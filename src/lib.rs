@@ -1,11 +1,11 @@
-pub struct PIDController {
+pub struct PIDController<'a> {
     setpoint: f32,
     /*get_process: fn()->f32,
     get_time: fn()->f32,
     set_control: fn(f32),*/
-    get_process: &'static dyn Fn()->f32,
-    get_time: &'static dyn Fn()->f32,
-    set_control: &'static dyn Fn(f32),
+    get_process: &'a dyn Fn()->f32,
+    get_time: &'a dyn Fn()->f32,
+    set_control: &'a mut dyn FnMut(f32),
     kp: f32,
     ki: f32,
     kd: f32,
@@ -13,17 +13,17 @@ pub struct PIDController {
     prev_error: f32,
     int_error: f32,
 }
-impl PIDController{
+impl<'a> PIDController<'_>{
     pub fn new(setpoint: f32,
                /*get_process: fn()->f32,
                get_time: fn()->f32,
                set_control: fn(f32),*/
-               get_process: &'static dyn Fn()->f32,
-               get_time: &'static dyn Fn()->f32,
-               set_control: &'static dyn Fn(f32),
+               get_process: &'a dyn Fn()->f32,
+               get_time: &'a dyn Fn()->f32,
+               set_control: &'a mut dyn FnMut(f32),
                kp: f32,
                ki: f32,
-               kd: f32)->PIDController{
+               kd: f32)->PIDController<'a>{
         PIDController{
             setpoint: setpoint,
             get_process: get_process,
@@ -84,11 +84,12 @@ mod tests {
         let get_time = || {
             time
         };
-        let set_control = |value: f32| {
+        let mut set_control = |value: f32| {
             time += 1f32;
             velocity += value;
             position += velocity;
         };
-        let mut pid = PIDController::new(1f32, &get_process, &get_time, &set_control, 1.0, 0.0, 0.0);
+        //let mut pid = PIDController::new(1f32, &get_process, &get_time, &set_control, 1.0, 0.0, 0.0);
+        let _pid = PIDController::new(1.0, &get_process, &get_time, &mut set_control, 1.0, 0.0, 0.0);
     }
 }
