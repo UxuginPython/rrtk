@@ -1,8 +1,11 @@
 pub struct PIDController {
     setpoint: f32,
-    get_process: fn()->f32,
+    /*get_process: fn()->f32,
     get_time: fn()->f32,
-    set_control: fn(f32),
+    set_control: fn(f32),*/
+    get_process: dyn Fn()->f32,
+    get_time: dyn Fn()->f32,
+    set_control: dyn Fn(f32),
     kp: f32,
     ki: f32,
     kd: f32,
@@ -61,7 +64,7 @@ mod tests {
         let mut velocity = 0f32;
         let mut position = 0f32;
         let mut time = 0f32;
-        fn get_process()->f32{
+        /*fn get_process()->f32{
             position
         }
         fn get_time()->f32{
@@ -71,7 +74,18 @@ mod tests {
             time+=1;
             velocity+=value;
             position+=velocity;
-        }
+        }*/
+        let get_process = || {
+            position
+        };
+        let get_time = || {
+            time
+        };
+        let set_control = |value: f32| {
+            time += 1;
+            velocity += value;
+            position += velocity;
+        };
         let mut pid = PIDController::new(1f32, get_process, get_time, set_control, 1.0, 0.0, 0.0);
     }
 }
