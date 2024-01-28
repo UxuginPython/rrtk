@@ -42,7 +42,6 @@ impl PIDController {
 #[cfg(test)]
 mod tests {
     use super::*;
-
     #[test]
     fn new() {
         let pid = PIDController::new(5.0, 1.0, 0.01, 0.1);
