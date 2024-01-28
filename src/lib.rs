@@ -55,7 +55,7 @@ mod tests {
         assert_eq!(pid.int_error, 0.0);
     }
     #[test]
-    fn first_update() {
+    fn initial_update() {
         let mut pid = PIDController::new(5.0, 1.0, 0.01, 0.1);
         let new_control = pid.update(1.0, 0.0);
         assert_eq!(new_control, 5.0);
