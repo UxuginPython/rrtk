@@ -1,4 +1,4 @@
-pub struct PIDController<'a> {
+pub struct PIDController {
     setpoint: f32,
     kp: f32,
     ki: f32,
