@@ -94,6 +94,26 @@ impl PIDControllerShift {
         self.shifts[self.shifts.len()-1]
     }
 }
+pub struct State {
+    position: f32,
+    velocity: f32,
+    acceleration: f32,
+}
+impl State {
+    pub fn new(position: f32, velocity: f32, acceleration: f32) -> State {
+        State {
+            position: position,
+            velocity: velocity,
+            acceleration: acceleration,
+        }
+    }
+    pub fn update(&mut self, delta_time: f32) {
+        let new_velocity = delta_time * self.acceleration + self.velocity;
+        let new_position = delta_time * (self.velocity + new_velocity) / 2.0;
+        self.position = new_position;
+        self.velocity = new_velocity;
+    }
+}
 #[cfg(test)]
 mod tests {
     use super::*;
