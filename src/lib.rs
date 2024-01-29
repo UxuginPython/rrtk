@@ -113,6 +113,18 @@ impl State {
         self.position = new_position;
         self.velocity = new_velocity;
     }
+    pub fn set_constant_acceleration(&mut self, acceleration: f32) {
+        self.acceleration = acceleration;
+    }
+    pub fn set_constant_velocity(&mut self, velocity: f32) {
+        self.acceleration = 0.0;
+        self.velocity = velocity;
+    }
+    pub fn set_constant_position(&mut self, position: f32) {
+        self.acceleration = 0.0;
+        self.velocity = 0.0;
+        self.position = position;
+    }
 }
 #[cfg(test)]
 mod tests {
