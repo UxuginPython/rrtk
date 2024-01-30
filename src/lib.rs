@@ -90,7 +90,6 @@ impl PIDControllerShift {
             new_shifts.push(prev_int+delta_time*(self.shifts[i-1]+new_shifts[i-1])/2.0);
         }
         self.shifts=new_shifts;
-        println!("{:#?}", self.shifts);
         self.shifts[self.shifts.len()-1]
     }
 }
@@ -108,8 +107,8 @@ impl State {
         }
     }
     pub fn update(&mut self, delta_time: f32) {
-        let new_velocity = delta_time * self.acceleration + self.velocity;
-        let new_position = delta_time * (self.velocity + new_velocity) / 2.0;
+        let new_velocity = self.velocity + delta_time * self.acceleration;
+        let new_position = self.position + delta_time * (self.velocity + new_velocity) / 2.0;
         self.position = new_position;
         self.velocity = new_velocity;
     }
@@ -126,11 +125,44 @@ impl State {
         self.position = position;
     }
 }
+pub struct Encoder {
+    state: State,
+    time: f32,
+}
+impl Encoder {
+    pub fn new(state: State, time: f32) -> Encoder {
+        Encoder {
+            state: state,
+            time: time,
+        }
+    }
+    pub fn update_acceleration(&mut self, time: f32, acceleration: f32) {
+        let delta_time = time - self.time;
+        let velocity = self.state.velocity + delta_time * (self.state.acceleration + acceleration) / 2.0;
+        let position = self.state.position + delta_time * (self.state.velocity + velocity) / 2.0;
+        self.state = State::new(position, velocity, acceleration);
+        self.time = time;
+    }
+    pub fn update_velocity(&mut self, time: f32, velocity: f32) {
+        let delta_time = time - self.time;
+        let acceleration = (velocity - self.state.velocity) / delta_time;
+        let position = self.state.position + delta_time * (self.state.velocity + velocity) / 2.0;
+        self.state = State::new(position, velocity, acceleration);
+        self.time = time;
+    }
+    pub fn update_position(&mut self, time: f32, position: f32) {
+        let delta_time = time - self.time;
+        let velocity = (position - self.state.position) / delta_time;
+        let acceleration = (velocity - self.state.velocity) / delta_time;
+        self.state = State::new(position, velocity, acceleration);
+        self.time = time;
+    }
+}
 #[cfg(test)]
 mod tests {
     use super::*;
     #[test]
-    fn new() {
+    fn pid_new() {
         let pid = PIDController::new(5.0, 1.0, 0.01, 0.1);
         assert_eq!(pid.setpoint, 5.0);
         assert_eq!(pid.kp, 1.0);
@@ -141,7 +173,7 @@ mod tests {
         assert_eq!(pid.int_error, 0.0);
     }
     #[test]
-    fn initial_update() {
+    fn pid_initial_update() {
         let mut pid = PIDController::new(5.0, 1.0, 0.01, 0.1);
         let new_control = pid.update(1.0, 0.0);
         assert_eq!(new_control, 5.0);
@@ -150,7 +182,7 @@ mod tests {
         assert_eq!(pid.int_error, 0.0);
     }
     #[test]
-    fn subsequent_update() {
+    fn pid_subsequent_update() {
         let mut pid = PIDController::new(5.0, 1.0, 0.01, 0.1);
         let _ = pid.update(1.0, 0.0);
         let new_control = pid.update(3.0, 1.0);
@@ -158,7 +190,7 @@ mod tests {
         assert_eq!(pid.int_error, 9.0);
     }
     #[test]
-    fn no_shift() {
+    fn pidshift_no_shift() {
         let mut pid = PIDControllerShift::new(5.0, 1.0, 0.01, 0.1, 0);
         let _ = pid.update(1.0, 0.0);
         let new_control = pid.update(3.0, 1.0);
@@ -166,10 +198,78 @@ mod tests {
         assert_eq!(pid.shifts, vec![4.04]);
     }
     #[test]
-    fn shift() {
+    fn pidshift_shift() {
         let mut pid = PIDControllerShift::new(5.0, 1.0, 0.01, 0.1, 1);
         let _ = pid.update(1.0, 0.0);
         let new_control = pid.update(3.0, 1.0);
         assert_eq!(new_control, 9.04);
+    }
+    #[test]
+    fn state_new() {
+        let state = State::new(1.0, 2.0, 3.0);
+        assert_eq!(state.position, 1.0);
+        assert_eq!(state.velocity, 2.0);
+        assert_eq!(state.acceleration, 3.0);
+    }
+    #[test]
+    fn state_update() {
+        let mut state = State::new(1.0, 2.0, 3.0);
+        state.update(4.0);
+        assert_eq!(state.position, 33.0);
+        assert_eq!(state.velocity, 14.0);
+        assert_eq!(state.acceleration, 3.0);
+    }
+    #[test]
+    fn state_acceleration() {
+        let mut state = State::new(1.0, 2.0, 3.0);
+        state.set_constant_acceleration(4.0);
+        assert_eq!(state.acceleration, 4.0);
+    }
+    #[test]
+    fn state_velocity() {
+        let mut state = State::new(1.0, 2.0, 3.0);
+        state.set_constant_velocity(4.0);
+        assert_eq!(state.velocity, 4.0);
+        assert_eq!(state.acceleration, 0.0);
+    }
+    #[test]
+    fn state_position() {
+        let mut state = State::new(1.0, 2.0, 3.0);
+        state.set_constant_position(4.0);
+        assert_eq!(state.position, 4.0);
+        assert_eq!(state.velocity, 0.0);
+        assert_eq!(state.acceleration, 0.0);
+    }
+    #[test]
+    fn encoder_new() {
+        let encoder = Encoder::new(State::new(1.0, 2.0, 3.0), 4.0);
+        assert_eq!(encoder.state.position, 1.0);
+        assert_eq!(encoder.state.velocity, 2.0);
+        assert_eq!(encoder.state.acceleration, 3.0);
+        assert_eq!(encoder.time, 4.0);
+    }
+    #[test]
+    fn encoder_update_acceleration() {
+        let mut encoder = Encoder::new(State::new(1.0, 2.0, 3.0), 4.0);
+        encoder.update_acceleration(6.0, 5.0);
+        assert_eq!(encoder.state.position, 13.0);
+        assert_eq!(encoder.state.velocity, 10.0);
+        assert_eq!(encoder.state.acceleration, 5.0);
+    }
+    #[test]
+    fn encoder_update_velocity() {
+        let mut encoder = Encoder::new(State::new(1.0, 2.0, 3.0), 4.0);
+        encoder.update_velocity(6.0, 5.0);
+        assert_eq!(encoder.state.position, 8.0);
+        assert_eq!(encoder.state.velocity, 5.0);
+        assert_eq!(encoder.state.acceleration, 1.5);
+    }
+    #[test]
+    fn encoder_update_position() {
+        let mut encoder = Encoder::new(State::new(1.0, 2.0, 3.0), 4.0);
+        encoder.update_position(6.0, 5.0);
+        assert_eq!(encoder.state.position, 5.0);
+        assert_eq!(encoder.state.velocity, 2.0);
+        assert_eq!(encoder.state.acceleration, 0.0);
     }
 }
