@@ -125,6 +125,8 @@ impl State {
         self.position = position;
     }
 }
+/*If you are using a position-based encoder, ensure that it sums full rotations instead of
+resetting to zero.*/
 pub struct Encoder {
     state: State,
     time: f32,
