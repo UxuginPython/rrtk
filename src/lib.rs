@@ -186,6 +186,9 @@ impl Motor {
     motor.encoder.update_velocity(time, velocity);
     run_motor_at_voltage(motor.update(time));
     (API will differ.)*/
+    /*The reason the encoder is not updated with the motor update method
+    is to allow for encoders reporting different metrics, as there are both
+    velocity- and position-based encoders.*/
     #[must_use]
     pub fn update(&mut self, time: f32) -> f32 {
         self.pid.update(time, match &self.mode {
