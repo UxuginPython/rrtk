@@ -158,6 +158,29 @@ impl Encoder {
         self.time = time;
     }
 }
+pub enum MotorMode {
+    POSITION,
+    VELOCITY,
+    ACCELERATION,
+}
+pub struct Motor {
+    encoder: Encoder,
+    pid: PIDControllerShift,
+    mode: MotorMode,
+}
+impl Motor {
+    pub fn new(state: State, time: f32, mode: MotorMode, setpoint: f32) -> Motor {
+        Motor {
+            encoder: Encoder::new(state, time),
+            pid: PIDControllerShift::new(setpoint, 1.0, 0.01, 0.1, match mode {
+                MotorMode::POSITION => 0,
+                MotorMode::VELOCITY => 1,
+                MotorMode::ACCELERATION => 2
+            }),
+            mode: mode,
+        }
+    }
+}
 #[cfg(test)]
 mod tests {
     use super::*;
