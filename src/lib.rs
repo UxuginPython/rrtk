@@ -186,6 +186,7 @@ impl Motor {
     motor.encoder.update_velocity(time, velocity);
     run_motor_at_voltage(motor.update(time));
     (API will differ.)*/
+    #[must_use]
     pub fn update(&mut self, time: f32) -> f32 {
         self.pid.update(time, match &self.mode {
             MotorMode::POSITION => self.encoder.state.position,
