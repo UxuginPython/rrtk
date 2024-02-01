@@ -175,10 +175,18 @@ impl Motor {
             pid: PIDControllerShift::new(setpoint, 1.0, 0.01, 0.1, match mode {
                 MotorMode::POSITION => 0,
                 MotorMode::VELOCITY => 1,
-                MotorMode::ACCELERATION => 2
+                MotorMode::ACCELERATION => 2,
             }),
             mode: mode,
         }
+    }
+    pub fn set_constant(&mut self, mode: MotorMode, setpoint: f32) {
+        self.mode = mode;
+        self.pid = PIDControllerShift::new(setpoint, 1.0, 0.01, 0.1, match self.mode {
+            MotorMode::POSITION => 0,
+            MotorMode::VELOCITY => 1,
+            MotorMode::ACCELERATION => 2,
+        });
     }
     /*The recommended way of doing this is
     time = get_time();
