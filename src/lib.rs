@@ -322,4 +322,17 @@ mod tests {
         assert_eq!(encoder.state.velocity, 2.0);
         assert_eq!(encoder.state.acceleration, 0.0);
     }
+    #[test]
+    fn motor_new() {
+        let motor = Motor::new(State::new(1.0, 2.0, 3.0), 4.0, MotorMode::ACCELERATION, 3.0);
+        assert_eq!(motor.encoder.state.position, 1.0);
+        assert_eq!(motor.encoder.state.velocity, 2.0);
+        assert_eq!(motor.encoder.state.acceleration, 3.0);
+        assert_eq!(motor.encoder.time, 4.0);
+        assert_eq!(motor.pid.setpoint, 3.0);
+        assert_eq!(motor.pid.kp, 1.0);
+        assert_eq!(motor.pid.ki, 0.01);
+        assert_eq!(motor.pid.kd, 0.1);
+        assert_eq!(motor.pid.shifts.len(), 3);
+    }
 }
