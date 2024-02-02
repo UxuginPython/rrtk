@@ -335,4 +335,11 @@ mod tests {
         assert_eq!(motor.pid.kd, 0.1);
         assert_eq!(motor.pid.shifts.len(), 3);
     }
+    #[test]
+    fn motor_set_constant() {
+        let mut motor = Motor::new(State::new(1.0, 2.0, 3.0), 4.0, MotorMode::ACCELERATION, 3.0);
+        motor.set_constant(MotorMode::VELOCITY, 5.0);
+        assert_eq!(motor.pid.shifts.len(), 2);
+        assert_eq!(motor.pid.setpoint, 5.0);
+    }
 }
