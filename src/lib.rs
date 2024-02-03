@@ -342,4 +342,14 @@ mod tests {
         assert_eq!(motor.pid.shifts.len(), 2);
         assert_eq!(motor.pid.setpoint, 5.0);
     }
+    #[test]
+    fn motor_update() {
+        let mut motor = Motor::new(State::new(1.0, 2.0, 3.0), 4.0, MotorMode::ACCELERATION, 3.0);
+        motor.encoder.update_acceleration(6.0, 3.0);
+        let update = motor.update(6.0);
+        assert_eq!(update, 0.0);
+        assert_eq!(motor.encoder.state.position, 11.0);
+        assert_eq!(motor.encoder.state.velocity, 8.0);
+        assert_eq!(motor.encoder.state.acceleration, 3.0);
+    }
 }
