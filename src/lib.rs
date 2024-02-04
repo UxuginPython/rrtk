@@ -1,3 +1,4 @@
+#[cfg(feature="PIDController")]
 pub struct PIDController {
     setpoint: f32,
     kp: f32,
@@ -7,6 +8,7 @@ pub struct PIDController {
     prev_error: Option<f32>,
     int_error: f32,
 }
+#[cfg(feature="PIDController")]
 impl PIDController {
     pub fn new(setpoint: f32, kp: f32, ki: f32, kd: f32) -> PIDController {
         PIDController {
@@ -39,6 +41,7 @@ impl PIDController {
         self.kp * error + self.ki * self.int_error + self.kd * drv_error
     }
 }
+#[cfg(feature="PIDControllerShift")]
 pub struct PIDControllerShift {
     setpoint: f32,
     kp: f32,
@@ -49,6 +52,7 @@ pub struct PIDControllerShift {
     int_error: f32,
     shifts: Vec<f32>,
 }
+#[cfg(feature="PIDControllerShift")]
 impl PIDControllerShift {
     pub fn new(setpoint: f32, kp: f32, ki: f32, kd: f32, shift: u8) -> PIDControllerShift {
         let mut shifts = Vec::new();
@@ -93,11 +97,13 @@ impl PIDControllerShift {
         self.shifts[self.shifts.len()-1]
     }
 }
+#[cfg(feature="State")]
 pub struct State {
     position: f32,
     velocity: f32,
     acceleration: f32,
 }
+#[cfg(feature="State")]
 impl State {
     pub fn new(position: f32, velocity: f32, acceleration: f32) -> State {
         State {
@@ -127,10 +133,12 @@ impl State {
 }
 /*If you are using a position-based encoder, ensure that it sums full rotations instead of
 resetting to zero.*/
+#[cfg(feature="Encoder")]
 pub struct Encoder {
     state: State,
     time: f32,
 }
+#[cfg(feature="Encoder")]
 impl Encoder {
     pub fn new(state: State, time: f32) -> Encoder {
         Encoder {
@@ -160,16 +168,19 @@ impl Encoder {
         self.time = time;
     }
 }
+#[cfg(feature="MotorMode")]
 pub enum MotorMode {
     POSITION,
     VELOCITY,
     ACCELERATION,
 }
+#[cfg(feature="Motor")]
 pub struct Motor {
     encoder: Encoder,
     pid: PIDControllerShift,
     mode: MotorMode,
 }
+#[cfg(feature="Motor")]
 impl Motor {
     pub fn new(state: State, time: f32, mode: MotorMode, setpoint: f32) -> Motor {
         Motor {
@@ -212,6 +223,7 @@ impl Motor {
 mod tests {
     use super::*;
     #[test]
+    #[cfg(feature="PIDController")]
     fn pid_new() {
         let pid = PIDController::new(5.0, 1.0, 0.01, 0.1);
         assert_eq!(pid.setpoint, 5.0);
@@ -223,6 +235,7 @@ mod tests {
         assert_eq!(pid.int_error, 0.0);
     }
     #[test]
+    #[cfg(feature="PIDController")]
     fn pid_initial_update() {
         let mut pid = PIDController::new(5.0, 1.0, 0.01, 0.1);
         let new_control = pid.update(1.0, 0.0);
@@ -232,6 +245,7 @@ mod tests {
         assert_eq!(pid.int_error, 0.0);
     }
     #[test]
+    #[cfg(feature="PIDController")]
     fn pid_subsequent_update() {
         let mut pid = PIDController::new(5.0, 1.0, 0.01, 0.1);
         let _ = pid.update(1.0, 0.0);
@@ -240,6 +254,7 @@ mod tests {
         assert_eq!(pid.int_error, 9.0);
     }
     #[test]
+    #[cfg(feature="PIDControllerShift")]
     fn pidshift_no_shift() {
         let mut pid = PIDControllerShift::new(5.0, 1.0, 0.01, 0.1, 0);
         let _ = pid.update(1.0, 0.0);
@@ -248,6 +263,7 @@ mod tests {
         assert_eq!(pid.shifts, vec![4.04]);
     }
     #[test]
+    #[cfg(feature="PIDControllerShift")]
     fn pidshift_shift() {
         let mut pid = PIDControllerShift::new(5.0, 1.0, 0.01, 0.1, 1);
         let _ = pid.update(1.0, 0.0);
@@ -255,6 +271,7 @@ mod tests {
         assert_eq!(new_control, 9.04);
     }
     #[test]
+    #[cfg(feature="State")]
     fn state_new() {
         let state = State::new(1.0, 2.0, 3.0);
         assert_eq!(state.position, 1.0);
@@ -262,6 +279,7 @@ mod tests {
         assert_eq!(state.acceleration, 3.0);
     }
     #[test]
+    #[cfg(feature="State")]
     fn state_update() {
         let mut state = State::new(1.0, 2.0, 3.0);
         state.update(4.0);
@@ -270,12 +288,14 @@ mod tests {
         assert_eq!(state.acceleration, 3.0);
     }
     #[test]
+    #[cfg(feature="State")]
     fn state_acceleration() {
         let mut state = State::new(1.0, 2.0, 3.0);
         state.set_constant_acceleration(4.0);
         assert_eq!(state.acceleration, 4.0);
     }
     #[test]
+    #[cfg(feature="State")]
     fn state_velocity() {
         let mut state = State::new(1.0, 2.0, 3.0);
         state.set_constant_velocity(4.0);
@@ -283,6 +303,7 @@ mod tests {
         assert_eq!(state.acceleration, 0.0);
     }
     #[test]
+    #[cfg(feature="State")]
     fn state_position() {
         let mut state = State::new(1.0, 2.0, 3.0);
         state.set_constant_position(4.0);
@@ -291,6 +312,7 @@ mod tests {
         assert_eq!(state.acceleration, 0.0);
     }
     #[test]
+    #[cfg(feature="Encoder")]
     fn encoder_new() {
         let encoder = Encoder::new(State::new(1.0, 2.0, 3.0), 4.0);
         assert_eq!(encoder.state.position, 1.0);
@@ -299,6 +321,7 @@ mod tests {
         assert_eq!(encoder.time, 4.0);
     }
     #[test]
+    #[cfg(feature="Encoder")]
     fn encoder_update_acceleration() {
         let mut encoder = Encoder::new(State::new(1.0, 2.0, 3.0), 4.0);
         encoder.update_acceleration(6.0, 5.0);
@@ -307,6 +330,7 @@ mod tests {
         assert_eq!(encoder.state.acceleration, 5.0);
     }
     #[test]
+    #[cfg(feature="Encoder")]
     fn encoder_update_velocity() {
         let mut encoder = Encoder::new(State::new(1.0, 2.0, 3.0), 4.0);
         encoder.update_velocity(6.0, 5.0);
@@ -315,6 +339,7 @@ mod tests {
         assert_eq!(encoder.state.acceleration, 1.5);
     }
     #[test]
+    #[cfg(feature="Encoder")]
     fn encoder_update_position() {
         let mut encoder = Encoder::new(State::new(1.0, 2.0, 3.0), 4.0);
         encoder.update_position(6.0, 5.0);
@@ -323,6 +348,7 @@ mod tests {
         assert_eq!(encoder.state.acceleration, 0.0);
     }
     #[test]
+    #[cfg(feature="Motor")]
     fn motor_new() {
         let motor = Motor::new(State::new(1.0, 2.0, 3.0), 4.0, MotorMode::ACCELERATION, 3.0);
         assert_eq!(motor.encoder.state.position, 1.0);
@@ -336,6 +362,7 @@ mod tests {
         assert_eq!(motor.pid.shifts.len(), 3);
     }
     #[test]
+    #[cfg(feature="Motor")]
     fn motor_set_constant() {
         let mut motor = Motor::new(State::new(1.0, 2.0, 3.0), 4.0, MotorMode::ACCELERATION, 3.0);
         motor.set_constant(MotorMode::VELOCITY, 5.0);
@@ -343,6 +370,7 @@ mod tests {
         assert_eq!(motor.pid.setpoint, 5.0);
     }
     #[test]
+    #[cfg(feature="Motor")]
     fn motor_update() {
         let mut motor = Motor::new(State::new(1.0, 2.0, 3.0), 4.0, MotorMode::ACCELERATION, 3.0);
         motor.encoder.update_acceleration(6.0, 3.0);
