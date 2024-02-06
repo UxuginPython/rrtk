@@ -169,6 +169,8 @@ impl Encoder {
     }
 }
 #[cfg(feature="MotorMode")]
+#[derive(Debug)]
+#[derive(PartialEq)]
 pub enum MotorMode {
     POSITION,
     VELOCITY,
@@ -217,6 +219,56 @@ impl Motor {
             MotorMode::VELOCITY => self.encoder.state.velocity,
             MotorMode::ACCELERATION => self.encoder.state.acceleration,
         })
+    }
+}
+#[cfg(feature="MotionProfile")]
+pub struct MotionProfile {
+    t1: f32,
+    t2: f32,
+    t3: f32,
+    max_vel: f32,
+    max_acc: f32,
+}
+#[cfg(feature="MotionProfile")]
+impl MotionProfile {
+    pub fn new(start_state: State, end_state: State, max_vel: f32, max_acc: f32) -> MotionProfile {
+        let sign = if end_state.position<start_state.position {-1.0} else {1.0};
+        let max_vel = max_vel.abs() * sign;
+        let max_acc = max_acc.abs() * sign;
+        let d_t1_vel = max_vel - start_state.velocity;
+        let t1 = d_t1_vel / max_acc;
+        assert!(t1>=0.0);
+        let d_t1_pos = (start_state.velocity + max_vel) / 2.0 * t1;
+        let d_t3_vel = end_state.velocity - max_vel;
+        let d_t3 = d_t3_vel / -max_acc;
+        assert!(d_t3>=0.0);
+        let d_t3_pos = (max_vel + end_state.velocity) / 2.0 * d_t3;
+        let d_t2_pos = (end_state.position - start_state.position) - (d_t1_pos + d_t3_pos);
+        let d_t2 = d_t2_pos / max_vel;
+        assert!(d_t2>=0.0);
+        let t2 = t1 + d_t2;
+        let t3 = t2 + d_t3;
+        MotionProfile {
+            t1: t1,
+            t2: t2,
+            t3: t3,
+            max_vel: max_vel,
+            max_acc: max_acc,
+        }
+    }
+    #[cfg(feature="MotorMode")]
+    pub fn get_mode(&self, t: f32) -> Result<MotorMode, &'static str> {
+        if t<0.0 {
+            return Err("time invalid");
+        } else if t<self.t1 {
+            return Ok(MotorMode::ACCELERATION);
+        } else if t<self.t2 {
+            return Ok(MotorMode::VELOCITY);
+        } else if t<self.t3 {
+            return Ok(MotorMode::ACCELERATION);
+        } else {
+            return Err("time invalid");
+        }
     }
 }
 #[cfg(test)]
@@ -379,5 +431,85 @@ mod tests {
         assert_eq!(motor.encoder.state.position, 11.0);
         assert_eq!(motor.encoder.state.velocity, 8.0);
         assert_eq!(motor.encoder.state.acceleration, 3.0);
+    }
+    #[test]
+    #[cfg(feature="MotionProfile")]
+    fn motion_profile_new_1() {
+        let motion_profile = MotionProfile::new(State::new(0.0, 0.0, 0.0), State::new(3.0, 0.0, 0.0), 1.0, 1.0);
+        assert_eq!(motion_profile.t1, 1.0);
+        assert_eq!(motion_profile.t2, 3.0);
+        assert_eq!(motion_profile.t3, 4.0);
+        assert_eq!(motion_profile.max_vel, 1.0);
+        assert_eq!(motion_profile.max_acc, 1.0);
+    }
+    #[test]
+    #[cfg(feature="MotionProfile")]
+    fn motion_profile_new_2() {
+        let motion_profile = MotionProfile::new(State::new(1.0, 0.0, 0.0), State::new(3.0, 0.0, 0.0), 1.0, 1.0);
+        assert_eq!(motion_profile.t1, 1.0);
+        assert_eq!(motion_profile.t2, 2.0);
+        assert_eq!(motion_profile.t3, 3.0);
+        assert_eq!(motion_profile.max_vel, 1.0);
+        assert_eq!(motion_profile.max_acc, 1.0);
+    }
+    #[test]
+    #[cfg(feature="MotionProfile")]
+    fn motion_profile_new_3 () {
+        let motion_profile = MotionProfile::new(State::new(0.0, 1.0, 0.0), State::new(3.0, 0.0, 0.0), 1.0, 1.0);
+        assert_eq!(motion_profile.t1, 0.0);
+        assert_eq!(motion_profile.t2, 2.5);
+        assert_eq!(motion_profile.t3, 3.5);
+        assert_eq!(motion_profile.max_vel, 1.0);
+        assert_eq!(motion_profile.max_acc, 1.0);
+    }
+    #[test]
+    #[cfg(feature="MotionProfile")]
+    fn motion_profile_new_4() {
+        let motion_profile = MotionProfile::new(State::new(0.0, 0.0, 1.0), State::new(3.0, 0.0, 0.0), 1.0, 1.0);
+        assert_eq!(motion_profile.t1, 1.0);
+        assert_eq!(motion_profile.t2, 3.0);
+        assert_eq!(motion_profile.t3, 4.0);
+        assert_eq!(motion_profile.max_vel, 1.0);
+        assert_eq!(motion_profile.max_acc, 1.0);
+    }
+    #[test]
+    #[cfg(feature="MotionProfile")]
+    fn motion_profile_new_5() {
+        let motion_profile = MotionProfile::new(State::new(0.0, 0.0, 0.0), State::new(6.0, 0.0, 0.0), 2.0, 1.0);
+        assert_eq!(motion_profile.t1, 2.0);
+        assert_eq!(motion_profile.t2, 3.0);
+        assert_eq!(motion_profile.t3, 5.0);
+        assert_eq!(motion_profile.max_vel, 2.0);
+        assert_eq!(motion_profile.max_acc, 1.0);
+    }
+    #[test]
+    #[cfg(feature="MotionProfile")]
+    fn motion_profile_new_6() {
+        let motion_profile = MotionProfile::new(State::new(0.0, 0.0, 0.0), State::new(3.0, 0.0, 0.0), 1.0, 2.0);
+        assert_eq!(motion_profile.t1, 0.5);
+        assert_eq!(motion_profile.t2, 3.0);
+        assert_eq!(motion_profile.t3, 3.5);
+        assert_eq!(motion_profile.max_vel, 1.0);
+        assert_eq!(motion_profile.max_acc, 2.0);
+    }
+    #[test]
+    #[cfg(feature="MotorMode")]
+    #[cfg(feature="MotionProfile")]
+    fn motion_profile_new_7() {
+        let motion_profile = MotionProfile::new(State::new(0.0, 0.0, 0.0), State::new(-3.0, 0.0, 0.0), 1.0, 1.0);
+        assert_eq!(motion_profile.t1, 1.0);
+        assert_eq!(motion_profile.t2, 3.0);
+        assert_eq!(motion_profile.t3, 4.0);
+        assert_eq!(motion_profile.max_vel, -1.0);
+        assert_eq!(motion_profile.max_acc, -1.0);
+    }
+    #[test]
+    #[cfg(feature="MotorMode")]
+    #[cfg(feature="MotionProfile")]
+    fn motion_profile_get_mode() {
+        let motion_profile = MotionProfile::new(State::new(0.0, 0.0, 0.0), State::new(3.0, 0.0, 0.0), 1.0, 1.0);
+        assert_eq!(motion_profile.get_mode(0.5), Ok(MotorMode::ACCELERATION));
+        assert_eq!(motion_profile.get_mode(2.5), Ok(MotorMode::VELOCITY));
+        assert_eq!(motion_profile.get_mode(3.5), Ok(MotorMode::ACCELERATION));
     }
 }
