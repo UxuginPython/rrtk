@@ -493,6 +493,7 @@ mod tests {
         assert_eq!(motion_profile.max_acc, 2.0);
     }
     #[test]
+    #[cfg(feature="MotorMode")]
     #[cfg(feature="MotionProfile")]
     fn motion_profile_new_7() {
         let motion_profile = MotionProfile::new(State::new(0.0, 0.0, 0.0), State::new(-3.0, 0.0, 0.0), 1.0, 1.0);
@@ -502,6 +503,9 @@ mod tests {
         assert_eq!(motion_profile.max_vel, -1.0);
         assert_eq!(motion_profile.max_acc, -1.0);
     }
+    #[test]
+    #[cfg(feature="MotorMode")]
+    #[cfg(feature="MotionProfile")]
     fn motion_profile_get_mode() {
         let motion_profile = MotionProfile::new(State::new(0.0, 0.0, 0.0), State::new(3.0, 0.0, 0.0), 1.0, 1.0);
         assert_eq!(motion_profile.get_mode(0.5), Ok(MotorMode::ACCELERATION));
