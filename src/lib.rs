@@ -230,34 +230,21 @@ pub struct MotionProfile {
 #[cfg(feature="MotionProfile")]
 impl MotionProfile {
     pub fn new(start_state: State, end_state: State, max_vel: f32, max_acc: f32) -> MotionProfile {
-        //println!("sign = if {} < {} {-1.0} else {1.0}", end_state.position, start_state.position);
         let sign = if end_state.position<start_state.position {-1.0} else {1.0};
-        println!("max_vel = {}.abs() * {}", max_vel, sign);
         let max_vel = max_vel.abs() * sign;
-        println!("max_acc = {}.abs() * {}", max_acc, sign);
         let max_acc = max_acc.abs() * sign;
-        println!("d_t1_vel = {} - {}", max_vel, start_state.velocity);
         let d_t1_vel = max_vel - start_state.velocity;
-        println!("t1 = {} / {}", d_t1_vel, max_acc);
         let t1 = d_t1_vel / max_acc;
         assert!(t1>=0.0);
-        println!("d_t1_pos = ({} + {}) / 2.0 * {}", start_state.velocity, max_vel, t1);
         let d_t1_pos = (start_state.velocity + max_vel) / 2.0 * t1;
-        println!("d_t3_vel = {} - {}", end_state.velocity, max_vel);
         let d_t3_vel = end_state.velocity - max_vel;
-        println!("d_t3 = {} / -{}", d_t3_vel, max_acc);
         let d_t3 = d_t3_vel / -max_acc;
         assert!(d_t3>=0.0);
-        println!("d_t3_pos = ({} + {}) / 2.0 * {}", max_vel, end_state.velocity, d_t3);
         let d_t3_pos = (max_vel + end_state.velocity) / 2.0 * d_t3;
-        println!("d_t2_pos = ({} - {}) - ({} + {})", end_state.position, start_state.position, d_t1_pos, d_t3_pos);
         let d_t2_pos = (end_state.position - start_state.position) - (d_t1_pos + d_t3_pos);
-        println!("d_t2 = {} / {}", d_t2_pos, max_vel);
         let d_t2 = d_t2_pos / max_vel;
         assert!(d_t2>=0.0);
-        println!("t2 = {} + {}", t1, d_t2);
         let t2 = t1 + d_t2;
-        println!("t3 = {} + {}", t2, d_t3);
         let t3 = t2 + d_t3;
         MotionProfile {
             t1: t1,
