@@ -647,7 +647,7 @@ mod tests {
     #[cfg(feature = "Task")]
     fn task_implement() {
         struct MyTask {
-            task_data: TaskData
+            task_data: TaskData,
         }
         impl MyTask {
             fn new() -> MyTask {
@@ -669,5 +669,58 @@ mod tests {
         assert_eq!(my_task.task_data.subtask, 0usize);
         assert_eq!(my_task.task_data.terminated, false);
         assert_eq!(my_task.task_data.stopped, false);
+    }
+    #[test]
+    #[cfg(feature = "Task")]
+    fn task_subtask() {
+        struct Foo {
+            task_data: TaskData,
+        }
+        impl Foo {
+            fn new() -> Foo {
+                Foo {
+                    task_data: TaskData::new(RefCell::new(vec![Rc::new(Bar::new())])),
+                }
+            }
+        }
+        impl Task for Foo {
+            fn get_task_data(&self) -> &TaskData {
+                &self.task_data
+            }
+            fn get_task_data_mut(&mut self) -> &mut TaskData {
+                &mut self.task_data
+            }
+            fn cycle(&mut self) {}
+        }
+        struct Bar {
+            task_data: TaskData,
+        }
+        impl Bar {
+            fn new() -> Bar {
+                Bar {
+                    task_data: TaskData::new_empty(),
+                }
+            }
+        }
+        impl Task for Bar {
+            fn get_task_data(&self) -> &TaskData {
+                &self.task_data
+            }
+            fn get_task_data_mut(&mut self) -> &mut TaskData {
+                &mut self.task_data
+            }
+            fn cycle(&mut self) {}
+        }
+        let foo = Foo::new();
+        let mut binding = foo.task_data.subtasks.borrow_mut();
+        let bar = Rc::get_mut(&mut binding[0]).unwrap();
+        let bar_data = bar.get_task_data();
+        assert_eq!(bar_data.subtask, 0usize);
+        assert_eq!(bar_data.terminated, false);
+        assert_eq!(bar_data.stopped, false);
+        let foo_data = foo.get_task_data();
+        assert_eq!(foo_data.subtask, 0usize);
+        assert_eq!(foo_data.terminated, false);
+        assert_eq!(foo_data.stopped, false);
     }
 }
