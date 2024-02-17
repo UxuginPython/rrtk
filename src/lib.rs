@@ -1,3 +1,4 @@
+#![cfg_attr(not(feature = "std"), no_std)]
 #[cfg(feature = "PIDController")]
 pub struct PIDController {
     setpoint: f32,
@@ -290,14 +291,20 @@ impl MotionProfile {
         }
     }
 }
+#[cfg(feature = "Task")]
+use core::cell::RefCell;
+#[cfg(feature = "Task")]
+use std::rc::Rc;
+#[cfg(feature = "Task")]
 pub struct TaskData {
     subtasks: RefCell<Vec<Rc<dyn Task>>>,
     subtask: usize,
     stopped: bool,
     terminated: bool,
 }
+#[cfg(feature = "Task")]
 impl TaskData {
-    fn new(subtasks: RefCell<Vec<Rc<dyn Task>>>) -> TaskData {
+    pub fn new(subtasks: RefCell<Vec<Rc<dyn Task>>>) -> TaskData {
         TaskData {
             subtasks: subtasks,
             subtask: 0,
@@ -305,7 +312,7 @@ impl TaskData {
             terminated: false,
         }
     }
-    fn new_empty() -> TaskData {
+    pub fn new_empty() -> TaskData {
         TaskData {
             subtasks: RefCell::new(vec![]),
             subtask: 0,
@@ -314,8 +321,7 @@ impl TaskData {
         }
     }
 }
-use core::cell::RefCell;
-use std::rc::Rc;
+#[cfg(feature = "Task")]
 pub trait Task {
     fn get_task_data(&self) -> &TaskData;
     fn get_task_data_mut(&mut self) -> &mut TaskData;
@@ -620,5 +626,48 @@ mod tests {
         assert_eq!(motion_profile.get_mode(0.5), Ok(MotorMode::ACCELERATION));
         assert_eq!(motion_profile.get_mode(2.5), Ok(MotorMode::VELOCITY));
         assert_eq!(motion_profile.get_mode(3.5), Ok(MotorMode::ACCELERATION));
+    }
+    #[test]
+    #[cfg(feature = "Task")]
+    fn task_data_new() {
+        let task_data = TaskData::new(RefCell::new(vec![]));
+        assert_eq!(task_data.subtask, 0usize);
+        assert_eq!(task_data.terminated, false);
+        assert_eq!(task_data.stopped, false);
+    }
+    #[test]
+    #[cfg(feature = "Task")]
+    fn task_data_new_empty() {
+        let task_data = TaskData::new_empty();
+        assert_eq!(task_data.subtask, 0usize);
+        assert_eq!(task_data.terminated, false);
+        assert_eq!(task_data.stopped, false);
+    }
+    #[test]
+    #[cfg(feature = "Task")]
+    fn task_implement() {
+        struct MyTask {
+            task_data: TaskData
+        }
+        impl MyTask {
+            fn new() -> MyTask {
+                MyTask {
+                    task_data: TaskData::new_empty(),
+                }
+            }
+        }
+        impl Task for MyTask {
+            fn get_task_data(&self) -> &TaskData {
+                &self.task_data
+            }
+            fn get_task_data_mut(&mut self) -> &mut TaskData {
+                &mut self.task_data
+            }
+            fn cycle(&mut self) {}
+        }
+        let my_task = MyTask::new();
+        assert_eq!(my_task.task_data.subtask, 0usize);
+        assert_eq!(my_task.task_data.terminated, false);
+        assert_eq!(my_task.task_data.stopped, false);
     }
 }
