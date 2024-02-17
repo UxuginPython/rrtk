@@ -290,6 +290,56 @@ impl MotionProfile {
         }
     }
 }
+pub struct TaskData {
+    subtasks: RefCell<Vec<Rc<dyn Task>>>,
+    subtask: usize,
+    stopped: bool,
+    terminated: bool,
+}
+impl TaskData {
+    fn new(subtasks: RefCell<Vec<Rc<dyn Task>>>) -> TaskData {
+        TaskData {
+            subtasks: subtasks,
+            subtask: 0,
+            stopped: false,
+            terminated: false,
+        }
+    }
+    fn new_empty() -> TaskData {
+        TaskData {
+            subtasks: RefCell::new(vec![]),
+            subtask: 0,
+            stopped: false,
+            terminated: false,
+        }
+    }
+}
+use core::cell::RefCell;
+use std::rc::Rc;
+pub trait Task {
+    fn get_task_data(&self) -> &TaskData;
+    fn get_task_data_mut(&mut self) -> &mut TaskData;
+    fn cycle(&mut self);
+    fn tick(&mut self) {
+        let task_data = self.get_task_data_mut();
+        if task_data.terminated || task_data.stopped {
+            return;
+        }
+        if task_data.subtasks.borrow().len() == 0 {
+            task_data.subtask = 0;
+        } else {
+            task_data.subtask += 1;
+            task_data.subtask %= task_data.subtasks.borrow().len() + 1;
+        }
+        if task_data.subtask == 0 {
+            self.cycle();
+        } else {
+            let mut binding = task_data.subtasks.borrow_mut();
+            let subtask = Rc::get_mut(&mut binding[task_data.subtask - 1]).unwrap();
+            subtask.tick();
+        }
+    }
+}
 #[cfg(test)]
 mod tests {
     use super::*;
