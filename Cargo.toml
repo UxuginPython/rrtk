@@ -9,7 +9,7 @@ edition = "2021"
 [features]
 std = []
 PIDController = []
-PIDControllerShift = []
+PIDControllerShift = ["std"]
 State = []
 Encoder = ["State"]
 MotorMode = []
