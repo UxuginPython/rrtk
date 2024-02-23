@@ -1,3 +1,4 @@
+#![cfg_attr(not(feature = "std"), no_std)]
 #[cfg(feature = "PIDController")]
 pub struct PIDController {
     setpoint: f32,
@@ -290,6 +291,61 @@ impl MotionProfile {
         }
     }
 }
+#[cfg(feature = "Task")]
+use core::cell::RefCell;
+#[cfg(feature = "Task")]
+use std::rc::Rc;
+#[cfg(feature = "Task")]
+pub struct TaskData {
+    subtasks: RefCell<Vec<Rc<dyn Task>>>,
+    subtask: usize,
+    stopped: bool,
+    terminated: bool,
+}
+#[cfg(feature = "Task")]
+impl TaskData {
+    pub fn new(subtasks: RefCell<Vec<Rc<dyn Task>>>) -> TaskData {
+        TaskData {
+            subtasks: subtasks,
+            subtask: 0,
+            stopped: false,
+            terminated: false,
+        }
+    }
+    pub fn new_empty() -> TaskData {
+        TaskData {
+            subtasks: RefCell::new(vec![]),
+            subtask: 0,
+            stopped: false,
+            terminated: false,
+        }
+    }
+}
+#[cfg(feature = "Task")]
+pub trait Task {
+    fn get_task_data(&self) -> &TaskData;
+    fn get_task_data_mut(&mut self) -> &mut TaskData;
+    fn cycle(&mut self);
+    fn tick(&mut self) {
+        let task_data = self.get_task_data_mut();
+        if task_data.terminated || task_data.stopped {
+            return;
+        }
+        if task_data.subtasks.borrow().len() == 0 {
+            task_data.subtask = 0;
+        } else {
+            task_data.subtask += 1;
+            task_data.subtask %= task_data.subtasks.borrow().len() + 1;
+        }
+        if task_data.subtask == 0 {
+            self.cycle();
+        } else {
+            let mut binding = task_data.subtasks.borrow_mut();
+            let subtask = Rc::get_mut(&mut binding[task_data.subtask - 1]).unwrap();
+            subtask.tick();
+        }
+    }
+}
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -570,5 +626,101 @@ mod tests {
         assert_eq!(motion_profile.get_mode(0.5), Ok(MotorMode::ACCELERATION));
         assert_eq!(motion_profile.get_mode(2.5), Ok(MotorMode::VELOCITY));
         assert_eq!(motion_profile.get_mode(3.5), Ok(MotorMode::ACCELERATION));
+    }
+    #[test]
+    #[cfg(feature = "Task")]
+    fn task_data_new() {
+        let task_data = TaskData::new(RefCell::new(vec![]));
+        assert_eq!(task_data.subtask, 0usize);
+        assert_eq!(task_data.terminated, false);
+        assert_eq!(task_data.stopped, false);
+    }
+    #[test]
+    #[cfg(feature = "Task")]
+    fn task_data_new_empty() {
+        let task_data = TaskData::new_empty();
+        assert_eq!(task_data.subtask, 0usize);
+        assert_eq!(task_data.terminated, false);
+        assert_eq!(task_data.stopped, false);
+    }
+    #[test]
+    #[cfg(feature = "Task")]
+    fn task_implement() {
+        struct MyTask {
+            task_data: TaskData,
+        }
+        impl MyTask {
+            fn new() -> MyTask {
+                MyTask {
+                    task_data: TaskData::new_empty(),
+                }
+            }
+        }
+        impl Task for MyTask {
+            fn get_task_data(&self) -> &TaskData {
+                &self.task_data
+            }
+            fn get_task_data_mut(&mut self) -> &mut TaskData {
+                &mut self.task_data
+            }
+            fn cycle(&mut self) {}
+        }
+        let my_task = MyTask::new();
+        assert_eq!(my_task.task_data.subtask, 0usize);
+        assert_eq!(my_task.task_data.terminated, false);
+        assert_eq!(my_task.task_data.stopped, false);
+    }
+    #[test]
+    #[cfg(feature = "Task")]
+    fn task_subtask() {
+        struct Foo {
+            task_data: TaskData,
+        }
+        impl Foo {
+            fn new() -> Foo {
+                Foo {
+                    task_data: TaskData::new(RefCell::new(vec![Rc::new(Bar::new())])),
+                }
+            }
+        }
+        impl Task for Foo {
+            fn get_task_data(&self) -> &TaskData {
+                &self.task_data
+            }
+            fn get_task_data_mut(&mut self) -> &mut TaskData {
+                &mut self.task_data
+            }
+            fn cycle(&mut self) {}
+        }
+        struct Bar {
+            task_data: TaskData,
+        }
+        impl Bar {
+            fn new() -> Bar {
+                Bar {
+                    task_data: TaskData::new_empty(),
+                }
+            }
+        }
+        impl Task for Bar {
+            fn get_task_data(&self) -> &TaskData {
+                &self.task_data
+            }
+            fn get_task_data_mut(&mut self) -> &mut TaskData {
+                &mut self.task_data
+            }
+            fn cycle(&mut self) {}
+        }
+        let foo = Foo::new();
+        let mut binding = foo.task_data.subtasks.borrow_mut();
+        let bar = Rc::get_mut(&mut binding[0]).unwrap();
+        let bar_data = bar.get_task_data();
+        assert_eq!(bar_data.subtask, 0usize);
+        assert_eq!(bar_data.terminated, false);
+        assert_eq!(bar_data.stopped, false);
+        let foo_data = foo.get_task_data();
+        assert_eq!(foo_data.subtask, 0usize);
+        assert_eq!(foo_data.terminated, false);
+        assert_eq!(foo_data.stopped, false);
     }
 }

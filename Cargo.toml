@@ -7,6 +7,7 @@ edition = "2021"
 
 [dependencies]
 [features]
+std = []
 PIDController = []
 PIDControllerShift = []
 State = []
@@ -14,4 +15,5 @@ Encoder = ["State"]
 MotorMode = []
 Motor = ["PIDControllerShift", "Encoder", "MotorMode"]
 MotionProfile = ["State"]
+Task = ["std"]
 default = ["Motor", "MotionProfile"]
