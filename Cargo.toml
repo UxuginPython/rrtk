@@ -1,6 +1,17 @@
+# SPDX-License-Identifier: LGPL-3.0-only
+#Copyright 2024 UxuginPython on GitHub
+#
+#     This file is part of Rust Robotics ToolKit.
+#
+#    Rust Robotics ToolKit is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software Foundation, version 3.
+#
+#    Rust Robotics ToolKit is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.
+#
+#    You should have received a copy of the GNU Lesser General Public License along with Rust Robotics ToolKit. If not, see <https://www.gnu.org/licenses/>.
 [package]
 name = "rrtk"
 version = "0.1.0"
+license="LGPL-3.0-only"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
