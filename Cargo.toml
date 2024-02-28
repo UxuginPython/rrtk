@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: LGPL-3.0-only
-#Copyright 2024 UxuginPython on GitHub
+#Copyright 2024 Uxugin on GitHub
 #
 #     This file is part of Rust Robotics ToolKit.
 #
@@ -13,6 +13,7 @@ name = "rrtk"
 version = "0.1.0"
 license="LGPL-3.0-only"
 edition = "2021"
+authors = ["Uxugin <uxugin at uxugin dot com>"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
