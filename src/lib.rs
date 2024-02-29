@@ -11,7 +11,6 @@ Copyright 2024 Uxugin on GitHub
     You should have received a copy of the GNU Lesser General Public License along with Rust Robotics ToolKit. If not, see <https://www.gnu.org/licenses/>.
 */
 #![cfg_attr(not(feature = "std"), no_std)]
-#[cfg(feature = "PIDController")]
 pub struct PIDController {
     setpoint: f32,
     kp: f32,
@@ -21,7 +20,6 @@ pub struct PIDController {
     prev_error: Option<f32>,
     int_error: f32,
 }
-#[cfg(feature = "PIDController")]
 impl PIDController {
     pub fn new(setpoint: f32, kp: f32, ki: f32, kd: f32) -> PIDController {
         PIDController {
@@ -54,7 +52,6 @@ impl PIDController {
         self.kp * error + self.ki * self.int_error + self.kd * drv_error
     }
 }
-#[cfg(feature = "PIDControllerShift")]
 pub struct PIDControllerShift {
     setpoint: f32,
     kp: f32,
@@ -65,7 +62,6 @@ pub struct PIDControllerShift {
     int_error: f32,
     shifts: Vec<f32>,
 }
-#[cfg(feature = "PIDControllerShift")]
 impl PIDControllerShift {
     pub fn new(setpoint: f32, kp: f32, ki: f32, kd: f32, shift: u8) -> PIDControllerShift {
         let mut shifts = Vec::new();
@@ -110,13 +106,11 @@ impl PIDControllerShift {
         self.shifts[self.shifts.len() - 1]
     }
 }
-#[cfg(feature = "State")]
 pub struct State {
     pub position: f32,
     pub velocity: f32,
     pub acceleration: f32,
 }
-#[cfg(feature = "State")]
 impl State {
     pub fn new(position: f32, velocity: f32, acceleration: f32) -> State {
         State {
@@ -146,12 +140,10 @@ impl State {
 }
 /*If you are using a position-based encoder, ensure that it sums full rotations instead of
 resetting to zero.*/
-#[cfg(feature = "Encoder")]
 pub struct Encoder {
     pub state: State,
     pub time: f32,
 }
-#[cfg(feature = "Encoder")]
 impl Encoder {
     pub fn new(state: State, time: f32) -> Encoder {
         Encoder {
@@ -182,20 +174,17 @@ impl Encoder {
         self.time = time;
     }
 }
-#[cfg(feature = "MotorMode")]
 #[derive(Debug, PartialEq)]
 pub enum MotorMode {
     POSITION,
     VELOCITY,
     ACCELERATION,
 }
-#[cfg(feature = "Motor")]
 pub struct Motor {
     pub encoder: Encoder,
     pid: PIDControllerShift,
     mode: MotorMode,
 }
-#[cfg(feature = "Motor")]
 impl Motor {
     pub fn new(state: State, time: f32, mode: MotorMode, setpoint: f32) -> Motor {
         Motor {
@@ -249,7 +238,6 @@ impl Motor {
         )
     }
 }
-#[cfg(feature = "MotionProfile")]
 pub struct MotionProfile {
     t1: f32,
     t2: f32,
@@ -257,7 +245,6 @@ pub struct MotionProfile {
     max_vel: f32,
     max_acc: f32,
 }
-#[cfg(feature = "MotionProfile")]
 impl MotionProfile {
     pub fn new(start_state: State, end_state: State, max_vel: f32, max_acc: f32) -> MotionProfile {
         let sign = if end_state.position < start_state.position {
@@ -288,7 +275,6 @@ impl MotionProfile {
             max_acc: max_acc,
         }
     }
-    #[cfg(feature = "MotorMode")]
     pub fn get_mode(&self, t: f32) -> Result<MotorMode, &'static str> {
         if t < 0.0 {
             return Err("time invalid");
@@ -303,18 +289,18 @@ impl MotionProfile {
         }
     }
 }
-#[cfg(feature = "Task")]
+#[cfg(feature = "std")]
 use core::cell::RefCell;
-#[cfg(feature = "Task")]
+#[cfg(feature = "std")]
 use std::rc::Rc;
-#[cfg(feature = "Task")]
+#[cfg(feature = "std")]
 pub struct TaskData {
     subtasks: RefCell<Vec<Rc<dyn Task>>>,
     subtask: usize,
     pub stopped: bool,
     pub terminated: bool,
 }
-#[cfg(feature = "Task")]
+#[cfg(feature = "std")]
 impl TaskData {
     pub fn new(subtasks: RefCell<Vec<Rc<dyn Task>>>) -> TaskData {
         TaskData {
@@ -333,7 +319,7 @@ impl TaskData {
         }
     }
 }
-#[cfg(feature = "Task")]
+#[cfg(feature = "std")]
 pub trait Task {
     fn get_task_data(&self) -> &TaskData;
     fn get_task_data_mut(&mut self) -> &mut TaskData;
@@ -362,7 +348,6 @@ pub trait Task {
 mod tests {
     use super::*;
     #[test]
-    #[cfg(feature = "Motor")]
     fn motor_new() {
         let motor = Motor::new(State::new(1.0, 2.0, 3.0), 4.0, MotorMode::ACCELERATION, 3.0);
         assert_eq!(motor.encoder.state.position, 1.0);
@@ -376,7 +361,6 @@ mod tests {
         assert_eq!(motor.pid.shifts.len(), 3);
     }
     #[test]
-    #[cfg(feature = "Motor")]
     fn motor_set_constant() {
         let mut motor = Motor::new(State::new(1.0, 2.0, 3.0), 4.0, MotorMode::ACCELERATION, 3.0);
         motor.set_constant(MotorMode::VELOCITY, 5.0);
@@ -384,7 +368,6 @@ mod tests {
         assert_eq!(motor.pid.setpoint, 5.0);
     }
     #[test]
-    #[cfg(feature = "PIDController")]
     fn pid_new() {
         let pid = PIDController::new(5.0, 1.0, 0.01, 0.1);
         assert_eq!(pid.setpoint, 5.0);
@@ -396,7 +379,6 @@ mod tests {
         assert_eq!(pid.int_error, 0.0);
     }
     #[test]
-    #[cfg(feature = "PIDController")]
     fn pid_initial_update() {
         let mut pid = PIDController::new(5.0, 1.0, 0.01, 0.1);
         let new_control = pid.update(1.0, 0.0);
@@ -406,7 +388,6 @@ mod tests {
         assert_eq!(pid.int_error, 0.0);
     }
     #[test]
-    #[cfg(feature = "PIDController")]
     fn pid_subsequent_update() {
         let mut pid = PIDController::new(5.0, 1.0, 0.01, 0.1);
         let _ = pid.update(1.0, 0.0);
@@ -415,7 +396,6 @@ mod tests {
         assert_eq!(pid.int_error, 9.0);
     }
     #[test]
-    #[cfg(feature = "PIDControllerShift")]
     fn pidshift_no_shift() {
         let mut pid = PIDControllerShift::new(5.0, 1.0, 0.01, 0.1, 0);
         let _ = pid.update(1.0, 0.0);
@@ -424,7 +404,6 @@ mod tests {
         assert_eq!(pid.shifts, vec![4.04]);
     }
     #[test]
-    #[cfg(feature = "Task")]
     fn task_data_new() {
         let task_data = TaskData::new(RefCell::new(vec![]));
         assert_eq!(task_data.subtask, 0usize);
@@ -432,7 +411,6 @@ mod tests {
         assert_eq!(task_data.stopped, false);
     }
     #[test]
-    #[cfg(feature = "Task")]
     fn task_data_new_empty() {
         let task_data = TaskData::new_empty();
         assert_eq!(task_data.subtask, 0usize);
@@ -440,7 +418,6 @@ mod tests {
         assert_eq!(task_data.stopped, false);
     }
     #[test]
-    #[cfg(feature = "Task")]
     fn task_implement() {
         struct MyTask {
             task_data: TaskData,
@@ -467,7 +444,6 @@ mod tests {
         assert_eq!(my_task.task_data.stopped, false);
     }
     #[test]
-    #[cfg(feature = "Task")]
     fn task_subtask() {
         struct Foo {
             task_data: TaskData,
@@ -520,7 +496,6 @@ mod tests {
         assert_eq!(foo_data.stopped, false);
     }
     #[test]
-    #[cfg(feature = "MotionProfile")]
     fn motion_profile_new_1() {
         let motion_profile = MotionProfile::new(
             State::new(0.0, 0.0, 0.0),
@@ -535,7 +510,6 @@ mod tests {
         assert_eq!(motion_profile.max_acc, 1.0);
     }
     #[test]
-    #[cfg(feature = "MotionProfile")]
     fn motion_profile_new_2() {
         let motion_profile = MotionProfile::new(
             State::new(1.0, 0.0, 0.0),
@@ -550,7 +524,6 @@ mod tests {
         assert_eq!(motion_profile.max_acc, 1.0);
     }
     #[test]
-    #[cfg(feature = "MotionProfile")]
     fn motion_profile_new_3() {
         let motion_profile = MotionProfile::new(
             State::new(0.0, 1.0, 0.0),
@@ -565,7 +538,6 @@ mod tests {
         assert_eq!(motion_profile.max_acc, 1.0);
     }
     #[test]
-    #[cfg(feature = "MotionProfile")]
     fn motion_profile_new_4() {
         let motion_profile = MotionProfile::new(
             State::new(0.0, 0.0, 1.0),
@@ -580,7 +552,6 @@ mod tests {
         assert_eq!(motion_profile.max_acc, 1.0);
     }
     #[test]
-    #[cfg(feature = "MotionProfile")]
     fn motion_profile_new_5() {
         let motion_profile = MotionProfile::new(
             State::new(0.0, 0.0, 0.0),
@@ -595,7 +566,6 @@ mod tests {
         assert_eq!(motion_profile.max_acc, 1.0);
     }
     #[test]
-    #[cfg(feature = "MotionProfile")]
     fn motion_profile_new_6() {
         let motion_profile = MotionProfile::new(
             State::new(0.0, 0.0, 0.0),
@@ -610,8 +580,6 @@ mod tests {
         assert_eq!(motion_profile.max_acc, 2.0);
     }
     #[test]
-    #[cfg(feature = "MotorMode")]
-    #[cfg(feature = "MotionProfile")]
     fn motion_profile_new_7() {
         let motion_profile = MotionProfile::new(
             State::new(0.0, 0.0, 0.0),
