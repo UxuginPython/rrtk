@@ -188,6 +188,7 @@ pub struct Motor {
     pid: PIDControllerShift,
     mode: MotorMode,
 }
+#[cfg(feature = "std")]
 impl Motor {
     pub fn new(state: State, time: f32, mode: MotorMode, setpoint: f32) -> Motor {
         Motor {
@@ -351,6 +352,7 @@ pub trait Task {
 mod tests {
     use super::*;
     #[test]
+    #[cfg(feature = "std")]
     fn motor_new() {
         let motor = Motor::new(State::new(1.0, 2.0, 3.0), 4.0, MotorMode::ACCELERATION, 3.0);
         assert_eq!(motor.encoder.state.position, 1.0);
@@ -364,6 +366,7 @@ mod tests {
         assert_eq!(motor.pid.shifts.len(), 3);
     }
     #[test]
+    #[cfg(feature = "std")]
     fn motor_set_constant() {
         let mut motor = Motor::new(State::new(1.0, 2.0, 3.0), 4.0, MotorMode::ACCELERATION, 3.0);
         motor.set_constant(MotorMode::VELOCITY, 5.0);
@@ -408,6 +411,7 @@ mod tests {
         assert_eq!(pid.shifts, vec![4.04]);
     }
     #[test]
+    #[cfg(feature = "std")]
     fn task_data_new() {
         let task_data = TaskData::new(RefCell::new(vec![]));
         assert_eq!(task_data.subtask, 0usize);
@@ -415,6 +419,7 @@ mod tests {
         assert_eq!(task_data.stopped, false);
     }
     #[test]
+    #[cfg(feature = "std")]
     fn task_data_new_empty() {
         let task_data = TaskData::new_empty();
         assert_eq!(task_data.subtask, 0usize);
@@ -422,6 +427,7 @@ mod tests {
         assert_eq!(task_data.stopped, false);
     }
     #[test]
+    #[cfg(feature = "std")]
     fn task_implement() {
         struct MyTask {
             task_data: TaskData,
@@ -448,6 +454,7 @@ mod tests {
         assert_eq!(my_task.task_data.stopped, false);
     }
     #[test]
+    #[cfg(feature = "std")]
     fn task_subtask() {
         struct Foo {
             task_data: TaskData,
