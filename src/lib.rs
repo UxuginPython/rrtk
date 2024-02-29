@@ -52,6 +52,7 @@ impl PIDController {
         self.kp * error + self.ki * self.int_error + self.kd * drv_error
     }
 }
+#[cfg(feature = "std")]
 pub struct PIDControllerShift {
     setpoint: f32,
     kp: f32,
@@ -62,6 +63,7 @@ pub struct PIDControllerShift {
     int_error: f32,
     shifts: Vec<f32>,
 }
+#[cfg(feature = "std")]
 impl PIDControllerShift {
     pub fn new(setpoint: f32, kp: f32, ki: f32, kd: f32, shift: u8) -> PIDControllerShift {
         let mut shifts = Vec::new();
@@ -180,6 +182,7 @@ pub enum MotorMode {
     VELOCITY,
     ACCELERATION,
 }
+#[cfg(feature = "std")]
 pub struct Motor {
     pub encoder: Encoder,
     pid: PIDControllerShift,
@@ -396,6 +399,7 @@ mod tests {
         assert_eq!(pid.int_error, 9.0);
     }
     #[test]
+#[cfg(feature = "std")]
     fn pidshift_no_shift() {
         let mut pid = PIDControllerShift::new(5.0, 1.0, 0.01, 0.1, 0);
         let _ = pid.update(1.0, 0.0);
