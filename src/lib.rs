@@ -242,6 +242,14 @@ impl Motor {
         )
     }
 }
+//abs method of f32 does not exist in no_std
+fn my_abs_f32(num: f32) -> f32 {
+    if num >= 0.0 {
+        num
+    } else {
+        -num
+    }
+}
 pub struct MotionProfile {
     t1: f32,
     t2: f32,
@@ -256,8 +264,8 @@ impl MotionProfile {
         } else {
             1.0
         };
-        let max_vel = max_vel.abs() * sign;
-        let max_acc = max_acc.abs() * sign;
+        let max_vel = my_abs_f32(max_vel) * sign;
+        let max_acc = my_abs_f32(max_acc) * sign;
         let d_t1_vel = max_vel - start_state.velocity;
         let t1 = d_t1_vel / max_acc;
         assert!(t1 >= 0.0);
