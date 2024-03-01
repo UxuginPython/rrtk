@@ -243,6 +243,7 @@ impl Motor {
     }
 }
 //abs method of f32 does not exist in no_std
+#[cfg(not(feature = "std"))]
 fn my_abs_f32(num: f32) -> f32 {
     if num >= 0.0 {
         num
@@ -264,8 +265,14 @@ impl MotionProfile {
         } else {
             1.0
         };
+        #[cfg(not(feature = "std"))]
         let max_vel = my_abs_f32(max_vel) * sign;
+        #[cfg(not(feature = "std"))]
         let max_acc = my_abs_f32(max_acc) * sign;
+        #[cfg(feature = "std")]
+        let max_vel = max_vel.abs() * sign;
+        #[cfg(feature = "std")]
+        let max_acc = max_acc.abs() * sign;
         let d_t1_vel = max_vel - start_state.velocity;
         let t1 = d_t1_vel / max_acc;
         assert!(t1 >= 0.0);
