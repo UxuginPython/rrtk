@@ -251,6 +251,10 @@ fn my_abs_f32(num: f32) -> f32 {
         -num
     }
 }
+#[cfg(not(feature = "std"))]
+fn my_square_f32(num: f32) -> f32 {
+    num * num
+}
 pub struct MotionProfile {
     t1: f32,
     t2: f32,
@@ -337,7 +341,10 @@ impl MotionProfile {
         if t < 0.0 {
             return Err("time invalid");
         } else if t < self.t1 {
+            #[cfg(feature = "std")]
             return Ok(0.5 * self.max_acc * t.powi(2));
+            #[cfg(not(feature = "std"))]
+            return Ok(0.5 * self.max_acc * my_square_f32(t));
         } else if t < self.t2 {
             return Ok(0.5 * self.max_vel * self.t1 + self.max_vel * (t - self.t1));
         } else if t < self.t3 {
