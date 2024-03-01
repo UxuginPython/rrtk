@@ -311,7 +311,7 @@ impl MotionProfile {
             return Err("time invalid");
         }
     }
-    pub fn get_acc(&self, t: f32) -> Result<f32, &'static str> {
+    pub fn get_acceleration(&self, t: f32) -> Result<f32, &'static str> {
         if t < 0.0 {
             return Err("time invalid");
         } else if t < self.t1 {
@@ -324,7 +324,7 @@ impl MotionProfile {
             return Err("time invalid");
         }
     }
-    pub fn get_vel(&self, t: f32) -> Result<f32, &'static str> {
+    pub fn get_velocity(&self, t: f32) -> Result<f32, &'static str> {
         if t < 0.0 {
             return Err("time invalid");
         } else if t < self.t1 {
@@ -337,7 +337,7 @@ impl MotionProfile {
             return Err("time invalid");
         }
     }
-    pub fn get_pos(&self, t: f32) -> Result<f32, &'static str> {
+    pub fn get_position(&self, t: f32) -> Result<f32, &'static str> {
         if t < 0.0 {
             return Err("time invalid");
         } else if t < self.t1 {
