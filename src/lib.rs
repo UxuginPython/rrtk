@@ -307,6 +307,45 @@ impl MotionProfile {
             return Err("time invalid");
         }
     }
+    pub fn get_acc(&self, t: f32) -> Result<f32, &'static str> {
+        if t < 0.0 {
+            return Err("time invalid");
+        } else if t < self.t1 {
+            return Ok(self.max_acc);
+        } else if t < self.t2 {
+            return Ok(0.0);
+        } else if t< self.t3 {
+            return Ok(-self.max_acc);
+        } else {
+            return Err("time invalid");
+        }
+    }
+    pub fn get_vel(&self, t: f32) -> Result<f32, &'static str> {
+        if t < 0.0 {
+            return Err("time invalid");
+        } else if t < self.t1 {
+            return Ok(self.max_acc * t);
+        } else if t < self.t2 {
+            return Ok(self.max_vel);
+        } else if t < self.t3 {
+            return Ok(self.max_vel - self.max_acc * (t - self.t2));
+        } else {
+            return Err("time invalid");
+        }
+    }
+    pub fn get_pos(&self, t: f32) -> Result<f32, &'static str> {
+        if t < 0.0 {
+            return Err("time invalid");
+        } else if t < self.t1 {
+            return Ok(0.5 * self.max_acc * t.powi(2));
+        } else if t < self.t2 {
+            return Ok(0.5 * self.max_vel * self.t1 + self.max_vel * (t - self.t1));
+        } else if t < self.t3 {
+            return Ok(0.5 * self.max_vel * self.t1 + self.max_vel * (self.t2 - self.t1) - self.max_vel * (t - self.t2));
+        } else {
+            return Err("time invalid");
+        }
+    }
 }
 #[cfg(feature = "std")]
 use core::cell::RefCell;
