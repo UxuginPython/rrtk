@@ -316,7 +316,7 @@ impl MotionProfile {
             return Ok(self.max_acc);
         } else if t < self.t2 {
             return Ok(0.0);
-        } else if t< self.t3 {
+        } else if t < self.t3 {
             return Ok(-self.max_acc);
         } else {
             return Err("time invalid");
@@ -346,7 +346,8 @@ impl MotionProfile {
         } else if t < self.t2 {
             return Ok(self.max_acc * self.t1 * (-0.5 * self.t1 + t));
         } else if t < self.t3 {
-            return Ok(self.max_acc * self.t1 * (-0.5 * self.t1 + self.t2) - 0.5 * self.max_acc * (t - self.t2) * (t - 2.0 * self.t1 - self.t2));
+            return Ok(self.max_acc * self.t1 * (-0.5 * self.t1 + self.t2)
+                - 0.5 * self.max_acc * (t - self.t2) * (t - 2.0 * self.t1 - self.t2));
         } else {
             return Err("time invalid");
         }
@@ -461,7 +462,7 @@ mod tests {
         assert_eq!(pid.int_error, 9.0);
     }
     #[test]
-#[cfg(feature = "std")]
+    #[cfg(feature = "std")]
     fn pidshift_no_shift() {
         let mut pid = PIDControllerShift::new(5.0, 1.0, 0.01, 0.1, 0);
         let _ = pid.update(1.0, 0.0);
