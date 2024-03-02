@@ -348,7 +348,7 @@ impl MotionProfile {
         } else if t < self.t2 {
             return Ok(0.5 * self.max_vel * self.t1 + self.max_vel * (t - self.t1));
         } else if t < self.t3 {
-            return Ok(0.5 * self.max_vel * self.t1 + self.max_vel * (self.t2 - self.t1) - self.max_vel * (t - self.t2));
+            return Ok(0.5 * self.max_vel * self.t1 + self.max_vel * (self.t2 - self.t1) + (t - self.t2) * (self.max_vel - self.max_acc * (t - self.t2)));
         } else {
             return Err("time invalid");
         }

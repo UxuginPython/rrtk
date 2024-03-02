@@ -112,3 +112,39 @@ fn motion_profile_get_mode() {
     assert_eq!(motion_profile.get_mode(2.5), Ok(MotorMode::VELOCITY));
     assert_eq!(motion_profile.get_mode(3.5), Ok(MotorMode::ACCELERATION));
 }
+#[test]
+fn motion_profile_get_acceleration() {
+    let motion_profile = MotionProfile::new(
+        State::new(0.0, 0.0, 0.0),
+        State::new(3.0, 0.0, 0.0),
+        1.0,
+        1.0,
+    );
+    assert_eq!(motion_profile.get_acceleration(0.5), Ok(1.0));
+    assert_eq!(motion_profile.get_acceleration(2.5), Ok(0.0));
+    assert_eq!(motion_profile.get_acceleration(3.5), Ok(-1.0));
+}
+#[test]
+fn motion_profile_get_velocity() {
+    let motion_profile = MotionProfile::new(
+        State::new(0.0, 0.0, 0.0),
+        State::new(3.0, 0.0, 0.0),
+        1.0,
+        1.0,
+    );
+    assert_eq!(motion_profile.get_velocity(0.5), Ok(0.5));
+    assert_eq!(motion_profile.get_velocity(2.5), Ok(1.0));
+    assert_eq!(motion_profile.get_velocity(3.5), Ok(0.5));
+}
+#[test]
+fn motion_profile_get_position() {
+    let motion_profile = MotionProfile::new(
+        State::new(0.0, 0.0, 0.0),
+        State::new(3.0, 0.0, 0.0),
+        1.0,
+        1.0,
+    );
+    assert_eq!(motion_profile.get_position(0.5), Ok(0.125));
+    assert_eq!(motion_profile.get_position(2.5), Ok(2.0));
+    assert_eq!(motion_profile.get_position(3.5), Ok(2.875));
+}
