@@ -259,7 +259,6 @@ pub struct MotionProfile {
     t1: f32,
     t2: f32,
     t3: f32,
-    max_vel: f32,
     max_acc: f32,
 }
 impl MotionProfile {
@@ -294,7 +293,6 @@ impl MotionProfile {
             t1: t1,
             t2: t2,
             t3: t3,
-            max_vel: max_vel,
             max_acc: max_acc,
         }
     }
@@ -330,9 +328,9 @@ impl MotionProfile {
         } else if t < self.t1 {
             return Ok(self.max_acc * t);
         } else if t < self.t2 {
-            return Ok(self.max_vel);
+            return Ok(self.max_acc * self.t1);
         } else if t < self.t3 {
-            return Ok(self.max_vel - self.max_acc * (t - self.t2));
+            return Ok(self.max_acc * (self.t1 + self.t2 - t));
         } else {
             return Err("time invalid");
         }
@@ -346,9 +344,9 @@ impl MotionProfile {
             #[cfg(not(feature = "std"))]
             return Ok(0.5 * self.max_acc * my_square_f32(t));
         } else if t < self.t2 {
-            return Ok(0.5 * self.max_vel * self.t1 + self.max_vel * (t - self.t1));
+            return Ok(self.max_acc * self.t1 * (-0.5 * self.t1 + t));
         } else if t < self.t3 {
-            return Ok(0.5 * self.max_vel * self.t1 + self.max_vel * (self.t2 - self.t1) + (t - self.t2) * (self.max_vel - self.max_acc * (t - self.t2)));
+            return Ok(self.max_acc * self.t1 * (-0.5 * self.t1 + self.t2) - 0.5 * self.max_acc * (t - self.t2) * (t - 2.0 * self.t1 - self.t2));
         } else {
             return Err("time invalid");
         }
@@ -578,7 +576,6 @@ mod tests {
         assert_eq!(motion_profile.t1, 1.0);
         assert_eq!(motion_profile.t2, 3.0);
         assert_eq!(motion_profile.t3, 4.0);
-        assert_eq!(motion_profile.max_vel, 1.0);
         assert_eq!(motion_profile.max_acc, 1.0);
     }
     #[test]
@@ -592,7 +589,6 @@ mod tests {
         assert_eq!(motion_profile.t1, 1.0);
         assert_eq!(motion_profile.t2, 2.0);
         assert_eq!(motion_profile.t3, 3.0);
-        assert_eq!(motion_profile.max_vel, 1.0);
         assert_eq!(motion_profile.max_acc, 1.0);
     }
     #[test]
@@ -606,7 +602,6 @@ mod tests {
         assert_eq!(motion_profile.t1, 0.0);
         assert_eq!(motion_profile.t2, 2.5);
         assert_eq!(motion_profile.t3, 3.5);
-        assert_eq!(motion_profile.max_vel, 1.0);
         assert_eq!(motion_profile.max_acc, 1.0);
     }
     #[test]
@@ -620,7 +615,6 @@ mod tests {
         assert_eq!(motion_profile.t1, 1.0);
         assert_eq!(motion_profile.t2, 3.0);
         assert_eq!(motion_profile.t3, 4.0);
-        assert_eq!(motion_profile.max_vel, 1.0);
         assert_eq!(motion_profile.max_acc, 1.0);
     }
     #[test]
@@ -634,7 +628,6 @@ mod tests {
         assert_eq!(motion_profile.t1, 2.0);
         assert_eq!(motion_profile.t2, 3.0);
         assert_eq!(motion_profile.t3, 5.0);
-        assert_eq!(motion_profile.max_vel, 2.0);
         assert_eq!(motion_profile.max_acc, 1.0);
     }
     #[test]
@@ -648,7 +641,6 @@ mod tests {
         assert_eq!(motion_profile.t1, 0.5);
         assert_eq!(motion_profile.t2, 3.0);
         assert_eq!(motion_profile.t3, 3.5);
-        assert_eq!(motion_profile.max_vel, 1.0);
         assert_eq!(motion_profile.max_acc, 2.0);
     }
     #[test]
@@ -662,7 +654,6 @@ mod tests {
         assert_eq!(motion_profile.t1, 1.0);
         assert_eq!(motion_profile.t2, 3.0);
         assert_eq!(motion_profile.t3, 4.0);
-        assert_eq!(motion_profile.max_vel, -1.0);
         assert_eq!(motion_profile.max_acc, -1.0);
     }
 }
