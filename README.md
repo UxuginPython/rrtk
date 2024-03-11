@@ -17,4 +17,4 @@ Future:
 - - S-curve motion profile
 - Drive base control
 - - Spline-based path planning
-- Kalman filtering
+- Noise filtering
