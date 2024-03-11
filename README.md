@@ -1,6 +1,9 @@
-### Rust Robotics ToolKit: A set of algorithms and code structures for robotics in Rust.
+### Rust Robotics ToolKit: A set of algorithms and other tools for robotics in Rust.
 
-It does not currently integrate with any API directly, but this may be added in the future.
+It is partially `no_std`. It does not currently integrate with any API directly, but this may be added in the future.
+
+#### License
+GNU Lesser General Public License, version 3 only
 
 #### Available:
 - PID controller
@@ -8,10 +11,12 @@ It does not currently integrate with any API directly, but this may be added in 
 - Trapezoidal motion profile
 
 #### Future:
+(in rough order of priority)
 - Stream system
-- Motion physics simulation
-- Jerk control
-- - S-curve motion profile
+- Noise filtering
 - Drive base control
 - - Spline-based path planning
-- Noise filtering
+- Feed forward control
+- Jerk control
+- - S-curve motion profile
+- Motion physics simulation
