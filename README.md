@@ -4,7 +4,7 @@
 It is partially `no_std`. It does not currently integrate with any API directly, but this may be added in the future.
 
 ## License
-### GNU Lesser General Public License, version 3 only
+#### GNU Lesser General Public License, version 3 only
 
 ## Available:
 - PID controller\*
