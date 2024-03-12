@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 /*
-Copyright 2024 Uxugin on GitHub
+Copyright 2024 UxuginPython on GitHub
 
      This file is part of Rust Robotics ToolKit.
 
