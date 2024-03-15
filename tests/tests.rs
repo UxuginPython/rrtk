@@ -164,11 +164,11 @@ fn motion_profile_get_position_2() {
 fn motion_profile_get_position_3() {
     let motion_profile = MotionProfile::new(
         State::new(1.0, 1.0, 3.0),
-        State::new(4.0, 0.0, 0.0),
-        1.0,
+        State::new(6.0, 1.0, 0.0),
+        2.0,
         1.0,
     );
-    assert_eq!(motion_profile.get_position(0.0), Ok(1.0));
-    assert_eq!(motion_profile.get_position(1.5), Ok(2.5));
-    assert_eq!(motion_profile.get_position(3.0), Ok(3.875));
+    assert_eq!(motion_profile.get_position(0.5), Ok(1.625));
+    assert_eq!(motion_profile.get_position(1.5), Ok(3.5));
+    assert_eq!(motion_profile.get_position(2.5), Ok(5.375));
 }
