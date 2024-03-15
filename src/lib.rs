@@ -256,6 +256,8 @@ fn my_square_f32(num: f32) -> f32 {
     num * num
 }
 pub struct MotionProfile {
+    start_pos: f32,
+    start_vel: f32,
     t1: f32,
     t2: f32,
     t3: f32,
@@ -290,6 +292,8 @@ impl MotionProfile {
         let t2 = t1 + d_t2;
         let t3 = t2 + d_t3;
         MotionProfile {
+            start_pos: start_state.position,
+            start_vel: start_state.velocity,
             t1: t1,
             t2: t2,
             t3: t3,
@@ -326,11 +330,11 @@ impl MotionProfile {
         if t < 0.0 {
             return Err("time invalid");
         } else if t < self.t1 {
-            return Ok(self.max_acc * t);
+            return Ok(self.max_acc * t + self.start_vel);
         } else if t < self.t2 {
-            return Ok(self.max_acc * self.t1);
+            return Ok(self.max_acc * self.t1 + self.start_vel);
         } else if t < self.t3 {
-            return Ok(self.max_acc * (self.t1 + self.t2 - t));
+            return Ok(self.max_acc * (self.t1 + self.t2 - t) + self.start_vel);
         } else {
             return Err("time invalid");
         }
@@ -340,14 +344,14 @@ impl MotionProfile {
             return Err("time invalid");
         } else if t < self.t1 {
             #[cfg(feature = "std")]
-            return Ok(0.5 * self.max_acc * t.powi(2));
+            return Ok(0.5 * self.max_acc * t.powi(2) + self.start_vel * t + self.start_pos);
             #[cfg(not(feature = "std"))]
-            return Ok(0.5 * self.max_acc * my_square_f32(t));
+            return Ok(0.5 * self.max_acc * my_square_f32(t) + self.start_vel * t + self.start_pos);
         } else if t < self.t2 {
-            return Ok(self.max_acc * self.t1 * (-0.5 * self.t1 + t));
+            return Ok(self.max_acc * self.t1 * (-0.5 * self.t1 + t) + self.start_vel * t + self.start_pos);
         } else if t < self.t3 {
             return Ok(self.max_acc * self.t1 * (-0.5 * self.t1 + self.t2)
-                - 0.5 * self.max_acc * (t - self.t2) * (t - 2.0 * self.t1 - self.t2));
+                - 0.5 * self.max_acc * (t - self.t2) * (t - 2.0 * self.t1 - self.t2) + self.start_vel * t + self.start_pos);
         } else {
             return Err("time invalid");
         }

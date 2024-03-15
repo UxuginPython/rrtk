@@ -148,3 +148,27 @@ fn motion_profile_get_position() {
     assert_eq!(motion_profile.get_position(2.5), Ok(2.0));
     assert_eq!(motion_profile.get_position(3.5), Ok(2.875));
 }
+#[test]
+fn motion_profile_get_position_2() {
+    let motion_profile = MotionProfile::new(
+        State::new(1.0, 0.0, 3.0),
+        State::new(4.0, 0.0, 0.0),
+        1.0,
+        1.0,
+    );
+    assert_eq!(motion_profile.get_position(0.5), Ok(1.125));
+    assert_eq!(motion_profile.get_position(2.5), Ok(3.0));
+    assert_eq!(motion_profile.get_position(3.5), Ok(3.875));
+}
+#[test]
+fn motion_profile_get_position_3() {
+    let motion_profile = MotionProfile::new(
+        State::new(1.0, 1.0, 3.0),
+        State::new(4.0, 0.0, 0.0),
+        1.0,
+        1.0,
+    );
+    assert_eq!(motion_profile.get_position(0.0), Ok(1.0));
+    assert_eq!(motion_profile.get_position(1.5), Ok(2.5));
+    assert_eq!(motion_profile.get_position(3.0), Ok(3.875));
+}
