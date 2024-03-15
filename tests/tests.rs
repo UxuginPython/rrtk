@@ -137,6 +137,30 @@ fn motion_profile_get_velocity() {
     assert_eq!(motion_profile.get_velocity(3.5), Ok(0.5));
 }
 #[test]
+fn motion_profile_get_velocity_2() {
+    let motion_profile = MotionProfile::new(
+        State::new(1.0, 0.0, 3.0),
+        State::new(4.0, 0.0, 0.0),
+        1.0,
+        1.0
+    );
+    assert_eq!(motion_profile.get_velocity(0.5), Ok(0.5));
+    assert_eq!(motion_profile.get_velocity(2.5), Ok(1.0));
+    assert_eq!(motion_profile.get_velocity(3.5), Ok(0.5));
+}
+#[test]
+fn motion_profile_get_velocity_3() {
+    let motion_profile = MotionProfile::new(
+        State::new(1.0, 1.0, 3.0),
+        State::new(6.0, 1.0, 0.0),
+        2.0,
+        1.0,
+    );
+    assert_eq!(motion_profile.get_velocity(0.5), Ok(1.5));
+    assert_eq!(motion_profile.get_velocity(1.5), Ok(2.0));
+    assert_eq!(motion_profile.get_velocity(2.5), Ok(1.5));
+}
+#[test]
 fn motion_profile_get_position() {
     let motion_profile = MotionProfile::new(
         State::new(0.0, 0.0, 0.0),
