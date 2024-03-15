@@ -348,10 +348,14 @@ impl MotionProfile {
             #[cfg(not(feature = "std"))]
             return Ok(0.5 * self.max_acc * my_square_f32(t) + self.start_vel * t + self.start_pos);
         } else if t < self.t2 {
-            return Ok(self.max_acc * self.t1 * (-0.5 * self.t1 + t) + self.start_vel * t + self.start_pos);
+            return Ok(self.max_acc * self.t1 * (-0.5 * self.t1 + t)
+                + self.start_vel * t
+                + self.start_pos);
         } else if t < self.t3 {
             return Ok(self.max_acc * self.t1 * (-0.5 * self.t1 + self.t2)
-                - 0.5 * self.max_acc * (t - self.t2) * (t - 2.0 * self.t1 - self.t2) + self.start_vel * t + self.start_pos);
+                - 0.5 * self.max_acc * (t - self.t2) * (t - 2.0 * self.t1 - self.t2)
+                + self.start_vel * t
+                + self.start_pos);
         } else {
             return Err("time invalid");
         }

@@ -142,7 +142,7 @@ fn motion_profile_get_velocity_2() {
         State::new(1.0, 0.0, 3.0),
         State::new(4.0, 0.0, 0.0),
         1.0,
-        1.0
+        1.0,
     );
     assert_eq!(motion_profile.get_velocity(0.5), Ok(0.5));
     assert_eq!(motion_profile.get_velocity(2.5), Ok(1.0));
