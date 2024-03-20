@@ -160,16 +160,23 @@ pub trait Encoder {
     ///recorded.
     fn get_state(&mut self) -> Datum<State>;
 }
+///A container for data required for all `VelocityEncoder` objects.
 pub struct VelocityEncoderData {
     pub acceleration: f32,
     pub velocity: f32,
     pub position: f32,
     pub time: f32,
 }
+///A trait for velocity-based encoders that do not compute acceleration and position themselves.
 pub trait VelocityEncoder: Encoder {
+    ///Get an immutable reference to the object's `VelocityEncoderData` field.
     fn get_velocity_encoder_data_ref(&self) -> &VelocityEncoderData;
+    ///Get a mutable reference to the object's `VelocityEncoderData` field.
     fn get_velocity_encoder_data_mut(&mut self) -> &mut VelocityEncoderData;
+    ///Get a new velocity measurement from the encoder along with a time. Do not update the
+    ///object's data. You should not call this directly.
     fn device_update(&mut self) -> Datum<f32>;
+    ///Get a new velocity measurement from the encoder, and update the object's data.
     fn update(&mut self) {
         let prev_data = self.get_velocity_encoder_data_ref();
         let old_vel = prev_data.velocity;
@@ -194,16 +201,23 @@ impl<T: VelocityEncoder> Encoder for T {
         Datum::new(data.time, State::new(data.position, data.velocity, data.acceleration))
     }
 }
+///A container for data required by all `PositionEncoder` objects.
 pub struct PositionEncoderData {
     pub acceleration: f32,
     pub velocity: f32,
     pub position: f32,
     pub time: f32,
 }
+///A trait for position-based encoders that do not compute velocity and acceleration themselves.
 pub trait PositionEncoder: Encoder {
+    ///Get an immutable reference to the object's `PositionEncoderData` field.
     fn get_position_encoder_data_ref(&self) -> &PositionEncoderData;
+    ///Get a mutable reference to the object's `PositionEncoderData` field.
     fn get_position_encoder_data_mut(&mut self) -> &mut PositionEncoderData;
+    ///Get a new position measurement from the encoder along with a time. Do not update the
+    ///object's data. You should not call this directly.
     fn device_update(&mut self) -> Datum<f32>;
+    ///Get a new position measurement from the encoder, and update the object's data.
     fn update(&mut self) {
         let prev_data = self.get_position_encoder_data_ref();
         let old_vel = prev_data.velocity;
