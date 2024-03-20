@@ -154,6 +154,30 @@ impl<T> Datum<T> {
         }
     }
 }
+///A trait for encoders.
+pub trait Encoder {
+    ///Get the current acceleration, velocity, and position and the time at which they were
+    ///recorded.
+    fn get_state(&mut self) -> Datum<State>;
+}
+///A trait for motors with some form of feedback, regardless if we can see it or not.
+pub trait FeedbackMotor {
+    ///Get the motor's current acceleration, velocity, and position and the time at which they
+    ///were recorded.
+    fn get_state(&mut self) -> Datum<State>;
+    ///Make the motor run at a given acceleration.
+    fn set_acceleration(&mut self, acceleration: f32);
+    ///Make the motor run at a given velocity.
+    fn set_velocity(&mut self, velocity: f32);
+    ///Make the mootr go to a given position.
+    fn set_position(&mut self, position: f32);
+}
+///A trait for motors without feedback.
+pub trait NonFeedbackMotor {
+    ///Run the motor at a given power. You can use this for voltage, percentage, or anything
+    ///roughly proportional to them.
+    fn set_power(&mut self, power: f32);
+}
 #[derive(Debug, PartialEq)]
 pub enum MotorMode {
     POSITION,
