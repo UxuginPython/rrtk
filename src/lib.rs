@@ -160,6 +160,40 @@ pub trait Encoder {
     ///recorded.
     fn get_state(&mut self) -> Datum<State>;
 }
+pub struct VelocityEncoderData {
+    pub acceleration: f32,
+    pub velocity: f32,
+    pub position: f32,
+    pub time: f32,
+}
+pub trait VelocityEncoder: Encoder {
+    fn get_velocity_encoder_data_ref(&self) -> &VelocityEncoderData;
+    fn get_velocity_encoder_data_mut(&mut self) -> &mut VelocityEncoderData;
+    fn device_update(&mut self) -> Datum<f32>;
+    fn update(&mut self) {
+        let prev_data = self.get_velocity_encoder_data_ref();
+        let old_vel = prev_data.velocity;
+        let old_pos = prev_data.position;
+        let old_time = prev_data.time;
+        let device_out = self.device_update();
+        let new_time = device_out.time;
+        let new_vel = device_out.value;
+        let delta_time = new_time - old_time;
+        let new_acc = (new_vel - old_vel) / delta_time;
+        let new_pos = old_pos + delta_time * (old_vel + new_vel) / 2.0;
+        let data = self.get_velocity_encoder_data_mut();
+        data.acceleration = new_acc;
+        data.velocity = new_vel;
+        data.position = new_pos;
+        data.time = new_time;
+    }
+}
+impl<T: VelocityEncoder> Encoder for T {
+    fn get_state(&mut self) -> Datum<State> {
+        let data = self.get_velocity_encoder_data_ref();
+        Datum::new(data.time, State::new(data.position, data.velocity, data.acceleration))
+    }
+}
 ///A trait for motors with some form of feedback, regardless if we can see it or not.
 pub trait FeedbackMotor {
     ///Get the motor's current acceleration, velocity, and position and the time at which they
