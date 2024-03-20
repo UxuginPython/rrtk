@@ -140,6 +140,20 @@ impl State {
         self.position = position;
     }
 }
+///A container for a time and something else, usually an `f32` or a `State`.
+pub struct Datum<T> {
+    pub time: f32,
+    pub value: T,
+}
+impl<T> Datum<T> {
+    ///Constructor for Datum type.
+    pub fn new(time: f32, value: T) -> Datum<T> {
+        Datum {
+            time: time,
+            value: value,
+        }
+    }
+}
 #[derive(Debug, PartialEq)]
 pub enum MotorMode {
     POSITION,
