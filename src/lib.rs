@@ -140,107 +140,11 @@ impl State {
         self.position = position;
     }
 }
-/*If you are using a position-based encoder, ensure that it sums full rotations instead of
-resetting to zero.*/
-pub struct Encoder {
-    pub state: State,
-    pub time: f32,
-}
-impl Encoder {
-    pub fn new(state: State, time: f32) -> Encoder {
-        Encoder {
-            state: state,
-            time: time,
-        }
-    }
-    pub fn update_acceleration(&mut self, time: f32, acceleration: f32) {
-        let delta_time = time - self.time;
-        let velocity =
-            self.state.velocity + delta_time * (self.state.acceleration + acceleration) / 2.0;
-        let position = self.state.position + delta_time * (self.state.velocity + velocity) / 2.0;
-        self.state = State::new(position, velocity, acceleration);
-        self.time = time;
-    }
-    pub fn update_velocity(&mut self, time: f32, velocity: f32) {
-        let delta_time = time - self.time;
-        let acceleration = (velocity - self.state.velocity) / delta_time;
-        let position = self.state.position + delta_time * (self.state.velocity + velocity) / 2.0;
-        self.state = State::new(position, velocity, acceleration);
-        self.time = time;
-    }
-    pub fn update_position(&mut self, time: f32, position: f32) {
-        let delta_time = time - self.time;
-        let velocity = (position - self.state.position) / delta_time;
-        let acceleration = (velocity - self.state.velocity) / delta_time;
-        self.state = State::new(position, velocity, acceleration);
-        self.time = time;
-    }
-}
 #[derive(Debug, PartialEq)]
 pub enum MotorMode {
     POSITION,
     VELOCITY,
     ACCELERATION,
-}
-#[cfg(feature = "std")]
-pub struct Motor {
-    pub encoder: Encoder,
-    pid: PIDControllerShift,
-    mode: MotorMode,
-}
-#[cfg(feature = "std")]
-impl Motor {
-    pub fn new(state: State, time: f32, mode: MotorMode, setpoint: f32) -> Motor {
-        Motor {
-            encoder: Encoder::new(state, time),
-            pid: PIDControllerShift::new(
-                setpoint,
-                1.0,
-                0.01,
-                0.1,
-                match mode {
-                    MotorMode::POSITION => 0,
-                    MotorMode::VELOCITY => 1,
-                    MotorMode::ACCELERATION => 2,
-                },
-            ),
-            mode: mode,
-        }
-    }
-    pub fn set_constant(&mut self, mode: MotorMode, setpoint: f32) {
-        self.mode = mode;
-        self.pid = PIDControllerShift::new(
-            setpoint,
-            1.0,
-            0.01,
-            0.1,
-            match self.mode {
-                MotorMode::POSITION => 0,
-                MotorMode::VELOCITY => 1,
-                MotorMode::ACCELERATION => 2,
-            },
-        );
-    }
-    /*The recommended way of doing this is
-    time = get_time();
-    velocity = get_velocity();
-    motor.encoder.update_velocity(time, velocity);
-    run_motor_at_voltage(motor.update(time));
-    (API will differ.)*/
-    /*The reason the encoder is not updated with the motor update method
-    is to allow for encoders reporting different metrics, as there are both
-    velocity- and position-based encoders.*/
-    #[must_use]
-    pub fn update(&mut self, time: f32) -> f32 {
-        self.pid.update(
-            time,
-            match &self.mode {
-                MotorMode::POSITION => self.encoder.state.position,
-                MotorMode::VELOCITY => self.encoder.state.velocity,
-                MotorMode::ACCELERATION => self.encoder.state.acceleration,
-            },
-        )
-    }
 }
 //abs method of f32 does not exist in no_std
 #[cfg(not(feature = "std"))]
