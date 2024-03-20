@@ -206,6 +206,7 @@ pub trait PositionEncoder: Encoder {
     fn device_update(&mut self) -> Datum<f32>;
     fn update(&mut self) {
         let prev_data = self.get_position_encoder_data_ref();
+        let old_vel = prev_data.velocity;
         let old_pos = prev_data.position;
         let old_time = prev_data.time;
         let device_out = self.device_update();
