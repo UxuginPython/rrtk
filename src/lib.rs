@@ -248,6 +248,59 @@ pub trait FeedbackMotor {
     ///Make the mootr go to a given position.
     fn set_position(&mut self, position: f32);
 }
+///A container for data required by all `ServoMotor` objects.
+pub struct ServoMotorData {
+    pub acceleration: f32,
+    pub velocity: f32,
+    pub position: f32,
+    pub time: f32,
+}
+///A trait for servo motors that do their own control theory and do not give us details about their
+///measured state.
+pub trait ServoMotor: FeedbackMotor {
+    ///Get an immutable reference to the object's `ServoMotorData` field.
+    fn get_servo_motor_data_ref(&self) -> &ServoMotorData;
+    ///Get a mutable reference to the object's `ServoMotorData` field.
+    fn get_servo_motor_data_mut(&mut self) -> &mut ServoMotorData;
+    ///Get a new time from the computer.
+    fn device_get_time(&mut self) -> f32;
+    ///Tell the motor to accelerate at a given acceleration.
+    fn device_set_acceleration(&mut self, acceleration: f32);
+    ///Tell the motor to run at a constant velocity.
+    fn device_set_velocity(&mut self, velocity: f32);
+    ///Tell the motor to go to a position and stop.
+    fn device_set_position(&mut self, position: f32);
+}
+impl<T: ServoMotor> FeedbackMotor for T {
+    fn get_state(&mut self) -> Datum<State> {
+        let data = self.get_servo_motor_data_ref();
+        Datum::new(data.time, State::new(data.position, data.velocity, data.acceleration))
+    }
+    fn set_acceleration(&mut self, acceleration: f32) {
+        self.device_set_acceleration(acceleration);
+        let time = self.device_get_time();
+        let data = self.get_servo_motor_data_mut();
+        data.acceleration = acceleration;
+        data.time = time;
+    }
+    fn set_velocity(&mut self, velocity: f32) {
+        self.device_set_velocity(velocity);
+        let time = self.device_get_time();
+        let data = self.get_servo_motor_data_mut();
+        data.acceleration = 0.0;
+        data.velocity = velocity;
+        data.time = time;
+    }
+    fn set_position(&mut self, position: f32) {
+        self.device_set_position(position);
+        let time = self.device_get_time();
+        let data = self.get_servo_motor_data_mut();
+        data.acceleration = 0.0;
+        data.velocity = 0.0;
+        data.position = position;
+        data.time = time;
+    }
+}
 ///A trait for motors without feedback.
 pub trait NonFeedbackMotor {
     ///Run the motor at a given power. You can use this for voltage, percentage, or anything
