@@ -162,6 +162,7 @@ pub trait Encoder {
     ///recorded.
     fn get_state(&mut self) -> Datum<State>;
 }
+///Data needed by all `SimpleEncoder` types.
 pub struct SimpleEncoderData {
     pub encoder_type: MotorMode,
     pub time: f32,
@@ -169,10 +170,17 @@ pub struct SimpleEncoderData {
     pub velocity: f32,
     pub acceleration: f32,
 }
+///An encoder trait that does the calculus for you. You just need to supply a position, velocity,
+///or acceleration, and the others will be calculated.
 pub trait SimpleEncoder: Encoder {
+    ///Get an immutable reference to the object's `SimpleEncoderData` object.
     fn get_simple_encoder_data_ref(&self) -> &SimpleEncoderData;
+    ///Get a mutable reference to the object's `SimpleEncoderData` object.
     fn get_simple_encoder_data_mut(&mut self) -> &mut SimpleEncoderData;
+    ///Get a new position, velocity, or acceleration from the encoder along with a time.
     fn device_update(&mut self) -> Datum<f32>;
+    ///Get a new position, velocity, or acceleration from the encoder, calculate the others, and
+    ///write it all the the object's `SimpleEncoderData`.
     fn update(&mut self) {
         let device_out = self.device_update();
         let data = self.get_simple_encoder_data_ref();
