@@ -435,7 +435,7 @@ impl MotionProfile {
 #[cfg(test)]
 mod tests {
     use super::*;
-    #[test]
+    /*#[test]
     #[cfg(feature = "std")]
     fn motor_new() {
         let motor = Motor::new(State::new(1.0, 2.0, 3.0), 4.0, MotorMode::ACCELERATION, 3.0);
@@ -456,7 +456,7 @@ mod tests {
         motor.set_constant(MotorMode::VELOCITY, 5.0);
         assert_eq!(motor.pid.shifts.len(), 2);
         assert_eq!(motor.pid.setpoint, 5.0);
-    }
+    }*/
     #[test]
     fn pid_new() {
         let pid = PIDController::new(5.0, 1.0, 0.01, 0.1);

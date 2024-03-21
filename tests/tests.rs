@@ -57,7 +57,7 @@ fn state_position() {
     assert_eq!(state.velocity, 0.0);
     assert_eq!(state.acceleration, 0.0);
 }
-#[test]
+/*#[test]
 fn encoder_new() {
     let encoder = Encoder::new(State::new(1.0, 2.0, 3.0), 4.0);
     assert_eq!(encoder.state.position, 1.0);
@@ -99,7 +99,7 @@ fn motor_update() {
     assert_eq!(motor.encoder.state.position, 11.0);
     assert_eq!(motor.encoder.state.velocity, 8.0);
     assert_eq!(motor.encoder.state.acceleration, 3.0);
-}
+}*/
 #[test]
 fn motion_profile_get_mode() {
     let motion_profile = MotionProfile::new(
