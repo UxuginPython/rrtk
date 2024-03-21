@@ -108,6 +108,7 @@ impl PIDControllerShift {
         self.shifts[self.shifts.len() - 1]
     }
 }
+#[derive(Clone)]
 pub struct State {
     pub position: f32,
     pub velocity: f32,
@@ -141,6 +142,7 @@ impl State {
     }
 }
 ///A container for a time and something else, usually an `f32` or a `State`.
+#[derive(Clone)]
 pub struct Datum<T> {
     pub time: f32,
     pub value: T,
@@ -166,6 +168,16 @@ pub struct VelocityEncoderData {
     pub velocity: f32,
     pub position: f32,
     pub time: f32,
+}
+impl VelocityEncoderData {
+    pub fn new(state: Datum<State>) -> VelocityEncoderData {
+        VelocityEncoderData {
+            acceleration: state.value.acceleration,
+            velocity: state.value.velocity,
+            position: state.value.position,
+            time: state.time,
+        }
+    }
 }
 ///A trait for velocity-based encoders that do not compute acceleration and position themselves.
 pub trait VelocityEncoder: Encoder {
