@@ -170,6 +170,17 @@ pub struct SimpleEncoderData {
     pub velocity: f32,
     pub acceleration: f32,
 }
+impl SimpleEncoderData {
+    pub fn new(encoder_type: MotorMode, start_state: Datum<State>) -> SimpleEncoderData {
+        SimpleEncoderData {
+            encoder_type: encoder_type,
+            time: start_state.time,
+            position: start_state.value.position,
+            velocity: start_state.value.velocity,
+            acceleration: start_state.value.acceleration,
+        }
+    }
+}
 ///An encoder trait that does the calculus for you. You just need to supply a position, velocity,
 ///or acceleration, and the others will be calculated.
 pub trait SimpleEncoder: Encoder {
