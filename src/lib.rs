@@ -162,96 +162,58 @@ pub trait Encoder {
     ///recorded.
     fn get_state(&mut self) -> Datum<State>;
 }
-///A container for data required for all `VelocityEncoder` objects.
-pub struct VelocityEncoderData {
-    pub acceleration: f32,
-    pub velocity: f32,
-    pub position: f32,
+pub struct SimpleEncoderData {
+    pub encoder_type: MotorMode,
     pub time: f32,
+    pub position: f32,
+    pub velocity: f32,
+    pub acceleration: f32,
 }
-impl VelocityEncoderData {
-    pub fn new(state: Datum<State>) -> VelocityEncoderData {
-        VelocityEncoderData {
-            acceleration: state.value.acceleration,
-            velocity: state.value.velocity,
-            position: state.value.position,
-            time: state.time,
+pub trait SimpleEncoder: Encoder {
+    fn get_simple_encoder_data_ref(&self) -> &SimpleEncoderData;
+    fn get_simple_encoder_data_mut(&mut self) -> &mut SimpleEncoderData;
+    fn device_update(&mut self) -> Datum<f32>;
+    fn update(&mut self) {
+        let device_out = self.device_update();
+        let data = self.get_simple_encoder_data_ref();
+        let old_time = data.time;
+        let old_pos = data.position;
+        let old_vel = data.velocity;
+        let old_acc = data.acceleration;
+        let new_time = device_out.time;
+        let delta_time = new_time - old_time;
+        match data.encoder_type {
+            MotorMode::POSITION => {
+                let new_pos = device_out.value;
+                let new_vel = (new_pos - old_pos) / delta_time;
+                let new_acc = (new_vel - old_vel) / delta_time;
+                let data = self.get_simple_encoder_data_mut();
+                data.time = new_time;
+                data.position = new_pos;
+                data.velocity = new_vel;
+                data.acceleration = new_acc;
+            },
+            MotorMode::VELOCITY => {
+                let new_vel = device_out.value;
+                let new_acc = (new_vel - old_vel) / delta_time;
+                let new_pos = old_pos + delta_time * (old_vel + new_vel) / 2.0;
+                let data = self.get_simple_encoder_data_mut();
+                data.time = new_time;
+                data.position = new_pos;
+                data.velocity = new_vel;
+                data.acceleration = new_acc;
+            },
+            MotorMode::ACCELERATION => {
+                let new_acc = device_out.value;
+                let new_vel = old_vel + delta_time * (old_acc + new_acc) / 2.0;
+                let new_pos = old_pos + delta_time * (old_vel + new_vel) / 2.0;
+                let data = self.get_simple_encoder_data_mut();
+                data.time = new_time;
+                data.position = new_pos;
+                data.velocity = new_vel;
+                data.acceleration = new_acc;
+            },
         }
-    }
-}
-///A trait for velocity-based encoders that do not compute acceleration and position themselves.
-pub trait VelocityEncoder: Encoder {
-    ///Get an immutable reference to the object's `VelocityEncoderData` field.
-    fn get_velocity_encoder_data_ref(&self) -> &VelocityEncoderData;
-    ///Get a mutable reference to the object's `VelocityEncoderData` field.
-    fn get_velocity_encoder_data_mut(&mut self) -> &mut VelocityEncoderData;
-    ///Get a new velocity measurement from the encoder along with a time. Do not update the
-    ///object's data. You should not call this directly.
-    fn device_update(&mut self) -> Datum<f32>;
-    ///Get a new velocity measurement from the encoder, and update the object's data.
-    fn update(&mut self) {
-        let prev_data = self.get_velocity_encoder_data_ref();
-        let old_vel = prev_data.velocity;
-        let old_pos = prev_data.position;
-        let old_time = prev_data.time;
-        let device_out = self.device_update();
-        let new_time = device_out.time;
-        let new_vel = device_out.value;
-        let delta_time = new_time - old_time;
-        let new_acc = (new_vel - old_vel) / delta_time;
-        let new_pos = old_pos + delta_time * (old_vel + new_vel) / 2.0;
-        let data = self.get_velocity_encoder_data_mut();
-        data.acceleration = new_acc;
-        data.velocity = new_vel;
-        data.position = new_pos;
-        data.time = new_time;
-    }
-}
-impl<T: VelocityEncoder> Encoder for T {
-    fn get_state(&mut self) -> Datum<State> {
-        let data = self.get_velocity_encoder_data_ref();
-        Datum::new(data.time, State::new(data.position, data.velocity, data.acceleration))
-    }
-}
-///A container for data required by all `PositionEncoder` objects.
-pub struct PositionEncoderData {
-    pub acceleration: f32,
-    pub velocity: f32,
-    pub position: f32,
-    pub time: f32,
-}
-///A trait for position-based encoders that do not compute velocity and acceleration themselves.
-pub trait PositionEncoder: Encoder {
-    ///Get an immutable reference to the object's `PositionEncoderData` field.
-    fn get_position_encoder_data_ref(&self) -> &PositionEncoderData;
-    ///Get a mutable reference to the object's `PositionEncoderData` field.
-    fn get_position_encoder_data_mut(&mut self) -> &mut PositionEncoderData;
-    ///Get a new position measurement from the encoder along with a time. Do not update the
-    ///object's data. You should not call this directly.
-    fn device_update(&mut self) -> Datum<f32>;
-    ///Get a new position measurement from the encoder, and update the object's data.
-    fn update(&mut self) {
-        let prev_data = self.get_position_encoder_data_ref();
-        let old_vel = prev_data.velocity;
-        let old_pos = prev_data.position;
-        let old_time = prev_data.time;
-        let device_out = self.device_update();
-        let new_time = device_out.time;
-        let new_pos = device_out.value;
-        let delta_time = new_time - old_time;
-        let new_vel = (new_pos - old_pos) / delta_time;
-        let new_acc = (new_vel - old_vel) / delta_time;
-        let data = self.get_position_encoder_data_mut();
-        data.acceleration = new_acc;
-        data.velocity = new_vel;
-        data.position = new_pos;
-        data.time = new_time;
-    }
-}
-impl<T: PositionEncoder> Encoder for T {
-    fn get_state(&mut self) -> Datum<State> {
-        let data = self.get_position_encoder_data_ref();
-        Datum::new(data.time, State::new(data.position, data.velocity, data.acceleration))
     }
 }
 ///A trait for motors with some form of feedback, regardless if we can see it or not.
