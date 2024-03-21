@@ -216,6 +216,12 @@ pub trait SimpleEncoder: Encoder {
         }
     }
 }
+impl<T: SimpleEncoder> Encoder for T {
+    fn get_state(&mut self) -> Datum<State> {
+        let data = self.get_simple_encoder_data_ref();
+        Datum::new(data.time, State::new(data.position, data.velocity, data.acceleration))
+    }
+}
 ///A trait for motors with some form of feedback, regardless if we can see it or not.
 pub trait FeedbackMotor {
     ///Get the motor's current acceleration, velocity, and position and the time at which they
