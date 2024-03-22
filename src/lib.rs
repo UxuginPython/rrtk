@@ -327,20 +327,38 @@ pub struct MotorEncoderPair {
     encoder: Box<dyn Encoder>,
     pid: Option<PIDControllerShift>,
     mode: Option<MotorMode>,
+    pos_kp: f32,
+    pos_ki: f32,
+    pos_kd: f32,
+    vel_kp: f32,
+    vel_ki: f32,
+    vel_kd: f32,
+    acc_kp: f32,
+    acc_ki: f32,
+    acc_kd: f32,
 }
 impl MotorEncoderPair {
-    pub fn new(motor: Box<dyn NonFeedbackMotor>, encoder: Box<dyn Encoder>) -> MotorEncoderPair {
+    pub fn new(motor: Box<dyn NonFeedbackMotor>, encoder: Box<dyn Encoder>, pos_kp: f32, pos_ki: f32, pos_kd: f32, vel_kp: f32, vel_ki: f32, vel_kd: f32, acc_kp: f32, acc_ki: f32, acc_kd: f32) -> MotorEncoderPair {
         MotorEncoderPair {
             motor: motor,
             encoder: encoder,
             pid: None,
             mode: None,
+            pos_kp: pos_kp,
+            pos_ki: pos_ki,
+            pos_kd: pos_kd,
+            vel_kp: vel_kp,
+            vel_ki: vel_ki,
+            vel_kd: vel_kd,
+            acc_kp: acc_kp,
+            acc_ki: acc_ki,
+            acc_kd: acc_kd,
         }
     }
 }
 impl FeedbackMotor for MotorEncoderPair {
     fn get_state(&mut self) -> Datum<State> {
-        unimplemented!();
+        self.encoder.get_state()
     }
     fn set_acceleration(&mut self, acceleration: f32) {
         unimplemented!();
