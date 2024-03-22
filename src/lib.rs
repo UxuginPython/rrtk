@@ -361,13 +361,16 @@ impl FeedbackMotor for MotorEncoderPair {
         self.encoder.get_state()
     }
     fn set_acceleration(&mut self, acceleration: f32) {
-        unimplemented!();
+        self.mode = Some(MotorMode::ACCELERATION);
+        self.pid = Some(PIDControllerShift::new(acceleration, self.acc_kp, self.acc_ki, self.acc_kd, 2));
     }
     fn set_velocity(&mut self, velocity: f32) {
-        unimplemented!();
+        self.mode = Some(MotorMode::VELOCITY);
+        self.pid = Some(PIDControllerShift::new(velocity, self.vel_kp, self.vel_ki, self.vel_kd, 1));
     }
-    fn set_position(&mut self, velocity: f32) {
-        unimplemented!();
+    fn set_position(&mut self, position: f32) {
+        self.mode = Some(MotorMode::POSITION);
+        self.pid = Some(PIDControllerShift::new(position, self.pos_kp, self.pos_ki, self.pos_kd, 0));
     }
 }
 #[derive(Debug, PartialEq)]
