@@ -260,6 +260,16 @@ pub struct ServoMotorData {
     pub position: f32,
     pub time: f32,
 }
+impl ServoMotorData {
+    pub fn new(start_state: Datum<State>) -> ServoMotorData {
+        ServoMotorData {
+            acceleration: start_state.value.acceleration,
+            velocity: start_state.value.velocity,
+            position: start_state.value.position,
+            time: start_state.time,
+        }
+    }
+}
 ///A trait for servo motors that do their own control theory and do not give us details about their
 ///measured state.
 pub trait ServoMotor: FeedbackMotor {
