@@ -159,3 +159,66 @@ fn simple_encoder_acceleration() {
     assert_eq!(output.value.velocity, 3.5);
     assert_eq!(output.value.acceleration, 6.0);
 }
+#[test]
+fn feedback_motor() {
+    struct DummyFeedbackMotor {
+        time: f32,
+        pos: f32,
+        vel: f32,
+        acc: f32,
+    }
+    impl DummyFeedbackMotor {
+        fn new(start_state: Datum<State>) -> DummyFeedbackMotor {
+            DummyFeedbackMotor {
+                time: start_state.time,
+                pos: start_state.value.position,
+                vel: start_state.value.velocity,
+                acc: start_state.value.acceleration,
+            }
+        }
+    }
+    impl FeedbackMotor for DummyFeedbackMotor {
+        fn get_state(&mut self) -> Datum<State> {
+            Datum::new(self.time, State::new(self.pos, self.vel, self.acc))
+        }
+        fn set_acceleration(&mut self, acceleration: f32) {
+            self.time += 1.0;
+            self.acc = acceleration;
+        }
+        fn set_velocity(&mut self, velocity: f32) {
+            self.time += 1.0;
+            self.acc = 0.0;
+            self.vel = velocity;
+        }
+        fn set_position(&mut self, position: f32) {
+            self.time += 1.0;
+            self.acc = 0.0;
+            self.vel = 0.0;
+            self.pos = position;
+        }
+    }
+    let mut my_feedback_motor = DummyFeedbackMotor::new(Datum::new(1.0, State::new(2.0, 3.0, 4.0)));
+    let output = my_feedback_motor.get_state();
+    assert_eq!(output.time, 1.0);
+    assert_eq!(output.value.position, 2.0);
+    assert_eq!(output.value.velocity, 3.0);
+    assert_eq!(output.value.acceleration, 4.0);
+    my_feedback_motor.set_acceleration(5.0);
+    let output = my_feedback_motor.get_state();
+    assert_eq!(output.time, 2.0);
+    assert_eq!(output.value.position, 2.0);
+    assert_eq!(output.value.velocity, 3.0);
+    assert_eq!(output.value.acceleration, 5.0);
+    my_feedback_motor.set_velocity(6.0);
+    let output = my_feedback_motor.get_state();
+    assert_eq!(output.time, 3.0);
+    assert_eq!(output.value.position, 2.0);
+    assert_eq!(output.value.velocity, 6.0);
+    assert_eq!(output.value.acceleration, 0.0);
+    my_feedback_motor.set_position(7.0);
+    let output = my_feedback_motor.get_state();
+    assert_eq!(output.time, 4.0);
+    assert_eq!(output.value.position, 7.0);
+    assert_eq!(output.value.velocity, 0.0);
+    assert_eq!(output.value.acceleration, 0.0);
+}
