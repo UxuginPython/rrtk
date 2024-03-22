@@ -99,7 +99,7 @@ fn simple_encoder_velocity() {
         }
         fn device_update(&mut self) -> Datum<f32> {
             self.time += 0.1;
-            self.vel+= 2.0;
+            self.vel += 2.0;
             Datum::new(self.time, self.vel)
         }
     }
@@ -116,4 +116,46 @@ fn simple_encoder_velocity() {
     assert_eq!(output.value.velocity, 5.0);
     //floating point errors
     assert!(19.999 < output.value.acceleration && output.value.acceleration < 20.001);
+}
+#[test]
+fn simple_encoder_acceleration() {
+    struct DummySimpleEncoder {
+        simple_encoder_data: SimpleEncoderData,
+        time: f32,
+        acc: f32,
+    }
+    impl DummySimpleEncoder {
+        fn new(start_state: Datum<State>) -> DummySimpleEncoder {
+            DummySimpleEncoder {
+                simple_encoder_data: SimpleEncoderData::new(MotorMode::ACCELERATION, start_state.clone()),
+                time: start_state.time,
+                acc: start_state.value.acceleration,
+            }
+        }
+    }
+    impl SimpleEncoder for DummySimpleEncoder {
+        fn get_simple_encoder_data_ref(&self) -> &SimpleEncoderData {
+            &self.simple_encoder_data
+        }
+        fn get_simple_encoder_data_mut(&mut self) -> &mut SimpleEncoderData {
+            &mut self.simple_encoder_data
+        }
+        fn device_update(&mut self) -> Datum<f32> {
+            self.time += 0.1;
+            self.acc += 2.0;
+            Datum::new(self.time, self.acc)
+        }
+    }
+    let mut my_simple_encoder = DummySimpleEncoder::new(Datum::new(1.0, State::new(2.0, 3.0, 4.0)));
+    let output = my_simple_encoder.get_state();
+    assert_eq!(output.time, 1.0);
+    assert_eq!(output.value.position, 2.0);
+    assert_eq!(output.value.velocity, 3.0);
+    assert_eq!(output.value.acceleration, 4.0);
+    my_simple_encoder.update();
+    let output = my_simple_encoder.get_state();
+    assert_eq!(output.time, 1.1);
+    assert_eq!(output.value.position, 2.325);
+    assert_eq!(output.value.velocity, 3.5);
+    assert_eq!(output.value.acceleration, 6.0);
 }
