@@ -322,6 +322,36 @@ pub trait NonFeedbackMotor {
     ///roughly proportional to them.
     fn set_power(&mut self, power: f32);
 }
+pub struct MotorEncoderPair {
+    motor: Box<dyn NonFeedbackMotor>,
+    encoder: Box<dyn Encoder>,
+    pid: Option<PIDControllerShift>,
+    mode: Option<MotorMode>,
+}
+impl MotorEncoderPair {
+    pub fn new(motor: Box<dyn NonFeedbackMotor>, encoder: Box<dyn Encoder>) -> MotorEncoderPair {
+        MotorEncoderPair {
+            motor: motor,
+            encoder: encoder,
+            pid: None,
+            mode: None,
+        }
+    }
+}
+impl FeedbackMotor for MotorEncoderPair {
+    fn get_state(&mut self) -> Datum<State> {
+        unimplemented!();
+    }
+    fn set_acceleration(&mut self, acceleration: f32) {
+        unimplemented!();
+    }
+    fn set_velocity(&mut self, velocity: f32) {
+        unimplemented!();
+    }
+    fn set_position(&mut self, velocity: f32) {
+        unimplemented!();
+    }
+}
 #[derive(Debug, PartialEq)]
 pub enum MotorMode {
     POSITION,
