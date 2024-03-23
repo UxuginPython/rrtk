@@ -322,6 +322,7 @@ pub trait NonFeedbackMotor {
     ///roughly proportional to them.
     fn set_power(&mut self, power: f32);
 }
+#[cfg(feature = "std")]
 pub struct MotorEncoderPair {
     motor: Box<dyn NonFeedbackMotor>,
     encoder: Box<dyn Encoder>,
@@ -337,6 +338,7 @@ pub struct MotorEncoderPair {
     acc_ki: f32,
     acc_kd: f32,
 }
+#[cfg(feature = "std")]
 impl MotorEncoderPair {
     pub fn new(motor: Box<dyn NonFeedbackMotor>, encoder: Box<dyn Encoder>, pos_kp: f32, pos_ki: f32, pos_kd: f32, vel_kp: f32, vel_ki: f32, vel_kd: f32, acc_kp: f32, acc_ki: f32, acc_kd: f32) -> MotorEncoderPair {
         MotorEncoderPair {
@@ -356,6 +358,7 @@ impl MotorEncoderPair {
         }
     }
 }
+#[cfg(feature = "std")]
 impl FeedbackMotor for MotorEncoderPair {
     fn get_state(&mut self) -> Datum<State> {
         self.encoder.get_state()
