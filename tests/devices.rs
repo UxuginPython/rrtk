@@ -295,3 +295,53 @@ fn non_feedback_motor() {
     let mut my_non_feedback_motor = DummyNonFeedbackMotor::new();
     my_non_feedback_motor.set_power(0.39);
 }
+/*#[cfg(feature = "std")]
+#[test]
+fn motor_encoder_pair() {
+    struct DummyNonFeedbackMotor {
+        pub power: f32
+    }
+    impl DummyNonFeedbackMotor {
+        fn new() -> DummyNonFeedbackMotor {
+            DummyNonFeedbackMotor {
+                power: 0.0,
+            }
+        }
+    }
+    impl NonFeedbackMotor for DummyNonFeedbackMotor {
+        fn set_power(&mut self, power: f32) {
+            self.power = power;
+        }
+    }
+    struct DummySimpleEncoder {
+        simple_encoder_data: SimpleEncoderData,
+        time: f32,
+        vel: f32,
+    }
+    impl DummySimpleEncoder {
+        fn new(start_state: Datum<State>) -> DummySimpleEncoder {
+            DummySimpleEncoder {
+                simple_encoder_data: SimpleEncoderData::new(MotorMode::VELOCITY, start_state.clone()),
+                time: start_state.time,
+                vel: start_state.value.velocity,
+            }
+        }
+    }
+    impl SimpleEncoder for DummySimpleEncoder {
+        fn get_simple_encoder_data_ref(&self) -> &SimpleEncoderData {
+            &self.simple_encoder_data
+        }
+        fn get_simple_encoder_data_mut(&mut self) -> &mut SimpleEncoderData {
+            &mut self.simple_encoder_data
+        }
+        fn device_update(&mut self) -> Datum<f32> {
+            self.time += 2.0;
+            self.vel += 1.0;
+            Datum::new(self.time, self.vel)
+        }
+    }
+    let mut pair = MotorEncoderPair::new(Box::new(DummyNonFeedbackMotor::new()), Box::new(DummySimpleEncoder::new(Datum::new(-1.0, State::new(0.0, -1.0, 0.0)))), 1.0, 0.01, 0.1, 1.0, 0.01, 0.1, 1.0, 0.01, 0.1);
+    pair.set_velocity(5.0);
+    pair.update();
+    assert_eq!(pair.motor.power, 9.04);
+}*/

@@ -6,14 +6,15 @@ It is partially `no_std`. It does not currently integrate with any API directly,
 ## License
 #### GNU Lesser General Public License, version 3 only
 
-## Available:
-- PID controller\*
-- Trapezoidal motion profile\*
-- Motor and encoder control system
+## Available
+- PID controller\*\*
+- Trapezoidal motion profile\*\*
+- Motor and encoder control system\*
 
-\*Available in `no_std`
+\*Partially available in `no_std`
+\*\*Fully available in `no_std`
 
-## Future:
+## Future
 - Stream system
 - Noise filtering
 - Drive base control
@@ -21,3 +22,11 @@ It is partially `no_std`. It does not currently integrate with any API directly,
 - Feed forward control
 - Jerk control
 - - S-curve motion profile
+
+## Changes
+### 0.1.0
+Initial release.
+### 0.1.1
+Fix motion profile issue.
+### 0.2.0-alpha.1
+New motor-encoder system.

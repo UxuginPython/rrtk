@@ -357,6 +357,17 @@ impl MotorEncoderPair {
             acc_kd: acc_kd,
         }
     }
+    pub fn update(&mut self) {
+        let output = self.get_state();
+        if self.pid.is_some() {
+            let pid_out = self.pid.as_mut().expect("i just checked it").update(output.time, match self.mode.as_ref().expect("if pid is Some, mode is too") {
+                MotorMode::POSITION => output.value.position,
+                MotorMode::VELOCITY => output.value.velocity,
+                MotorMode::ACCELERATION => output.value.acceleration,
+            });
+            self.motor.set_power(pid_out);
+        }
+    }
 }
 #[cfg(feature = "std")]
 impl FeedbackMotor for MotorEncoderPair {
