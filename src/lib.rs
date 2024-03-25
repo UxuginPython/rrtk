@@ -253,7 +253,16 @@ pub trait FeedbackMotor {
     ///Make the mootr go to a given position.
     fn set_position(&mut self, position: f32);
     fn follow_motion_profile(&mut self, motion_profile: MotionProfile) {
-        let max_vel = motion_profile.start_vel + 0.5 * motion_profile.max_acc * motion_profile.t1;
+        let max_vel = motion_profile.max_acc * motion_profile.t1 + motion_profile.start_vel;
+        #[cfg(feature = "std")]
+        let t1_pos = 0.5 * motion_profile.max_acc * motion_profile.t1.powi(2) + motion_profile.start_vel * motion_profile.t1 + motion_profile.start_pos;
+        #[cfg(not(feature = "std"))]
+        let t1_pos = 0.5 * motion_profile.max_acc * my_square_f32(motion_profile.t1) + motion_profile.start_vel * motion_profile.t1 + motion_profile.start_pos;
+        let t2_pos = max_vel * (motion_profile.t2 - motion_profile.t1) + t1_pos;
+        #[cfg(feature = "std")]
+        let t3_pos = 0.5 * -motion_profile.max_acc * (motion_profile.t3 - motion_profile.t2).powi(2) + max_vel * (motion_profile.t3 - motion_profile.t2) + t2_pos;
+        #[cfg(not(feature = "std"))]
+        let t3_pos = 0.5 * -motion_profile.max_acc * my_square_f32(motion_profile.t3 - motion_profile.t2) + max_vel * (motion_profile.t3 - motion_profile.t2) + t2_pos;
         let mut time = 0.0;
         let output = self.get_state();
         let start_time = output.time;
@@ -269,6 +278,7 @@ pub trait FeedbackMotor {
         while time-start_time < motion_profile.t3 {
             time = self.get_state().time;
         }
+        self.set_position(t3_pos);
     }
 }
 ///A container for data required by all `ServoMotor` objects.
