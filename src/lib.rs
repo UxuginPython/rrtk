@@ -252,6 +252,24 @@ pub trait FeedbackMotor {
     fn set_velocity(&mut self, velocity: f32);
     ///Make the mootr go to a given position.
     fn set_position(&mut self, position: f32);
+    fn follow_motion_profile(&mut self, motion_profile: MotionProfile) {
+        let max_vel = 0.5 * motion_profile.max_acc * motion_profile.t1;
+        let mut time = 0.0;
+        let output = self.get_state();
+        let start_time = output.time;
+        self.set_acceleration(motion_profile.max_acc);
+        while time-start_time < motion_profile.t1 {
+            time = self.get_state().time;
+        }
+        self.set_velocity(max_vel);
+        while time-start_time < motion_profile.t2 {
+            time = self.get_state().time;
+        }
+        self.set_acceleration(-motion_profile.max_acc);
+        while time-start_time < motion_profile.t3 {
+            time = self.get_state().time;
+        }
+    }
 }
 ///A container for data required by all `ServoMotor` objects.
 pub struct ServoMotorData {
