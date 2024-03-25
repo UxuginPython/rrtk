@@ -12,6 +12,7 @@ It is partially `no_std`. It does not currently integrate with any API directly,
 - Motor and encoder control system\*
 
 \*Partially available in `no_std`
+
 \*\*Fully available in `no_std`
 
 ## Future
