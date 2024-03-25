@@ -253,7 +253,7 @@ pub trait FeedbackMotor {
     ///Make the mootr go to a given position.
     fn set_position(&mut self, position: f32);
     fn follow_motion_profile(&mut self, motion_profile: MotionProfile) {
-        let max_vel = 0.5 * motion_profile.max_acc * motion_profile.t1;
+        let max_vel = motion_profile.start_vel + 0.5 * motion_profile.max_acc * motion_profile.t1;
         let mut time = 0.0;
         let output = self.get_state();
         let start_time = output.time;
