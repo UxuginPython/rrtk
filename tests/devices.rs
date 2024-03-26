@@ -162,6 +162,7 @@ fn simple_encoder_acceleration() {
 #[test]
 fn feedback_motor() {
     struct DummyFeedbackMotor {
+        feedback_motor_data: FeedbackMotorData,
         time: f32,
         pos: f32,
         vel: f32,
@@ -170,6 +171,7 @@ fn feedback_motor() {
     impl DummyFeedbackMotor {
         fn new(start_state: Datum<State>) -> DummyFeedbackMotor {
             DummyFeedbackMotor {
+                feedback_motor_data: FeedbackMotorData::new(),
                 time: start_state.time,
                 pos: start_state.value.position,
                 vel: start_state.value.velocity,
@@ -178,6 +180,12 @@ fn feedback_motor() {
         }
     }
     impl FeedbackMotor for DummyFeedbackMotor {
+        fn get_feedback_motor_data_ref(&self) -> &FeedbackMotorData {
+            &self.feedback_motor_data
+        }
+        fn get_feedback_motor_data_mut(&mut self) -> &mut FeedbackMotorData {
+            &mut self.feedback_motor_data
+        }
         fn get_state(&mut self) -> Datum<State> {
             Datum::new(self.time, State::new(self.pos, self.vel, self.acc))
         }

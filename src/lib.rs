@@ -241,8 +241,31 @@ impl<T: SimpleEncoder> Encoder for T {
         Datum::new(data.time, State::new(data.position, data.velocity, data.acceleration))
     }
 }
+enum MotionProfileState {
+    BeforeStart,
+    InitialAccel,
+    ConstantVel,
+    EndAccel,
+    Complete,
+}
+pub struct FeedbackMotorData {
+    motion_profile: Option<MotionProfile>,
+    mp_start_time: Option<f32>,
+    mp_state: Option<MotionProfileState>,
+}
+impl FeedbackMotorData {
+    pub fn new() -> FeedbackMotorData {
+        FeedbackMotorData {
+            motion_profile: None,
+            mp_start_time: None,
+            mp_state: None,
+        }
+    }
+}
 ///A trait for motors with some form of feedback, regardless if we can see it or not.
 pub trait FeedbackMotor {
+    fn get_feedback_motor_data_ref(&self) -> &FeedbackMotorData;
+    fn get_feedback_motor_data_mut(&mut self) -> &mut FeedbackMotorData;
     ///Get the motor's current acceleration, velocity, and position and the time at which they
     ///were recorded.
     fn get_state(&mut self) -> Datum<State>;
@@ -252,6 +275,25 @@ pub trait FeedbackMotor {
     fn set_velocity(&mut self, velocity: f32);
     ///Make the mootr go to a given position.
     fn set_position(&mut self, position: f32);
+    fn start_motion_profile(&mut self, motion_profile: MotionProfile) {
+        let output = self.get_state();
+        let data = self.get_feedback_motor_data_mut();
+        data.motion_profile = Some(motion_profile);
+        data.mp_state = Some(MotionProfileState::InitialAccel);
+        data.mp_start_time = Some(output.time);
+    }
+    fn update_motion_profile(&mut self) {
+        let data = self.get_feedback_motor_data_mut();
+        if data.mp_state.is_some() {
+            match data.mp_state.as_ref().expect("i just checked it") {
+                MotionProfileState::BeforeStart => {unimplemented!()},
+                MotionProfileState::InitialAccel => {unimplemented!()},
+                MotionProfileState::ConstantVel => {unimplemented!()},
+                MotionProfileState::EndAccel => {unimplemented!()},
+                MotionProfileState::Complete => {unimplemented!()},
+            }
+        }
+    }
     fn follow_motion_profile(&mut self, motion_profile: MotionProfile) {
         let max_vel = motion_profile.max_acc * motion_profile.t1 + motion_profile.start_vel;
         #[cfg(feature = "std")]
@@ -283,6 +325,7 @@ pub trait FeedbackMotor {
 }
 ///A container for data required by all `ServoMotor` objects.
 pub struct ServoMotorData {
+    pub feedback_motor_data: FeedbackMotorData,
     pub acceleration: f32,
     pub velocity: f32,
     pub position: f32,
@@ -291,6 +334,7 @@ pub struct ServoMotorData {
 impl ServoMotorData {
     pub fn new(start_state: Datum<State>) -> ServoMotorData {
         ServoMotorData {
+            feedback_motor_data: FeedbackMotorData::new(),
             acceleration: start_state.value.acceleration,
             velocity: start_state.value.velocity,
             position: start_state.value.position,
@@ -315,6 +359,14 @@ pub trait ServoMotor: FeedbackMotor {
     fn device_set_position(&mut self, position: f32);
 }
 impl<T: ServoMotor> FeedbackMotor for T {
+    fn get_feedback_motor_data_ref(&self) -> &FeedbackMotorData {
+        let data = self.get_servo_motor_data_ref();
+        &data.feedback_motor_data
+    }
+    fn get_feedback_motor_data_mut(&mut self) -> &mut FeedbackMotorData {
+        let data = self.get_servo_motor_data_mut();
+        &mut data.feedback_motor_data
+    }
     fn get_state(&mut self) -> Datum<State> {
         let data = self.get_servo_motor_data_ref();
         Datum::new(data.time, State::new(data.position, data.velocity, data.acceleration))
@@ -352,6 +404,7 @@ pub trait NonFeedbackMotor {
 }
 #[cfg(feature = "std")]
 pub struct MotorEncoderPair {
+    feedback_motor_data: FeedbackMotorData,
     motor: Box<dyn NonFeedbackMotor>,
     encoder: Box<dyn Encoder>,
     pid: Option<PIDControllerShift>,
@@ -370,6 +423,7 @@ pub struct MotorEncoderPair {
 impl MotorEncoderPair {
     pub fn new(motor: Box<dyn NonFeedbackMotor>, encoder: Box<dyn Encoder>, pos_kp: f32, pos_ki: f32, pos_kd: f32, vel_kp: f32, vel_ki: f32, vel_kd: f32, acc_kp: f32, acc_ki: f32, acc_kd: f32) -> MotorEncoderPair {
         MotorEncoderPair {
+            feedback_motor_data: FeedbackMotorData::new(),
             motor: motor,
             encoder: encoder,
             pid: None,
@@ -399,6 +453,12 @@ impl MotorEncoderPair {
 }
 #[cfg(feature = "std")]
 impl FeedbackMotor for MotorEncoderPair {
+    fn get_feedback_motor_data_ref(&self) -> &FeedbackMotorData {
+        &self.feedback_motor_data
+    }
+    fn get_feedback_motor_data_mut(&mut self) -> &mut FeedbackMotorData {
+        &mut self.feedback_motor_data
+    }
     fn get_state(&mut self) -> Datum<State> {
         self.encoder.get_state()
     }
