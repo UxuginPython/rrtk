@@ -11,6 +11,7 @@ Copyright 2024 UxuginPython on GitHub
     You should have received a copy of the GNU Lesser General Public License along with Rust Robotics ToolKit. If not, see <https://www.gnu.org/licenses/>.
 */
 #![cfg_attr(not(feature = "std"), no_std)]
+///A proportional-integral-derivative controller.
 pub struct PIDController {
     setpoint: f32,
     kp: f32,
@@ -21,6 +22,7 @@ pub struct PIDController {
     int_error: f32,
 }
 impl PIDController {
+    ///Constructor for `PIDController`.
     pub fn new(setpoint: f32, kp: f32, ki: f32, kd: f32) -> PIDController {
         PIDController {
             setpoint: setpoint,
@@ -32,6 +34,8 @@ impl PIDController {
             int_error: 0.0,
         }
     }
+    ///Update the PID controller. Give it a new time and process variable value, and it will give
+    ///you a new control variable value.
     #[must_use]
     pub fn update(&mut self, time: f32, process: f32) -> f32 {
         let error = self.setpoint - process;
@@ -52,6 +56,8 @@ impl PIDController {
         self.kp * error + self.ki * self.int_error + self.kd * drv_error
     }
 }
+///A PID controller that will integrate the control variable a given number of times to simplify
+///control of some systems such as motors.
 #[cfg(feature = "std")]
 pub struct PIDControllerShift {
     setpoint: f32,
@@ -65,6 +71,7 @@ pub struct PIDControllerShift {
 }
 #[cfg(feature = "std")]
 impl PIDControllerShift {
+    ///Constructor for `PIDControllerShift`.
     pub fn new(setpoint: f32, kp: f32, ki: f32, kd: f32, shift: u8) -> PIDControllerShift {
         let mut shifts = Vec::new();
         for _ in 0..shift + 1 {
@@ -81,6 +88,8 @@ impl PIDControllerShift {
             shifts: shifts,
         }
     }
+    ///Update the PID controller. Give it a new time and process variable value, and it will give
+    ///you a new control variable value.
     #[must_use]
     pub fn update(&mut self, time: f32, process: f32) -> f32 {
         let error = self.setpoint - process;
@@ -108,6 +117,7 @@ impl PIDControllerShift {
         self.shifts[self.shifts.len() - 1]
     }
 }
+///A one-dimensional motion state with position, velocity, and acceleration.
 #[derive(Clone)]
 pub struct State {
     pub position: f32,
@@ -115,6 +125,7 @@ pub struct State {
     pub acceleration: f32,
 }
 impl State {
+    ///Constructor for `State`.
     pub fn new(position: f32, velocity: f32, acceleration: f32) -> State {
         State {
             position: position,
@@ -122,19 +133,23 @@ impl State {
             acceleration: acceleration,
         }
     }
+    ///Calculate the future state assuming a constant acceleration.
     pub fn update(&mut self, delta_time: f32) {
         let new_velocity = self.velocity + delta_time * self.acceleration;
         let new_position = self.position + delta_time * (self.velocity + new_velocity) / 2.0;
         self.position = new_position;
         self.velocity = new_velocity;
     }
+    ///Set the acceleration.
     pub fn set_constant_acceleration(&mut self, acceleration: f32) {
         self.acceleration = acceleration;
     }
+    ///Set the velocity to a given value and acceleration to zero.
     pub fn set_constant_velocity(&mut self, velocity: f32) {
         self.acceleration = 0.0;
         self.velocity = velocity;
     }
+    ///Set the position to a given value and the velocity and acceleration to zero.
     pub fn set_constant_position(&mut self, position: f32) {
         self.acceleration = 0.0;
         self.velocity = 0.0;
@@ -171,6 +186,7 @@ pub struct SimpleEncoderData {
     pub acceleration: f32,
 }
 impl SimpleEncoderData {
+    ///Constructor for `SimpleEncoderData`.
     pub fn new(encoder_type: MotorMode, start_state: Datum<State>) -> SimpleEncoderData {
         SimpleEncoderData {
             encoder_type: encoder_type,
@@ -241,6 +257,7 @@ impl<T: SimpleEncoder> Encoder for T {
         Datum::new(data.time, State::new(data.position, data.velocity, data.acceleration))
     }
 }
+///Where you are in following a motion profile.
 enum MotionProfileState {
     BeforeStart,
     InitialAccel,
@@ -248,12 +265,14 @@ enum MotionProfileState {
     EndAccel,
     Complete,
 }
+///Data needed by all `FeedbackMotor` objects.
 pub struct FeedbackMotorData {
     motion_profile: Option<MotionProfile>,
     mp_start_time: Option<f32>,
     mp_state: Option<MotionProfileState>,
 }
 impl FeedbackMotorData {
+    ///Constructor for `FeedbackMotorData`.
     pub fn new() -> FeedbackMotorData {
         FeedbackMotorData {
             motion_profile: None,
@@ -275,12 +294,14 @@ pub trait FeedbackMotor {
     fn set_velocity(&mut self, velocity: f32);
     ///Make the mootr go to a given position.
     fn set_position(&mut self, position: f32);
+    ///Set up the object to follow a motion profile.
     fn start_motion_profile(&mut self, motion_profile: MotionProfile) {
         let data = self.get_feedback_motor_data_mut();
         data.motion_profile = Some(motion_profile);
         data.mp_state = Some(MotionProfileState::BeforeStart);
         data.mp_start_time = None;
     }
+    ///Call this repeatedly until the motion profile finishes.
     fn update_motion_profile(&mut self) {
         //Do not switch the order of the following two lines, I guess. They both need an &mut self,
         //which seems like it shouldn't compile, but this way, it does. The other way, it does not.
@@ -330,6 +351,7 @@ pub trait FeedbackMotor {
             }
         }
     }
+    ///Follow a motion profile, waiting for it to complete.
     fn follow_motion_profile(&mut self, motion_profile: MotionProfile) {
         let max_vel = motion_profile.max_acc * motion_profile.t1 + motion_profile.start_vel;
         #[cfg(feature = "std")]
@@ -368,6 +390,7 @@ pub struct ServoMotorData {
     pub time: f32,
 }
 impl ServoMotorData {
+    ///Constructor for `ServoMotorData`.
     pub fn new(start_state: Datum<State>) -> ServoMotorData {
         ServoMotorData {
             feedback_motor_data: FeedbackMotorData::new(),
@@ -438,6 +461,8 @@ pub trait NonFeedbackMotor {
     ///roughly proportional to them.
     fn set_power(&mut self, power: f32);
 }
+///Use an encoder connected directly to a motor without feedback and a PID controller to control it
+///like a servo.
 #[cfg(feature = "std")]
 pub struct MotorEncoderPair {
     feedback_motor_data: FeedbackMotorData,
@@ -457,6 +482,7 @@ pub struct MotorEncoderPair {
 }
 #[cfg(feature = "std")]
 impl MotorEncoderPair {
+    ///Constructor for `MotorEncoderPair`.
     pub fn new(motor: Box<dyn NonFeedbackMotor>, encoder: Box<dyn Encoder>, pos_kp: f32, pos_ki: f32, pos_kd: f32, vel_kp: f32, vel_ki: f32, vel_kd: f32, acc_kp: f32, acc_ki: f32, acc_kd: f32) -> MotorEncoderPair {
         MotorEncoderPair {
             feedback_motor_data: FeedbackMotorData::new(),
@@ -475,6 +501,7 @@ impl MotorEncoderPair {
             acc_kd: acc_kd,
         }
     }
+    ///Update the PID controller.
     pub fn update(&mut self) {
         let output = self.get_state();
         if self.pid.is_some() {
@@ -511,12 +538,14 @@ impl FeedbackMotor for MotorEncoderPair {
         self.pid = Some(PIDControllerShift::new(position, self.pos_kp, self.pos_ki, self.pos_kd, 0));
     }
 }
+///What a motor is currently controlling: position, velocity, or acceleration.
 #[derive(Debug, PartialEq)]
 pub enum MotorMode {
     POSITION,
     VELOCITY,
     ACCELERATION,
 }
+///Compute absolute value without the standard library.
 //abs method of f32 does not exist in no_std
 #[cfg(not(feature = "std"))]
 fn my_abs_f32(num: f32) -> f32 {
@@ -526,10 +555,12 @@ fn my_abs_f32(num: f32) -> f32 {
         -num
     }
 }
+///Square a number without the standard library.
 #[cfg(not(feature = "std"))]
 fn my_square_f32(num: f32) -> f32 {
     num * num
 }
+///A motion profile for getting from one state to another.
 pub struct MotionProfile {
     start_pos: f32,
     start_vel: f32,
@@ -539,6 +570,7 @@ pub struct MotionProfile {
     max_acc: f32,
 }
 impl MotionProfile {
+    ///Constructor for `MotionProfile` using start and end states.
     pub fn new(start_state: State, end_state: State, max_vel: f32, max_acc: f32) -> MotionProfile {
         let sign = if end_state.position < start_state.position {
             -1.0
@@ -575,6 +607,7 @@ impl MotionProfile {
             max_acc: max_acc,
         }
     }
+    ///Get the intended `MotorMode` at a given time.
     pub fn get_mode(&self, t: f32) -> Result<MotorMode, &'static str> {
         if t < 0.0 {
             return Err("time invalid");
@@ -588,6 +621,7 @@ impl MotionProfile {
             return Err("time invalid");
         }
     }
+    ///Get the intended acceleration at a given time.
     pub fn get_acceleration(&self, t: f32) -> Result<f32, &'static str> {
         if t < 0.0 {
             return Err("time invalid");
@@ -601,6 +635,7 @@ impl MotionProfile {
             return Err("time invalid");
         }
     }
+    ///Get the intended velocity at a given time.
     pub fn get_velocity(&self, t: f32) -> Result<f32, &'static str> {
         if t < 0.0 {
             return Err("time invalid");
@@ -614,6 +649,7 @@ impl MotionProfile {
             return Err("time invalid");
         }
     }
+    ///Get the intended position at a given time.
     pub fn get_position(&self, t: f32) -> Result<f32, &'static str> {
         if t < 0.0 {
             return Err("time invalid");
