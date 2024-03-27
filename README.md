@@ -31,7 +31,3 @@ Initial release.
 Fix motion profile issue.
 ### 0.2.0-alpha.1
 New motor-encoder system.
-### 0.2.0-alpha.2
-Make motors able to follow a motion profile by calling one function.
-### 0.2.0-beta.1
-Make motors able to additionally follow a motion profile through a state machine.
