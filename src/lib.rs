@@ -276,21 +276,57 @@ pub trait FeedbackMotor {
     ///Make the mootr go to a given position.
     fn set_position(&mut self, position: f32);
     fn start_motion_profile(&mut self, motion_profile: MotionProfile) {
-        let output = self.get_state();
         let data = self.get_feedback_motor_data_mut();
         data.motion_profile = Some(motion_profile);
-        data.mp_state = Some(MotionProfileState::InitialAccel);
-        data.mp_start_time = Some(output.time);
+        data.mp_state = Some(MotionProfileState::BeforeStart);
+        data.mp_start_time = None;
     }
     fn update_motion_profile(&mut self) {
+        //Do not switch the order of the following two lines, I guess. They both need an &mut self,
+        //which seems like it shouldn't compile, but this way, it does. The other way, it does not.
+        let output = self.get_state();
         let data = self.get_feedback_motor_data_mut();
         if data.mp_state.is_some() {
             match data.mp_state.as_ref().expect("i just checked it") {
-                MotionProfileState::BeforeStart => {unimplemented!()},
-                MotionProfileState::InitialAccel => {unimplemented!()},
-                MotionProfileState::ConstantVel => {unimplemented!()},
-                MotionProfileState::EndAccel => {unimplemented!()},
-                MotionProfileState::Complete => {unimplemented!()},
+                MotionProfileState::BeforeStart => {
+                    data.mp_state = Some(MotionProfileState::InitialAccel);
+                    let new_acc = data.motion_profile.as_ref().unwrap().max_acc;
+                    self.set_acceleration(new_acc);
+                    //self.set_acceleration(data.motion_profile.as_mut().expect("i just checked it").max_acc);
+                    //The code in this state, using a variable, compiles. If you comment out that
+                    //part and uncomment the commented-out line, it does not compile.
+                },
+                MotionProfileState::InitialAccel => {
+                    if output.time >= data.motion_profile.as_ref().unwrap().t1 {
+                        data.mp_state = Some(MotionProfileState::ConstantVel);
+                        let max_vel = data.motion_profile.as_ref().unwrap().max_acc * data.motion_profile.as_ref().unwrap().t1 + data.motion_profile.as_ref().unwrap().start_vel;
+                        self.set_velocity(max_vel);
+                    }
+                },
+                MotionProfileState::ConstantVel => {
+                    if output.time >= data.motion_profile.as_ref().unwrap().t2 {
+                        data.mp_state = Some(MotionProfileState::EndAccel);
+                        let new_acc = -data.motion_profile.as_ref().unwrap().max_acc;
+                        self.set_acceleration(new_acc);
+                    }
+                },
+                MotionProfileState::EndAccel => {
+                    if output.time >= data.motion_profile.as_ref().unwrap().t3 {
+                        data.mp_state = Some(MotionProfileState::Complete);
+                        let max_vel = data.motion_profile.as_ref().unwrap().max_acc * data.motion_profile.as_ref().unwrap().t1 + data.motion_profile.as_ref().unwrap().start_vel;
+                        #[cfg(feature = "std")]
+                        let t1_pos = 0.5 * data.motion_profile.as_ref().unwrap().max_acc * data.motion_profile.as_ref().unwrap().t1.powi(2) + data.motion_profile.as_ref().unwrap().start_vel * data.motion_profile.as_ref().unwrap().t1 + data.motion_profile.as_ref().unwrap().start_pos;
+                        #[cfg(not(feature = "std"))]
+                        let t1_pos = 0.5 * data.motion_profile.as_ref().unwrap().max_acc * my_square_f32(data.motion_profile.as_ref().unwrap().t1) + data.motion_profile.as_ref().unwrap().start_vel * data.motion_profile.as_ref().unwrap().t1 + data.motion_profile.as_ref().unwrap().start_pos;
+                        let t2_pos = max_vel * (data.motion_profile.as_ref().unwrap().t2 - data.motion_profile.as_ref().unwrap().t1) + t1_pos;
+                        #[cfg(feature = "std")]
+                        let t3_pos = 0.5 * -data.motion_profile.as_ref().unwrap().max_acc * (data.motion_profile.as_ref().unwrap().t3 - data.motion_profile.as_ref().unwrap().t2).powi(2) + max_vel * (data.motion_profile.as_ref().unwrap().t3 - data.motion_profile.as_ref().unwrap().t2) + t2_pos;
+                        #[cfg(not(feature = "std"))]
+                        let t3_pos = 0.5 * -data.motion_profile.as_ref().unwrap().max_acc * my_square_f32(data.motion_profile.as_ref().unwrap().t3 - data.motion_profile.as_ref().unwrap().t2) + max_vel * (data.motion_profile.as_ref().unwrap().t3 - data.motion_profile.as_ref().unwrap().t2) + t2_pos;
+                        self.set_position(t3_pos);
+                    }
+                },
+                MotionProfileState::Complete => {},
             }
         }
     }
