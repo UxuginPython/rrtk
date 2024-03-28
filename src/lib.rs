@@ -176,6 +176,9 @@ pub trait Encoder {
     ///Get the current acceleration, velocity, and position and the time at which they were
     ///recorded.
     fn get_state(&mut self) -> Datum<State>;
+    ///This should be run continually while the device is enabled. If your encoder does not need a
+    ///function like this, just implement it as {}.
+    fn update(&mut self);
 }
 ///Data needed by all `SimpleEncoder` types.
 pub struct SimpleEncoderData {
@@ -206,8 +209,12 @@ pub trait SimpleEncoder: Encoder {
     fn get_simple_encoder_data_mut(&mut self) -> &mut SimpleEncoderData;
     ///Get a new position, velocity, or acceleration from the encoder along with a time.
     fn device_update(&mut self) -> Datum<f32>;
-    ///Get a new position, velocity, or acceleration from the encoder, calculate the others, and
-    ///write it all the the object's `SimpleEncoderData`.
+}
+impl<T: SimpleEncoder> Encoder for T {
+    fn get_state(&mut self) -> Datum<State> {
+        let data = self.get_simple_encoder_data_ref();
+        Datum::new(data.time, State::new(data.position, data.velocity, data.acceleration))
+    }
     fn update(&mut self) {
         let device_out = self.device_update();
         let data = self.get_simple_encoder_data_ref();
@@ -249,12 +256,6 @@ pub trait SimpleEncoder: Encoder {
                 data.acceleration = new_acc;
             },
         }
-    }
-}
-impl<T: SimpleEncoder> Encoder for T {
-    fn get_state(&mut self) -> Datum<State> {
-        let data = self.get_simple_encoder_data_ref();
-        Datum::new(data.time, State::new(data.position, data.velocity, data.acceleration))
     }
 }
 ///Where you are in following a motion profile.
@@ -503,6 +504,7 @@ impl MotorEncoderPair {
     }
     ///Update the PID controller.
     pub fn update(&mut self) {
+        self.encoder.update();
         let output = self.get_state();
         if self.pid.is_some() {
             let pid_out = self.pid.as_mut().expect("i just checked it").update(output.time, match self.mode.as_ref().expect("if pid is Some, mode is too") {

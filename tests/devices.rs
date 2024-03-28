@@ -23,6 +23,7 @@ fn encoder() {
         fn get_state(&mut self) -> Datum<State> {
             Datum::new(1.0, State::new(2.0, 3.0, 4.0))
         }
+        fn update(&mut self) {}
     }
     let mut my_encoder = DummyEncoder::new();
     let output = my_encoder.get_state();
