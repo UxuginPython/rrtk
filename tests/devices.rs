@@ -306,6 +306,7 @@ fn non_feedback_motor() {
 }
 //this works in a rather convoluted way due to privacy and lifetimes and stuff
 #[test]
+#[cfg(feature = "std")]
 fn motor_encoder_pair() {
     struct DummyNonFeedbackMotor {
         pub power: f32,
