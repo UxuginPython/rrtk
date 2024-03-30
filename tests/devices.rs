@@ -205,6 +205,7 @@ fn feedback_motor() {
             self.vel = 0.0;
             self.pos = position;
         }
+        fn update(&mut self) {}
     }
     let mut my_feedback_motor = DummyFeedbackMotor::new(Datum::new(1.0, State::new(2.0, 3.0, 4.0)));
     let output = my_feedback_motor.get_state();
@@ -264,6 +265,7 @@ fn servo_motor() {
         fn device_set_position(&mut self, _position: f32) {
             self.time += 1.0;
         }
+        fn device_update(&mut self) {}
     }
     let mut my_servo_motor = DummyServoMotor::new(Datum::new(1.0, State::new(2.0, 3.0, 4.0)));
     let output = my_servo_motor.get_state();
@@ -365,4 +367,57 @@ fn motor_encoder_pair() {
     pair.set_velocity(5.0);
     pair.update();
     pair.update();
+}
+#[test]
+fn follow_motion_profile() {
+    struct DummyServoMotor {
+        pub servo_motor_data: ServoMotorData,
+        pub time: f32,
+        pub asserts: u8,
+    }
+    impl DummyServoMotor {
+        fn new() -> DummyServoMotor {
+            DummyServoMotor {
+                servo_motor_data: ServoMotorData::new(Datum::new(0.0, State::new(0.0, 0.0, 0.0))),
+                time: 0.0,
+                asserts: 0,
+            }
+        }
+    }
+    impl ServoMotor for DummyServoMotor {
+        fn get_servo_motor_data_ref(&self) -> &ServoMotorData {
+            &self.servo_motor_data
+        }
+        fn get_servo_motor_data_mut(&mut self) -> &mut ServoMotorData {
+            &mut self.servo_motor_data
+        }
+        fn device_get_time(&mut self) -> f32 {
+            println!("DummyServoMotor device_get_time called, time is {:?}", self.time);
+            if self.time == 0.5 {
+                assert_eq!(self.get_servo_motor_data_ref().acceleration, 1.0);
+                self.asserts += 1;
+            }
+            if 2.499 < self.time && self.time < 2.501 {
+                assert_eq!(self.get_servo_motor_data_ref().velocity, 1.0);
+                self.asserts += 1;
+            }
+            if 3.499 < self.time && self.time < 3.501 {
+                assert_eq!(self.get_servo_motor_data_ref().acceleration, -1.0);
+                self.asserts += 1;
+            }
+            self.time
+        }
+        fn device_set_acceleration(&mut self, _acceleration: f32) {}
+        fn device_set_velocity(&mut self, _velocity: f32) {}
+        fn device_set_position(&mut self, _position: f32) {}
+        fn device_update(&mut self) {
+            self.time += 0.1;
+            println!("DummyServoMotor device_update called, new time is {}", self.time);
+        }
+    }
+    let mut my_servo = DummyServoMotor::new();
+    my_servo.follow_motion_profile(MotionProfile::new(State::new(0.0, 0.0, 0.0), State::new(3.0, 0.0, 0.0), 1.0, 1.0));
+    //make sure we actually checked all three assert_eqs and we didn't get messed up by floating
+    //point errors
+    assert_eq!(my_servo.asserts, 3);
 }

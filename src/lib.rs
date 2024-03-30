@@ -295,6 +295,9 @@ pub trait FeedbackMotor {
     fn set_velocity(&mut self, velocity: f32);
     ///Make the mootr go to a given position.
     fn set_position(&mut self, position: f32);
+    ///This should be run continually while the device is enabled. If your motor does not need a
+    ///function like this, just implement it as {}.
+    fn update(&mut self);
     ///Set up the object to follow a motion profile.
     fn start_motion_profile(&mut self, motion_profile: MotionProfile) {
         let data = self.get_feedback_motor_data_mut();
@@ -369,14 +372,17 @@ pub trait FeedbackMotor {
         let start_time = output.time;
         self.set_acceleration(motion_profile.max_acc);
         while time-start_time < motion_profile.t1 {
+            self.update();
             time = self.get_state().time;
         }
         self.set_velocity(max_vel);
         while time-start_time < motion_profile.t2 {
+            self.update();
             time = self.get_state().time;
         }
         self.set_acceleration(-motion_profile.max_acc);
         while time-start_time < motion_profile.t3 {
+            self.update();
             time = self.get_state().time;
         }
         self.set_position(t3_pos);
@@ -417,6 +423,9 @@ pub trait ServoMotor: FeedbackMotor {
     fn device_set_velocity(&mut self, velocity: f32);
     ///Tell the motor to go to a position and stop.
     fn device_set_position(&mut self, position: f32);
+    ///This should be run continually while the device is enabled. If your motor does not need a
+    ///function like this, just implement it as {}.
+    fn device_update(&mut self);
 }
 impl<T: ServoMotor> FeedbackMotor for T {
     fn get_feedback_motor_data_ref(&self) -> &FeedbackMotorData {
@@ -453,6 +462,12 @@ impl<T: ServoMotor> FeedbackMotor for T {
         data.acceleration = 0.0;
         data.velocity = 0.0;
         data.position = position;
+        data.time = time;
+    }
+    fn update(&mut self) {
+        self.device_update();
+        let time = self.device_get_time();
+        let data = self.get_servo_motor_data_mut();
         data.time = time;
     }
 }
@@ -502,19 +517,6 @@ impl MotorEncoderPair {
             acc_kd: acc_kd,
         }
     }
-    ///Update the PID controller.
-    pub fn update(&mut self) {
-        self.encoder.update();
-        let output = self.get_state();
-        if self.pid.is_some() {
-            let pid_out = self.pid.as_mut().expect("i just checked it").update(output.time, match self.mode.as_ref().expect("if pid is Some, mode is too") {
-                MotorMode::POSITION => output.value.position,
-                MotorMode::VELOCITY => output.value.velocity,
-                MotorMode::ACCELERATION => output.value.acceleration,
-            });
-            self.motor.set_power(pid_out);
-        }
-    }
 }
 #[cfg(feature = "std")]
 impl FeedbackMotor for MotorEncoderPair {
@@ -538,6 +540,18 @@ impl FeedbackMotor for MotorEncoderPair {
     fn set_position(&mut self, position: f32) {
         self.mode = Some(MotorMode::POSITION);
         self.pid = Some(PIDControllerShift::new(position, self.pos_kp, self.pos_ki, self.pos_kd, 0));
+    }
+    fn update(&mut self) {
+        self.encoder.update();
+        let output = self.get_state();
+        if self.pid.is_some() {
+            let pid_out = self.pid.as_mut().expect("i just checked it").update(output.time, match self.mode.as_ref().expect("if pid is Some, mode is too") {
+                MotorMode::POSITION => output.value.position,
+                MotorMode::VELOCITY => output.value.velocity,
+                MotorMode::ACCELERATION => output.value.acceleration,
+            });
+            self.motor.set_power(pid_out);
+        }
     }
 }
 ///What a motor is currently controlling: position, velocity, or acceleration.
