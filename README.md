@@ -31,3 +31,11 @@ Initial release.
 Fix motion profile issue.
 ### 0.2.0-alpha.1
 New motor-encoder system.
+### 0.2.0-alpha.2
+Function for motors to follow motion profiles.
+### 0.2.0-beta.1
+Allow the user to run a custom update loop for motion profile following as an alternative to the single function.
+### 0.2.0-beta.2
+Add an update method to encoders.
+### 0.2.0
+Add an update method to motors and reorganize the package to use features with the motor-encoder system in a module.

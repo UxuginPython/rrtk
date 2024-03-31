@@ -97,18 +97,26 @@ enum MotionProfileState {
     Complete,
 }
 ///Data needed by all `FeedbackMotor` objects.
-pub struct FeedbackMotorData {
-    motion_profile: Option<MotionProfile>,
-    mp_start_time: Option<f32>,
-    mp_state: Option<MotionProfileState>,
+pub enum FeedbackMotorData {
+    WithoutMotionProfile,
+    #[cfg(feature = "motionprofile")]
+    WithMotionProfile {
+        motion_profile: MotionProfile,
+        start_time: Option<f32>,
+        state: MotionProfileState,
+    }
 }
 impl FeedbackMotorData {
     ///Constructor for `FeedbackMotorData`.
     pub fn new() -> FeedbackMotorData {
-        FeedbackMotorData {
-            motion_profile: None,
-            mp_start_time: None,
-            mp_state: None,
+        FeedbackMotorData::WithoutMotionProfile
+    }
+    #[cfg(feature = "motionprofile")]
+    fn new_with(motion_profile: MotionProfile) -> FeedbackMotorData {
+        FeedbackMotorData::WithMotionProfile {
+            motion_profile: motion_profile,
+            start_time: None,
+            state: MotionProfileState::BeforeStart,
         }
     }
 }
@@ -129,69 +137,64 @@ pub trait FeedbackMotor {
     ///function like this, just implement it as {}.
     fn update(&mut self);
     ///Set up the object to follow a motion profile.
+    #[cfg(feature = "motionprofile")]
     fn start_motion_profile(&mut self, motion_profile: MotionProfile) {
         let data = self.get_feedback_motor_data_mut();
-        data.motion_profile = Some(motion_profile);
-        data.mp_state = Some(MotionProfileState::BeforeStart);
-        data.mp_start_time = None;
+        *data = FeedbackMotorData::new_with(motion_profile);
     }
     ///Call this repeatedly until the motion profile finishes.
+    #[cfg(feature = "motionprofile")]
     fn update_motion_profile(&mut self) {
         let output = self.get_state();
         let data = self.get_feedback_motor_data_mut();
-        if data.mp_state.is_some() {
-            match data.mp_state.as_ref().unwrap() {
-                MotionProfileState::BeforeStart => {
-                    data.mp_state = Some(MotionProfileState::InitialAccel);
-                    let new_acc = data.motion_profile.as_ref().unwrap().max_acc;
-                    self.set_acceleration(new_acc);
-                },
-                MotionProfileState::InitialAccel => {
-                    if output.time >= data.motion_profile.as_ref().unwrap().t1 {
-                        data.mp_state = Some(MotionProfileState::ConstantVel);
-                        let max_vel = data.motion_profile.as_ref().unwrap().max_acc * data.motion_profile.as_ref().unwrap().t1 + data.motion_profile.as_ref().unwrap().start_vel;
-                        self.set_velocity(max_vel);
-                    }
-                },
-                MotionProfileState::ConstantVel => {
-                    if output.time >= data.motion_profile.as_ref().unwrap().t2 {
-                        data.mp_state = Some(MotionProfileState::EndAccel);
-                        let new_acc = -data.motion_profile.as_ref().unwrap().max_acc;
+        match data {
+            FeedbackMotorData::WithoutMotionProfile => {},
+            FeedbackMotorData::WithMotionProfile {motion_profile, start_time, state} => {
+                match state {
+                    MotionProfileState::BeforeStart => {
+                        *state = MotionProfileState::InitialAccel;
+                        *start_time = Some(output.time);
+                        let new_acc = motion_profile.max_acc;
                         self.set_acceleration(new_acc);
-                    }
-                },
-                MotionProfileState::EndAccel => {
-                    if output.time >= data.motion_profile.as_ref().unwrap().t3 {
-                        data.mp_state = Some(MotionProfileState::Complete);
-                        let max_vel = data.motion_profile.as_ref().unwrap().max_acc * data.motion_profile.as_ref().unwrap().t1 + data.motion_profile.as_ref().unwrap().start_vel;
-                        #[cfg(feature = "std")]
-                        let t1_pos = 0.5 * data.motion_profile.as_ref().unwrap().max_acc * data.motion_profile.as_ref().unwrap().t1.powi(2) + data.motion_profile.as_ref().unwrap().start_vel * data.motion_profile.as_ref().unwrap().t1 + data.motion_profile.as_ref().unwrap().start_pos;
-                        #[cfg(not(feature = "std"))]
-                        let t1_pos = 0.5 * data.motion_profile.as_ref().unwrap().max_acc * my_square_f32(data.motion_profile.as_ref().unwrap().t1) + data.motion_profile.as_ref().unwrap().start_vel * data.motion_profile.as_ref().unwrap().t1 + data.motion_profile.as_ref().unwrap().start_pos;
-                        let t2_pos = max_vel * (data.motion_profile.as_ref().unwrap().t2 - data.motion_profile.as_ref().unwrap().t1) + t1_pos;
-                        #[cfg(feature = "std")]
-                        let t3_pos = 0.5 * -data.motion_profile.as_ref().unwrap().max_acc * (data.motion_profile.as_ref().unwrap().t3 - data.motion_profile.as_ref().unwrap().t2).powi(2) + max_vel * (data.motion_profile.as_ref().unwrap().t3 - data.motion_profile.as_ref().unwrap().t2) + t2_pos;
-                        #[cfg(not(feature = "std"))]
-                        let t3_pos = 0.5 * -data.motion_profile.as_ref().unwrap().max_acc * my_square_f32(data.motion_profile.as_ref().unwrap().t3 - data.motion_profile.as_ref().unwrap().t2) + max_vel * (data.motion_profile.as_ref().unwrap().t3 - data.motion_profile.as_ref().unwrap().t2) + t2_pos;
-                        self.set_position(t3_pos);
-                    }
-                },
-                MotionProfileState::Complete => {},
-            }
+                    },
+                    MotionProfileState::InitialAccel => {
+                        if output.time - start_time.expect("start_time is only none when state is BeforeStart") >= motion_profile.t1 {
+                            *state = MotionProfileState::ConstantVel;
+                            let max_vel = motion_profile.max_acc * motion_profile.t1 + motion_profile.start_vel;
+                            self.set_velocity(max_vel);
+                        }
+                    },
+                    MotionProfileState::ConstantVel => {
+                        if output.time - start_time.unwrap() >= motion_profile.t2 {
+                            *state = MotionProfileState::EndAccel;
+                            let new_acc = -motion_profile.max_acc;
+                            self.set_acceleration(new_acc);
+                        }
+                    },
+                    MotionProfileState::EndAccel => {
+                        if output.time - start_time.unwrap() >= motion_profile.t3 {
+                            *state = MotionProfileState::Complete;
+                            let max_vel = motion_profile.max_acc * motion_profile.t1 + motion_profile.start_vel;
+                            //                                          easiest way to square
+                            //                                          without std
+                            let t1_pos = 0.5 * motion_profile.max_acc * motion_profile.t1 * motion_profile.t1 + motion_profile.start_vel * motion_profile.t1 + motion_profile.start_pos;
+                            let t2_pos = max_vel * (motion_profile.t2 - motion_profile.t1) + t1_pos;
+                            let t3_pos = 0.5 * -motion_profile.max_acc * (motion_profile.t3 - motion_profile.t2) * (motion_profile.t3 - motion_profile.t2) + max_vel * (motion_profile.t3 - motion_profile.t2) + t2_pos;
+                            self.set_position(t3_pos);
+                        }
+                    },
+                    MotionProfileState::Complete => {},
+                }
+            },
         }
     }
     ///Follow a motion profile, waiting for it to complete.
+    #[cfg(feature = "motionprofile")]
     fn follow_motion_profile(&mut self, motion_profile: MotionProfile) {
         let max_vel = motion_profile.max_acc * motion_profile.t1 + motion_profile.start_vel;
-        #[cfg(feature = "std")]
-        let t1_pos = 0.5 * motion_profile.max_acc * motion_profile.t1.powi(2) + motion_profile.start_vel * motion_profile.t1 + motion_profile.start_pos;
-        #[cfg(not(feature = "std"))]
-        let t1_pos = 0.5 * motion_profile.max_acc * my_square_f32(motion_profile.t1) + motion_profile.start_vel * motion_profile.t1 + motion_profile.start_pos;
+        let t1_pos = 0.5 * motion_profile.max_acc * motion_profile.t1 * motion_profile.t1 + motion_profile.start_vel * motion_profile.t1 + motion_profile.start_pos;
         let t2_pos = max_vel * (motion_profile.t2 - motion_profile.t1) + t1_pos;
-        #[cfg(feature = "std")]
-        let t3_pos = 0.5 * -motion_profile.max_acc * (motion_profile.t3 - motion_profile.t2).powi(2) + max_vel * (motion_profile.t3 - motion_profile.t2) + t2_pos;
-        #[cfg(not(feature = "std"))]
-        let t3_pos = 0.5 * -motion_profile.max_acc * my_square_f32(motion_profile.t3 - motion_profile.t2) + max_vel * (motion_profile.t3 - motion_profile.t2) + t2_pos;
+        let t3_pos = 0.5 * -motion_profile.max_acc * (motion_profile.t3 - motion_profile.t2) * (motion_profile.t3 - motion_profile.t2) + max_vel * (motion_profile.t3 - motion_profile.t2) + t2_pos;
         let mut time = 0.0;
         let output = self.get_state();
         let start_time = output.time;
@@ -304,7 +307,7 @@ pub trait NonFeedbackMotor {
 }
 ///Use an encoder connected directly to a motor without feedback and a PID controller to control it
 ///like a servo.
-#[cfg(feature = "std")]
+#[cfg(all(feature = "std", feature = "pid"))]
 pub struct MotorEncoderPair {
     feedback_motor_data: FeedbackMotorData,
     motor: Box<dyn NonFeedbackMotor>,
@@ -321,7 +324,7 @@ pub struct MotorEncoderPair {
     acc_ki: f32,
     acc_kd: f32,
 }
-#[cfg(feature = "std")]
+#[cfg(all(feature = "std", feature = "pid"))]
 impl MotorEncoderPair {
     ///Constructor for `MotorEncoderPair`.
     pub fn new(motor: Box<dyn NonFeedbackMotor>, encoder: Box<dyn Encoder>, pos_kp: f32, pos_ki: f32, pos_kd: f32, vel_kp: f32, vel_ki: f32, vel_kd: f32, acc_kp: f32, acc_ki: f32, acc_kd: f32) -> MotorEncoderPair {
@@ -343,7 +346,7 @@ impl MotorEncoderPair {
         }
     }
 }
-#[cfg(feature = "std")]
+#[cfg(all(feature = "std", feature = "pid"))]
 impl FeedbackMotor for MotorEncoderPair {
     fn get_feedback_motor_data_ref(&self) -> &FeedbackMotorData {
         &self.feedback_motor_data

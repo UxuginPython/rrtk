@@ -14,7 +14,7 @@ use rrtk::*;
 //use core::cell::RefCell;
 //use std::rc::Rc;
 #[test]
-#[cfg(feature = "std")]
+#[cfg(all(feature = "std", feature = "pid"))]
 fn pidshift_shift() {
     let mut pid = PIDControllerShift::new(5.0, 1.0, 0.01, 0.1, 1);
     let _ = pid.update(1.0, 0.0);
@@ -57,50 +57,8 @@ fn state_position() {
     assert_eq!(state.velocity, 0.0);
     assert_eq!(state.acceleration, 0.0);
 }
-/*#[test]
-fn encoder_new() {
-    let encoder = Encoder::new(State::new(1.0, 2.0, 3.0), 4.0);
-    assert_eq!(encoder.state.position, 1.0);
-    assert_eq!(encoder.state.velocity, 2.0);
-    assert_eq!(encoder.state.acceleration, 3.0);
-    assert_eq!(encoder.time, 4.0);
-}
 #[test]
-fn encoder_update_acceleration() {
-    let mut encoder = Encoder::new(State::new(1.0, 2.0, 3.0), 4.0);
-    encoder.update_acceleration(6.0, 5.0);
-    assert_eq!(encoder.state.position, 13.0);
-    assert_eq!(encoder.state.velocity, 10.0);
-    assert_eq!(encoder.state.acceleration, 5.0);
-}
-#[test]
-fn encoder_update_velocity() {
-    let mut encoder = Encoder::new(State::new(1.0, 2.0, 3.0), 4.0);
-    encoder.update_velocity(6.0, 5.0);
-    assert_eq!(encoder.state.position, 8.0);
-    assert_eq!(encoder.state.velocity, 5.0);
-    assert_eq!(encoder.state.acceleration, 1.5);
-}
-#[test]
-fn encoder_update_position() {
-    let mut encoder = Encoder::new(State::new(1.0, 2.0, 3.0), 4.0);
-    encoder.update_position(6.0, 5.0);
-    assert_eq!(encoder.state.position, 5.0);
-    assert_eq!(encoder.state.velocity, 2.0);
-    assert_eq!(encoder.state.acceleration, 0.0);
-}
-#[test]
-#[cfg(feature = "std")]
-fn motor_update() {
-    let mut motor = Motor::new(State::new(1.0, 2.0, 3.0), 4.0, MotorMode::ACCELERATION, 3.0);
-    motor.encoder.update_acceleration(6.0, 3.0);
-    let update = motor.update(6.0);
-    assert_eq!(update, 0.0);
-    assert_eq!(motor.encoder.state.position, 11.0);
-    assert_eq!(motor.encoder.state.velocity, 8.0);
-    assert_eq!(motor.encoder.state.acceleration, 3.0);
-}*/
-#[test]
+#[cfg(feature = "motionprofile")]
 fn motion_profile_get_mode() {
     let motion_profile = MotionProfile::new(
         State::new(0.0, 0.0, 0.0),
@@ -113,6 +71,7 @@ fn motion_profile_get_mode() {
     assert_eq!(motion_profile.get_mode(3.5), Ok(MotorMode::ACCELERATION));
 }
 #[test]
+#[cfg(feature = "motionprofile")]
 fn motion_profile_get_acceleration() {
     let motion_profile = MotionProfile::new(
         State::new(0.0, 0.0, 0.0),
@@ -125,6 +84,7 @@ fn motion_profile_get_acceleration() {
     assert_eq!(motion_profile.get_acceleration(3.5), Ok(-1.0));
 }
 #[test]
+#[cfg(feature = "motionprofile")]
 fn motion_profile_get_velocity() {
     let motion_profile = MotionProfile::new(
         State::new(0.0, 0.0, 0.0),
@@ -137,6 +97,7 @@ fn motion_profile_get_velocity() {
     assert_eq!(motion_profile.get_velocity(3.5), Ok(0.5));
 }
 #[test]
+#[cfg(feature = "motionprofile")]
 fn motion_profile_get_velocity_2() {
     let motion_profile = MotionProfile::new(
         State::new(1.0, 0.0, 3.0),
@@ -149,6 +110,7 @@ fn motion_profile_get_velocity_2() {
     assert_eq!(motion_profile.get_velocity(3.5), Ok(0.5));
 }
 #[test]
+#[cfg(feature = "motionprofile")]
 fn motion_profile_get_velocity_3() {
     let motion_profile = MotionProfile::new(
         State::new(1.0, 1.0, 3.0),
@@ -161,6 +123,7 @@ fn motion_profile_get_velocity_3() {
     assert_eq!(motion_profile.get_velocity(2.5), Ok(1.5));
 }
 #[test]
+#[cfg(feature = "motionprofile")]
 fn motion_profile_get_position() {
     let motion_profile = MotionProfile::new(
         State::new(0.0, 0.0, 0.0),
@@ -173,6 +136,7 @@ fn motion_profile_get_position() {
     assert_eq!(motion_profile.get_position(3.5), Ok(2.875));
 }
 #[test]
+#[cfg(feature = "motionprofile")]
 fn motion_profile_get_position_2() {
     let motion_profile = MotionProfile::new(
         State::new(1.0, 0.0, 3.0),
@@ -185,6 +149,7 @@ fn motion_profile_get_position_2() {
     assert_eq!(motion_profile.get_position(3.5), Ok(3.875));
 }
 #[test]
+#[cfg(feature = "motionprofile")]
 fn motion_profile_get_position_3() {
     let motion_profile = MotionProfile::new(
         State::new(1.0, 1.0, 3.0),

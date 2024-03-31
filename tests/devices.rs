@@ -316,7 +316,7 @@ fn non_feedback_motor() {
     my_non_feedback_motor.set_power(0.39);
 }
 #[test]
-#[cfg(all(feature = "std", feature = "devices"))]
+#[cfg(all(feature = "std", feature = "devices", feature = "pid"))]
 fn motor_encoder_pair() {
     struct DummyNonFeedbackMotor {
         pub power: f32,
@@ -376,7 +376,7 @@ fn motor_encoder_pair() {
     pair.update();
 }
 #[test]
-#[cfg(feature = "devices")]
+#[cfg(all(feature = "devices", feature = "motionprofile"))]
 fn follow_motion_profile() {
     struct DummyServoMotor {
         pub servo_motor_data: ServoMotorData,
@@ -430,7 +430,7 @@ fn follow_motion_profile() {
     assert_eq!(my_servo.asserts, 3);
 }
 #[test]
-#[cfg(feature = "devices")]
+#[cfg(all(feature = "devices", feature = "motionprofile"))]
 fn motion_profile_loop() {
     struct DummyServoMotor {
         pub servo_motor_data: ServoMotorData,

@@ -14,6 +14,7 @@ Copyright 2024 UxuginPython on GitHub
 #[cfg(feature = "devices")]
 pub mod devices;
 ///A proportional-integral-derivative controller.
+#[cfg(feature = "pid")]
 pub struct PIDController {
     setpoint: f32,
     kp: f32,
@@ -23,6 +24,7 @@ pub struct PIDController {
     prev_error: Option<f32>,
     int_error: f32,
 }
+#[cfg(feature = "pid")]
 impl PIDController {
     ///Constructor for `PIDController`.
     pub fn new(setpoint: f32, kp: f32, ki: f32, kd: f32) -> PIDController {
@@ -60,7 +62,7 @@ impl PIDController {
 }
 ///A PID controller that will integrate the control variable a given number of times to simplify
 ///control of some systems such as motors.
-#[cfg(feature = "std")]
+#[cfg(all(feature = "std", feature = "pid"))]
 pub struct PIDControllerShift {
     setpoint: f32,
     kp: f32,
@@ -71,7 +73,7 @@ pub struct PIDControllerShift {
     int_error: f32,
     shifts: Vec<f32>,
 }
-#[cfg(feature = "std")]
+#[cfg(all(feature = "std", feature = "pid"))]
 impl PIDControllerShift {
     ///Constructor for `PIDControllerShift`.
     pub fn new(setpoint: f32, kp: f32, ki: f32, kd: f32, shift: u8) -> PIDControllerShift {
@@ -182,7 +184,8 @@ pub enum MotorMode {
 }
 ///Compute absolute value without the standard library.
 //abs method of f32 does not exist in no_std
-#[cfg(not(feature = "std"))]
+#[cfg(all(not(feature = "std"), feature = "motionprofile"))]
+#[inline]
 fn my_abs_f32(num: f32) -> f32 {
     if num >= 0.0 {
         num
@@ -190,12 +193,8 @@ fn my_abs_f32(num: f32) -> f32 {
         -num
     }
 }
-///Square a number without the standard library.
-#[cfg(not(feature = "std"))]
-fn my_square_f32(num: f32) -> f32 {
-    num * num
-}
 ///A motion profile for getting from one state to another.
+#[cfg(feature = "motionprofile")]
 pub struct MotionProfile {
     start_pos: f32,
     start_vel: f32,
@@ -204,6 +203,7 @@ pub struct MotionProfile {
     t3: f32,
     max_acc: f32,
 }
+#[cfg(feature = "motionprofile")]
 impl MotionProfile {
     ///Constructor for `MotionProfile` using start and end states.
     pub fn new(start_state: State, end_state: State, max_vel: f32, max_acc: f32) -> MotionProfile {
@@ -289,10 +289,7 @@ impl MotionProfile {
         if t < 0.0 {
             return Err("time invalid");
         } else if t < self.t1 {
-            #[cfg(feature = "std")]
-            return Ok(0.5 * self.max_acc * t.powi(2) + self.start_vel * t + self.start_pos);
-            #[cfg(not(feature = "std"))]
-            return Ok(0.5 * self.max_acc * my_square_f32(t) + self.start_vel * t + self.start_pos);
+            return Ok(0.5 * self.max_acc * t * t + self.start_vel * t + self.start_pos);
         } else if t < self.t2 {
             return Ok(self.max_acc * self.t1 * (-0.5 * self.t1 + t)
                 + self.start_vel * t
@@ -333,6 +330,7 @@ mod tests {
         assert_eq!(motor.pid.setpoint, 5.0);
     }*/
     #[test]
+    #[cfg(feature = "pid")]
     fn pid_new() {
         let pid = PIDController::new(5.0, 1.0, 0.01, 0.1);
         assert_eq!(pid.setpoint, 5.0);
@@ -344,6 +342,7 @@ mod tests {
         assert_eq!(pid.int_error, 0.0);
     }
     #[test]
+    #[cfg(feature = "pid")]
     fn pid_initial_update() {
         let mut pid = PIDController::new(5.0, 1.0, 0.01, 0.1);
         let new_control = pid.update(1.0, 0.0);
@@ -353,6 +352,7 @@ mod tests {
         assert_eq!(pid.int_error, 0.0);
     }
     #[test]
+    #[cfg(feature = "pid")]
     fn pid_subsequent_update() {
         let mut pid = PIDController::new(5.0, 1.0, 0.01, 0.1);
         let _ = pid.update(1.0, 0.0);
@@ -361,7 +361,7 @@ mod tests {
         assert_eq!(pid.int_error, 9.0);
     }
     #[test]
-    #[cfg(feature = "std")]
+    #[cfg(all(feature = "std", feature = "pid"))]
     fn pidshift_no_shift() {
         let mut pid = PIDControllerShift::new(5.0, 1.0, 0.01, 0.1, 0);
         let _ = pid.update(1.0, 0.0);
@@ -370,6 +370,7 @@ mod tests {
         assert_eq!(pid.shifts, vec![4.04]);
     }
     #[test]
+    #[cfg(feature = "motionprofile")]
     fn motion_profile_new_1() {
         let motion_profile = MotionProfile::new(
             State::new(0.0, 0.0, 0.0),
@@ -383,6 +384,7 @@ mod tests {
         assert_eq!(motion_profile.max_acc, 1.0);
     }
     #[test]
+    #[cfg(feature = "motionprofile")]
     fn motion_profile_new_2() {
         let motion_profile = MotionProfile::new(
             State::new(1.0, 0.0, 0.0),
@@ -396,6 +398,7 @@ mod tests {
         assert_eq!(motion_profile.max_acc, 1.0);
     }
     #[test]
+    #[cfg(feature = "motionprofile")]
     fn motion_profile_new_3() {
         let motion_profile = MotionProfile::new(
             State::new(0.0, 1.0, 0.0),
@@ -409,6 +412,7 @@ mod tests {
         assert_eq!(motion_profile.max_acc, 1.0);
     }
     #[test]
+    #[cfg(feature = "motionprofile")]
     fn motion_profile_new_4() {
         let motion_profile = MotionProfile::new(
             State::new(0.0, 0.0, 1.0),
@@ -422,6 +426,7 @@ mod tests {
         assert_eq!(motion_profile.max_acc, 1.0);
     }
     #[test]
+    #[cfg(feature = "motionprofile")]
     fn motion_profile_new_5() {
         let motion_profile = MotionProfile::new(
             State::new(0.0, 0.0, 0.0),
@@ -435,6 +440,7 @@ mod tests {
         assert_eq!(motion_profile.max_acc, 1.0);
     }
     #[test]
+    #[cfg(feature = "motionprofile")]
     fn motion_profile_new_6() {
         let motion_profile = MotionProfile::new(
             State::new(0.0, 0.0, 0.0),
@@ -448,6 +454,7 @@ mod tests {
         assert_eq!(motion_profile.max_acc, 2.0);
     }
     #[test]
+    #[cfg(feature = "motionprofile")]
     fn motion_profile_new_7() {
         let motion_profile = MotionProfile::new(
             State::new(0.0, 0.0, 0.0),
