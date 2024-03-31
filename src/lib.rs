@@ -307,19 +307,14 @@ pub trait FeedbackMotor {
     }
     ///Call this repeatedly until the motion profile finishes.
     fn update_motion_profile(&mut self) {
-        //Do not switch the order of the following two lines, I guess. They both need an &mut self,
-        //which seems like it shouldn't compile, but this way, it does. The other way, it does not.
         let output = self.get_state();
         let data = self.get_feedback_motor_data_mut();
         if data.mp_state.is_some() {
-            match data.mp_state.as_ref().expect("i just checked it") {
+            match data.mp_state.as_ref().unwrap() {
                 MotionProfileState::BeforeStart => {
                     data.mp_state = Some(MotionProfileState::InitialAccel);
                     let new_acc = data.motion_profile.as_ref().unwrap().max_acc;
                     self.set_acceleration(new_acc);
-                    //self.set_acceleration(data.motion_profile.as_mut().expect("i just checked it").max_acc);
-                    //The code in this state, using a variable, compiles. If you comment out that
-                    //part and uncomment the commented-out line, it does not compile.
                 },
                 MotionProfileState::InitialAccel => {
                     if output.time >= data.motion_profile.as_ref().unwrap().t1 {
@@ -545,7 +540,7 @@ impl FeedbackMotor for MotorEncoderPair {
         self.encoder.update();
         let output = self.get_state();
         if self.pid.is_some() {
-            let pid_out = self.pid.as_mut().expect("i just checked it").update(output.time, match self.mode.as_ref().expect("if pid is Some, mode is too") {
+            let pid_out = self.pid.as_mut().unwrap().update(output.time, match self.mode.as_ref().expect("if pid is Some, mode is too") {
                 MotorMode::POSITION => output.value.position,
                 MotorMode::VELOCITY => output.value.velocity,
                 MotorMode::ACCELERATION => output.value.acceleration,
