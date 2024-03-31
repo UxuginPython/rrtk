@@ -14,7 +14,6 @@ Copyright 2024 UxuginPython on GitHub
 #[cfg(feature = "devices")]
 pub mod devices;
 ///A proportional-integral-derivative controller.
-#[cfg(feature = "pid")]
 pub struct PIDController {
     setpoint: f32,
     kp: f32,
@@ -61,7 +60,7 @@ impl PIDController {
 }
 ///A PID controller that will integrate the control variable a given number of times to simplify
 ///control of some systems such as motors.
-#[cfg(all(feature = "std", feature = "pid"))]
+#[cfg(feature = "std")]
 pub struct PIDControllerShift {
     setpoint: f32,
     kp: f32,
