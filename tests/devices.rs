@@ -10,8 +10,12 @@ Copyright 2024 UxuginPython on GitHub
 
     You should have received a copy of the GNU Lesser General Public License along with Rust Robotics ToolKit. If not, see <https://www.gnu.org/licenses/>.
 */
+#[cfg(feature = "devices")]
 use rrtk::*;
+#[cfg(feature = "devices")]
+use rrtk::devices::*;
 #[test]
+#[cfg(feature = "devices")]
 fn encoder() {
     struct DummyEncoder {}
     impl DummyEncoder {
@@ -33,6 +37,7 @@ fn encoder() {
     assert_eq!(output.value.acceleration, 4.0);
 }
 #[test]
+#[cfg(feature = "devices")]
 fn simple_encoder_position() {
     struct DummySimpleEncoder {
         simple_encoder_data: SimpleEncoderData,
@@ -76,6 +81,7 @@ fn simple_encoder_position() {
     assert!(169.999 < output.value.acceleration && output.value.acceleration < 170.001);
 }
 #[test]
+#[cfg(feature = "devices")]
 fn simple_encoder_velocity() {
     struct DummySimpleEncoder {
         simple_encoder_data: SimpleEncoderData,
@@ -118,6 +124,7 @@ fn simple_encoder_velocity() {
     assert!(19.999 < output.value.acceleration && output.value.acceleration < 20.001);
 }
 #[test]
+#[cfg(feature = "devices")]
 fn simple_encoder_acceleration() {
     struct DummySimpleEncoder {
         simple_encoder_data: SimpleEncoderData,
@@ -160,6 +167,7 @@ fn simple_encoder_acceleration() {
     assert_eq!(output.value.acceleration, 6.0);
 }
 #[test]
+#[cfg(feature = "devices")]
 fn feedback_motor() {
     struct DummyFeedbackMotor {
         feedback_motor_data: FeedbackMotorData,
@@ -232,6 +240,7 @@ fn feedback_motor() {
     assert_eq!(output.value.acceleration, 0.0);
 }
 #[test]
+#[cfg(feature = "devices")]
 fn servo_motor() {
     struct DummyServoMotor {
         servo_motor_data: ServoMotorData,
@@ -292,6 +301,7 @@ fn servo_motor() {
     assert_eq!(output.value.acceleration, 0.0);
 }
 #[test]
+#[cfg(feature = "devices")]
 fn non_feedback_motor() {
     struct DummyNonFeedbackMotor {}
     impl DummyNonFeedbackMotor {
@@ -306,7 +316,7 @@ fn non_feedback_motor() {
     my_non_feedback_motor.set_power(0.39);
 }
 #[test]
-#[cfg(feature = "std")]
+#[cfg(all(feature = "std", feature = "devices"))]
 fn motor_encoder_pair() {
     struct DummyNonFeedbackMotor {
         pub power: f32,
@@ -366,6 +376,7 @@ fn motor_encoder_pair() {
     pair.update();
 }
 #[test]
+#[cfg(feature = "devices")]
 fn follow_motion_profile() {
     struct DummyServoMotor {
         pub servo_motor_data: ServoMotorData,
@@ -419,6 +430,7 @@ fn follow_motion_profile() {
     assert_eq!(my_servo.asserts, 3);
 }
 #[test]
+#[cfg(feature = "devices")]
 fn motion_profile_loop() {
     struct DummyServoMotor {
         pub servo_motor_data: ServoMotorData,
