@@ -13,7 +13,7 @@ Copyright 2024 UxuginPython on GitHub
 #![cfg_attr(not(feature = "std"), no_std)]
 #[cfg(feature = "devices")]
 pub mod devices;
-///A proportional-integral-derivative controller.
+///A proportional-integral-derivative controller. Requires `pid` feature.
 #[cfg(feature = "pid")]
 pub struct PIDController {
     setpoint: f32,
@@ -61,7 +61,7 @@ impl PIDController {
     }
 }
 ///A PID controller that will integrate the control variable a given number of times to simplify
-///control of some systems such as motors.
+///control of some systems such as motors. Requires `std` and `pid` features.
 #[cfg(all(feature = "std", feature = "pid"))]
 pub struct PIDControllerShift {
     setpoint: f32,
@@ -182,7 +182,7 @@ pub enum MotorMode {
     VELOCITY,
     ACCELERATION,
 }
-///Compute absolute value without the standard library.
+///Compute absolute value without the standard library. Requires `motionprofile` feature.
 //abs method of f32 does not exist in no_std
 #[cfg(all(not(feature = "std"), feature = "motionprofile"))]
 #[inline]
@@ -193,7 +193,7 @@ fn my_abs_f32(num: f32) -> f32 {
         -num
     }
 }
-///A motion profile for getting from one state to another.
+///A motion profile for getting from one state to another. Requires `motionprofile` feature.
 #[cfg(feature = "motionprofile")]
 pub struct MotionProfile {
     start_pos: f32,
@@ -307,28 +307,6 @@ impl MotionProfile {
 #[cfg(test)]
 mod tests {
     use super::*;
-    /*#[test]
-    #[cfg(feature = "std")]
-    fn motor_new() {
-        let motor = Motor::new(State::new(1.0, 2.0, 3.0), 4.0, MotorMode::ACCELERATION, 3.0);
-        assert_eq!(motor.encoder.state.position, 1.0);
-        assert_eq!(motor.encoder.state.velocity, 2.0);
-        assert_eq!(motor.encoder.state.acceleration, 3.0);
-        assert_eq!(motor.encoder.time, 4.0);
-        assert_eq!(motor.pid.setpoint, 3.0);
-        assert_eq!(motor.pid.kp, 1.0);
-        assert_eq!(motor.pid.ki, 0.01);
-        assert_eq!(motor.pid.kd, 0.1);
-        assert_eq!(motor.pid.shifts.len(), 3);
-    }
-    #[test]
-    #[cfg(feature = "std")]
-    fn motor_set_constant() {
-        let mut motor = Motor::new(State::new(1.0, 2.0, 3.0), 4.0, MotorMode::ACCELERATION, 3.0);
-        motor.set_constant(MotorMode::VELOCITY, 5.0);
-        assert_eq!(motor.pid.shifts.len(), 2);
-        assert_eq!(motor.pid.setpoint, 5.0);
-    }*/
     #[test]
     #[cfg(feature = "pid")]
     fn pid_new() {
