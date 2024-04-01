@@ -178,9 +178,9 @@ impl<T> Datum<T> {
 ///What a motor is currently controlling: position, velocity, or acceleration.
 #[derive(Debug, PartialEq)]
 pub enum MotorMode {
-    POSITION,
-    VELOCITY,
-    ACCELERATION,
+    Position,
+    Velocity,
+    Acceleration,
 }
 ///Compute absolute value without the standard library. Requires `motionprofile` feature.
 //abs method of f32 does not exist in no_std
@@ -256,11 +256,11 @@ impl MotionProfile {
         if t < 0.0 {
             return Err("time invalid");
         } else if t < self.t1 {
-            return Ok(MotorMode::ACCELERATION);
+            return Ok(MotorMode::Acceleration);
         } else if t < self.t2 {
-            return Ok(MotorMode::VELOCITY);
+            return Ok(MotorMode::Velocity);
         } else if t < self.t3 {
-            return Ok(MotorMode::ACCELERATION);
+            return Ok(MotorMode::Acceleration);
         } else {
             return Err("time invalid");
         }

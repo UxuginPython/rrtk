@@ -55,7 +55,7 @@ impl<T: SimpleEncoder> Encoder for T {
         let new_time = device_out.time;
         let delta_time = new_time - old_time;
         match data.encoder_type {
-            MotorMode::POSITION => {
+            MotorMode::Position => {
                 let new_pos = device_out.value;
                 let new_vel = (new_pos - old_pos) / delta_time;
                 let new_acc = (new_vel - old_vel) / delta_time;
@@ -65,7 +65,7 @@ impl<T: SimpleEncoder> Encoder for T {
                 data.velocity = new_vel;
                 data.acceleration = new_acc;
             },
-            MotorMode::VELOCITY => {
+            MotorMode::Velocity => {
                 let new_vel = device_out.value;
                 let new_acc = (new_vel - old_vel) / delta_time;
                 let new_pos = old_pos + delta_time * (old_vel + new_vel) / 2.0;
@@ -75,7 +75,7 @@ impl<T: SimpleEncoder> Encoder for T {
                 data.velocity = new_vel;
                 data.acceleration = new_acc;
             },
-            MotorMode::ACCELERATION => {
+            MotorMode::Acceleration => {
                 let new_acc = device_out.value;
                 let new_vel = old_vel + delta_time * (old_acc + new_acc) / 2.0;
                 let new_pos = old_pos + delta_time * (old_vel + new_vel) / 2.0;
@@ -89,7 +89,7 @@ impl<T: SimpleEncoder> Encoder for T {
     }
 }
 ///Where you are in following a motion profile.
-enum MotionProfileState {
+pub enum MotionProfileState {
     BeforeStart,
     InitialAccel,
     ConstantVel,
@@ -358,15 +358,15 @@ impl FeedbackMotor for MotorEncoderPair {
         self.encoder.get_state()
     }
     fn set_acceleration(&mut self, acceleration: f32) {
-        self.mode = Some(MotorMode::ACCELERATION);
+        self.mode = Some(MotorMode::Acceleration);
         self.pid = Some(PIDControllerShift::new(acceleration, self.acc_kp, self.acc_ki, self.acc_kd, 2));
     }
     fn set_velocity(&mut self, velocity: f32) {
-        self.mode = Some(MotorMode::VELOCITY);
+        self.mode = Some(MotorMode::Velocity);
         self.pid = Some(PIDControllerShift::new(velocity, self.vel_kp, self.vel_ki, self.vel_kd, 1));
     }
     fn set_position(&mut self, position: f32) {
-        self.mode = Some(MotorMode::POSITION);
+        self.mode = Some(MotorMode::Position);
         self.pid = Some(PIDControllerShift::new(position, self.pos_kp, self.pos_ki, self.pos_kd, 0));
     }
     fn update(&mut self) {
@@ -374,9 +374,9 @@ impl FeedbackMotor for MotorEncoderPair {
         let output = self.get_state();
         if self.pid.is_some() {
             let pid_out = self.pid.as_mut().unwrap().update(output.time, match self.mode.as_ref().expect("if pid is Some, mode is too") {
-                MotorMode::POSITION => output.value.position,
-                MotorMode::VELOCITY => output.value.velocity,
-                MotorMode::ACCELERATION => output.value.acceleration,
+                MotorMode::Position => output.value.position,
+                MotorMode::Velocity => output.value.velocity,
+                MotorMode::Acceleration => output.value.acceleration,
             });
             self.motor.set_power(pid_out);
         }

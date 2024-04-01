@@ -66,9 +66,9 @@ fn motion_profile_get_mode() {
         1.0,
         1.0,
     );
-    assert_eq!(motion_profile.get_mode(0.5), Ok(MotorMode::ACCELERATION));
-    assert_eq!(motion_profile.get_mode(2.5), Ok(MotorMode::VELOCITY));
-    assert_eq!(motion_profile.get_mode(3.5), Ok(MotorMode::ACCELERATION));
+    assert_eq!(motion_profile.get_mode(0.5), Ok(MotorMode::Acceleration));
+    assert_eq!(motion_profile.get_mode(2.5), Ok(MotorMode::Velocity));
+    assert_eq!(motion_profile.get_mode(3.5), Ok(MotorMode::Acceleration));
 }
 #[test]
 #[cfg(feature = "motionprofile")]
