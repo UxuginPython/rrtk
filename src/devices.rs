@@ -7,7 +7,7 @@ pub trait Encoder {
     ///recorded.
     fn get_state(&mut self) -> Datum<State>;
     ///This should be run continually while the device is enabled. If your encoder does not need a
-    ///function like this, just implement it as {}.
+    ///function like this, just implement it as `{}`.
     fn update(&mut self);
 }
 ///Data needed by all `SimpleEncoder` types.
@@ -134,7 +134,7 @@ pub trait FeedbackMotor {
     ///Make the mootr go to a given position.
     fn set_position(&mut self, position: f32);
     ///This should be run continually while the device is enabled. If your motor does not need a
-    ///function like this, just implement it as {}.
+    ///function like this, just implement it as `{}`.
     fn update(&mut self);
     ///Set up the object to follow a motion profile.
     #[cfg(feature = "motionprofile")]
@@ -252,7 +252,7 @@ pub trait ServoMotor: FeedbackMotor {
     ///Tell the motor to go to a position and stop.
     fn device_set_position(&mut self, position: f32);
     ///This should be run continually while the device is enabled. If your motor does not need a
-    ///function like this, just implement it as {}.
+    ///function like this, just implement it as `{}`.
     fn device_update(&mut self);
 }
 impl<T: ServoMotor> FeedbackMotor for T {
@@ -306,7 +306,7 @@ pub trait NonFeedbackMotor {
     fn set_power(&mut self, power: f32);
 }
 ///Use an encoder connected directly to a motor without feedback and a PID controller to control it
-///like a servo.
+///like a servo. Requires `std` and `pid` features.
 #[cfg(all(feature = "std", feature = "pid"))]
 pub struct MotorEncoderPair {
     feedback_motor_data: FeedbackMotorData,

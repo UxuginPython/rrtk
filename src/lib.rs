@@ -193,6 +193,15 @@ fn my_abs_f32(num: f32) -> f32 {
         -num
     }
 }
+///Where you are in following a motion profile. Requires `motionprofile` feature.
+#[cfg(feature = "motionprofile")]
+pub enum MotionProfilePiece {
+    BeforeStart,
+    InitialAcceleration,
+    ConstantVelocity,
+    EndAcceleration,
+    Complete,
+}
 ///A motion profile for getting from one state to another. Requires `motionprofile` feature.
 #[cfg(feature = "motionprofile")]
 pub struct MotionProfile {
@@ -254,6 +263,20 @@ impl MotionProfile {
             return Ok(MotorMode::ACCELERATION);
         } else {
             return Err("time invalid");
+        }
+    }
+    ///Get the `MotionProfilePiece` at a given time.
+    pub fn get_piece(&self, t: f32) -> MotionProfilePiece {
+        if t < 0.0 {
+            return MotionProfilePiece::BeforeStart;
+        } else if t < self.t1 {
+            return MotionProfilePiece::InitialAcceleration;
+        } else if t < self.t2 {
+            return MotionProfilePiece::ConstantVelocity;
+        } else if t < self.t3 {
+            return MotionProfilePiece::EndAcceleration;
+        } else {
+            return MotionProfilePiece::Complete;
         }
     }
     ///Get the intended acceleration at a given time.
