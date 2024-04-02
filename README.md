@@ -19,10 +19,10 @@ It is partially `no_std`. It does not currently integrate with any API directly,
 - Stream system
 - Noise filtering
 - Drive base control
-- - Spline-based path planning
+    - Spline-based path planning
 - Feed forward control
 - Jerk control
-- - S-curve motion profile
+    - S-curve motion profile
 
 ## Changes
 ### 0.1.0
@@ -30,7 +30,7 @@ Initial release.
 ### 0.1.1
 Fix motion profile issue.
 ### 0.2.0-alpha.1
-New motor-encoder system.
+Start new motor-encoder system.
 ### 0.2.0-alpha.2
 Function for motors to follow motion profiles.
 ### 0.2.0-beta.1
