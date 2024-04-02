@@ -11,9 +11,9 @@ Copyright 2024 UxuginPython on GitHub
     You should have received a copy of the GNU Lesser General Public License along with Rust Robotics ToolKit. If not, see <https://www.gnu.org/licenses/>.
 */
 #[cfg(feature = "devices")]
-use rrtk::*;
-#[cfg(feature = "devices")]
 use rrtk::devices::*;
+#[cfg(feature = "devices")]
+use rrtk::*;
 #[test]
 #[cfg(feature = "devices")]
 fn encoder() {
@@ -47,7 +47,10 @@ fn simple_encoder_position() {
     impl DummySimpleEncoder {
         fn new(start_state: Datum<State>) -> DummySimpleEncoder {
             DummySimpleEncoder {
-                simple_encoder_data: SimpleEncoderData::new(MotorMode::Position, start_state.clone()),
+                simple_encoder_data: SimpleEncoderData::new(
+                    MotorMode::Position,
+                    start_state.clone(),
+                ),
                 time: start_state.time,
                 pos: start_state.value.position,
             }
@@ -91,7 +94,10 @@ fn simple_encoder_velocity() {
     impl DummySimpleEncoder {
         fn new(start_state: Datum<State>) -> DummySimpleEncoder {
             DummySimpleEncoder {
-                simple_encoder_data: SimpleEncoderData::new(MotorMode::Velocity, start_state.clone()),
+                simple_encoder_data: SimpleEncoderData::new(
+                    MotorMode::Velocity,
+                    start_state.clone(),
+                ),
                 time: start_state.time,
                 vel: start_state.value.velocity,
             }
@@ -134,7 +140,10 @@ fn simple_encoder_acceleration() {
     impl DummySimpleEncoder {
         fn new(start_state: Datum<State>) -> DummySimpleEncoder {
             DummySimpleEncoder {
-                simple_encoder_data: SimpleEncoderData::new(MotorMode::Acceleration, start_state.clone()),
+                simple_encoder_data: SimpleEncoderData::new(
+                    MotorMode::Acceleration,
+                    start_state.clone(),
+                ),
                 time: start_state.time,
                 acc: start_state.value.acceleration,
             }
@@ -349,7 +358,10 @@ fn motor_encoder_pair() {
     impl DummySimpleEncoder {
         fn new(start_state: Datum<State>) -> DummySimpleEncoder {
             DummySimpleEncoder {
-                simple_encoder_data: SimpleEncoderData::new(MotorMode::Velocity, start_state.clone()),
+                simple_encoder_data: SimpleEncoderData::new(
+                    MotorMode::Velocity,
+                    start_state.clone(),
+                ),
                 time: start_state.time,
                 velocity: start_state.value.velocity,
             }
@@ -370,7 +382,22 @@ fn motor_encoder_pair() {
             Datum::new(self.time, self.velocity)
         }
     }
-    let mut pair = MotorEncoderPair::new(Box::new(DummyNonFeedbackMotor::new()), Box::new(DummySimpleEncoder::new(Datum::new(-1.0, State::new(0.0, -1.0, 0.0)))), 1.0, 0.01, 0.1, 1.0, 0.01, 0.1, 1.0, 0.01, 0.1);
+    let mut pair = MotorEncoderPair::new(
+        Box::new(DummyNonFeedbackMotor::new()),
+        Box::new(DummySimpleEncoder::new(Datum::new(
+            -1.0,
+            State::new(0.0, -1.0, 0.0),
+        ))),
+        1.0,
+        0.01,
+        0.1,
+        1.0,
+        0.01,
+        0.1,
+        1.0,
+        0.01,
+        0.1,
+    );
     pair.set_velocity(5.0);
     pair.update();
     pair.update();
@@ -424,7 +451,12 @@ fn follow_motion_profile() {
         }
     }
     let mut my_servo = DummyServoMotor::new();
-    my_servo.follow_motion_profile(MotionProfile::new(State::new(0.0, 0.0, 0.0), State::new(3.0, 0.0, 0.0), 1.0, 1.0));
+    my_servo.follow_motion_profile(MotionProfile::new(
+        State::new(0.0, 0.0, 0.0),
+        State::new(3.0, 0.0, 0.0),
+        1.0,
+        1.0,
+    ));
     //make sure we actually checked all three assert_eqs and we didn't get messed up by floating
     //point errors
     assert_eq!(my_servo.asserts, 3);
@@ -478,7 +510,12 @@ fn motion_profile_loop() {
         }
     }
     let mut my_servo = DummyServoMotor::new();
-    my_servo.start_motion_profile(MotionProfile::new(State::new(0.0, 0.0, 0.0), State::new(3.0, 0.0, 0.0), 1.0, 1.0));
+    my_servo.start_motion_profile(MotionProfile::new(
+        State::new(0.0, 0.0, 0.0),
+        State::new(3.0, 0.0, 0.0),
+        1.0,
+        1.0,
+    ));
     for _ in 0..2000 {
         my_servo.update();
         my_servo.update_motion_profile();

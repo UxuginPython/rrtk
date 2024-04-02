@@ -43,7 +43,10 @@ pub trait SimpleEncoder: Encoder {
 impl<T: SimpleEncoder> Encoder for T {
     fn get_state(&mut self) -> Datum<State> {
         let data = self.get_simple_encoder_data_ref();
-        Datum::new(data.time, State::new(data.position, data.velocity, data.acceleration))
+        Datum::new(
+            data.time,
+            State::new(data.position, data.velocity, data.acceleration),
+        )
     }
     fn update(&mut self) {
         let device_out = self.device_update();
@@ -64,7 +67,7 @@ impl<T: SimpleEncoder> Encoder for T {
                 data.position = new_pos;
                 data.velocity = new_vel;
                 data.acceleration = new_acc;
-            },
+            }
             MotorMode::Velocity => {
                 let new_vel = device_out.value;
                 let new_acc = (new_vel - old_vel) / delta_time;
@@ -74,7 +77,7 @@ impl<T: SimpleEncoder> Encoder for T {
                 data.position = new_pos;
                 data.velocity = new_vel;
                 data.acceleration = new_acc;
-            },
+            }
             MotorMode::Acceleration => {
                 let new_acc = device_out.value;
                 let new_vel = old_vel + delta_time * (old_acc + new_acc) / 2.0;
@@ -84,7 +87,7 @@ impl<T: SimpleEncoder> Encoder for T {
                 data.position = new_pos;
                 data.velocity = new_vel;
                 data.acceleration = new_acc;
-            },
+            }
         }
     }
 }
@@ -104,7 +107,7 @@ pub enum FeedbackMotorData {
         motion_profile: MotionProfile,
         start_time: Option<f32>,
         state: MotionProfileState,
-    }
+    },
 }
 impl FeedbackMotorData {
     ///Constructor for `FeedbackMotorData`.
@@ -148,68 +151,94 @@ pub trait FeedbackMotor {
         let output = self.get_state();
         let data = self.get_feedback_motor_data_mut();
         match data {
-            FeedbackMotorData::WithoutMotionProfile => {},
-            FeedbackMotorData::WithMotionProfile {motion_profile, start_time, state} => {
+            FeedbackMotorData::WithoutMotionProfile => {}
+            FeedbackMotorData::WithMotionProfile {
+                motion_profile,
+                start_time,
+                state,
+            } => {
                 match state {
                     MotionProfileState::BeforeStart => {
                         *state = MotionProfileState::InitialAccel;
                         *start_time = Some(output.time);
                         let new_acc = motion_profile.max_acc;
                         self.set_acceleration(new_acc);
-                    },
+                    }
                     MotionProfileState::InitialAccel => {
-                        if output.time - start_time.expect("start_time is only none when state is BeforeStart") >= motion_profile.t1 {
+                        if output.time
+                            - start_time.expect("start_time is only none when state is BeforeStart")
+                            >= motion_profile.t1
+                        {
                             *state = MotionProfileState::ConstantVel;
-                            let max_vel = motion_profile.max_acc * motion_profile.t1 + motion_profile.start_vel;
+                            let max_vel = motion_profile.max_acc * motion_profile.t1
+                                + motion_profile.start_vel;
                             self.set_velocity(max_vel);
                         }
-                    },
+                    }
                     MotionProfileState::ConstantVel => {
                         if output.time - start_time.unwrap() >= motion_profile.t2 {
                             *state = MotionProfileState::EndAccel;
                             let new_acc = -motion_profile.max_acc;
                             self.set_acceleration(new_acc);
                         }
-                    },
+                    }
                     MotionProfileState::EndAccel => {
                         if output.time - start_time.unwrap() >= motion_profile.t3 {
                             *state = MotionProfileState::Complete;
-                            let max_vel = motion_profile.max_acc * motion_profile.t1 + motion_profile.start_vel;
+                            let max_vel = motion_profile.max_acc * motion_profile.t1
+                                + motion_profile.start_vel;
                             //                                          easiest way to square
                             //                                          without std
-                            let t1_pos = 0.5 * motion_profile.max_acc * motion_profile.t1 * motion_profile.t1 + motion_profile.start_vel * motion_profile.t1 + motion_profile.start_pos;
+                            let t1_pos = 0.5
+                                * motion_profile.max_acc
+                                * motion_profile.t1
+                                * motion_profile.t1
+                                + motion_profile.start_vel * motion_profile.t1
+                                + motion_profile.start_pos;
                             let t2_pos = max_vel * (motion_profile.t2 - motion_profile.t1) + t1_pos;
-                            let t3_pos = 0.5 * -motion_profile.max_acc * (motion_profile.t3 - motion_profile.t2) * (motion_profile.t3 - motion_profile.t2) + max_vel * (motion_profile.t3 - motion_profile.t2) + t2_pos;
+                            let t3_pos = 0.5
+                                * -motion_profile.max_acc
+                                * (motion_profile.t3 - motion_profile.t2)
+                                * (motion_profile.t3 - motion_profile.t2)
+                                + max_vel * (motion_profile.t3 - motion_profile.t2)
+                                + t2_pos;
                             self.set_position(t3_pos);
                         }
-                    },
-                    MotionProfileState::Complete => {},
+                    }
+                    MotionProfileState::Complete => {}
                 }
-            },
+            }
         }
     }
     ///Follow a motion profile, waiting for it to complete.
     #[cfg(feature = "motionprofile")]
     fn follow_motion_profile(&mut self, motion_profile: MotionProfile) {
         let max_vel = motion_profile.max_acc * motion_profile.t1 + motion_profile.start_vel;
-        let t1_pos = 0.5 * motion_profile.max_acc * motion_profile.t1 * motion_profile.t1 + motion_profile.start_vel * motion_profile.t1 + motion_profile.start_pos;
+        let t1_pos = 0.5 * motion_profile.max_acc * motion_profile.t1 * motion_profile.t1
+            + motion_profile.start_vel * motion_profile.t1
+            + motion_profile.start_pos;
         let t2_pos = max_vel * (motion_profile.t2 - motion_profile.t1) + t1_pos;
-        let t3_pos = 0.5 * -motion_profile.max_acc * (motion_profile.t3 - motion_profile.t2) * (motion_profile.t3 - motion_profile.t2) + max_vel * (motion_profile.t3 - motion_profile.t2) + t2_pos;
+        let t3_pos = 0.5
+            * -motion_profile.max_acc
+            * (motion_profile.t3 - motion_profile.t2)
+            * (motion_profile.t3 - motion_profile.t2)
+            + max_vel * (motion_profile.t3 - motion_profile.t2)
+            + t2_pos;
         let mut time = 0.0;
         let output = self.get_state();
         let start_time = output.time;
         self.set_acceleration(motion_profile.max_acc);
-        while time-start_time < motion_profile.t1 {
+        while time - start_time < motion_profile.t1 {
             self.update();
             time = self.get_state().time;
         }
         self.set_velocity(max_vel);
-        while time-start_time < motion_profile.t2 {
+        while time - start_time < motion_profile.t2 {
             self.update();
             time = self.get_state().time;
         }
         self.set_acceleration(-motion_profile.max_acc);
-        while time-start_time < motion_profile.t3 {
+        while time - start_time < motion_profile.t3 {
             self.update();
             time = self.get_state().time;
         }
@@ -266,7 +295,10 @@ impl<T: ServoMotor> FeedbackMotor for T {
     }
     fn get_state(&mut self) -> Datum<State> {
         let data = self.get_servo_motor_data_ref();
-        Datum::new(data.time, State::new(data.position, data.velocity, data.acceleration))
+        Datum::new(
+            data.time,
+            State::new(data.position, data.velocity, data.acceleration),
+        )
     }
     fn set_acceleration(&mut self, acceleration: f32) {
         self.device_set_acceleration(acceleration);
@@ -327,7 +359,19 @@ pub struct MotorEncoderPair {
 #[cfg(all(feature = "std", feature = "pid"))]
 impl MotorEncoderPair {
     ///Constructor for `MotorEncoderPair`.
-    pub fn new(motor: Box<dyn NonFeedbackMotor>, encoder: Box<dyn Encoder>, pos_kp: f32, pos_ki: f32, pos_kd: f32, vel_kp: f32, vel_ki: f32, vel_kd: f32, acc_kp: f32, acc_ki: f32, acc_kd: f32) -> MotorEncoderPair {
+    pub fn new(
+        motor: Box<dyn NonFeedbackMotor>,
+        encoder: Box<dyn Encoder>,
+        pos_kp: f32,
+        pos_ki: f32,
+        pos_kd: f32,
+        vel_kp: f32,
+        vel_ki: f32,
+        vel_kd: f32,
+        acc_kp: f32,
+        acc_ki: f32,
+        acc_kd: f32,
+    ) -> MotorEncoderPair {
         MotorEncoderPair {
             feedback_motor_data: FeedbackMotorData::new(),
             motor: motor,
@@ -359,25 +403,46 @@ impl FeedbackMotor for MotorEncoderPair {
     }
     fn set_acceleration(&mut self, acceleration: f32) {
         self.mode = Some(MotorMode::Acceleration);
-        self.pid = Some(PIDControllerShift::new(acceleration, self.acc_kp, self.acc_ki, self.acc_kd, 2));
+        self.pid = Some(PIDControllerShift::new(
+            acceleration,
+            self.acc_kp,
+            self.acc_ki,
+            self.acc_kd,
+            2,
+        ));
     }
     fn set_velocity(&mut self, velocity: f32) {
         self.mode = Some(MotorMode::Velocity);
-        self.pid = Some(PIDControllerShift::new(velocity, self.vel_kp, self.vel_ki, self.vel_kd, 1));
+        self.pid = Some(PIDControllerShift::new(
+            velocity,
+            self.vel_kp,
+            self.vel_ki,
+            self.vel_kd,
+            1,
+        ));
     }
     fn set_position(&mut self, position: f32) {
         self.mode = Some(MotorMode::Position);
-        self.pid = Some(PIDControllerShift::new(position, self.pos_kp, self.pos_ki, self.pos_kd, 0));
+        self.pid = Some(PIDControllerShift::new(
+            position,
+            self.pos_kp,
+            self.pos_ki,
+            self.pos_kd,
+            0,
+        ));
     }
     fn update(&mut self) {
         self.encoder.update();
         let output = self.get_state();
         if self.pid.is_some() {
-            let pid_out = self.pid.as_mut().unwrap().update(output.time, match self.mode.as_ref().expect("if pid is Some, mode is too") {
-                MotorMode::Position => output.value.position,
-                MotorMode::Velocity => output.value.velocity,
-                MotorMode::Acceleration => output.value.acceleration,
-            });
+            let pid_out = self.pid.as_mut().unwrap().update(
+                output.time,
+                match self.mode.as_ref().expect("if pid is Some, mode is too") {
+                    MotorMode::Position => output.value.position,
+                    MotorMode::Velocity => output.value.velocity,
+                    MotorMode::Acceleration => output.value.acceleration,
+                },
+            );
             self.motor.set_power(pid_out);
         }
     }
