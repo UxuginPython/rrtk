@@ -1,10 +1,14 @@
 use crate::*;
 #[cfg(feature = "std")]
 use std::rc::Rc;
+#[cfg(feature = "std")]
+use std::cell::RefCell;
 #[cfg(not(feature = "std"))]
 extern crate alloc;
 #[cfg(not(feature = "std"))]
 use alloc::rc::Rc;
+#[cfg(not(feature = "std"))]
+use core::cell::RefCell;
 #[cfg(not(feature = "std"))]
 use alloc::vec::Vec;
 pub trait TimeGetter {
@@ -16,21 +20,29 @@ pub trait Stream<T: Clone> {
     fn update(&mut self);
 }
 pub struct Constant<T> {
-    time_getter: Rc<dyn TimeGetter>,
+    time_getter: Rc<RefCell<dyn TimeGetter>>,
     value: T,
+}
+impl<T> Constant<T> {
+    pub fn new(time_getter: Rc<RefCell<dyn TimeGetter>>, value: T) -> Self {
+        Self {
+            time_getter: time_getter,
+            value: value,
+        }
+    }
 }
 impl<T: Clone> Stream<T> for Constant<T> {
     fn get(&self) -> Datum<T> {
-        let time = self.time_getter.get();
+        let time = self.time_getter.borrow().get();
         Datum::new(time, self.value.clone())
     }
     fn update(&mut self) {}
 }
 pub struct SumStream {
-    addends: Vec<Rc<dyn Stream<f32>>>,
+    addends: Vec<Rc<RefCell<dyn Stream<f32>>>>,
 }
 impl SumStream {
-    pub fn new(addends: Vec<Rc<dyn Stream<f32>>>) -> Self {
+    pub fn new(addends: Vec<Rc<RefCell<dyn Stream<f32>>>>) -> Self {
         Self { addends: addends }
     }
 }
@@ -38,7 +50,7 @@ impl Stream<f32> for SumStream {
     fn get(&self) -> Datum<f32> {
         let mut outputs = Vec::new();
         for i in &self.addends {
-            outputs.push(i.get());
+            outputs.push(i.borrow().get());
         }
         let mut value = 0.0;
         for i in &outputs {
@@ -55,11 +67,11 @@ impl Stream<f32> for SumStream {
     fn update(&mut self) {}
 }
 pub struct DifferenceStream {
-    minuend: Rc<dyn Stream<f32>>,
-    subtrahend: Rc<dyn Stream<f32>>,
+    minuend: Rc<RefCell<dyn Stream<f32>>>,
+    subtrahend: Rc<RefCell<dyn Stream<f32>>>,
 }
 impl DifferenceStream {
-    pub fn new(minuend: Rc<dyn Stream<f32>>, subtrahend: Rc<dyn Stream<f32>>) -> Self {
+    pub fn new(minuend: Rc<RefCell<dyn Stream<f32>>>, subtrahend: Rc<RefCell<dyn Stream<f32>>>) -> Self {
         Self {
             minuend: minuend,
             subtrahend: subtrahend,
@@ -68,8 +80,8 @@ impl DifferenceStream {
 }
 impl Stream<f32> for DifferenceStream {
     fn get(&self) -> Datum<f32> {
-        let minuend_output = self.minuend.get();
-        let subtrahend_output = self.subtrahend.get();
+        let minuend_output = self.minuend.borrow().get();
+        let subtrahend_output = self.subtrahend.borrow().get();
         let value = minuend_output.value - subtrahend_output.value;
         let time = if minuend_output.time > subtrahend_output.time {
             minuend_output.time
@@ -81,10 +93,10 @@ impl Stream<f32> for DifferenceStream {
     fn update(&mut self) {}
 }
 pub struct ProductStream {
-    factors: Vec<Rc<dyn Stream<f32>>>,
+    factors: Vec<Rc<RefCell<dyn Stream<f32>>>>,
 }
 impl ProductStream {
-    pub fn new(factors: Vec<Rc<dyn Stream<f32>>>) -> Self {
+    pub fn new(factors: Vec<Rc<RefCell<dyn Stream<f32>>>>) -> Self {
         Self { factors: factors }
     }
 }
@@ -96,7 +108,7 @@ impl Stream<f32> for ProductStream {
         }
         let mut outputs = Vec::new();
         for i in &self.factors {
-            outputs.push(i.get());
+            outputs.push(i.borrow().get());
         }
         let mut value = 1.0;
         for i in &outputs {
@@ -113,11 +125,11 @@ impl Stream<f32> for ProductStream {
     fn update(&mut self) {}
 }
 pub struct QuotientStream {
-    dividend: Rc<dyn Stream<f32>>,
-    divisor: Rc<dyn Stream<f32>>,
+    dividend: Rc<RefCell<dyn Stream<f32>>>,
+    divisor: Rc<RefCell<dyn Stream<f32>>>,
 }
 impl QuotientStream {
-    pub fn new(dividend: Rc<dyn Stream<f32>>, divisor: Rc<dyn Stream<f32>>) -> Self {
+    pub fn new(dividend: Rc<RefCell<dyn Stream<f32>>>, divisor: Rc<RefCell<dyn Stream<f32>>>) -> Self {
         Self {
             dividend: dividend,
             divisor: divisor,
@@ -126,8 +138,8 @@ impl QuotientStream {
 }
 impl Stream<f32> for QuotientStream {
     fn get(&self) -> Datum<f32> {
-        let dividend_output = self.dividend.get();
-        let divisor_output = self.divisor.get();
+        let dividend_output = self.dividend.borrow().get();
+        let divisor_output = self.divisor.borrow().get();
         let value = dividend_output.value / divisor_output.value;
         let time = if dividend_output.time > divisor_output.time {
             dividend_output.time
