@@ -150,3 +150,32 @@ impl Stream<f32> for QuotientStream {
     }
     fn update(&mut self) {}
 }
+#[cfg(feature = "std")]
+pub struct ExponentStream {
+    base: Rc<RefCell<dyn Stream<f32>>>,
+    exponent: Rc<RefCell<dyn Stream<f32>>>,
+}
+#[cfg(feature = "std")]
+impl ExponentStream {
+    pub fn new(base: Rc<RefCell<dyn Stream<f32>>>, exponent: Rc<RefCell<dyn Stream<f32>>>) -> Self {
+        Self {
+            base: base,
+            exponent: exponent,
+        }
+    }
+}
+#[cfg(feature = "std")]
+impl Stream<f32> for ExponentStream {
+    fn get(&self) -> Datum<f32> {
+        let base_output = self.base.borrow().get();
+        let exponent_output = self.exponent.borrow().get();
+        let value = base_output.value.powf(exponent_output.value);
+        let time = if base_output.time > exponent_output.time {
+            base_output.time
+        } else {
+            exponent_output.time
+        };
+        Datum::new(time, value)
+    }
+    fn update(&mut self) {}
+}
