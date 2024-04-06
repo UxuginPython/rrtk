@@ -11,14 +11,13 @@ use alloc::rc::Rc;
 use core::cell::RefCell;
 #[cfg(not(feature = "std"))]
 use alloc::vec::Vec;
-#[derive(Debug)]
-pub struct StreamError {}
+pub mod errors;
 pub trait TimeGetter {
     fn get(&self) -> f32;
     fn update(&mut self);
 }
 pub trait Stream<T: Clone> {
-    fn get(&self) -> Result<Datum<T>, StreamError>;
+    fn get(&self) -> Result<Datum<T>, Box<dyn errors::AnyStreamError>>;
     fn update(&mut self);
 }
 pub struct Constant<T> {
@@ -34,7 +33,7 @@ impl<T> Constant<T> {
     }
 }
 impl<T: Clone> Stream<T> for Constant<T> {
-    fn get(&self) -> Result<Datum<T>, StreamError> {
+    fn get(&self) -> Result<Datum<T>, Box<dyn errors::AnyStreamError>> {
         let time = self.time_getter.borrow().get();
         Ok(Datum::new(time, self.value.clone()))
     }
@@ -49,7 +48,7 @@ impl SumStream {
     }
 }
 impl Stream<f32> for SumStream {
-    fn get(&self) -> Result<Datum<f32>, StreamError> {
+    fn get(&self) -> Result<Datum<f32>, Box<dyn errors::AnyStreamError>> {
         let mut outputs = Vec::new();
         for i in &self.addends {
             outputs.push(i.borrow().get());
@@ -58,7 +57,7 @@ impl Stream<f32> for SumStream {
         for i in &outputs {
             match i {
                 Ok(output) => {value += output.value},
-                Err(_) => {return Err(StreamError {})},
+                Err(suberror) => {return Err(Box::new(errors::StreamError::new(None, Some(*suberror))))},
             }
         }
         let mut time = 0.0;
@@ -84,11 +83,16 @@ impl DifferenceStream {
     }
 }
 impl Stream<f32> for DifferenceStream {
-    fn get(&self) -> Result<Datum<f32>, StreamError> {
+    fn get(&self) -> Result<Datum<f32>, Box<dyn errors::AnyStreamError>> {
         let minuend_output = self.minuend.borrow().get();
         let subtrahend_output = self.subtrahend.borrow().get();
-        if !(minuend_output.is_ok() && subtrahend_output.is_ok()) {
-            return Err(StreamError {})
+        match minuend_output {
+            Ok(_) => {},
+            Err(suberror) => {return Err(Box::new(errors::StreamError::new(None, Some(suberror))))}
+        }
+        match subtrahend_output {
+            Ok(_) => {},
+            Err(suberror) => {return Err(Box::new(errors::StreamError::new(None, Some(suberror))))}
         }
         let minuend_output = minuend_output.unwrap();
         let subtrahend_output = subtrahend_output.unwrap();
@@ -111,9 +115,9 @@ impl ProductStream {
     }
 }
 impl Stream<f32> for ProductStream {
-    fn get(&self) -> Result<Datum<f32>, StreamError> {
+    fn get(&self) -> Result<Datum<f32>, Box<dyn errors::AnyStreamError>> {
         if self.factors.is_empty() {
-            return Err(StreamError {});
+            return Err(Box::new(errors::StreamError::new(Some("factors vec empty"), None)));
         }
         let mut outputs = Vec::new();
         for i in &self.factors {
@@ -123,7 +127,7 @@ impl Stream<f32> for ProductStream {
         for i in &outputs {
             match i {
                 Ok(output) => {value *= output.value;},
-                Err(_) => {return Err(StreamError {});}
+                Err(suberror) => {return Err(Box::new(errors::StreamError::new(None, Some(*suberror))));}
             }
         }
         let mut time = 0.0;
@@ -149,11 +153,16 @@ impl QuotientStream {
     }
 }
 impl Stream<f32> for QuotientStream {
-    fn get(&self) -> Result<Datum<f32>, StreamError> {
+    fn get(&self) -> Result<Datum<f32>, Box<dyn errors::AnyStreamError>> {
         let dividend_output = self.dividend.borrow().get();
         let divisor_output = self.divisor.borrow().get();
-        if !(dividend_output.is_ok() && divisor_output.is_ok()) {
-            return Err(StreamError {});
+        match dividend_output {
+            Ok(_) => {},
+            Err(suberror) => {return Err(Box::new(errors::StreamError::new(None, Some(suberror))))}
+        }
+        match divisor_output {
+            Ok(_) => {},
+            Err(suberror) => {return Err(Box::new(errors::StreamError::new(None, Some(suberror))))}
         }
         let dividend_output = dividend_output.unwrap();
         let divisor_output = divisor_output.unwrap();
@@ -183,11 +192,16 @@ impl ExponentStream {
 }
 #[cfg(feature = "std")]
 impl Stream<f32> for ExponentStream {
-    fn get(&self) -> Result<Datum<f32>, StreamError> {
+    fn get(&self) -> Result<Datum<f32>, Box<dyn errors::AnyStreamError>> {
         let base_output = self.base.borrow().get();
         let exponent_output = self.exponent.borrow().get();
-        if !(base_output.is_ok() && exponent_output.is_ok()) {
-            return Err(StreamError {});
+        match base_output {
+            Ok(_) => {},
+            Err(suberror) => {return Err(Box::new(errors::StreamError::new(None, Some(suberror))))}
+        }
+        match exponent_output {
+            Ok(_) => {},
+            Err(suberror) => {return Err(Box::new(errors::StreamError::new(None, Some(suberror))))}
         }
         let base_output = base_output.unwrap();
         let exponent_output = exponent_output.unwrap();
