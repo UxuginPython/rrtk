@@ -3,6 +3,8 @@ use crate::*;
 use std::rc::Rc;
 #[cfg(feature = "std")]
 use std::cell::RefCell;
+#[cfg(feature = "std")]
+use std::fmt::Debug;
 #[cfg(not(feature = "std"))]
 extern crate alloc;
 #[cfg(not(feature = "std"))]
@@ -11,14 +13,15 @@ use alloc::rc::Rc;
 use core::cell::RefCell;
 #[cfg(not(feature = "std"))]
 use alloc::vec::Vec;
-#[derive(Debug)]
-pub struct StreamError {}
+#[cfg(not(feature = "std"))]
+use core::fmt::Debug;
+pub mod errors;
 pub trait TimeGetter {
     fn get(&self) -> f32;
     fn update(&mut self);
 }
-pub trait Stream<T: Clone> {
-    fn get(&self) -> Result<Datum<T>, StreamError>;
+pub trait Stream<T: Clone, E: Copy + Debug> {
+    fn get(&self) -> Result<Datum<T>, errors::StreamError<E>>;
     fn update(&mut self);
 }
 pub struct Constant<T> {
@@ -33,23 +36,26 @@ impl<T> Constant<T> {
         }
     }
 }
-impl<T: Clone> Stream<T> for Constant<T> {
-    fn get(&self) -> Result<Datum<T>, StreamError> {
+impl<T: Clone, E: Copy + Debug> Stream<T, E> for Constant<T> {
+    fn get(&self) -> Result<Datum<T>, errors::StreamError<E>> {
         let time = self.time_getter.borrow().get();
         Ok(Datum::new(time, self.value.clone()))
     }
     fn update(&mut self) {}
 }
-pub struct SumStream {
-    addends: Vec<Rc<RefCell<dyn Stream<f32>>>>,
+pub struct SumStream<E> {
+    addends: Vec<Rc<RefCell<dyn Stream<f32, E>>>>,
 }
-impl SumStream {
-    pub fn new(addends: Vec<Rc<RefCell<dyn Stream<f32>>>>) -> Self {
+impl<E> SumStream<E> {
+    pub fn new(addends: Vec<Rc<RefCell<dyn Stream<f32, E>>>>) -> Self {
         Self { addends: addends }
     }
 }
-impl Stream<f32> for SumStream {
-    fn get(&self) -> Result<Datum<f32>, StreamError> {
+impl<E: Copy + Debug> Stream<f32, E> for SumStream<E> {
+    fn get(&self) -> Result<Datum<f32>, errors::StreamError<E>> {
+        if self.addends.is_empty() {
+            return Err(errors::StreamError::EmptyAddendVec)
+        }
         let mut outputs = Vec::new();
         for i in &self.addends {
             outputs.push(i.borrow().get());
@@ -58,7 +64,7 @@ impl Stream<f32> for SumStream {
         for i in &outputs {
             match i {
                 Ok(output) => {value += output.value},
-                Err(_) => {return Err(StreamError {})},
+                Err(error) => {return Err(*error);},
             }
         }
         let mut time = 0.0;
@@ -71,24 +77,29 @@ impl Stream<f32> for SumStream {
     }
     fn update(&mut self) {}
 }
-pub struct DifferenceStream {
-    minuend: Rc<RefCell<dyn Stream<f32>>>,
-    subtrahend: Rc<RefCell<dyn Stream<f32>>>,
+pub struct DifferenceStream<E> {
+    minuend: Rc<RefCell<dyn Stream<f32, E>>>,
+    subtrahend: Rc<RefCell<dyn Stream<f32, E>>>,
 }
-impl DifferenceStream {
-    pub fn new(minuend: Rc<RefCell<dyn Stream<f32>>>, subtrahend: Rc<RefCell<dyn Stream<f32>>>) -> Self {
+impl<E> DifferenceStream<E> {
+    pub fn new(minuend: Rc<RefCell<dyn Stream<f32, E>>>, subtrahend: Rc<RefCell<dyn Stream<f32, E>>>) -> Self {
         Self {
             minuend: minuend,
             subtrahend: subtrahend,
         }
     }
 }
-impl Stream<f32> for DifferenceStream {
-    fn get(&self) -> Result<Datum<f32>, StreamError> {
+impl<E: Copy + Debug> Stream<f32, E> for DifferenceStream<E> {
+    fn get(&self) -> Result<Datum<f32>, errors::StreamError<E>> {
         let minuend_output = self.minuend.borrow().get();
         let subtrahend_output = self.subtrahend.borrow().get();
-        if !(minuend_output.is_ok() && subtrahend_output.is_ok()) {
-            return Err(StreamError {})
+        match minuend_output {
+            Ok(_) => {},
+            Err(error) => {return Err(error)},
+        }
+        match subtrahend_output {
+            Ok(_) => {},
+            Err(error) => {return Err(error)},
         }
         let minuend_output = minuend_output.unwrap();
         let subtrahend_output = subtrahend_output.unwrap();
@@ -102,18 +113,18 @@ impl Stream<f32> for DifferenceStream {
     }
     fn update(&mut self) {}
 }
-pub struct ProductStream {
-    factors: Vec<Rc<RefCell<dyn Stream<f32>>>>,
+pub struct ProductStream<E> {
+    factors: Vec<Rc<RefCell<dyn Stream<f32, E>>>>,
 }
-impl ProductStream {
-    pub fn new(factors: Vec<Rc<RefCell<dyn Stream<f32>>>>) -> Self {
+impl<E> ProductStream<E> {
+    pub fn new(factors: Vec<Rc<RefCell<dyn Stream<f32, E>>>>) -> Self {
         Self { factors: factors }
     }
 }
-impl Stream<f32> for ProductStream {
-    fn get(&self) -> Result<Datum<f32>, StreamError> {
+impl<E: Copy + Debug> Stream<f32, E> for ProductStream<E> {
+    fn get(&self) -> Result<Datum<f32>, errors::StreamError<E>> {
         if self.factors.is_empty() {
-            return Err(StreamError {});
+            return Err(errors::StreamError::EmptyFactorVec);
         }
         let mut outputs = Vec::new();
         for i in &self.factors {
@@ -123,7 +134,7 @@ impl Stream<f32> for ProductStream {
         for i in &outputs {
             match i {
                 Ok(output) => {value *= output.value;},
-                Err(_) => {return Err(StreamError {});}
+                Err(error) => {return Err(*error);}
             }
         }
         let mut time = 0.0;
@@ -136,24 +147,29 @@ impl Stream<f32> for ProductStream {
     }
     fn update(&mut self) {}
 }
-pub struct QuotientStream {
-    dividend: Rc<RefCell<dyn Stream<f32>>>,
-    divisor: Rc<RefCell<dyn Stream<f32>>>,
+pub struct QuotientStream<E> {
+    dividend: Rc<RefCell<dyn Stream<f32, E>>>,
+    divisor: Rc<RefCell<dyn Stream<f32, E>>>,
 }
-impl QuotientStream {
-    pub fn new(dividend: Rc<RefCell<dyn Stream<f32>>>, divisor: Rc<RefCell<dyn Stream<f32>>>) -> Self {
+impl<E> QuotientStream<E> {
+    pub fn new(dividend: Rc<RefCell<dyn Stream<f32, E>>>, divisor: Rc<RefCell<dyn Stream<f32, E>>>) -> Self {
         Self {
             dividend: dividend,
             divisor: divisor,
         }
     }
 }
-impl Stream<f32> for QuotientStream {
-    fn get(&self) -> Result<Datum<f32>, StreamError> {
+impl<E: Copy + Debug> Stream<f32, E> for QuotientStream<E> {
+    fn get(&self) -> Result<Datum<f32>, errors::StreamError<E>> {
         let dividend_output = self.dividend.borrow().get();
         let divisor_output = self.divisor.borrow().get();
-        if !(dividend_output.is_ok() && divisor_output.is_ok()) {
-            return Err(StreamError {});
+        match dividend_output {
+            Ok(_) => {},
+            Err(error) => {return Err(error);},
+        }
+        match divisor_output {
+            Ok(_) => {},
+            Err(error) => {return Err(error);},
         }
         let dividend_output = dividend_output.unwrap();
         let divisor_output = divisor_output.unwrap();
@@ -168,13 +184,13 @@ impl Stream<f32> for QuotientStream {
     fn update(&mut self) {}
 }
 #[cfg(feature = "std")]
-pub struct ExponentStream {
-    base: Rc<RefCell<dyn Stream<f32>>>,
-    exponent: Rc<RefCell<dyn Stream<f32>>>,
+pub struct ExponentStream<E> {
+    base: Rc<RefCell<dyn Stream<f32, E>>>,
+    exponent: Rc<RefCell<dyn Stream<f32, E>>>,
 }
 #[cfg(feature = "std")]
-impl ExponentStream {
-    pub fn new(base: Rc<RefCell<dyn Stream<f32>>>, exponent: Rc<RefCell<dyn Stream<f32>>>) -> Self {
+impl<E> ExponentStream<E> {
+    pub fn new(base: Rc<RefCell<dyn Stream<f32, E>>>, exponent: Rc<RefCell<dyn Stream<f32, E>>>) -> Self {
         Self {
             base: base,
             exponent: exponent,
@@ -182,12 +198,17 @@ impl ExponentStream {
     }
 }
 #[cfg(feature = "std")]
-impl Stream<f32> for ExponentStream {
-    fn get(&self) -> Result<Datum<f32>, StreamError> {
+impl<E: Copy + Debug> Stream<f32, E> for ExponentStream<E> {
+    fn get(&self) -> Result<Datum<f32>, errors::StreamError<E>> {
         let base_output = self.base.borrow().get();
         let exponent_output = self.exponent.borrow().get();
-        if !(base_output.is_ok() && exponent_output.is_ok()) {
-            return Err(StreamError {});
+        match base_output {
+            Ok(_) => {},
+            Err(error) => {return Err(error);}
+        }
+        match exponent_output {
+            Ok(_) => {},
+            Err(error) => {return Err(error);}
         }
         let base_output = base_output.unwrap();
         let exponent_output = exponent_output.unwrap();
