@@ -16,12 +16,13 @@ use alloc::vec::Vec;
 #[cfg(not(feature = "std"))]
 use core::fmt::Debug;
 pub mod errors;
+pub type StreamOutput<T, E> = Result<Option<Datum<T>>, errors::StreamError<E>>;
 pub trait TimeGetter {
     fn get(&self) -> f32;
     fn update(&mut self);
 }
 pub trait Stream<T: Clone, E: Copy + Debug> {
-    fn get(&self) -> Result<Datum<T>, errors::StreamError<E>>;
+    fn get(&self) -> StreamOutput<T, E>;
     fn update(&mut self);
 }
 pub struct Constant<T> {
@@ -37,9 +38,9 @@ impl<T> Constant<T> {
     }
 }
 impl<T: Clone, E: Copy + Debug> Stream<T, E> for Constant<T> {
-    fn get(&self) -> Result<Datum<T>, errors::StreamError<E>> {
+    fn get(&self) -> StreamOutput<T, E> {
         let time = self.time_getter.borrow().get();
-        Ok(Datum::new(time, self.value.clone()))
+        Ok(Some(Datum::new(time, self.value.clone())))
     }
     fn update(&mut self) {}
 }
@@ -52,7 +53,7 @@ impl<E> SumStream<E> {
     }
 }
 impl<E: Copy + Debug> Stream<f32, E> for SumStream<E> {
-    fn get(&self) -> Result<Datum<f32>, errors::StreamError<E>> {
+    fn get(&self) -> StreamOutput<f32, E> {
         if self.addends.is_empty() {
             return Err(errors::StreamError::EmptyAddendVec)
         }
@@ -63,17 +64,32 @@ impl<E: Copy + Debug> Stream<f32, E> for SumStream<E> {
         let mut value = 0.0;
         for i in &outputs {
             match i {
-                Ok(output) => {value += output.value},
+                Ok(maybe_output) => {
+                    match maybe_output {
+                        Some(output) => {value += output.value;},
+                        None => {}
+                    }
+                },
                 Err(error) => {return Err(*error);},
             }
         }
         let mut time = 0.0;
         for i in &outputs {
-            if i.as_ref().expect("caught by match in for loop").time > time {
-                time = i.as_ref().unwrap().time;
+            match i {
+                Ok(maybe_output) => {
+                    match maybe_output {
+                        Some(output) => {
+                            if output.time > time {
+                                time = output.time;
+                            }
+                        },
+                        None => {},
+                    }
+                },
+                Err(_) => {panic!("This should never happen because errors were returned earlier.")}
             }
         }
-        Ok(Datum::new(time, value))
+        Ok(Some(Datum::new(time, value)))
     }
     fn update(&mut self) {}
 }
@@ -90,19 +106,9 @@ impl<E> DifferenceStream<E> {
     }
 }
 impl<E: Copy + Debug> Stream<f32, E> for DifferenceStream<E> {
-    fn get(&self) -> Result<Datum<f32>, errors::StreamError<E>> {
-        let minuend_output = self.minuend.borrow().get();
-        let subtrahend_output = self.subtrahend.borrow().get();
-        match minuend_output {
-            Ok(_) => {},
-            Err(error) => {return Err(error)},
-        }
-        match subtrahend_output {
-            Ok(_) => {},
-            Err(error) => {return Err(error)},
-        }
-        let minuend_output = minuend_output.unwrap();
-        let subtrahend_output = subtrahend_output.unwrap();
+    fn get(&self) -> StreamOutput<f32, E> {
+        let minuend_output = self.minuend.borrow().get()?;
+        let subtrahend_output = self.subtrahend.borrow().get()?;
         let value = minuend_output.value - subtrahend_output.value;
         let time = if minuend_output.time > subtrahend_output.time {
             minuend_output.time
@@ -113,7 +119,7 @@ impl<E: Copy + Debug> Stream<f32, E> for DifferenceStream<E> {
     }
     fn update(&mut self) {}
 }
-pub struct ProductStream<E> {
+/*pub struct ProductStream<E> {
     factors: Vec<Rc<RefCell<dyn Stream<f32, E>>>>,
 }
 impl<E> ProductStream<E> {
@@ -221,4 +227,4 @@ impl<E: Copy + Debug> Stream<f32, E> for ExponentStream<E> {
         Ok(Datum::new(time, value))
     }
     fn update(&mut self) {}
-}
+}*/
