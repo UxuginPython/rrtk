@@ -44,6 +44,24 @@ impl<T: Clone, E: Copy + Debug> Stream<T, E> for Constant<T> {
     }
     fn update(&mut self) {}
 }
+pub struct NoneToError<T, E> {
+    input: Rc<RefCell<dyn Stream<T, E>>>,
+}
+impl<T, E> NoneToError<T, E> {
+    pub fn new(input: Rc<RefCell<dyn Stream<T, E>>>) -> Self {
+        Self { input: input }
+    }
+}
+impl<T: Clone, E: Copy + Debug> Stream<T, E> for NoneToError<T, E> {
+    fn get(&self) -> StreamOutput<T, E> {
+        let output = self.input.borrow().get()?;
+        match output {
+            Some(_) => {return Ok(output);},
+            None => {return Err(errors::StreamError::FromNone);}
+        }
+    }
+    fn update(&mut self) {}
+}
 pub struct SumStream<E> {
     addends: Vec<Rc<RefCell<dyn Stream<f32, E>>>>,
 }
@@ -57,39 +75,42 @@ impl<E: Copy + Debug> Stream<f32, E> for SumStream<E> {
         if self.addends.is_empty() {
             return Err(errors::StreamError::EmptyAddendVec)
         }
+        //Err(...) -> return Err immediately
+        //Ok(None) -> skip
+        //Ok(Some(...)) -> add to value
         let mut outputs = Vec::new();
         for i in &self.addends {
-            outputs.push(i.borrow().get());
+            outputs.push(i.borrow().get()?);
         }
         let mut value = 0.0;
         for i in &outputs {
             match i {
-                Ok(maybe_output) => {
-                    match maybe_output {
-                        Some(output) => {value += output.value;},
-                        None => {}
-                    }
-                },
-                Err(error) => {return Err(*error);},
+                Some(output) => {value += output.value;},
+                None => {}
             }
         }
-        let mut time = 0.0;
+        let mut time = None;
         for i in &outputs {
             match i {
-                Ok(maybe_output) => {
-                    match maybe_output {
-                        Some(output) => {
-                            if output.time > time {
-                                time = output.time;
+                Some(output) => {
+                    match time {
+                        Some(old_time) => {
+                            if output.time > old_time {
+                                time = Some(output.time);
                             }
                         },
-                        None => {},
+                        None => {
+                            time = Some(output.time);
+                        },
                     }
                 },
-                Err(_) => {panic!("This should never happen because errors were returned earlier.")}
+                None => {},
             }
         }
-        Ok(Some(Datum::new(time, value)))
+        match time {
+            Some(time_) => {return Ok(Some(Datum::new(time_, value)));}
+            None => {return Ok(None);}
+        }
     }
     fn update(&mut self) {}
 }
@@ -109,17 +130,27 @@ impl<E: Copy + Debug> Stream<f32, E> for DifferenceStream<E> {
     fn get(&self) -> StreamOutput<f32, E> {
         let minuend_output = self.minuend.borrow().get()?;
         let subtrahend_output = self.subtrahend.borrow().get()?;
+        match minuend_output {
+            Some(_) => {},
+            None => {return Ok(None);},
+        }
+        let minuend_output = minuend_output.unwrap();
+        match subtrahend_output {
+            Some(_) => {}
+            None => {return Ok(Some(minuend_output));}
+        }
+        let subtrahend_output = subtrahend_output.unwrap();
         let value = minuend_output.value - subtrahend_output.value;
         let time = if minuend_output.time > subtrahend_output.time {
             minuend_output.time
         } else {
             subtrahend_output.time
         };
-        Ok(Datum::new(time, value))
+        Ok(Some(Datum::new(time, value)))
     }
     fn update(&mut self) {}
 }
-/*pub struct ProductStream<E> {
+pub struct ProductStream<E> {
     factors: Vec<Rc<RefCell<dyn Stream<f32, E>>>>,
 }
 impl<E> ProductStream<E> {
@@ -128,28 +159,43 @@ impl<E> ProductStream<E> {
     }
 }
 impl<E: Copy + Debug> Stream<f32, E> for ProductStream<E> {
-    fn get(&self) -> Result<Datum<f32>, errors::StreamError<E>> {
+    fn get(&self) -> StreamOutput<f32, E> {
         if self.factors.is_empty() {
             return Err(errors::StreamError::EmptyFactorVec);
         }
         let mut outputs = Vec::new();
         for i in &self.factors {
-            outputs.push(i.borrow().get());
+            outputs.push(i.borrow().get()?);
         }
         let mut value = 1.0;
         for i in &outputs {
             match i {
-                Ok(output) => {value *= output.value;},
-                Err(error) => {return Err(*error);}
+                Some(output) => {value *= output.value;},
+                None => {},
             }
         }
-        let mut time = 0.0;
+        let mut time = None;
         for i in &outputs {
-            if i.as_ref().unwrap().time > time {
-                time = i.as_ref().unwrap().time;
+            match i {
+                Some(output) => {
+                    match time {
+                        Some(old_time) => {
+                            if output.time > old_time {
+                                time = Some(output.time);
+                            }
+                        },
+                        None => {
+                            time = Some(output.time);
+                        },
+                    }
+                },
+                None => {},
             }
         }
-        Ok(Datum::new(time, value))
+        match time {
+            Some(time_) => {return Ok(Some(Datum::new(time_, value)));}
+            None => {return Ok(None);}
+        }
     }
     fn update(&mut self) {}
 }
@@ -166,18 +212,18 @@ impl<E> QuotientStream<E> {
     }
 }
 impl<E: Copy + Debug> Stream<f32, E> for QuotientStream<E> {
-    fn get(&self) -> Result<Datum<f32>, errors::StreamError<E>> {
-        let dividend_output = self.dividend.borrow().get();
-        let divisor_output = self.divisor.borrow().get();
+    fn get(&self) -> StreamOutput<f32, E> {
+        let dividend_output = self.dividend.borrow().get()?;
+        let divisor_output = self.divisor.borrow().get()?;
         match dividend_output {
-            Ok(_) => {},
-            Err(error) => {return Err(error);},
-        }
-        match divisor_output {
-            Ok(_) => {},
-            Err(error) => {return Err(error);},
+            Some(_) => {},
+            None => {return Ok(None);},
         }
         let dividend_output = dividend_output.unwrap();
+        match divisor_output {
+            Some(_) => {},
+            None => {return Ok(Some(dividend_output));},
+        }
         let divisor_output = divisor_output.unwrap();
         let value = dividend_output.value / divisor_output.value;
         let time = if dividend_output.time > divisor_output.time {
@@ -185,7 +231,7 @@ impl<E: Copy + Debug> Stream<f32, E> for QuotientStream<E> {
         } else {
             divisor_output.time
         };
-        Ok(Datum::new(time, value))
+        Ok(Some(Datum::new(time, value)))
     }
     fn update(&mut self) {}
 }
@@ -205,18 +251,18 @@ impl<E> ExponentStream<E> {
 }
 #[cfg(feature = "std")]
 impl<E: Copy + Debug> Stream<f32, E> for ExponentStream<E> {
-    fn get(&self) -> Result<Datum<f32>, errors::StreamError<E>> {
-        let base_output = self.base.borrow().get();
-        let exponent_output = self.exponent.borrow().get();
+    fn get(&self) -> StreamOutput<f32, E> {
+        let base_output = self.base.borrow().get()?;
+        let exponent_output = self.exponent.borrow().get()?;
         match base_output {
-            Ok(_) => {},
-            Err(error) => {return Err(error);}
-        }
-        match exponent_output {
-            Ok(_) => {},
-            Err(error) => {return Err(error);}
+            Some(_) => {},
+            None => {return Ok(None);}
         }
         let base_output = base_output.unwrap();
+        match exponent_output {
+            Some(_) => {},
+            None => {return Ok(Some(base_output));}
+        }
         let exponent_output = exponent_output.unwrap();
         let value = base_output.value.powf(exponent_output.value);
         let time = if base_output.time > exponent_output.time {
@@ -224,7 +270,7 @@ impl<E: Copy + Debug> Stream<f32, E> for ExponentStream<E> {
         } else {
             exponent_output.time
         };
-        Ok(Datum::new(time, value))
+        Ok(Some(Datum::new(time, value)))
     }
     fn update(&mut self) {}
-}*/
+}
