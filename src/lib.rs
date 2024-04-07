@@ -11,9 +11,9 @@ Copyright 2024 UxuginPython on GitHub
     You should have received a copy of the GNU Lesser General Public License along with Rust Robotics ToolKit. If not, see <https://www.gnu.org/licenses/>.
 */
 #![cfg_attr(not(feature = "std"), no_std)]
-pub mod streams;
 #[cfg(feature = "devices")]
 pub mod devices;
+pub mod streams;
 ///A proportional-integral-derivative controller. Requires `pid` feature.
 #[cfg(feature = "pid")]
 pub struct PIDController {

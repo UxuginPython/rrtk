@@ -1,18 +1,18 @@
 use crate::*;
 #[cfg(feature = "std")]
-use std::rc::Rc;
-#[cfg(feature = "std")]
 use std::cell::RefCell;
 #[cfg(feature = "std")]
 use std::fmt::Debug;
+#[cfg(feature = "std")]
+use std::rc::Rc;
 #[cfg(not(feature = "std"))]
 extern crate alloc;
 #[cfg(not(feature = "std"))]
 use alloc::rc::Rc;
 #[cfg(not(feature = "std"))]
-use core::cell::RefCell;
-#[cfg(not(feature = "std"))]
 use alloc::vec::Vec;
+#[cfg(not(feature = "std"))]
+use core::cell::RefCell;
 #[cfg(not(feature = "std"))]
 use core::fmt::Debug;
 pub mod errors;
@@ -56,8 +56,12 @@ impl<T: Clone, E: Copy + Debug> Stream<T, E> for NoneToError<T, E> {
     fn get(&self) -> StreamOutput<T, E> {
         let output = self.input.borrow().get()?;
         match output {
-            Some(_) => {return Ok(output);},
-            None => {return Err(errors::StreamError::FromNone);}
+            Some(_) => {
+                return Ok(output);
+            }
+            None => {
+                return Err(errors::StreamError::FromNone);
+            }
         }
     }
     fn update(&mut self) {}
@@ -73,7 +77,7 @@ impl<E> SumStream<E> {
 impl<E: Copy + Debug> Stream<f32, E> for SumStream<E> {
     fn get(&self) -> StreamOutput<f32, E> {
         if self.addends.is_empty() {
-            return Err(errors::StreamError::EmptyAddendVec)
+            return Err(errors::StreamError::EmptyAddendVec);
         }
         //Err(...) -> return Err immediately
         //Ok(None) -> skip
@@ -85,31 +89,35 @@ impl<E: Copy + Debug> Stream<f32, E> for SumStream<E> {
         let mut value = 0.0;
         for i in &outputs {
             match i {
-                Some(output) => {value += output.value;},
+                Some(output) => {
+                    value += output.value;
+                }
                 None => {}
             }
         }
         let mut time = None;
         for i in &outputs {
             match i {
-                Some(output) => {
-                    match time {
-                        Some(old_time) => {
-                            if output.time > old_time {
-                                time = Some(output.time);
-                            }
-                        },
-                        None => {
+                Some(output) => match time {
+                    Some(old_time) => {
+                        if output.time > old_time {
                             time = Some(output.time);
-                        },
+                        }
+                    }
+                    None => {
+                        time = Some(output.time);
                     }
                 },
-                None => {},
+                None => {}
             }
         }
         match time {
-            Some(time_) => {return Ok(Some(Datum::new(time_, value)));}
-            None => {return Ok(None);}
+            Some(time_) => {
+                return Ok(Some(Datum::new(time_, value)));
+            }
+            None => {
+                return Ok(None);
+            }
         }
     }
     fn update(&mut self) {}
@@ -119,7 +127,10 @@ pub struct DifferenceStream<E> {
     subtrahend: Rc<RefCell<dyn Stream<f32, E>>>,
 }
 impl<E> DifferenceStream<E> {
-    pub fn new(minuend: Rc<RefCell<dyn Stream<f32, E>>>, subtrahend: Rc<RefCell<dyn Stream<f32, E>>>) -> Self {
+    pub fn new(
+        minuend: Rc<RefCell<dyn Stream<f32, E>>>,
+        subtrahend: Rc<RefCell<dyn Stream<f32, E>>>,
+    ) -> Self {
         Self {
             minuend: minuend,
             subtrahend: subtrahend,
@@ -131,13 +142,17 @@ impl<E: Copy + Debug> Stream<f32, E> for DifferenceStream<E> {
         let minuend_output = self.minuend.borrow().get()?;
         let subtrahend_output = self.subtrahend.borrow().get()?;
         match minuend_output {
-            Some(_) => {},
-            None => {return Ok(None);},
+            Some(_) => {}
+            None => {
+                return Ok(None);
+            }
         }
         let minuend_output = minuend_output.unwrap();
         match subtrahend_output {
             Some(_) => {}
-            None => {return Ok(Some(minuend_output));}
+            None => {
+                return Ok(Some(minuend_output));
+            }
         }
         let subtrahend_output = subtrahend_output.unwrap();
         let value = minuend_output.value - subtrahend_output.value;
@@ -170,31 +185,35 @@ impl<E: Copy + Debug> Stream<f32, E> for ProductStream<E> {
         let mut value = 1.0;
         for i in &outputs {
             match i {
-                Some(output) => {value *= output.value;},
-                None => {},
+                Some(output) => {
+                    value *= output.value;
+                }
+                None => {}
             }
         }
         let mut time = None;
         for i in &outputs {
             match i {
-                Some(output) => {
-                    match time {
-                        Some(old_time) => {
-                            if output.time > old_time {
-                                time = Some(output.time);
-                            }
-                        },
-                        None => {
+                Some(output) => match time {
+                    Some(old_time) => {
+                        if output.time > old_time {
                             time = Some(output.time);
-                        },
+                        }
+                    }
+                    None => {
+                        time = Some(output.time);
                     }
                 },
-                None => {},
+                None => {}
             }
         }
         match time {
-            Some(time_) => {return Ok(Some(Datum::new(time_, value)));}
-            None => {return Ok(None);}
+            Some(time_) => {
+                return Ok(Some(Datum::new(time_, value)));
+            }
+            None => {
+                return Ok(None);
+            }
         }
     }
     fn update(&mut self) {}
@@ -204,7 +223,10 @@ pub struct QuotientStream<E> {
     divisor: Rc<RefCell<dyn Stream<f32, E>>>,
 }
 impl<E> QuotientStream<E> {
-    pub fn new(dividend: Rc<RefCell<dyn Stream<f32, E>>>, divisor: Rc<RefCell<dyn Stream<f32, E>>>) -> Self {
+    pub fn new(
+        dividend: Rc<RefCell<dyn Stream<f32, E>>>,
+        divisor: Rc<RefCell<dyn Stream<f32, E>>>,
+    ) -> Self {
         Self {
             dividend: dividend,
             divisor: divisor,
@@ -216,13 +238,17 @@ impl<E: Copy + Debug> Stream<f32, E> for QuotientStream<E> {
         let dividend_output = self.dividend.borrow().get()?;
         let divisor_output = self.divisor.borrow().get()?;
         match dividend_output {
-            Some(_) => {},
-            None => {return Ok(None);},
+            Some(_) => {}
+            None => {
+                return Ok(None);
+            }
         }
         let dividend_output = dividend_output.unwrap();
         match divisor_output {
-            Some(_) => {},
-            None => {return Ok(Some(dividend_output));},
+            Some(_) => {}
+            None => {
+                return Ok(Some(dividend_output));
+            }
         }
         let divisor_output = divisor_output.unwrap();
         let value = dividend_output.value / divisor_output.value;
@@ -242,7 +268,10 @@ pub struct ExponentStream<E> {
 }
 #[cfg(feature = "std")]
 impl<E> ExponentStream<E> {
-    pub fn new(base: Rc<RefCell<dyn Stream<f32, E>>>, exponent: Rc<RefCell<dyn Stream<f32, E>>>) -> Self {
+    pub fn new(
+        base: Rc<RefCell<dyn Stream<f32, E>>>,
+        exponent: Rc<RefCell<dyn Stream<f32, E>>>,
+    ) -> Self {
         Self {
             base: base,
             exponent: exponent,
@@ -255,13 +284,17 @@ impl<E: Copy + Debug> Stream<f32, E> for ExponentStream<E> {
         let base_output = self.base.borrow().get()?;
         let exponent_output = self.exponent.borrow().get()?;
         match base_output {
-            Some(_) => {},
-            None => {return Ok(None);}
+            Some(_) => {}
+            None => {
+                return Ok(None);
+            }
         }
         let base_output = base_output.unwrap();
         match exponent_output {
-            Some(_) => {},
-            None => {return Ok(Some(base_output));}
+            Some(_) => {}
+            None => {
+                return Ok(Some(base_output));
+            }
         }
         let exponent_output = exponent_output.unwrap();
         let value = base_output.value.powf(exponent_output.value);
