@@ -17,37 +17,55 @@ use core::cell::RefCell;
 use core::fmt::Debug;
 pub mod errors;
 pub type StreamOutput<T, E> = Result<Option<Datum<T>>, errors::StreamError<E>>;
-pub trait TimeGetter {
-    fn get(&self) -> f32;
+pub trait TimeGetter<E: Copy + Debug> {
+    fn get(&self) -> Result<f32, errors::StreamError<E>>;
     fn update(&mut self);
+}
+pub struct TimeGetterFromStream<T: Clone, E> {
+    elevator: NoneToError<T, E>,
+}
+impl<T: Clone, E> TimeGetterFromStream<T, E> {
+    pub fn new(stream: Rc<RefCell<dyn Stream<T, E>>>) -> Self {
+        Self {
+            elevator: NoneToError::new(Rc::clone(&stream)),
+        }
+    }
+}
+impl<T: Clone, E: Copy + Debug> TimeGetter<E> for TimeGetterFromStream<T, E> {
+    fn get(&self) -> Result<f32, errors::StreamError<E>> {
+        let output = self.elevator.get()?;
+        let output = output.expect("`NoneToError` made all `Ok(None)`s into `Err(_)`s, and `?` returned all `Err(_)`s, so we're sure this is now an `Ok(Some(_))`.");
+        return Ok(output.time);
+    }
+    fn update(&mut self) {}
 }
 pub trait Stream<T: Clone, E: Copy + Debug> {
     fn get(&self) -> StreamOutput<T, E>;
     fn update(&mut self);
 }
-pub struct Constant<T> {
-    time_getter: Rc<RefCell<dyn TimeGetter>>,
+pub struct Constant<T, E> {
+    time_getter: Rc<RefCell<dyn TimeGetter<E>>>,
     value: T,
 }
-impl<T> Constant<T> {
-    pub fn new(time_getter: Rc<RefCell<dyn TimeGetter>>, value: T) -> Self {
+impl<T, E> Constant<T, E> {
+    pub fn new(time_getter: Rc<RefCell<dyn TimeGetter<E>>>, value: T) -> Self {
         Self {
             time_getter: time_getter,
             value: value,
         }
     }
 }
-impl<T: Clone, E: Copy + Debug> Stream<T, E> for Constant<T> {
+impl<T: Clone, E: Copy + Debug> Stream<T, E> for Constant<T, E> {
     fn get(&self) -> StreamOutput<T, E> {
-        let time = self.time_getter.borrow().get();
+        let time = self.time_getter.borrow().get()?;
         Ok(Some(Datum::new(time, self.value.clone())))
     }
     fn update(&mut self) {}
 }
-pub struct NoneToError<T, E> {
+pub struct NoneToError<T: Clone, E> {
     input: Rc<RefCell<dyn Stream<T, E>>>,
 }
-impl<T, E> NoneToError<T, E> {
+impl<T: Clone, E> NoneToError<T, E> {
     pub fn new(input: Rc<RefCell<dyn Stream<T, E>>>) -> Self {
         Self { input: input }
     }
@@ -348,7 +366,8 @@ impl<E: Copy + Debug> Stream<f32, E> for DerivativeStream<E> {
         self.prev_output = Some(output);
     }
 }
-pub struct IntegralStream<E: Copy + Debug> { //Luke, you're an idiot.
+pub struct IntegralStream<E: Copy + Debug> { //Luke, you're an idiot. Lucy, you're not. Brunk, be
+                                             //careful.
     input: Rc<RefCell<dyn Stream<f32, E>>>,
     value: StreamOutput<f32, E>,
     prev_output: Option<Datum<f32>>,
@@ -393,5 +412,28 @@ impl<E: Copy + Debug> Stream<f32, E> for IntegralStream<E> {
         let value = prev_value + (output.time - prev_output.time) * (prev_output.value + output.value) / 2.0;
         self.value = Ok(Some(Datum::new(output.time, value)));
         self.prev_output = Some(output);
+    }
+}
+//One year ago, I wrote this same thing in Python and noticed the same thing about thw variable
+//names. Everything is different now. This is Rust, FIRST is not involved, and Johnathan doesn't
+//think it's a good idea anymore. I guess it's not up to them now though. It's your choice, dear
+//user, whether this is good or not. No season, no judges, no competition. Just a slowly rising
+//download count on crates.io, and a sad developer up too late writing depressing comments.
+pub struct StreamPIDController<E: Copy + Debug> {
+    sum: SumStream<E>,
+}
+impl<E: Copy + Debug> StreamPIDController<E> {
+    pub fn new(input: Rc<RefCell<dyn Stream<f32, E>>>, kp: f32, ki: f32, kd: f32) -> Self {
+        let time_getter = Rc::new(RefCell::new(TimeGetterFromStream::new(Rc::clone(&input))));
+        let kp = Rc::new(RefCell::new(Constant::new(Rc::clone(&time_getter), kp)));
+        let ki = Rc::new(RefCell::new(Constant::new(Rc::clone(&time_getter), ki)));
+        let kd = Rc::new(RefCell::new(Constant::new(Rc::clone(&time_getter), kd)));
+        let kp_mul = Rc::new(RefCell::new(ProductStream::new(vec![Rc::clone(&input), Rc::clone(&kp)])));
+        let ki_mul = Rc::new(RefCell::new(ProductStream::new(vec![Rc::clone(&input), Rc::clone(&ki)])));
+        let kd_mul = Rc::new(RefCell::new(ProductStream::new(vec![Rc::clone(&input), Rc::clone(&kd)])));
+        let sum = SumStream::new(vec![Rc::clone(&kp_mul), Rc::clone(&ki_mul), Rc::clone(&kd_mul)]);
+        Self {
+            sum: sum,
+        }
     }
 }
