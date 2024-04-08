@@ -345,6 +345,53 @@ impl<E: Copy + Debug> Stream<f32, E> for DerivativeStream<E> {
         let prev_output = self.prev_output.as_ref().unwrap();
         let value = (output.value - prev_output.value) / (output.time - prev_output.time);
         self.value = Ok(Some(Datum::new(output.time, value)));
-        self.prev_output = Some(prev_output.clone());
+        self.prev_output = Some(output);
+    }
+}
+pub struct IntegralStream<E: Copy + Debug> { //Luke, you're an idiot.
+    input: Rc<RefCell<dyn Stream<f32, E>>>,
+    value: StreamOutput<f32, E>,
+    prev_output: Option<Datum<f32>>,
+}
+impl<E: Copy + Debug> IntegralStream<E> {
+    pub fn new(input: Rc<RefCell<dyn Stream<f32, E>>>) -> Self {
+        Self {
+            input: input,
+            value: Ok(None),
+            prev_output: None,
+        }
+    }
+}
+impl<E: Copy + Debug> Stream<f32, E> for IntegralStream<E> {
+    fn get(&self) -> StreamOutput<f32, E> {
+        self.value.clone()
+    }
+    fn update(&mut self) {
+        let output = self.input.borrow().get();
+        match output {
+            Ok(_) => {},
+            Err(error) => {self.value = Err(error); self.prev_output = None; return;}
+        }
+        let output = output.unwrap();
+        match output {
+            Some(_) => {},
+            None => {self.value = Ok(None); self.prev_output = None; return;}
+        }
+        let output = output.unwrap();
+        match self.prev_output {
+            Some(_) => {},
+            None => {self.prev_output = Some(output); return;}
+        }
+        let prev_output = self.prev_output.as_ref().unwrap();
+        let prev_value = match &self.value {
+            Ok(option_value) => match option_value {
+                Some(real_value) => real_value.value,
+                None => 0.0,
+            },
+            Err(_) => 0.0,
+        };
+        let value = prev_value + (output.time - prev_output.time) * (prev_output.value + output.value) / 2.0;
+        self.value = Ok(Some(Datum::new(output.time, value)));
+        self.prev_output = Some(output);
     }
 }
