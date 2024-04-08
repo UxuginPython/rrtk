@@ -414,11 +414,6 @@ impl<E: Copy + Debug> Stream<f32, E> for IntegralStream<E> {
         self.prev_output = Some(output);
     }
 }
-//One year ago, I wrote this same thing in Python and noticed the same thing about thw variable
-//names. Everything is different now. This is Rust, FIRST is not involved, and Johnathan doesn't
-//think it's a good idea anymore. I guess it's not up to them now though. It's your choice, dear
-//user, whether this is good or not. No season, no judges, no competition. Just a slowly rising
-//download count on crates.io, and a sad developer up too late writing depressing comments.
 pub struct StreamPIDController<E: Copy + Debug> {
     sum: SumStream<E>,
 }
