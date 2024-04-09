@@ -417,7 +417,7 @@ impl<E: Copy + Debug> Stream<f32, E> for IntegralStream<E> {
 pub struct StreamPIDController<E: Copy + Debug> {
     sum: SumStream<E>,
 }
-impl<E: Copy + Debug> StreamPIDController<E> {
+impl<E: Copy + Debug + 'static> StreamPIDController<E> {
     pub fn new(input: Rc<RefCell<Box<dyn Stream<f32, E>>>>, kp: f32, ki: f32, kd: f32) -> Self {
         let time_getter = Rc::new(RefCell::new(Box::new(TimeGetterFromStream::new(Rc::clone(&input))) as Box<dyn TimeGetter<E>>));
         let kp = Rc::new(RefCell::new(Box::new(Constant::new(Rc::clone(&time_getter), kp)) as Box<dyn Stream<f32, E>>));
@@ -430,5 +430,13 @@ impl<E: Copy + Debug> StreamPIDController<E> {
         Self {
             sum: sum,
         }
+    }
+}
+impl<E: Copy + Debug + 'static> Stream<f32, E> for StreamPIDController<E> {
+    fn get(&self) -> StreamOutput<f32, E> {
+        todo!();
+    }
+    fn update(&mut self) {
+        todo!();
     }
 }
