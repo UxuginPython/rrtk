@@ -434,9 +434,7 @@ impl<E: Copy + Debug + 'static> StreamPIDController<E> {
 }
 impl<E: Copy + Debug + 'static> Stream<f32, E> for StreamPIDController<E> {
     fn get(&self) -> StreamOutput<f32, E> {
-        todo!();
+        self.sum.get()
     }
-    fn update(&mut self) {
-        todo!();
-    }
+    fn update(&mut self) {}
 }
