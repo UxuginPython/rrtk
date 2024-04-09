@@ -423,14 +423,18 @@ pub struct StreamPIDController<E: Copy + Debug> {
     sum: SumStream<E>,
 }
 impl<E: Copy + Debug + 'static> StreamPIDController<E> {
-    pub fn new(input: Rc<RefCell<Box<dyn Stream<f32, E>>>>, kp: f32, ki: f32, kd: f32) -> Self {
+    pub fn new(input: Rc<RefCell<Box<dyn Stream<f32, E>>>>, setpoint: f32, kp: f32, ki: f32, kd: f32) -> Self {
         let time_getter = Rc::new(RefCell::new(Box::new(TimeGetterFromStream::new(Rc::clone(&input))) as Box<dyn TimeGetter<E>>));
+        let setpoint = Rc::new(RefCell::new(Box::new(Constant::new(Rc::clone(&time_getter), setpoint)) as Box<dyn Stream<f32, E>>));
+        let error = Rc::new(RefCell::new(Box::new(DifferenceStream::new(Rc::clone(&setpoint), Rc::clone(&input))) as Box<dyn Stream<f32, E>>));
+        let int = Rc::new(RefCell::new(Box::new(IntegralStream::new(Rc::clone(&error))) as Box<dyn Stream<f32, E>>));
+        let drv = Rc::new(RefCell::new(Box::new(DerivativeStream::new(Rc::clone(&error))) as Box<dyn Stream<f32, E>>));
         let kp = Rc::new(RefCell::new(Box::new(Constant::new(Rc::clone(&time_getter), kp)) as Box<dyn Stream<f32, E>>));
         let ki = Rc::new(RefCell::new(Box::new(Constant::new(Rc::clone(&time_getter), ki)) as Box<dyn Stream<f32, E>>));
         let kd = Rc::new(RefCell::new(Box::new(Constant::new(Rc::clone(&time_getter), kd)) as Box<dyn Stream<f32, E>>));
-        let kp_mul = Rc::new(RefCell::new(Box::new(ProductStream::new(vec![Rc::clone(&input), Rc::clone(&kp)])) as Box<dyn Stream<f32, E>>));
-        let ki_mul = Rc::new(RefCell::new(Box::new(ProductStream::new(vec![Rc::clone(&input), Rc::clone(&ki)])) as Box<dyn Stream<f32, E>>));
-        let kd_mul = Rc::new(RefCell::new(Box::new(ProductStream::new(vec![Rc::clone(&input), Rc::clone(&kd)])) as Box<dyn Stream<f32, E>>));
+        let kp_mul = Rc::new(RefCell::new(Box::new(ProductStream::new(vec![Rc::clone(&kp), Rc::clone(&error)])) as Box<dyn Stream<f32, E>>));
+        let ki_mul = Rc::new(RefCell::new(Box::new(ProductStream::new(vec![Rc::clone(&ki), Rc::clone(&int)])) as Box<dyn Stream<f32, E>>));
+        let kd_mul = Rc::new(RefCell::new(Box::new(ProductStream::new(vec![Rc::clone(&kd), Rc::clone(&drv)])) as Box<dyn Stream<f32, E>>));
         let sum = SumStream::new(vec![Rc::clone(&kp_mul), Rc::clone(&ki_mul), Rc::clone(&kd_mul)]);
         Self {
             sum: sum,
