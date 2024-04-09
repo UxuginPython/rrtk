@@ -25,7 +25,7 @@ pub struct TimeGetterFromStream<T: Clone, E> {
     elevator: NoneToError<T, E>,
 }
 impl<T: Clone, E> TimeGetterFromStream<T, E> {
-    pub fn new(stream: Rc<RefCell<dyn Stream<T, E>>>) -> Self {
+    pub fn new(stream: Rc<RefCell<Box<dyn Stream<T, E>>>>) -> Self {
         Self {
             elevator: NoneToError::new(Rc::clone(&stream)),
         }
@@ -44,11 +44,11 @@ pub trait Stream<T: Clone, E: Copy + Debug> {
     fn update(&mut self);
 }
 pub struct Constant<T, E> {
-    time_getter: Rc<RefCell<dyn TimeGetter<E>>>,
+    time_getter: Rc<RefCell<Box<dyn TimeGetter<E>>>>,
     value: T,
 }
 impl<T, E> Constant<T, E> {
-    pub fn new(time_getter: Rc<RefCell<dyn TimeGetter<E>>>, value: T) -> Self {
+    pub fn new(time_getter: Rc<RefCell<Box<dyn TimeGetter<E>>>>, value: T) -> Self {
         Self {
             time_getter: time_getter,
             value: value,
@@ -63,10 +63,10 @@ impl<T: Clone, E: Copy + Debug> Stream<T, E> for Constant<T, E> {
     fn update(&mut self) {}
 }
 pub struct NoneToError<T: Clone, E> {
-    input: Rc<RefCell<dyn Stream<T, E>>>,
+    input: Rc<RefCell<Box<dyn Stream<T, E>>>>,
 }
 impl<T: Clone, E> NoneToError<T, E> {
-    pub fn new(input: Rc<RefCell<dyn Stream<T, E>>>) -> Self {
+    pub fn new(input: Rc<RefCell<Box<dyn Stream<T, E>>>>) -> Self {
         Self { input: input }
     }
 }
@@ -85,10 +85,10 @@ impl<T: Clone, E: Copy + Debug> Stream<T, E> for NoneToError<T, E> {
     fn update(&mut self) {}
 }
 pub struct SumStream<E> {
-    addends: Vec<Rc<RefCell<dyn Stream<f32, E>>>>,
+    addends: Vec<Rc<RefCell<Box<dyn Stream<f32, E>>>>>,
 }
 impl<E> SumStream<E> {
-    pub fn new(addends: Vec<Rc<RefCell<dyn Stream<f32, E>>>>) -> Self {
+    pub fn new(addends: Vec<Rc<RefCell<Box<dyn Stream<f32, E>>>>>) -> Self {
         Self { addends: addends }
     }
 }
@@ -141,13 +141,13 @@ impl<E: Copy + Debug> Stream<f32, E> for SumStream<E> {
     fn update(&mut self) {}
 }
 pub struct DifferenceStream<E> {
-    minuend: Rc<RefCell<dyn Stream<f32, E>>>,
-    subtrahend: Rc<RefCell<dyn Stream<f32, E>>>,
+    minuend: Rc<RefCell<Box<dyn Stream<f32, E>>>>,
+    subtrahend: Rc<RefCell<Box<dyn Stream<f32, E>>>>,
 }
 impl<E> DifferenceStream<E> {
     pub fn new(
-        minuend: Rc<RefCell<dyn Stream<f32, E>>>,
-        subtrahend: Rc<RefCell<dyn Stream<f32, E>>>,
+        minuend: Rc<RefCell<Box<dyn Stream<f32, E>>>>,
+        subtrahend: Rc<RefCell<Box<dyn Stream<f32, E>>>>,
     ) -> Self {
         Self {
             minuend: minuend,
@@ -184,10 +184,10 @@ impl<E: Copy + Debug> Stream<f32, E> for DifferenceStream<E> {
     fn update(&mut self) {}
 }
 pub struct ProductStream<E> {
-    factors: Vec<Rc<RefCell<dyn Stream<f32, E>>>>,
+    factors: Vec<Rc<RefCell<Box<dyn Stream<f32, E>>>>>,
 }
 impl<E> ProductStream<E> {
-    pub fn new(factors: Vec<Rc<RefCell<dyn Stream<f32, E>>>>) -> Self {
+    pub fn new(factors: Vec<Rc<RefCell<Box<dyn Stream<f32, E>>>>>) -> Self {
         Self { factors: factors }
     }
 }
@@ -237,13 +237,13 @@ impl<E: Copy + Debug> Stream<f32, E> for ProductStream<E> {
     fn update(&mut self) {}
 }
 pub struct QuotientStream<E> {
-    dividend: Rc<RefCell<dyn Stream<f32, E>>>,
-    divisor: Rc<RefCell<dyn Stream<f32, E>>>,
+    dividend: Rc<RefCell<Box<dyn Stream<f32, E>>>>,
+    divisor: Rc<RefCell<Box<dyn Stream<f32, E>>>>,
 }
 impl<E> QuotientStream<E> {
     pub fn new(
-        dividend: Rc<RefCell<dyn Stream<f32, E>>>,
-        divisor: Rc<RefCell<dyn Stream<f32, E>>>,
+        dividend: Rc<RefCell<Box<dyn Stream<f32, E>>>>,
+        divisor: Rc<RefCell<Box<dyn Stream<f32, E>>>>,
     ) -> Self {
         Self {
             dividend: dividend,
@@ -281,14 +281,14 @@ impl<E: Copy + Debug> Stream<f32, E> for QuotientStream<E> {
 }
 #[cfg(feature = "std")]
 pub struct ExponentStream<E> {
-    base: Rc<RefCell<dyn Stream<f32, E>>>,
-    exponent: Rc<RefCell<dyn Stream<f32, E>>>,
+    base: Rc<RefCell<Box<dyn Stream<f32, E>>>>,
+    exponent: Rc<RefCell<Box<dyn Stream<f32, E>>>>,
 }
 #[cfg(feature = "std")]
 impl<E> ExponentStream<E> {
     pub fn new(
-        base: Rc<RefCell<dyn Stream<f32, E>>>,
-        exponent: Rc<RefCell<dyn Stream<f32, E>>>,
+        base: Rc<RefCell<Box<dyn Stream<f32, E>>>>,
+        exponent: Rc<RefCell<Box<dyn Stream<f32, E>>>>,
     ) -> Self {
         Self {
             base: base,
@@ -326,13 +326,13 @@ impl<E: Copy + Debug> Stream<f32, E> for ExponentStream<E> {
     fn update(&mut self) {}
 }
 pub struct DerivativeStream<E: Copy + Debug> {
-    input: Rc<RefCell<dyn Stream<f32, E>>>,
+    input: Rc<RefCell<Box<dyn Stream<f32, E>>>>,
     value: StreamOutput<f32, E>,
     //doesn't matter if this is an Err or Ok(None) - we can't use it either way if it's not Some
     prev_output: Option<Datum<f32>>,
 }
 impl<E: Copy + Debug> DerivativeStream<E> {
-    pub fn new(input: Rc<RefCell<dyn Stream<f32, E>>>) -> Self {
+    pub fn new(input: Rc<RefCell<Box<dyn Stream<f32, E>>>>) -> Self {
         Self {
             input: input,
             value: Ok(None),
@@ -368,12 +368,12 @@ impl<E: Copy + Debug> Stream<f32, E> for DerivativeStream<E> {
 }
 pub struct IntegralStream<E: Copy + Debug> { //Luke, you're an idiot. Lucy, you're not. Brunk, be
                                              //careful.
-    input: Rc<RefCell<dyn Stream<f32, E>>>,
+    input: Rc<RefCell<Box<dyn Stream<f32, E>>>>,
     value: StreamOutput<f32, E>,
     prev_output: Option<Datum<f32>>,
 }
 impl<E: Copy + Debug> IntegralStream<E> {
-    pub fn new(input: Rc<RefCell<dyn Stream<f32, E>>>) -> Self {
+    pub fn new(input: Rc<RefCell<Box<dyn Stream<f32, E>>>>) -> Self {
         Self {
             input: input,
             value: Ok(None),
@@ -418,14 +418,14 @@ pub struct StreamPIDController<E: Copy + Debug> {
     sum: SumStream<E>,
 }
 impl<E: Copy + Debug> StreamPIDController<E> {
-    pub fn new(input: Rc<RefCell<dyn Stream<f32, E>>>, kp: f32, ki: f32, kd: f32) -> Self {
-        let time_getter = Rc::new(RefCell::new(TimeGetterFromStream::new(Rc::clone(&input))));
-        let kp = Rc::new(RefCell::new(Constant::new(Rc::clone(&time_getter), kp)));
-        let ki = Rc::new(RefCell::new(Constant::new(Rc::clone(&time_getter), ki)));
-        let kd = Rc::new(RefCell::new(Constant::new(Rc::clone(&time_getter), kd)));
-        let kp_mul = Rc::new(RefCell::new(ProductStream::new(vec![Rc::clone(&input), Rc::clone(&kp)])));
-        let ki_mul = Rc::new(RefCell::new(ProductStream::new(vec![Rc::clone(&input), Rc::clone(&ki)])));
-        let kd_mul = Rc::new(RefCell::new(ProductStream::new(vec![Rc::clone(&input), Rc::clone(&kd)])));
+    pub fn new(input: Rc<RefCell<Box<dyn Stream<f32, E>>>>, kp: f32, ki: f32, kd: f32) -> Self {
+        let time_getter = Rc::new(RefCell::new(Box::new(TimeGetterFromStream::new(Rc::clone(&input))) as Box<dyn TimeGetter<E>>));
+        let kp = Rc::new(RefCell::new(Box::new(Constant::new(Rc::clone(&time_getter), kp)) as Box<dyn Stream<f32, E>>));
+        let ki = Rc::new(RefCell::new(Box::new(Constant::new(Rc::clone(&time_getter), ki)) as Box<dyn Stream<f32, E>>));
+        let kd = Rc::new(RefCell::new(Box::new(Constant::new(Rc::clone(&time_getter), kd)) as Box<dyn Stream<f32, E>>));
+        let kp_mul = Rc::new(RefCell::new(Box::new(ProductStream::new(vec![Rc::clone(&input), Rc::clone(&kp)])) as Box<dyn Stream<f32, E>>));
+        let ki_mul = Rc::new(RefCell::new(Box::new(ProductStream::new(vec![Rc::clone(&input), Rc::clone(&ki)])) as Box<dyn Stream<f32, E>>));
+        let kd_mul = Rc::new(RefCell::new(Box::new(ProductStream::new(vec![Rc::clone(&input), Rc::clone(&kd)])) as Box<dyn Stream<f32, E>>));
         let sum = SumStream::new(vec![Rc::clone(&kp_mul), Rc::clone(&ki_mul), Rc::clone(&kd_mul)]);
         Self {
             sum: sum,
