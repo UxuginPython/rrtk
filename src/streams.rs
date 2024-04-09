@@ -12,9 +12,14 @@ use alloc::rc::Rc;
 #[cfg(not(feature = "std"))]
 use alloc::vec::Vec;
 #[cfg(not(feature = "std"))]
+//It's funny I know, but it really is so; oh, I'm my own macro!
+use alloc::vec;
+#[cfg(not(feature = "std"))]
 use core::cell::RefCell;
 #[cfg(not(feature = "std"))]
 use core::fmt::Debug;
+#[cfg(not(feature = "std"))]
+use alloc::boxed::Box;
 pub mod errors;
 pub type StreamOutput<T, E> = Result<Option<Datum<T>>, errors::StreamError<E>>;
 pub trait TimeGetter<E: Copy + Debug> {
