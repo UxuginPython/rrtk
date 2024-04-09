@@ -162,7 +162,7 @@ impl State {
     }
 }
 ///A container for a time and something else, usually an `f32` or a `State`.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Datum<T> {
     pub time: f32,
     pub value: T,
