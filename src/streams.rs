@@ -48,6 +48,18 @@ pub trait Stream<T: Clone, E: Copy + Debug> {
     fn get(&self) -> StreamOutput<T, E>;
     fn update(&mut self);
 }
+#[macro_export]
+macro_rules! make_stream_input {
+    ($stream:expr, $ttype:tt, $etype:tt) => {
+        Rc::new(RefCell::new(Box::new($stream) as Box<dyn Stream<$ttype, $etype>>))
+    }
+}
+#[macro_export]
+macro_rules! make_time_getter_input {
+    ($time_getter:expr, $etype:tt) => {
+        Rc::new(RefCell::new(Box::new($time_getter) as Box<dyn TimeGetter<$etype>>))
+    }
+}
 pub struct Constant<T, E> {
     time_getter: Rc<RefCell<Box<dyn TimeGetter<E>>>>,
     value: T,

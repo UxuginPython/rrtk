@@ -40,6 +40,35 @@ fn time_getter_from_stream() {
     assert_eq!(time_getter.get().unwrap(), 1.0);
 }
 #[test]
+fn make_stream_input_() {
+    #[derive(Clone, Copy, Debug)]
+    struct Nothing;
+    struct DummyStream {
+        time: f32,
+    }
+    impl DummyStream {
+        pub fn new() -> Self {
+            Self {
+                time: 0.0,
+            }
+        }
+    }
+    impl<E: Copy + Debug> Stream<f32, E> for DummyStream {
+        fn get(&self) -> StreamOutput<f32, E> {
+            Ok(Some(Datum::new(self.time, 0.0)))
+        }
+        fn update(&mut self) {
+            self.time += 1.0;
+        }
+    }
+    let tg_stream = make_stream_input!(DummyStream::new(), f32, Nothing);
+    let time_getter = make_time_getter_input!(TimeGetterFromStream::new(Rc::clone(&tg_stream)), Nothing);
+    let stream = Constant::new(Rc::clone(&time_getter), 20u8);
+    assert_eq!(stream.get().unwrap().unwrap().value, 20);
+    tg_stream.borrow_mut().update();
+    assert_eq!(stream.get().unwrap().unwrap().value, 20);
+}
+#[test]
 fn constant() {
     #[derive(Clone, Copy, Debug)]
     struct Nothing;
