@@ -22,6 +22,8 @@ use core::fmt::Debug;
 use alloc::boxed::Box;
 pub mod errors;
 pub type StreamOutput<T, E> = Result<Option<Datum<T>>, errors::StreamError<E>>;
+pub type InputStream<T, E> = Rc<RefCell<Box<dyn Stream<T, E>>>>;
+pub type InputTimeGetter<E> = Rc<RefCell<Box<dyn TimeGetter<E>>>>;
 pub trait TimeGetter<E: Copy + Debug> {
     fn get(&self) -> Result<f32, errors::StreamError<E>>;
     fn update(&mut self);
@@ -61,11 +63,11 @@ macro_rules! make_time_getter_input {
     }
 }
 pub struct Constant<T, E> {
-    time_getter: Rc<RefCell<Box<dyn TimeGetter<E>>>>,
+    time_getter: InputTimeGetter<E>,
     value: T,
 }
 impl<T, E> Constant<T, E> {
-    pub fn new(time_getter: Rc<RefCell<Box<dyn TimeGetter<E>>>>, value: T) -> Self {
+    pub fn new(time_getter: InputTimeGetter<E>, value: T) -> Self {
         Self {
             time_getter: time_getter,
             value: value,
@@ -80,10 +82,10 @@ impl<T: Clone, E: Copy + Debug> Stream<T, E> for Constant<T, E> {
     fn update(&mut self) {}
 }
 pub struct NoneToError<T: Clone, E> {
-    input: Rc<RefCell<Box<dyn Stream<T, E>>>>,
+    input: InputStream<T, E>,
 }
 impl<T: Clone, E> NoneToError<T, E> {
-    pub fn new(input: Rc<RefCell<Box<dyn Stream<T, E>>>>) -> Self {
+    pub fn new(input: InputStream<T, E>) -> Self {
         Self { input: input }
     }
 }
@@ -102,10 +104,10 @@ impl<T: Clone, E: Copy + Debug> Stream<T, E> for NoneToError<T, E> {
     fn update(&mut self) {}
 }
 pub struct SumStream<E> {
-    addends: Vec<Rc<RefCell<Box<dyn Stream<f32, E>>>>>,
+    addends: Vec<InputStream<f32, E>>,
 }
 impl<E> SumStream<E> {
-    pub fn new(addends: Vec<Rc<RefCell<Box<dyn Stream<f32, E>>>>>) -> Self {
+    pub fn new(addends: Vec<InputStream<f32, E>>) -> Self {
         Self { addends: addends }
     }
 }
@@ -158,13 +160,13 @@ impl<E: Copy + Debug> Stream<f32, E> for SumStream<E> {
     fn update(&mut self) {}
 }
 pub struct DifferenceStream<E> {
-    minuend: Rc<RefCell<Box<dyn Stream<f32, E>>>>,
-    subtrahend: Rc<RefCell<Box<dyn Stream<f32, E>>>>,
+    minuend: InputStream<f32, E>,
+    subtrahend: InputStream<f32, E>,
 }
 impl<E> DifferenceStream<E> {
     pub fn new(
-        minuend: Rc<RefCell<Box<dyn Stream<f32, E>>>>,
-        subtrahend: Rc<RefCell<Box<dyn Stream<f32, E>>>>,
+        minuend: InputStream<f32, E>,
+        subtrahend: InputStream<f32, E>,
     ) -> Self {
         Self {
             minuend: minuend,
@@ -201,10 +203,10 @@ impl<E: Copy + Debug> Stream<f32, E> for DifferenceStream<E> {
     fn update(&mut self) {}
 }
 pub struct ProductStream<E> {
-    factors: Vec<Rc<RefCell<Box<dyn Stream<f32, E>>>>>,
+    factors: Vec<InputStream<f32, E>>,
 }
 impl<E> ProductStream<E> {
-    pub fn new(factors: Vec<Rc<RefCell<Box<dyn Stream<f32, E>>>>>) -> Self {
+    pub fn new(factors: Vec<InputStream<f32, E>>) -> Self {
         Self { factors: factors }
     }
 }
@@ -254,13 +256,13 @@ impl<E: Copy + Debug> Stream<f32, E> for ProductStream<E> {
     fn update(&mut self) {}
 }
 pub struct QuotientStream<E> {
-    dividend: Rc<RefCell<Box<dyn Stream<f32, E>>>>,
-    divisor: Rc<RefCell<Box<dyn Stream<f32, E>>>>,
+    dividend: InputStream<f32, E>,
+    divisor: InputStream<f32, E>,
 }
 impl<E> QuotientStream<E> {
     pub fn new(
-        dividend: Rc<RefCell<Box<dyn Stream<f32, E>>>>,
-        divisor: Rc<RefCell<Box<dyn Stream<f32, E>>>>,
+        dividend: InputStream<f32, E>,
+        divisor: InputStream<f32, E>,
     ) -> Self {
         Self {
             dividend: dividend,
@@ -298,14 +300,14 @@ impl<E: Copy + Debug> Stream<f32, E> for QuotientStream<E> {
 }
 #[cfg(feature = "std")]
 pub struct ExponentStream<E> {
-    base: Rc<RefCell<Box<dyn Stream<f32, E>>>>,
-    exponent: Rc<RefCell<Box<dyn Stream<f32, E>>>>,
+    base: InputStream<f32, E>,
+    exponent: InputStream<f32, E>,
 }
 #[cfg(feature = "std")]
 impl<E> ExponentStream<E> {
     pub fn new(
-        base: Rc<RefCell<Box<dyn Stream<f32, E>>>>,
-        exponent: Rc<RefCell<Box<dyn Stream<f32, E>>>>,
+        base: InputStream<f32, E>,
+        exponent: InputStream<f32, E>,
     ) -> Self {
         Self {
             base: base,
@@ -343,13 +345,13 @@ impl<E: Copy + Debug> Stream<f32, E> for ExponentStream<E> {
     fn update(&mut self) {}
 }
 pub struct DerivativeStream<E: Copy + Debug> {
-    input: Rc<RefCell<Box<dyn Stream<f32, E>>>>,
+    input: InputStream<f32, E>,
     value: StreamOutput<f32, E>,
     //doesn't matter if this is an Err or Ok(None) - we can't use it either way if it's not Some
     prev_output: Option<Datum<f32>>,
 }
 impl<E: Copy + Debug> DerivativeStream<E> {
-    pub fn new(input: Rc<RefCell<Box<dyn Stream<f32, E>>>>) -> Self {
+    pub fn new(input: InputStream<f32, E>) -> Self {
         Self {
             input: input,
             value: Ok(None),
@@ -384,12 +386,12 @@ impl<E: Copy + Debug> Stream<f32, E> for DerivativeStream<E> {
     }
 }
 pub struct IntegralStream<E: Copy + Debug> {
-    input: Rc<RefCell<Box<dyn Stream<f32, E>>>>,
+    input: InputStream<f32, E>,
     value: StreamOutput<f32, E>,
     prev_output: Option<Datum<f32>>,
 }
 impl<E: Copy + Debug> IntegralStream<E> {
-    pub fn new(input: Rc<RefCell<Box<dyn Stream<f32, E>>>>) -> Self {
+    pub fn new(input: InputStream<f32, E>) -> Self {
         Self {
             input: input,
             value: Ok(None),
