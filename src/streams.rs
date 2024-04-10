@@ -371,8 +371,7 @@ impl<E: Copy + Debug> Stream<f32, E> for DerivativeStream<E> {
         self.prev_output = Some(output);
     }
 }
-pub struct IntegralStream<E: Copy + Debug> { //Luke, you're an idiot. Lucy, you're not. Brunk, be
-                                             //careful.
+pub struct IntegralStream<E: Copy + Debug> {
     input: Rc<RefCell<Box<dyn Stream<f32, E>>>>,
     value: StreamOutput<f32, E>,
     prev_output: Option<Datum<f32>>,

@@ -605,3 +605,39 @@ fn exponent_stream() {
         Err(_) => {panic!();}
     }
 }
+#[test]
+fn derivative_stream() {
+    #[derive(Clone, Copy, Debug)]
+    struct DummyError;
+    struct DummyStream {
+        time: f32,
+    }
+    impl DummyStream {
+        pub fn new() -> Self {
+            Self {
+                time: 0.0,
+            }
+        }
+    }
+    impl Stream<f32, DummyError> for DummyStream {
+        fn get(&self) -> StreamOutput<f32, DummyError> {
+            Ok(Some(Datum::new(self.time * 2.0, self.time * 3.0)))
+        }
+        fn update(&mut self) {
+            self.time += 2.0;
+        }
+    }
+    let input = Rc::new(RefCell::new(Box::new(DummyStream::new()) as Box<dyn Stream<f32, DummyError>>));
+    println!("{:?}", input.borrow().get().unwrap().unwrap());
+    let mut stream = DerivativeStream::new(Rc::clone(&input));
+    input.borrow_mut().update();
+    println!("{:?}", input.borrow().get().unwrap().unwrap());
+    stream.update();
+    println!("{:?}", input.borrow().get().unwrap().unwrap());
+    input.borrow_mut().update();
+    println!("{:?}", input.borrow().get().unwrap().unwrap());
+    stream.update();
+    println!("{:?}", input.borrow().get().unwrap().unwrap());
+    assert_eq!(stream.get().unwrap().unwrap().time, 8.0);
+    assert_eq!(stream.get().unwrap().unwrap().value, 1.5);
+}
