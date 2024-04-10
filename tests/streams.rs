@@ -299,3 +299,58 @@ fn difference_stream() {
         Err(_) => {panic!();}
     }
 }
+#[test]
+fn product_stream() {
+    #[derive(Clone, Copy, Debug)]
+    struct Nothing;
+    struct ErroringStream {
+        index: u8,
+    }
+    impl ErroringStream {
+        pub fn new() -> Self {
+            Self {
+                index: 0,
+            }
+        }
+    }
+    impl Stream<f32, Nothing> for ErroringStream {
+        fn get(&self) -> StreamOutput<f32, Nothing> {
+            if self.index == 0 {
+                return Err(errors::StreamError::Other(Nothing));
+            } else if self.index == 1 {
+                return Ok(None);
+            } else {
+                return Ok(Some(Datum::new(2.0, 3.0)));
+            }
+        }
+        fn update(&mut self) {
+            self.index += 1;
+        }
+    }
+    struct NormalStream;
+    impl NormalStream {
+        pub fn new() -> Self {
+            Self {}
+        }
+    }
+    impl Stream<f32, Nothing> for NormalStream {
+        fn get(&self) -> StreamOutput<f32, Nothing> {
+            Ok(Some(Datum::new(1.0, 5.0)))
+        }
+        fn update(&mut self) {}
+    }
+    let erroring = Rc::new(RefCell::new(Box::new(ErroringStream::new()) as Box<dyn Stream<f32, Nothing>>));
+    let normal = Rc::new(RefCell::new(Box::new(NormalStream::new()) as Box<dyn Stream<f32, Nothing>>));
+    let stream = ProductStream::new(vec![Rc::clone(&erroring), Rc::clone(&normal)]);
+    match stream.get() {
+        Ok(_) => {panic!("error not propagated")},
+        Err(_) => {},
+    }
+    //normal does not need update
+    erroring.borrow_mut().update();
+    assert_eq!(stream.get().unwrap().unwrap().time, 1.0);
+    assert_eq!(stream.get().unwrap().unwrap().value, 5.0);
+    erroring.borrow_mut().update();
+    assert_eq!(stream.get().unwrap().unwrap().time, 2.0);
+    assert_eq!(stream.get().unwrap().unwrap().value, 15.0);
+}
