@@ -432,31 +432,31 @@ impl<E: Copy + Debug> Stream<f32, E> for IntegralStream<E> {
         self.prev_output = Some(output);
     }
 }
-pub struct StreamPIDController<E: Copy + Debug> {
-    sum: SumStream<E>,
+pub struct StreamPID<E: Copy + Debug> {
+    output: SumStream<E>,
 }
-impl<E: Copy + Debug + 'static> StreamPIDController<E> {
-    pub fn new(input: Rc<RefCell<Box<dyn Stream<f32, E>>>>, setpoint: f32, kp: f32, ki: f32, kd: f32) -> Self {
-        let time_getter = Rc::new(RefCell::new(Box::new(TimeGetterFromStream::new(Rc::clone(&input))) as Box<dyn TimeGetter<E>>));
-        let setpoint = Rc::new(RefCell::new(Box::new(Constant::new(Rc::clone(&time_getter), setpoint)) as Box<dyn Stream<f32, E>>));
-        let error = Rc::new(RefCell::new(Box::new(DifferenceStream::new(Rc::clone(&setpoint), Rc::clone(&input))) as Box<dyn Stream<f32, E>>));
-        let int = Rc::new(RefCell::new(Box::new(IntegralStream::new(Rc::clone(&error))) as Box<dyn Stream<f32, E>>));
-        let drv = Rc::new(RefCell::new(Box::new(DerivativeStream::new(Rc::clone(&error))) as Box<dyn Stream<f32, E>>));
-        let kp = Rc::new(RefCell::new(Box::new(Constant::new(Rc::clone(&time_getter), kp)) as Box<dyn Stream<f32, E>>));
-        let ki = Rc::new(RefCell::new(Box::new(Constant::new(Rc::clone(&time_getter), ki)) as Box<dyn Stream<f32, E>>));
-        let kd = Rc::new(RefCell::new(Box::new(Constant::new(Rc::clone(&time_getter), kd)) as Box<dyn Stream<f32, E>>));
-        let kp_mul = Rc::new(RefCell::new(Box::new(ProductStream::new(vec![Rc::clone(&kp), Rc::clone(&error)])) as Box<dyn Stream<f32, E>>));
-        let ki_mul = Rc::new(RefCell::new(Box::new(ProductStream::new(vec![Rc::clone(&ki), Rc::clone(&int)])) as Box<dyn Stream<f32, E>>));
-        let kd_mul = Rc::new(RefCell::new(Box::new(ProductStream::new(vec![Rc::clone(&kd), Rc::clone(&drv)])) as Box<dyn Stream<f32, E>>));
-        let sum = SumStream::new(vec![Rc::clone(&kp_mul), Rc::clone(&ki_mul), Rc::clone(&kd_mul)]);
+impl<E: Copy + Debug + 'static> StreamPID<E> {
+    pub fn new(input: InputStream<f32, E>, setpoint: f32, kp: f32, ki: f32, kd: f32) -> Self {
+        let time_getter = make_time_getter_input!(TimeGetterFromStream::new(Rc::clone(&input)), E);
+        let setpoint = make_stream_input!(Constant::new(Rc::clone(&time_getter), setpoint), f32, E);
+        let kp = make_stream_input!(Constant::new(Rc::clone(&time_getter), kp), f32, E);
+        let ki = make_stream_input!(Constant::new(Rc::clone(&time_getter), ki), f32, E);
+        let kd = make_stream_input!(Constant::new(Rc::clone(&time_getter), kd), f32, E);
+        let error = make_stream_input!(DifferenceStream::new(Rc::clone(&setpoint), Rc::clone(&input)), f32, E);
+        let int = make_stream_input!(IntegralStream::new(Rc::clone(&error)), f32, E);
+        let drv = make_stream_input!(DerivativeStream::new(Rc::clone(&error)), f32, E);
+        let kp_mul = make_stream_input!(ProductStream::new(vec![Rc::clone(&kp), Rc::clone(&error)]), f32, E);
+        let ki_mul = make_stream_input!(ProductStream::new(vec![Rc::clone(&ki), Rc::clone(&int)]), f32, E);
+        let kd_mul = make_stream_input!(ProductStream::new(vec![Rc::clone(&kd), Rc::clone(&drv)]), f32, E);
+        let output = SumStream::new(vec![Rc::clone(&kp_mul), Rc::clone(&ki_mul), Rc::clone(&kd_mul)]);
         Self {
-            sum: sum,
+            output: output
         }
     }
 }
-impl<E: Copy + Debug + 'static> Stream<f32, E> for StreamPIDController<E> {
+impl<E: Copy + Debug + 'static> Stream<f32, E> for StreamPID<E> {
     fn get(&self) -> StreamOutput<f32, E> {
-        self.sum.get()
+        self.output.get()
     }
     fn update(&mut self) {}
 }
