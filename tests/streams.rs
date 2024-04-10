@@ -479,3 +479,129 @@ fn quotient_stream() {
         Err(_) => {panic!();}
     }
 }
+#[test]
+#[cfg(feature = "std")]
+fn exponent_stream() {
+    #[derive(Clone, Copy, Debug)]
+    struct DummyError;
+    struct Stream1 {
+        index: u8,
+    }
+    impl Stream1 {
+        pub fn new() -> Self {
+            Self {
+                index: 0,
+            }
+        }
+    }
+    impl Stream<f32, DummyError> for Stream1 {
+        fn get(&self) -> StreamOutput<f32, DummyError> {
+            if self.index == 0 || self.index == 1 || self.index == 2 {
+                return Err(errors::StreamError::Other(DummyError));
+            } else if self.index == 3 || self.index == 4 || self.index == 5 {
+                return Ok(None);
+            }
+            return Ok(Some(Datum::new(1.0, 5.0)));
+        }
+        fn update(&mut self) {
+            self.index += 1;
+        }
+    }
+    struct Stream2 {
+        index: u8,
+    }
+    impl Stream2 {
+        pub fn new() -> Self {
+            Self {
+                index: 0,
+            }
+        }
+    }
+    impl Stream<f32, DummyError> for Stream2 {
+        fn get(&self) -> StreamOutput<f32, DummyError> {
+            if self.index == 0 || self.index == 3 || self.index == 6 {
+                return Err(errors::StreamError::Other(DummyError));
+            } else if self.index == 1 || self.index == 4 || self.index == 7 {
+                return Ok(None);
+            }
+            return Ok(Some(Datum::new(2.0, 3.0)));
+        }
+        fn update(&mut self) {
+            self.index += 1;
+        }
+    }
+    let stream1 = Rc::new(RefCell::new(Box::new(Stream1::new()) as Box<dyn Stream<f32, DummyError>>));
+    let stream2 = Rc::new(RefCell::new(Box::new(Stream2::new()) as Box<dyn Stream<f32, DummyError>>));
+    let stream = ExponentStream::new(Rc::clone(&stream1), Rc::clone(&stream2));
+    //Err, Err
+    match stream.get() {
+        Ok(_) => {panic!();}
+        Err(_) => {}
+    }
+    stream1.borrow_mut().update();
+    stream2.borrow_mut().update();
+    //Err, None
+    match stream.get() {
+        Ok(_) => {panic!();}
+        Err(_) => {}
+    }
+    stream1.borrow_mut().update();
+    stream2.borrow_mut().update();
+    //Err, Some
+    match stream.get() {
+        Ok(_) => {panic!();}
+        Err(_) => {}
+    }
+    stream1.borrow_mut().update();
+    stream2.borrow_mut().update();
+    //None, Err
+    match stream.get() {
+        Ok(_) => {panic!();}
+        Err(_) => {}
+    }
+    stream1.borrow_mut().update();
+    stream2.borrow_mut().update();
+    //None, None
+    match stream.get() {
+        Ok(Some(_)) => {panic!();}
+        Ok(None) => {}
+        Err(_) => {panic!();}
+    }
+    stream1.borrow_mut().update();
+    stream2.borrow_mut().update();
+    //None, Some
+    match stream.get() {
+        Ok(Some(_)) => {panic!();}
+        Ok(None) => {}
+        Err(_) => {panic!();}
+    }
+    stream1.borrow_mut().update();
+    stream2.borrow_mut().update();
+    //Some, Err
+    match stream.get() {
+        Ok(_) => {panic!();}
+        Err(_) => {}
+    }
+    stream1.borrow_mut().update();
+    stream2.borrow_mut().update();
+    //Some, None
+    match stream.get() {
+        Ok(Some(x)) => {
+            assert_eq!(x.time, 1.0);
+            assert_eq!(x.value, 5.0);
+        }
+        Ok(None) => {panic!();}
+        Err(_) => {panic!();}
+    }
+    stream1.borrow_mut().update();
+    stream2.borrow_mut().update();
+    //Some, Some
+    match stream.get() {
+        Ok(Some(x)) => {
+            assert_eq!(x.time, 2.0);
+            assert_eq!(x.value, 125.0);
+        }
+        Ok(None) => {panic!();}
+        Err(_) => {panic!();}
+    }
+}
