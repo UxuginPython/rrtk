@@ -22,6 +22,7 @@ use core::fmt::Debug;
 use alloc::boxed::Box;
 pub mod errors;
 pub type StreamOutput<T, E> = Result<Option<Datum<T>>, errors::StreamError<E>>;
+pub type TimeGetterOutput<E> = Result<f32, errors::StreamError<E>>;
 pub type InputStream<T, E> = Rc<RefCell<Box<dyn Stream<T, E>>>>;
 pub type InputTimeGetter<E> = Rc<RefCell<Box<dyn TimeGetter<E>>>>;
 pub trait TimeGetter<E: Copy + Debug> {
@@ -98,6 +99,34 @@ impl<T: Clone, E: Copy + Debug> Stream<T, E> for NoneToError<T, E> {
             }
             None => {
                 return Err(errors::StreamError::FromNone);
+            }
+        }
+    }
+    fn update(&mut self) {}
+}
+pub struct NoneToValue<T, E> {
+    input: InputStream<T, E>,
+    time_getter: InputTimeGetter<E>,
+    none_value: T,
+}
+impl<T, E> NoneToValue<T, E> {
+    pub fn new(input: InputStream<T, E>, time_getter: InputTimeGetter<E>, none_value: T) -> Self {
+        Self {
+            input: input,
+            time_getter: time_getter,
+            none_value: none_value,
+        }
+    }
+}
+impl<T: Clone, E: Copy + Debug> Stream<T, E> for NoneToValue<T, E> {
+    fn get(&self) -> StreamOutput<T, E> {
+        let output = self.input.borrow().get()?;
+        match output {
+            Some(_) => {
+                return Ok(output);
+            }
+            None => {
+                return Ok(Some(Datum::new(self.time_getter.borrow().get()?, self.none_value.clone())))
             }
         }
     }
@@ -433,6 +462,8 @@ impl<E: Copy + Debug> Stream<f32, E> for IntegralStream<E> {
     }
 }
 pub struct StreamPID<E: Copy + Debug> {
+    int: InputStream<f32, E>,
+    drv: InputStream<f32, E>,
     output: SumStream<E>,
 }
 impl<E: Copy + Debug + 'static> StreamPID<E> {
@@ -445,11 +476,19 @@ impl<E: Copy + Debug + 'static> StreamPID<E> {
         let error = make_stream_input!(DifferenceStream::new(Rc::clone(&setpoint), Rc::clone(&input)), f32, E);
         let int = make_stream_input!(IntegralStream::new(Rc::clone(&error)), f32, E);
         let drv = make_stream_input!(DerivativeStream::new(Rc::clone(&error)), f32, E);
+        //`ProductStream`'s behavior is to treat all `None` values as 1.0 so that it's as if they
+        //were not included. However, this is not what we want with the coefficient. `NoneToValue`
+        //is used to convert all `None` values to `Some(0.0)` to effectively exlude them from the
+        //final sum.
+        let int_zeroer = make_stream_input!(NoneToValue::new(Rc::clone(&int), Rc::clone(&time_getter), 0.0), f32, E);
+        let drv_zeroer = make_stream_input!(NoneToValue::new(Rc::clone(&drv), Rc::clone(&time_getter), 0.0), f32, E);
         let kp_mul = make_stream_input!(ProductStream::new(vec![Rc::clone(&kp), Rc::clone(&error)]), f32, E);
-        let ki_mul = make_stream_input!(ProductStream::new(vec![Rc::clone(&ki), Rc::clone(&int)]), f32, E);
-        let kd_mul = make_stream_input!(ProductStream::new(vec![Rc::clone(&kd), Rc::clone(&drv)]), f32, E);
+        let ki_mul = make_stream_input!(ProductStream::new(vec![Rc::clone(&ki), Rc::clone(&int_zeroer)]), f32, E);
+        let kd_mul = make_stream_input!(ProductStream::new(vec![Rc::clone(&kd), Rc::clone(&drv_zeroer)]), f32, E);
         let output = SumStream::new(vec![Rc::clone(&kp_mul), Rc::clone(&ki_mul), Rc::clone(&kd_mul)]);
         Self {
+            int: Rc::clone(&int),
+            drv: Rc::clone(&drv),
             output: output
         }
     }
@@ -458,5 +497,8 @@ impl<E: Copy + Debug + 'static> Stream<f32, E> for StreamPID<E> {
     fn get(&self) -> StreamOutput<f32, E> {
         self.output.get()
     }
-    fn update(&mut self) {}
+    fn update(&mut self) {
+        self.int.borrow_mut().update();
+        self.drv.borrow_mut().update();
+    }
 }

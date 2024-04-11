@@ -149,6 +149,72 @@ fn none_to_error() {
     }
 }
 #[test]
+fn none_to_value() {
+    #[derive(Clone, Copy, Debug)]
+    struct Nothing;
+    struct DummyStream {
+        index: u8,
+    }
+    impl DummyStream {
+        pub fn new() -> Self {
+            Self {
+                index: 0,
+            }
+        }
+    }
+    impl Stream<f32, Nothing> for DummyStream {
+        fn get(&self) -> StreamOutput<f32, Nothing> {
+            if self.index == 1 {
+                return Ok(None);
+            } else if self.index == 2 {
+                return Err(errors::StreamError::Other(Nothing));
+            }
+            return Ok(Some(Datum::new(0.0, 1.0)));
+        }
+        fn update(&mut self) {
+            self.index += 1;
+        }
+    }
+    struct DummyTimeGetter {
+        time: f32,
+    }
+    impl DummyTimeGetter {
+        pub fn new() -> Self {
+            Self {
+                time: 0.0,
+            }
+        }
+    }
+    impl<E: Copy + Debug> TimeGetter<E> for DummyTimeGetter {
+        fn get(&self) -> TimeGetterOutput<E> {
+            Ok(self.time)
+        }
+        fn update(&mut self) {
+            self.time += 1.0;
+        }
+    }
+    let input = Rc::new(RefCell::new(Box::new(DummyStream::new()) as Box<dyn Stream<f32, Nothing>>));
+    let stream = NoneToValue::new(Rc::clone(&input), make_time_getter_input!(DummyTimeGetter::new(), Nothing), 2.0);
+    match stream.get() {
+        Ok(option) => match option {
+            Some(datum) => {assert_eq!(datum.value, 1.0);},
+            None => {panic!("should return Ok(Some(_)), returned Ok(None)");}
+        },
+        Err(_) => {panic!("should return Ok(Some(_)), returned Err(_)");}
+    }
+    input.borrow_mut().update();
+    match stream.get() {
+        Ok(Some(datum)) => {assert_eq!(datum.value, 2.0);},
+        Ok(None) => {panic!("should return Ok(Some(_)), returned Ok(None)")}
+        Err(_) => {panic!("should return Ok(Some(_)), returned Err(_)");}
+    }
+    input.borrow_mut().update();
+    match stream.get() {
+        Ok(_) => {panic!("should return Err(_), returned Ok(_)");},
+        Err(_) => {},
+    }
+}
+#[test]
 fn sum_stream() {
     #[derive(Clone, Copy, Debug)]
     struct Nothing;
@@ -695,4 +761,36 @@ fn integral_stream() {
     stream.update();
     assert_eq!(stream.get().unwrap().unwrap().time, 2.0);
     assert_eq!(stream.get().unwrap().unwrap().value, 1.0);
+}
+#[test]
+fn stream_pid() {
+    #[derive(Clone, Copy, Debug)]
+    struct DummyError;
+    struct DummyStream {
+        time: f32,
+    }
+    impl DummyStream {
+        pub fn new() -> Self {
+            Self {
+                time: 0.0,
+            }
+        }
+    }
+    impl Stream<f32, DummyError> for DummyStream {
+        fn get(&self) -> StreamOutput<f32, DummyError> {
+            Ok(Some(Datum::new(self.time, self.time / 2.0)))
+        }
+        fn update(&mut self) {
+            self.time += 2.0;
+        }
+    }
+    let input = make_stream_input!(DummyStream::new(), f32, DummyError);
+    let mut stream = StreamPID::new(Rc::clone(&input), 5.0, 1.0, 0.01, 0.1);
+    stream.update();
+    assert_eq!(stream.get().unwrap().unwrap().time, 0.0);
+    assert_eq!(stream.get().unwrap().unwrap().value, 5.0);
+    input.borrow_mut().update();
+    stream.update();
+    assert_eq!(stream.get().unwrap().unwrap().time, 2.0);
+    assert_eq!(stream.get().unwrap().unwrap().value, 4.04);
 }
