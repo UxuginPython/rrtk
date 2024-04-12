@@ -39,3 +39,5 @@ Allow the user to run a custom update loop for motion profile following as an al
 Add an update method to encoders.
 ### 0.2.0
 Add an update method to motors, allow easier detection of parts of motion profiles, and reorganize the package to use features with the motor-encoder system in a module.
+### 0.3.0-alpha.1
+Start new stream system.
