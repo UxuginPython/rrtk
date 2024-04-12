@@ -1,19 +1,19 @@
-use rrtk::*;
 use rrtk::streams::*;
+use rrtk::*;
+#[cfg(feature = "std")]
+use std::cell::RefCell;
 #[cfg(feature = "std")]
 use std::fmt::Debug;
 #[cfg(feature = "std")]
 use std::rc::Rc;
-#[cfg(feature = "std")]
-use std::cell::RefCell;
 #[cfg(not(feature = "std"))]
 extern crate alloc;
-#[cfg(not(feature = "std"))]
-use core::fmt::Debug;
 #[cfg(not(feature = "std"))]
 use alloc::rc::Rc;
 #[cfg(not(feature = "std"))]
 use core::cell::RefCell;
+#[cfg(not(feature = "std"))]
+use core::fmt::Debug;
 #[test]
 fn time_getter_from_stream() {
     struct DummyStream {
@@ -21,9 +21,7 @@ fn time_getter_from_stream() {
     }
     impl DummyStream {
         pub fn new() -> Self {
-            Self {
-                time: 0.0,
-            }
+            Self { time: 0.0 }
         }
     }
     impl<E: Copy + Debug> Stream<f32, E> for DummyStream {
@@ -34,7 +32,9 @@ fn time_getter_from_stream() {
             self.time += 1.0;
         }
     }
-    let stream = Rc::new(RefCell::new(Box::new(DummyStream::new()) as Box<dyn Stream<f32, u8>>));
+    let stream = Rc::new(RefCell::new(
+        Box::new(DummyStream::new()) as Box<dyn Stream<f32, u8>>
+    ));
     let time_getter = TimeGetterFromStream::new(Rc::clone(&stream));
     stream.borrow_mut().update();
     assert_eq!(time_getter.get().unwrap(), 1.0);
@@ -48,9 +48,7 @@ fn make_stream_input_() {
     }
     impl DummyStream {
         pub fn new() -> Self {
-            Self {
-                time: 0.0,
-            }
+            Self { time: 0.0 }
         }
     }
     impl<E: Copy + Debug> Stream<f32, E> for DummyStream {
@@ -62,7 +60,8 @@ fn make_stream_input_() {
         }
     }
     let tg_stream = make_stream_input!(DummyStream::new(), f32, Nothing);
-    let time_getter = make_time_getter_input!(TimeGetterFromStream::new(Rc::clone(&tg_stream)), Nothing);
+    let time_getter =
+        make_time_getter_input!(TimeGetterFromStream::new(Rc::clone(&tg_stream)), Nothing);
     let stream = Constant::new(Rc::clone(&time_getter), 20u8);
     assert_eq!(stream.get().unwrap().unwrap().value, 20);
     tg_stream.borrow_mut().update();
@@ -77,9 +76,7 @@ fn constant() {
     }
     impl DummyStream {
         pub fn new() -> Self {
-            Self {
-                time: 0.0,
-            }
+            Self { time: 0.0 }
         }
     }
     impl<E: Copy + Debug> Stream<f32, E> for DummyStream {
@@ -90,8 +87,12 @@ fn constant() {
             self.time += 1.0;
         }
     }
-    let tg_stream = Rc::new(RefCell::new(Box::new(DummyStream::new()) as Box<dyn Stream<f32, Nothing>>));
-    let time_getter = Rc::new(RefCell::new(Box::new(TimeGetterFromStream::new(Rc::clone(&tg_stream))) as Box<dyn TimeGetter<Nothing>>));
+    let tg_stream = Rc::new(RefCell::new(
+        Box::new(DummyStream::new()) as Box<dyn Stream<f32, Nothing>>
+    ));
+    let time_getter = Rc::new(RefCell::new(Box::new(TimeGetterFromStream::new(Rc::clone(
+        &tg_stream,
+    ))) as Box<dyn TimeGetter<Nothing>>));
     let mut stream = Constant::new(Rc::clone(&time_getter), 20u8);
     assert_eq!(stream.get().unwrap().unwrap().value, 20);
     tg_stream.borrow_mut().update();
@@ -108,9 +109,7 @@ fn none_to_error() {
     }
     impl DummyStream {
         pub fn new() -> Self {
-            Self {
-                index: 0,
-            }
+            Self { index: 0 }
         }
     }
     impl Stream<f32, Nothing> for DummyStream {
@@ -126,26 +125,40 @@ fn none_to_error() {
             self.index += 1;
         }
     }
-    let input = Rc::new(RefCell::new(Box::new(DummyStream::new()) as Box<dyn Stream<f32, Nothing>>));
+    let input = Rc::new(RefCell::new(
+        Box::new(DummyStream::new()) as Box<dyn Stream<f32, Nothing>>
+    ));
     let stream = NoneToError::new(Rc::clone(&input));
     match stream.get() {
         Ok(option) => match option {
-            Some(_) => {},
-            None => {panic!("should not have None");}
+            Some(_) => {}
+            None => {
+                panic!("should not have None");
+            }
         },
-        Err(_) => {panic!("should not have Err now");}
+        Err(_) => {
+            panic!("should not have Err now");
+        }
     }
     input.borrow_mut().update();
     match stream.get() {
-        Ok(_) => {panic!("should return Err");},
-        Err(errors::StreamError::FromNone) => {},
-        Err(_) => {panic!("should be FromNone");}
+        Ok(_) => {
+            panic!("should return Err");
+        }
+        Err(errors::StreamError::FromNone) => {}
+        Err(_) => {
+            panic!("should be FromNone");
+        }
     }
     input.borrow_mut().update();
     match stream.get() {
-        Ok(_) => {panic!("should return Err");},
-        Err(errors::StreamError::FromNone) => {panic!("should return Nothing error");},
-        Err(_) => {},
+        Ok(_) => {
+            panic!("should return Err");
+        }
+        Err(errors::StreamError::FromNone) => {
+            panic!("should return Nothing error");
+        }
+        Err(_) => {}
     }
 }
 #[test]
@@ -157,9 +170,7 @@ fn none_to_value() {
     }
     impl DummyStream {
         pub fn new() -> Self {
-            Self {
-                index: 0,
-            }
+            Self { index: 0 }
         }
     }
     impl Stream<f32, Nothing> for DummyStream {
@@ -180,9 +191,7 @@ fn none_to_value() {
     }
     impl DummyTimeGetter {
         pub fn new() -> Self {
-            Self {
-                time: 0.0,
-            }
+            Self { time: 0.0 }
         }
     }
     impl<E: Copy + Debug> TimeGetter<E> for DummyTimeGetter {
@@ -193,25 +202,45 @@ fn none_to_value() {
             self.time += 1.0;
         }
     }
-    let input = Rc::new(RefCell::new(Box::new(DummyStream::new()) as Box<dyn Stream<f32, Nothing>>));
-    let stream = NoneToValue::new(Rc::clone(&input), make_time_getter_input!(DummyTimeGetter::new(), Nothing), 2.0);
+    let input = Rc::new(RefCell::new(
+        Box::new(DummyStream::new()) as Box<dyn Stream<f32, Nothing>>
+    ));
+    let stream = NoneToValue::new(
+        Rc::clone(&input),
+        make_time_getter_input!(DummyTimeGetter::new(), Nothing),
+        2.0,
+    );
     match stream.get() {
         Ok(option) => match option {
-            Some(datum) => {assert_eq!(datum.value, 1.0);},
-            None => {panic!("should return Ok(Some(_)), returned Ok(None)");}
+            Some(datum) => {
+                assert_eq!(datum.value, 1.0);
+            }
+            None => {
+                panic!("should return Ok(Some(_)), returned Ok(None)");
+            }
         },
-        Err(_) => {panic!("should return Ok(Some(_)), returned Err(_)");}
+        Err(_) => {
+            panic!("should return Ok(Some(_)), returned Err(_)");
+        }
     }
     input.borrow_mut().update();
     match stream.get() {
-        Ok(Some(datum)) => {assert_eq!(datum.value, 2.0);},
-        Ok(None) => {panic!("should return Ok(Some(_)), returned Ok(None)")}
-        Err(_) => {panic!("should return Ok(Some(_)), returned Err(_)");}
+        Ok(Some(datum)) => {
+            assert_eq!(datum.value, 2.0);
+        }
+        Ok(None) => {
+            panic!("should return Ok(Some(_)), returned Ok(None)")
+        }
+        Err(_) => {
+            panic!("should return Ok(Some(_)), returned Err(_)");
+        }
     }
     input.borrow_mut().update();
     match stream.get() {
-        Ok(_) => {panic!("should return Err(_), returned Ok(_)");},
-        Err(_) => {},
+        Ok(_) => {
+            panic!("should return Err(_), returned Ok(_)");
+        }
+        Err(_) => {}
     }
 }
 #[test]
@@ -223,9 +252,7 @@ fn sum_stream() {
     }
     impl ErroringStream {
         pub fn new() -> Self {
-            Self {
-                index: 0,
-            }
+            Self { index: 0 }
         }
     }
     impl Stream<f32, Nothing> for ErroringStream {
@@ -254,12 +281,18 @@ fn sum_stream() {
         }
         fn update(&mut self) {}
     }
-    let erroring = Rc::new(RefCell::new(Box::new(ErroringStream::new()) as Box<dyn Stream<f32, Nothing>>));
-    let normal = Rc::new(RefCell::new(Box::new(NormalStream::new()) as Box<dyn Stream<f32, Nothing>>));
+    let erroring = Rc::new(RefCell::new(
+        Box::new(ErroringStream::new()) as Box<dyn Stream<f32, Nothing>>
+    ));
+    let normal = Rc::new(RefCell::new(
+        Box::new(NormalStream::new()) as Box<dyn Stream<f32, Nothing>>
+    ));
     let stream = SumStream::new(vec![Rc::clone(&erroring), Rc::clone(&normal)]);
     match stream.get() {
-        Ok(_) => {panic!("error not propagated")},
-        Err(_) => {},
+        Ok(_) => {
+            panic!("error not propagated")
+        }
+        Err(_) => {}
     }
     //normal does not need update
     erroring.borrow_mut().update();
@@ -278,9 +311,7 @@ fn difference_stream() {
     }
     impl Stream1 {
         pub fn new() -> Self {
-            Self {
-                index: 0,
-            }
+            Self { index: 0 }
         }
     }
     impl Stream<f32, DummyError> for Stream1 {
@@ -301,9 +332,7 @@ fn difference_stream() {
     }
     impl Stream2 {
         pub fn new() -> Self {
-            Self {
-                index: 0,
-            }
+            Self { index: 0 }
         }
     }
     impl Stream<f32, DummyError> for Stream2 {
@@ -319,56 +348,78 @@ fn difference_stream() {
             self.index += 1;
         }
     }
-    let stream1 = Rc::new(RefCell::new(Box::new(Stream1::new()) as Box<dyn Stream<f32, DummyError>>));
-    let stream2 = Rc::new(RefCell::new(Box::new(Stream2::new()) as Box<dyn Stream<f32, DummyError>>));
+    let stream1 = Rc::new(RefCell::new(
+        Box::new(Stream1::new()) as Box<dyn Stream<f32, DummyError>>
+    ));
+    let stream2 = Rc::new(RefCell::new(
+        Box::new(Stream2::new()) as Box<dyn Stream<f32, DummyError>>
+    ));
     let stream = DifferenceStream::new(Rc::clone(&stream1), Rc::clone(&stream2));
     //Err, Err
     match stream.get() {
-        Ok(_) => {panic!();}
+        Ok(_) => {
+            panic!();
+        }
         Err(_) => {}
     }
     stream1.borrow_mut().update();
     stream2.borrow_mut().update();
     //Err, None
     match stream.get() {
-        Ok(_) => {panic!();}
+        Ok(_) => {
+            panic!();
+        }
         Err(_) => {}
     }
     stream1.borrow_mut().update();
     stream2.borrow_mut().update();
     //Err, Some
     match stream.get() {
-        Ok(_) => {panic!();}
+        Ok(_) => {
+            panic!();
+        }
         Err(_) => {}
     }
     stream1.borrow_mut().update();
     stream2.borrow_mut().update();
     //None, Err
     match stream.get() {
-        Ok(_) => {panic!();}
+        Ok(_) => {
+            panic!();
+        }
         Err(_) => {}
     }
     stream1.borrow_mut().update();
     stream2.borrow_mut().update();
     //None, None
     match stream.get() {
-        Ok(Some(_)) => {panic!();}
+        Ok(Some(_)) => {
+            panic!();
+        }
         Ok(None) => {}
-        Err(_) => {panic!();}
+        Err(_) => {
+            panic!();
+        }
     }
     stream1.borrow_mut().update();
     stream2.borrow_mut().update();
     //None, Some
     match stream.get() {
-        Ok(Some(_)) => {panic!();}
+        Ok(Some(_)) => {
+            panic!();
+        }
         Ok(None) => {}
-        Err(_) => {panic!();}
+        Err(_) => {
+            panic!();
+        }
     }
     stream1.borrow_mut().update();
     stream2.borrow_mut().update();
     //Some, Err
     match stream.get() {
-        Ok(_) => {panic!();}
+        Ok(_) => {
+            panic!();
+        }
         Err(_) => {}
     }
     stream1.borrow_mut().update();
@@ -379,8 +430,12 @@ fn difference_stream() {
             assert_eq!(x.time, 1.0);
             assert_eq!(x.value, 10.0);
         }
-        Ok(None) => {panic!();}
-        Err(_) => {panic!();}
+        Ok(None) => {
+            panic!();
+        }
+        Err(_) => {
+            panic!();
+        }
     }
     stream1.borrow_mut().update();
     stream2.borrow_mut().update();
@@ -390,8 +445,12 @@ fn difference_stream() {
             assert_eq!(x.time, 2.0);
             assert_eq!(x.value, 7.0);
         }
-        Ok(None) => {panic!();}
-        Err(_) => {panic!();}
+        Ok(None) => {
+            panic!();
+        }
+        Err(_) => {
+            panic!();
+        }
     }
 }
 #[test]
@@ -403,9 +462,7 @@ fn product_stream() {
     }
     impl ErroringStream {
         pub fn new() -> Self {
-            Self {
-                index: 0,
-            }
+            Self { index: 0 }
         }
     }
     impl Stream<f32, Nothing> for ErroringStream {
@@ -434,12 +491,18 @@ fn product_stream() {
         }
         fn update(&mut self) {}
     }
-    let erroring = Rc::new(RefCell::new(Box::new(ErroringStream::new()) as Box<dyn Stream<f32, Nothing>>));
-    let normal = Rc::new(RefCell::new(Box::new(NormalStream::new()) as Box<dyn Stream<f32, Nothing>>));
+    let erroring = Rc::new(RefCell::new(
+        Box::new(ErroringStream::new()) as Box<dyn Stream<f32, Nothing>>
+    ));
+    let normal = Rc::new(RefCell::new(
+        Box::new(NormalStream::new()) as Box<dyn Stream<f32, Nothing>>
+    ));
     let stream = ProductStream::new(vec![Rc::clone(&erroring), Rc::clone(&normal)]);
     match stream.get() {
-        Ok(_) => {panic!("error not propagated")},
-        Err(_) => {},
+        Ok(_) => {
+            panic!("error not propagated")
+        }
+        Err(_) => {}
     }
     //normal does not need update
     erroring.borrow_mut().update();
@@ -458,9 +521,7 @@ fn quotient_stream() {
     }
     impl Stream1 {
         pub fn new() -> Self {
-            Self {
-                index: 0,
-            }
+            Self { index: 0 }
         }
     }
     impl Stream<f32, DummyError> for Stream1 {
@@ -481,9 +542,7 @@ fn quotient_stream() {
     }
     impl Stream2 {
         pub fn new() -> Self {
-            Self {
-                index: 0,
-            }
+            Self { index: 0 }
         }
     }
     impl Stream<f32, DummyError> for Stream2 {
@@ -499,56 +558,78 @@ fn quotient_stream() {
             self.index += 1;
         }
     }
-    let stream1 = Rc::new(RefCell::new(Box::new(Stream1::new()) as Box<dyn Stream<f32, DummyError>>));
-    let stream2 = Rc::new(RefCell::new(Box::new(Stream2::new()) as Box<dyn Stream<f32, DummyError>>));
+    let stream1 = Rc::new(RefCell::new(
+        Box::new(Stream1::new()) as Box<dyn Stream<f32, DummyError>>
+    ));
+    let stream2 = Rc::new(RefCell::new(
+        Box::new(Stream2::new()) as Box<dyn Stream<f32, DummyError>>
+    ));
     let stream = QuotientStream::new(Rc::clone(&stream1), Rc::clone(&stream2));
     //Err, Err
     match stream.get() {
-        Ok(_) => {panic!();}
+        Ok(_) => {
+            panic!();
+        }
         Err(_) => {}
     }
     stream1.borrow_mut().update();
     stream2.borrow_mut().update();
     //Err, None
     match stream.get() {
-        Ok(_) => {panic!();}
+        Ok(_) => {
+            panic!();
+        }
         Err(_) => {}
     }
     stream1.borrow_mut().update();
     stream2.borrow_mut().update();
     //Err, Some
     match stream.get() {
-        Ok(_) => {panic!();}
+        Ok(_) => {
+            panic!();
+        }
         Err(_) => {}
     }
     stream1.borrow_mut().update();
     stream2.borrow_mut().update();
     //None, Err
     match stream.get() {
-        Ok(_) => {panic!();}
+        Ok(_) => {
+            panic!();
+        }
         Err(_) => {}
     }
     stream1.borrow_mut().update();
     stream2.borrow_mut().update();
     //None, None
     match stream.get() {
-        Ok(Some(_)) => {panic!();}
+        Ok(Some(_)) => {
+            panic!();
+        }
         Ok(None) => {}
-        Err(_) => {panic!();}
+        Err(_) => {
+            panic!();
+        }
     }
     stream1.borrow_mut().update();
     stream2.borrow_mut().update();
     //None, Some
     match stream.get() {
-        Ok(Some(_)) => {panic!();}
+        Ok(Some(_)) => {
+            panic!();
+        }
         Ok(None) => {}
-        Err(_) => {panic!();}
+        Err(_) => {
+            panic!();
+        }
     }
     stream1.borrow_mut().update();
     stream2.borrow_mut().update();
     //Some, Err
     match stream.get() {
-        Ok(_) => {panic!();}
+        Ok(_) => {
+            panic!();
+        }
         Err(_) => {}
     }
     stream1.borrow_mut().update();
@@ -559,8 +640,12 @@ fn quotient_stream() {
             assert_eq!(x.time, 1.0);
             assert_eq!(x.value, 12.0);
         }
-        Ok(None) => {panic!();}
-        Err(_) => {panic!();}
+        Ok(None) => {
+            panic!();
+        }
+        Err(_) => {
+            panic!();
+        }
     }
     stream1.borrow_mut().update();
     stream2.borrow_mut().update();
@@ -570,8 +655,12 @@ fn quotient_stream() {
             assert_eq!(x.time, 2.0);
             assert_eq!(x.value, 4.0);
         }
-        Ok(None) => {panic!();}
-        Err(_) => {panic!();}
+        Ok(None) => {
+            panic!();
+        }
+        Err(_) => {
+            panic!();
+        }
     }
 }
 #[test]
@@ -584,9 +673,7 @@ fn exponent_stream() {
     }
     impl Stream1 {
         pub fn new() -> Self {
-            Self {
-                index: 0,
-            }
+            Self { index: 0 }
         }
     }
     impl Stream<f32, DummyError> for Stream1 {
@@ -607,9 +694,7 @@ fn exponent_stream() {
     }
     impl Stream2 {
         pub fn new() -> Self {
-            Self {
-                index: 0,
-            }
+            Self { index: 0 }
         }
     }
     impl Stream<f32, DummyError> for Stream2 {
@@ -625,56 +710,78 @@ fn exponent_stream() {
             self.index += 1;
         }
     }
-    let stream1 = Rc::new(RefCell::new(Box::new(Stream1::new()) as Box<dyn Stream<f32, DummyError>>));
-    let stream2 = Rc::new(RefCell::new(Box::new(Stream2::new()) as Box<dyn Stream<f32, DummyError>>));
+    let stream1 = Rc::new(RefCell::new(
+        Box::new(Stream1::new()) as Box<dyn Stream<f32, DummyError>>
+    ));
+    let stream2 = Rc::new(RefCell::new(
+        Box::new(Stream2::new()) as Box<dyn Stream<f32, DummyError>>
+    ));
     let stream = ExponentStream::new(Rc::clone(&stream1), Rc::clone(&stream2));
     //Err, Err
     match stream.get() {
-        Ok(_) => {panic!();}
+        Ok(_) => {
+            panic!();
+        }
         Err(_) => {}
     }
     stream1.borrow_mut().update();
     stream2.borrow_mut().update();
     //Err, None
     match stream.get() {
-        Ok(_) => {panic!();}
+        Ok(_) => {
+            panic!();
+        }
         Err(_) => {}
     }
     stream1.borrow_mut().update();
     stream2.borrow_mut().update();
     //Err, Some
     match stream.get() {
-        Ok(_) => {panic!();}
+        Ok(_) => {
+            panic!();
+        }
         Err(_) => {}
     }
     stream1.borrow_mut().update();
     stream2.borrow_mut().update();
     //None, Err
     match stream.get() {
-        Ok(_) => {panic!();}
+        Ok(_) => {
+            panic!();
+        }
         Err(_) => {}
     }
     stream1.borrow_mut().update();
     stream2.borrow_mut().update();
     //None, None
     match stream.get() {
-        Ok(Some(_)) => {panic!();}
+        Ok(Some(_)) => {
+            panic!();
+        }
         Ok(None) => {}
-        Err(_) => {panic!();}
+        Err(_) => {
+            panic!();
+        }
     }
     stream1.borrow_mut().update();
     stream2.borrow_mut().update();
     //None, Some
     match stream.get() {
-        Ok(Some(_)) => {panic!();}
+        Ok(Some(_)) => {
+            panic!();
+        }
         Ok(None) => {}
-        Err(_) => {panic!();}
+        Err(_) => {
+            panic!();
+        }
     }
     stream1.borrow_mut().update();
     stream2.borrow_mut().update();
     //Some, Err
     match stream.get() {
-        Ok(_) => {panic!();}
+        Ok(_) => {
+            panic!();
+        }
         Err(_) => {}
     }
     stream1.borrow_mut().update();
@@ -685,8 +792,12 @@ fn exponent_stream() {
             assert_eq!(x.time, 1.0);
             assert_eq!(x.value, 5.0);
         }
-        Ok(None) => {panic!();}
-        Err(_) => {panic!();}
+        Ok(None) => {
+            panic!();
+        }
+        Err(_) => {
+            panic!();
+        }
     }
     stream1.borrow_mut().update();
     stream2.borrow_mut().update();
@@ -696,8 +807,12 @@ fn exponent_stream() {
             assert_eq!(x.time, 2.0);
             assert_eq!(x.value, 125.0);
         }
-        Ok(None) => {panic!();}
-        Err(_) => {panic!();}
+        Ok(None) => {
+            panic!();
+        }
+        Err(_) => {
+            panic!();
+        }
     }
 }
 #[test]
@@ -709,9 +824,7 @@ fn derivative_stream() {
     }
     impl DummyStream {
         pub fn new() -> Self {
-            Self {
-                time: 0.0,
-            }
+            Self { time: 0.0 }
         }
     }
     impl Stream<f32, DummyError> for DummyStream {
@@ -722,7 +835,9 @@ fn derivative_stream() {
             self.time += 2.0;
         }
     }
-    let input = Rc::new(RefCell::new(Box::new(DummyStream::new()) as Box<dyn Stream<f32, DummyError>>));
+    let input = Rc::new(RefCell::new(
+        Box::new(DummyStream::new()) as Box<dyn Stream<f32, DummyError>>
+    ));
     let mut stream = DerivativeStream::new(Rc::clone(&input));
     input.borrow_mut().update();
     stream.update();
@@ -740,9 +855,7 @@ fn integral_stream() {
     }
     impl DummyStream {
         pub fn new() -> Self {
-            Self {
-                time: 0.0,
-            }
+            Self { time: 0.0 }
         }
     }
     impl Stream<f32, DummyError> for DummyStream {
@@ -771,9 +884,7 @@ fn stream_pid() {
     }
     impl DummyStream {
         pub fn new() -> Self {
-            Self {
-                time: 0.0,
-            }
+            Self { time: 0.0 }
         }
     }
     impl Stream<f32, DummyError> for DummyStream {

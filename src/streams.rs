@@ -8,18 +8,18 @@ use std::rc::Rc;
 #[cfg(not(feature = "std"))]
 extern crate alloc;
 #[cfg(not(feature = "std"))]
-use alloc::rc::Rc;
+use alloc::boxed::Box;
 #[cfg(not(feature = "std"))]
-use alloc::vec::Vec;
+use alloc::rc::Rc;
 #[cfg(not(feature = "std"))]
 //It's funny I know, but it really is so; oh, I'm my own macro!
 use alloc::vec;
 #[cfg(not(feature = "std"))]
+use alloc::vec::Vec;
+#[cfg(not(feature = "std"))]
 use core::cell::RefCell;
 #[cfg(not(feature = "std"))]
 use core::fmt::Debug;
-#[cfg(not(feature = "std"))]
-use alloc::boxed::Box;
 pub mod errors;
 pub type StreamOutput<T, E> = Result<Option<Datum<T>>, errors::StreamError<E>>;
 pub type TimeGetterOutput<E> = Result<f32, errors::StreamError<E>>;
@@ -54,14 +54,18 @@ pub trait Stream<T: Clone, E: Copy + Debug> {
 #[macro_export]
 macro_rules! make_stream_input {
     ($stream:expr, $ttype:tt, $etype:tt) => {
-        Rc::new(RefCell::new(Box::new($stream) as Box<dyn Stream<$ttype, $etype>>))
-    }
+        Rc::new(RefCell::new(
+            Box::new($stream) as Box<dyn Stream<$ttype, $etype>>
+        ))
+    };
 }
 #[macro_export]
 macro_rules! make_time_getter_input {
     ($time_getter:expr, $etype:tt) => {
-        Rc::new(RefCell::new(Box::new($time_getter) as Box<dyn TimeGetter<$etype>>))
-    }
+        Rc::new(RefCell::new(
+            Box::new($time_getter) as Box<dyn TimeGetter<$etype>>
+        ))
+    };
 }
 pub struct Constant<T, E> {
     time_getter: InputTimeGetter<E>,
@@ -126,7 +130,10 @@ impl<T: Clone, E: Copy + Debug> Stream<T, E> for NoneToValue<T, E> {
                 return Ok(output);
             }
             None => {
-                return Ok(Some(Datum::new(self.time_getter.borrow().get()?, self.none_value.clone())))
+                return Ok(Some(Datum::new(
+                    self.time_getter.borrow().get()?,
+                    self.none_value.clone(),
+                )))
             }
         }
     }
@@ -193,10 +200,7 @@ pub struct DifferenceStream<E> {
     subtrahend: InputStream<f32, E>,
 }
 impl<E> DifferenceStream<E> {
-    pub fn new(
-        minuend: InputStream<f32, E>,
-        subtrahend: InputStream<f32, E>,
-    ) -> Self {
+    pub fn new(minuend: InputStream<f32, E>, subtrahend: InputStream<f32, E>) -> Self {
         Self {
             minuend: minuend,
             subtrahend: subtrahend,
@@ -289,10 +293,7 @@ pub struct QuotientStream<E> {
     divisor: InputStream<f32, E>,
 }
 impl<E> QuotientStream<E> {
-    pub fn new(
-        dividend: InputStream<f32, E>,
-        divisor: InputStream<f32, E>,
-    ) -> Self {
+    pub fn new(dividend: InputStream<f32, E>, divisor: InputStream<f32, E>) -> Self {
         Self {
             dividend: dividend,
             divisor: divisor,
@@ -334,10 +335,7 @@ pub struct ExponentStream<E> {
 }
 #[cfg(feature = "std")]
 impl<E> ExponentStream<E> {
-    pub fn new(
-        base: InputStream<f32, E>,
-        exponent: InputStream<f32, E>,
-    ) -> Self {
+    pub fn new(base: InputStream<f32, E>, exponent: InputStream<f32, E>) -> Self {
         Self {
             base: base,
             exponent: exponent,
@@ -395,18 +393,29 @@ impl<E: Copy + Debug> Stream<f32, E> for DerivativeStream<E> {
     fn update(&mut self) {
         let output = self.input.borrow().get();
         match output {
-            Ok(_) => {},
-            Err(error) => {self.value = Err(error); self.prev_output = None; return;},
+            Ok(_) => {}
+            Err(error) => {
+                self.value = Err(error);
+                self.prev_output = None;
+                return;
+            }
         }
         let output = output.unwrap();
         match output {
-            Some(_) => {},
-            None => {self.value = Ok(None); self.prev_output = None; return;}
+            Some(_) => {}
+            None => {
+                self.value = Ok(None);
+                self.prev_output = None;
+                return;
+            }
         }
         let output = output.unwrap();
         match self.prev_output {
-            Some(_) => {},
-            None => {self.prev_output = Some(output); return;}
+            Some(_) => {}
+            None => {
+                self.prev_output = Some(output);
+                return;
+            }
         }
         let prev_output = self.prev_output.as_ref().unwrap();
         let value = (output.value - prev_output.value) / (output.time - prev_output.time);
@@ -435,18 +444,29 @@ impl<E: Copy + Debug> Stream<f32, E> for IntegralStream<E> {
     fn update(&mut self) {
         let output = self.input.borrow().get();
         match output {
-            Ok(_) => {},
-            Err(error) => {self.value = Err(error); self.prev_output = None; return;}
+            Ok(_) => {}
+            Err(error) => {
+                self.value = Err(error);
+                self.prev_output = None;
+                return;
+            }
         }
         let output = output.unwrap();
         match output {
-            Some(_) => {},
-            None => {self.value = Ok(None); self.prev_output = None; return;}
+            Some(_) => {}
+            None => {
+                self.value = Ok(None);
+                self.prev_output = None;
+                return;
+            }
         }
         let output = output.unwrap();
         match self.prev_output {
-            Some(_) => {},
-            None => {self.prev_output = Some(output); return;}
+            Some(_) => {}
+            None => {
+                self.prev_output = Some(output);
+                return;
+            }
         }
         let prev_output = self.prev_output.as_ref().unwrap();
         let prev_value = match &self.value {
@@ -456,7 +476,8 @@ impl<E: Copy + Debug> Stream<f32, E> for IntegralStream<E> {
             },
             Err(_) => 0.0,
         };
-        let value = prev_value + (output.time - prev_output.time) * (prev_output.value + output.value) / 2.0;
+        let value = prev_value
+            + (output.time - prev_output.time) * (prev_output.value + output.value) / 2.0;
         self.value = Ok(Some(Datum::new(output.time, value)));
         self.prev_output = Some(output);
     }
@@ -473,23 +494,51 @@ impl<E: Copy + Debug + 'static> StreamPID<E> {
         let kp = make_stream_input!(Constant::new(Rc::clone(&time_getter), kp), f32, E);
         let ki = make_stream_input!(Constant::new(Rc::clone(&time_getter), ki), f32, E);
         let kd = make_stream_input!(Constant::new(Rc::clone(&time_getter), kd), f32, E);
-        let error = make_stream_input!(DifferenceStream::new(Rc::clone(&setpoint), Rc::clone(&input)), f32, E);
+        let error = make_stream_input!(
+            DifferenceStream::new(Rc::clone(&setpoint), Rc::clone(&input)),
+            f32,
+            E
+        );
         let int = make_stream_input!(IntegralStream::new(Rc::clone(&error)), f32, E);
         let drv = make_stream_input!(DerivativeStream::new(Rc::clone(&error)), f32, E);
         //`ProductStream`'s behavior is to treat all `None` values as 1.0 so that it's as if they
         //were not included. However, this is not what we want with the coefficient. `NoneToValue`
         //is used to convert all `None` values to `Some(0.0)` to effectively exlude them from the
         //final sum.
-        let int_zeroer = make_stream_input!(NoneToValue::new(Rc::clone(&int), Rc::clone(&time_getter), 0.0), f32, E);
-        let drv_zeroer = make_stream_input!(NoneToValue::new(Rc::clone(&drv), Rc::clone(&time_getter), 0.0), f32, E);
-        let kp_mul = make_stream_input!(ProductStream::new(vec![Rc::clone(&kp), Rc::clone(&error)]), f32, E);
-        let ki_mul = make_stream_input!(ProductStream::new(vec![Rc::clone(&ki), Rc::clone(&int_zeroer)]), f32, E);
-        let kd_mul = make_stream_input!(ProductStream::new(vec![Rc::clone(&kd), Rc::clone(&drv_zeroer)]), f32, E);
-        let output = SumStream::new(vec![Rc::clone(&kp_mul), Rc::clone(&ki_mul), Rc::clone(&kd_mul)]);
+        let int_zeroer = make_stream_input!(
+            NoneToValue::new(Rc::clone(&int), Rc::clone(&time_getter), 0.0),
+            f32,
+            E
+        );
+        let drv_zeroer = make_stream_input!(
+            NoneToValue::new(Rc::clone(&drv), Rc::clone(&time_getter), 0.0),
+            f32,
+            E
+        );
+        let kp_mul = make_stream_input!(
+            ProductStream::new(vec![Rc::clone(&kp), Rc::clone(&error)]),
+            f32,
+            E
+        );
+        let ki_mul = make_stream_input!(
+            ProductStream::new(vec![Rc::clone(&ki), Rc::clone(&int_zeroer)]),
+            f32,
+            E
+        );
+        let kd_mul = make_stream_input!(
+            ProductStream::new(vec![Rc::clone(&kd), Rc::clone(&drv_zeroer)]),
+            f32,
+            E
+        );
+        let output = SumStream::new(vec![
+            Rc::clone(&kp_mul),
+            Rc::clone(&ki_mul),
+            Rc::clone(&kd_mul),
+        ]);
         Self {
             int: Rc::clone(&int),
             drv: Rc::clone(&drv),
-            output: output
+            output: output,
         }
     }
 }
