@@ -34,7 +34,7 @@ impl<T: Clone, E: Copy + Debug> Stream<T, E> for NoneToError<T, E> {
                 return Ok(output);
             }
             None => {
-                return Err(errors::StreamError::FromNone);
+                return Err(Error::FromNone);
             }
         }
     }
@@ -82,7 +82,7 @@ impl<E> SumStream<E> {
 impl<E: Copy + Debug> Stream<f32, E> for SumStream<E> {
     fn get(&self) -> StreamOutput<f32, E> {
         if self.addends.is_empty() {
-            return Err(errors::StreamError::EmptyAddendVec);
+            return Err(Error::EmptyAddendVec);
         }
         //Err(...) -> return Err immediately
         //Ok(None) -> skip
@@ -178,7 +178,7 @@ impl<E> ProductStream<E> {
 impl<E: Copy + Debug> Stream<f32, E> for ProductStream<E> {
     fn get(&self) -> StreamOutput<f32, E> {
         if self.factors.is_empty() {
-            return Err(errors::StreamError::EmptyFactorVec);
+            return Err(Error::EmptyFactorVec);
         }
         let mut outputs = Vec::new();
         for i in &self.factors {

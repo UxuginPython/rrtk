@@ -34,7 +34,18 @@ use core::fmt::Debug;
 #[cfg(feature = "devices")]
 pub mod devices;
 pub mod streams;
-pub mod errors;
+#[derive(Clone, Copy, Debug)]
+pub enum Error<O: Copy + Debug> {
+    ///Returned when a `SumStream` has no inputs.
+    EmptyAddendVec,
+    ///Returned when a `ProductStream` has no inputs.
+    EmptyFactorVec,
+    ///Returned when a `None` is elevated to an error by a `NoneToError`.
+    FromNone,
+    ///Returned when a `TimeGetterFromStream`'s `Stream` doesn't return `Ok(Some(_))`.
+    StreamNotSome,
+    Other(O),
+}
 ///A proportional-integral-derivative controller. Requires `pid` feature.
 #[cfg(feature = "pid")]
 pub struct PIDController {
@@ -349,12 +360,12 @@ impl MotionProfile {
         }
     }
 }
-pub type StreamOutput<T, E> = Result<Option<Datum<T>>, errors::StreamError<E>>;
-pub type TimeGetterOutput<E> = Result<f32, errors::StreamError<E>>;
+pub type StreamOutput<T, E> = Result<Option<Datum<T>>, Error<E>>;
+pub type TimeGetterOutput<E> = Result<f32, Error<E>>;
 pub type InputStream<T, E> = Rc<RefCell<Box<dyn Stream<T, E>>>>;
 pub type InputTimeGetter<E> = Rc<RefCell<Box<dyn TimeGetter<E>>>>;
 pub trait TimeGetter<E: Copy + Debug> {
-    fn get(&self) -> Result<f32, errors::StreamError<E>>;
+    fn get(&self) -> Result<f32, Error<E>>;
     fn update(&mut self);
 }
 pub struct TimeGetterFromStream<T: Clone, E> {
@@ -368,7 +379,7 @@ impl<T: Clone, E> TimeGetterFromStream<T, E> {
     }
 }
 impl<T: Clone, E: Copy + Debug> TimeGetter<E> for TimeGetterFromStream<T, E> {
-    fn get(&self) -> Result<f32, errors::StreamError<E>> {
+    fn get(&self) -> Result<f32, Error<E>> {
         let output = self.elevator.get()?;
         let output = output.expect("`NoneToError` made all `Ok(None)`s into `Err(_)`s, and `?` returned all `Err(_)`s, so we're sure this is now an `Ok(Some(_))`.");
         return Ok(output.time);

@@ -117,7 +117,7 @@ fn none_to_error() {
             if self.index == 1 {
                 return Ok(None);
             } else if self.index == 2 {
-                return Err(errors::StreamError::Other(Nothing));
+                return Err(Error::Other(Nothing));
             }
             return Ok(Some(Datum::new(0.0, 0.0)));
         }
@@ -145,7 +145,7 @@ fn none_to_error() {
         Ok(_) => {
             panic!("should return Err");
         }
-        Err(errors::StreamError::FromNone) => {}
+        Err(Error::FromNone) => {}
         Err(_) => {
             panic!("should be FromNone");
         }
@@ -155,7 +155,7 @@ fn none_to_error() {
         Ok(_) => {
             panic!("should return Err");
         }
-        Err(errors::StreamError::FromNone) => {
+        Err(Error::FromNone) => {
             panic!("should return Nothing error");
         }
         Err(_) => {}
@@ -178,7 +178,7 @@ fn none_to_value() {
             if self.index == 1 {
                 return Ok(None);
             } else if self.index == 2 {
-                return Err(errors::StreamError::Other(Nothing));
+                return Err(Error::Other(Nothing));
             }
             return Ok(Some(Datum::new(0.0, 1.0)));
         }
@@ -258,7 +258,7 @@ fn sum_stream() {
     impl Stream<f32, Nothing> for ErroringStream {
         fn get(&self) -> StreamOutput<f32, Nothing> {
             if self.index == 0 {
-                return Err(errors::StreamError::Other(Nothing));
+                return Err(Error::Other(Nothing));
             } else if self.index == 1 {
                 return Ok(None);
             } else {
@@ -317,7 +317,7 @@ fn difference_stream() {
     impl Stream<f32, DummyError> for Stream1 {
         fn get(&self) -> StreamOutput<f32, DummyError> {
             if self.index == 0 || self.index == 1 || self.index == 2 {
-                return Err(errors::StreamError::Other(DummyError));
+                return Err(Error::Other(DummyError));
             } else if self.index == 3 || self.index == 4 || self.index == 5 {
                 return Ok(None);
             }
@@ -338,7 +338,7 @@ fn difference_stream() {
     impl Stream<f32, DummyError> for Stream2 {
         fn get(&self) -> StreamOutput<f32, DummyError> {
             if self.index == 0 || self.index == 3 || self.index == 6 {
-                return Err(errors::StreamError::Other(DummyError));
+                return Err(Error::Other(DummyError));
             } else if self.index == 1 || self.index == 4 || self.index == 7 {
                 return Ok(None);
             }
@@ -468,7 +468,7 @@ fn product_stream() {
     impl Stream<f32, Nothing> for ErroringStream {
         fn get(&self) -> StreamOutput<f32, Nothing> {
             if self.index == 0 {
-                return Err(errors::StreamError::Other(Nothing));
+                return Err(Error::Other(Nothing));
             } else if self.index == 1 {
                 return Ok(None);
             } else {
@@ -527,7 +527,7 @@ fn quotient_stream() {
     impl Stream<f32, DummyError> for Stream1 {
         fn get(&self) -> StreamOutput<f32, DummyError> {
             if self.index == 0 || self.index == 1 || self.index == 2 {
-                return Err(errors::StreamError::Other(DummyError));
+                return Err(Error::Other(DummyError));
             } else if self.index == 3 || self.index == 4 || self.index == 5 {
                 return Ok(None);
             }
@@ -548,7 +548,7 @@ fn quotient_stream() {
     impl Stream<f32, DummyError> for Stream2 {
         fn get(&self) -> StreamOutput<f32, DummyError> {
             if self.index == 0 || self.index == 3 || self.index == 6 {
-                return Err(errors::StreamError::Other(DummyError));
+                return Err(Error::Other(DummyError));
             } else if self.index == 1 || self.index == 4 || self.index == 7 {
                 return Ok(None);
             }
@@ -679,7 +679,7 @@ fn exponent_stream() {
     impl Stream<f32, DummyError> for Stream1 {
         fn get(&self) -> StreamOutput<f32, DummyError> {
             if self.index == 0 || self.index == 1 || self.index == 2 {
-                return Err(errors::StreamError::Other(DummyError));
+                return Err(Error::Other(DummyError));
             } else if self.index == 3 || self.index == 4 || self.index == 5 {
                 return Ok(None);
             }
@@ -700,7 +700,7 @@ fn exponent_stream() {
     impl Stream<f32, DummyError> for Stream2 {
         fn get(&self) -> StreamOutput<f32, DummyError> {
             if self.index == 0 || self.index == 3 || self.index == 6 {
-                return Err(errors::StreamError::Other(DummyError));
+                return Err(Error::Other(DummyError));
             } else if self.index == 1 || self.index == 4 || self.index == 7 {
                 return Ok(None);
             }
