@@ -483,3 +483,69 @@ impl<E: Copy + Debug + 'static> Stream<f32, E> for StreamPID<E> {
         self.drv.borrow_mut().update();
     }
 }
+//https://www.itl.nist.gov/div898/handbook/pmc/section3/pmc324.htm
+pub struct EWMAStream<E: Copy + Debug> {
+    input: InputStream<f32, E>,
+    //As data may not come in at regular intervals as is assumed by a standard EWMA, this value
+    //will be multiplied by delta time before being used.
+    smoothing_constant: f32,
+    value: StreamOutput<f32, E>,
+    update_time: Option<f32>,
+}
+impl<E: Copy + Debug> EWMAStream<E> {
+    pub fn new(input: InputStream<f32, E>, smoothing_constant: f32) -> Self {
+        Self {
+            input: input,
+            smoothing_constant: smoothing_constant,
+            value: Ok(None),
+            update_time: None,
+        }
+    }
+}
+impl<E: Copy + Debug> Stream<f32, E> for EWMAStream<E> {
+    fn get(&self) -> StreamOutput<f32, E> {
+        self.value.clone()
+    }
+    fn update(&mut self) {
+        let output = self.input.borrow().get();
+        match output {
+            Err(error) => {
+                self.value = Err(error);
+                self.update_time = None;
+                return;
+            }
+            Ok(None) => {
+                match self.value {
+                    Err(_) => {
+                        self.value = Ok(None);
+                        self.update_time = None;
+                    }
+                    Ok(_) => {}
+                }
+                return;
+            }
+            Ok(Some(_)) => {}
+        }
+        let output = output.unwrap().unwrap();
+        match self.value {
+            Ok(Some(_)) => {}
+            _ => {
+                self.value = Ok(Some(output.clone()));
+                self.update_time = Some(output.time);
+            }
+        }
+        let prev_value = self.value.as_ref().unwrap().as_ref().unwrap();
+        let prev_time = self.update_time.expect("update_time must be Some if value is");
+        let delta_time = output.time - prev_time;
+        let value = if delta_time * self.smoothing_constant < 1.0 {
+            let value = prev_value.value;
+            let value = value - (delta_time * self.smoothing_constant) * value;
+            let value = value + (delta_time * self.smoothing_constant) * output.value;
+            value
+        } else {
+            output.value
+        };
+        self.value = Ok(Some(Datum::new(output.time, value)));
+        self.update_time = Some(output.time);
+    }
+}
