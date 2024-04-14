@@ -41,3 +41,5 @@ Add an update method to encoders.
 Add an update method to motors, allow easier detection of parts of motion profiles, and reorganize the package to use features with the motor-encoder system in a module.
 ### 0.3.0-alpha.1
 Start new stream system.
+### 0.3.0-alpha.2
+Reorganize a bit and add [EWMA](https://www.itl.nist.gov/div898/handbook/pmc/section3/pmc324.htm) stream.

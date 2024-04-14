@@ -535,7 +535,9 @@ impl<E: Copy + Debug> Stream<f32, E> for EWMAStream<E> {
             }
         }
         let prev_value = self.value.as_ref().unwrap().as_ref().unwrap();
-        let prev_time = self.update_time.expect("update_time must be Some if value is");
+        let prev_time = self
+            .update_time
+            .expect("update_time must be Some if value is");
         let delta_time = output.time - prev_time;
         let value = if delta_time * self.smoothing_constant < 1.0 {
             let value = prev_value.value;
