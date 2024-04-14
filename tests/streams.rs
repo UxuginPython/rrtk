@@ -997,42 +997,32 @@ fn moving_average_stream() {
         }
     }
     let input = make_stream_input!(DummyStream::new(), f32, DummyError);
-    println!("input.borrow().get() is {:?}", input.borrow().get());
     let mut stream = MovingAverageStream::new(Rc::clone(&input), 5.0);
     input.borrow_mut().update();
-    println!("input.borrow().get() is {:?}", input.borrow().get());
     stream.update();
     assert_eq!(stream.get().unwrap().unwrap().value, 110.0);
     input.borrow_mut().update();
-    println!("input.borrow().get() is {:?}", input.borrow().get());
     stream.update();
     assert_eq!(stream.get().unwrap().unwrap().value, 110.0);
     input.borrow_mut().update();
-    println!("input.borrow().get() is {:?}", input.borrow().get());
     stream.update();
     assert_eq!(stream.get().unwrap().unwrap().value, 110.4);
     input.borrow_mut().update();
-    println!("input.borrow().get() is {:?}", input.borrow().get());
     stream.update();
     assert_eq!(stream.get().unwrap().unwrap().value, 112.8);
     input.borrow_mut().update();
-    println!("input.borrow().get() is {:?}", input.borrow().get());
     stream.update();
     assert_eq!(stream.get().unwrap().unwrap().value, 107.4);
     input.borrow_mut().update();
-    println!("input.borrow().get() is {:?}", input.borrow().get());
     stream.update();
     assert_eq!(stream.get().unwrap().unwrap().value, 102.8);
     input.borrow_mut().update();
-    println!("input.borrow().get() is {:?}", input.borrow().get());
     stream.update();
     assert_eq!(stream.get().unwrap().unwrap().value, 104.6);
     input.borrow_mut().update();
-    println!("input.borrow().get() is {:?}", input.borrow().get());
     stream.update();
     assert_eq!(stream.get().unwrap().unwrap().value, 109.2);
     input.borrow_mut().update();
-    println!("input.borrow().get() is {:?}", input.borrow().get());
     stream.update();
     assert_eq!(stream.get().unwrap().unwrap().value, 106.6);
 }

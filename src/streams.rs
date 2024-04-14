@@ -581,7 +581,6 @@ impl<E: Copy + Debug> Stream<f32, E> for MovingAverageStream<E> {
     }
     fn update(&mut self) {
         let output = self.input.borrow().get();
-        println!("output is {:?}", output);
         match output {
             Err(error) => {
                 self.value = Err(error);
@@ -602,43 +601,36 @@ impl<E: Copy + Debug> Stream<f32, E> for MovingAverageStream<E> {
         }
         let output = output.unwrap().unwrap();
         let new_time = output.time;
-        println!("self.input_values is {:?}", self.input_values);
         match self.input_values.len() {
             0 => {
                 self.input_values.push_back(output.clone());
                 self.value = Ok(Some(output.clone()));
-                println!("self.input_values is {:?}", self.input_values);
                 return;
             }
             _ => {}
         }
-        println!("self.input_values is {:?}", self.input_values);
         if self.input_values.len() >= 2 {
             while new_time - self.input_values[1].time >= self.window {
                 self.input_values.remove(0);
             }
         }
         self.input_values.push_back(output);
-        println!("self.input_values is {:?}", self.input_values);
         let mut start_times = Vec::<f32>::with_capacity(self.input_values.len());
         start_times.push(new_time - self.window);
         for i in &self.input_values {
             start_times.push(i.time);
         }
         start_times.remove(1);
-        println!("start_times is {:?}", start_times);
         let mut end_times = Vec::<f32>::with_capacity(self.input_values.len());
         for i in &self.input_values {
             end_times.push(i.time);
         }
         end_times.push(new_time);
         end_times.remove(0);
-        println!("end_times is {:?}", end_times);
         let mut weights = Vec::<f32>::with_capacity(self.input_values.len());
         for i in 0..self.input_values.len() {
             weights.push(end_times[i] - start_times[i]);
         }
-        println!("weights is {:?}", weights);
         let mut weights_sum = 0f32;
         for i in &weights {
             weights_sum += i;
