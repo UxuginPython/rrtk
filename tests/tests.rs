@@ -11,8 +11,6 @@ Copyright 2024 UxuginPython on GitHub
     You should have received a copy of the GNU Lesser General Public License along with Rust Robotics ToolKit. If not, see <https://www.gnu.org/licenses/>.
 */
 use rrtk::*;
-//use core::cell::RefCell;
-//use std::rc::Rc;
 #[test]
 #[cfg(all(feature = "std", feature = "pid"))]
 fn pidshift_shift() {

@@ -1,3 +1,15 @@
+// SPDX-License-Identifier: LGPL-3.0-only
+/*
+Copyright 2024 UxuginPython on GitHub
+
+     This file is part of Rust Robotics ToolKit.
+
+    Rust Robotics ToolKit is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software Foundation, version 3.
+
+    Rust Robotics ToolKit is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public License along with Rust Robotics ToolKit. If not, see <https://www.gnu.org/licenses/>.
+*/
 //!Control motors and encoders.
 //!This module is available only with the `devices` feature enabled.
 use crate::*;
@@ -187,11 +199,9 @@ pub trait FeedbackMotor {
                             *state = MotionProfileState::Complete;
                             let max_vel = motion_profile.max_acc * motion_profile.t1
                                 + motion_profile.start_vel;
-                            //                                          easiest way to square
-                            //                                          without std
                             let t1_pos = 0.5
                                 * motion_profile.max_acc
-                                * motion_profile.t1
+                                * motion_profile.t1 //easiest way to square without std
                                 * motion_profile.t1
                                 + motion_profile.start_vel * motion_profile.t1
                                 + motion_profile.start_pos;

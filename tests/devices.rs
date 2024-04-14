@@ -341,10 +341,8 @@ fn motor_encoder_pair() {
     }
     impl NonFeedbackMotor for DummyNonFeedbackMotor {
         fn set_power(&mut self, power: f32) {
-            println!("DummyNonFeedbackMotor set_power called");
             self.time += 2.0;
             self.power = power;
-            //println!("Ea Nasir sold low quality copper to {}ni. Time is {}.", self.power, self.time);
             if self.time == 3.0 {
                 assert_eq!(self.power, 9.04);
             }
@@ -375,10 +373,8 @@ fn motor_encoder_pair() {
             &mut self.simple_encoder_data
         }
         fn device_update(&mut self) -> Datum<f32> {
-            //println!("DummySimpleEncoder device_update called");
             self.time += 2.0;
             self.velocity += 1.0;
-            //println!("Encoder says time is {} and velocity is {}.", self.time, self.velocity);
             Datum::new(self.time, self.velocity)
         }
     }
@@ -427,7 +423,6 @@ fn follow_motion_profile() {
             &mut self.servo_motor_data
         }
         fn device_get_time(&mut self) -> f32 {
-            //println!("DummyServoMotor device_get_time called, time is {:?}", self.time);
             if self.time == 0.5 {
                 assert_eq!(self.get_servo_motor_data_ref().acceleration, 1.0);
                 self.asserts += 1;
@@ -447,7 +442,6 @@ fn follow_motion_profile() {
         fn device_set_position(&mut self, _position: f32) {}
         fn device_update(&mut self) {
             self.time += 0.1;
-            //println!("DummyServoMotor device_update called, new time is {}", self.time);
         }
     }
     let mut my_servo = DummyServoMotor::new();
@@ -486,7 +480,6 @@ fn motion_profile_loop() {
             &mut self.servo_motor_data
         }
         fn device_get_time(&mut self) -> f32 {
-            //println!("DummyServoMotor device_get_time called, time is {:?}", self.time);
             if self.time == 0.5 {
                 assert_eq!(self.get_servo_motor_data_ref().acceleration, 1.0);
                 self.asserts += 1;
@@ -506,7 +499,6 @@ fn motion_profile_loop() {
         fn device_set_position(&mut self, _position: f32) {}
         fn device_update(&mut self) {
             self.time += 0.1;
-            //println!("DummyServoMotor device_update called, new time is {}", self.time);
         }
     }
     let mut my_servo = DummyServoMotor::new();
@@ -519,7 +511,6 @@ fn motion_profile_loop() {
     for _ in 0..2000 {
         my_servo.update();
         my_servo.update_motion_profile();
-        //println!("{:?}", my_servo.asserts);
     }
     assert_eq!(my_servo.asserts, 3);
 }
