@@ -965,3 +965,74 @@ fn ewma_stream() {
     stream.update();
     assert_eq!(stream.get().unwrap().unwrap().value, 104.5703125);
 }
+#[test]
+fn moving_average_stream() {
+    #[derive(Clone, Copy, Debug)]
+    struct DummyError;
+    struct DummyStream {
+        time: u8,
+    }
+    impl DummyStream {
+        pub fn new() -> Self {
+            Self { time: 0 }
+        }
+    }
+    impl Stream<f32, DummyError> for DummyStream {
+        fn get(&self) -> StreamOutput<f32, DummyError> {
+            let value = match self.time {
+                2 => 110.0,
+                4 => 111.0,
+                6 => 116.0,
+                8 => 97.0,
+                10 => 102.0,
+                12 => 111.0,
+                14 => 111.0,
+                16 => 100.0,
+                _ => 0.0,
+            };
+            Ok(Some(Datum::new(self.time as f32, value)))
+        }
+        fn update(&mut self) {
+            self.time += 2;
+        }
+    }
+    let input = make_stream_input!(DummyStream::new(), f32, DummyError);
+    println!("input.borrow().get() is {:?}", input.borrow().get());
+    let mut stream = MovingAverageStream::new(Rc::clone(&input), 5.0);
+    input.borrow_mut().update();
+    println!("input.borrow().get() is {:?}", input.borrow().get());
+    stream.update();
+    assert_eq!(stream.get().unwrap().unwrap().value, 110.0);
+    input.borrow_mut().update();
+    println!("input.borrow().get() is {:?}", input.borrow().get());
+    stream.update();
+    assert_eq!(stream.get().unwrap().unwrap().value, 110.0);
+    input.borrow_mut().update();
+    println!("input.borrow().get() is {:?}", input.borrow().get());
+    stream.update();
+    assert_eq!(stream.get().unwrap().unwrap().value, 110.4);
+    input.borrow_mut().update();
+    println!("input.borrow().get() is {:?}", input.borrow().get());
+    stream.update();
+    assert_eq!(stream.get().unwrap().unwrap().value, 112.8);
+    input.borrow_mut().update();
+    println!("input.borrow().get() is {:?}", input.borrow().get());
+    stream.update();
+    assert_eq!(stream.get().unwrap().unwrap().value, 107.4);
+    input.borrow_mut().update();
+    println!("input.borrow().get() is {:?}", input.borrow().get());
+    stream.update();
+    assert_eq!(stream.get().unwrap().unwrap().value, 102.8);
+    input.borrow_mut().update();
+    println!("input.borrow().get() is {:?}", input.borrow().get());
+    stream.update();
+    assert_eq!(stream.get().unwrap().unwrap().value, 104.6);
+    input.borrow_mut().update();
+    println!("input.borrow().get() is {:?}", input.borrow().get());
+    stream.update();
+    assert_eq!(stream.get().unwrap().unwrap().value, 109.2);
+    input.borrow_mut().update();
+    println!("input.borrow().get() is {:?}", input.borrow().get());
+    stream.update();
+    assert_eq!(stream.get().unwrap().unwrap().value, 106.6);
+}

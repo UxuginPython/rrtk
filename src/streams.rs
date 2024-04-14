@@ -1,4 +1,8 @@
 use crate::*;
+#[cfg(feature = "std")]
+use std::collections::vec_deque::VecDeque;
+#[cfg(not(feature = "std"))]
+use alloc::collections::vec_deque::VecDeque;
 pub struct Constant<T, E> {
     time_getter: InputTimeGetter<E>,
     value: T,
@@ -549,5 +553,101 @@ impl<E: Copy + Debug> Stream<f32, E> for EWMAStream<E> {
         };
         self.value = Ok(Some(Datum::new(output.time, value)));
         self.update_time = Some(output.time);
+    }
+}
+//Expect the moving average to be delayed by one update compared to the actual data. This is
+//because MovingAverageStream reports the average with the window ending at the timestamp of the
+//new input value. Thus, the new input has a timespan of zero within the window when it is first
+//received, and so it is weighted as zero and excluded.
+pub struct MovingAverageStream<E: Copy + Debug> {
+    input: InputStream<f32, E>,
+    window: f32,
+    value: StreamOutput<f32, E>,
+    input_values: VecDeque<Datum<f32>>,
+}
+impl<E: Copy + Debug> MovingAverageStream<E> {
+    pub fn new(input: InputStream<f32, E>, window: f32) -> Self {
+        Self {
+            input: input,
+            window: window,
+            value: Ok(None),
+            input_values: VecDeque::new(),
+        }
+    }
+}
+impl<E: Copy + Debug> Stream<f32, E> for MovingAverageStream<E> {
+    fn get(&self) -> StreamOutput<f32, E> {
+        self.value.clone()
+    }
+    fn update(&mut self) {
+        let output = self.input.borrow().get();
+        println!("output is {:?}", output);
+        match output {
+            Err(error) => {
+                self.value = Err(error);
+                self.input_values = VecDeque::new();
+                return;
+            }
+            Ok(None) => {
+                match self.value {
+                    Err(_) => {
+                        self.value = Ok(None);
+                        return;
+                    }
+                    Ok(_) => {}
+                }
+                return;
+            }
+            Ok(Some(_)) => {}
+        }
+        let output = output.unwrap().unwrap();
+        let new_time = output.time;
+        println!("self.input_values is {:?}", self.input_values);
+        match self.input_values.len() {
+            0 => {
+                self.input_values.push_back(output.clone());
+                self.value = Ok(Some(output.clone()));
+                println!("self.input_values is {:?}", self.input_values);
+                return;
+            }
+            _ => {}
+        }
+        println!("self.input_values is {:?}", self.input_values);
+        if self.input_values.len() >= 2 {
+            while new_time - self.input_values[1].time >= self.window {
+                self.input_values.remove(0);
+            }
+        }
+        self.input_values.push_back(output);
+        println!("self.input_values is {:?}", self.input_values);
+        let mut start_times = Vec::<f32>::with_capacity(self.input_values.len());
+        start_times.push(new_time - self.window);
+        for i in &self.input_values {
+            start_times.push(i.time);
+        }
+        start_times.remove(1);
+        println!("start_times is {:?}", start_times);
+        let mut end_times = Vec::<f32>::with_capacity(self.input_values.len());
+        for i in &self.input_values {
+            end_times.push(i.time);
+        }
+        end_times.push(new_time);
+        end_times.remove(0);
+        println!("end_times is {:?}", end_times);
+        let mut weights = Vec::<f32>::with_capacity(self.input_values.len());
+        for i in 0..self.input_values.len() {
+            weights.push(end_times[i] - start_times[i]);
+        }
+        println!("weights is {:?}", weights);
+        let mut weights_sum = 0f32;
+        for i in &weights {
+            weights_sum += i;
+        }
+        let mut average = 0f32;
+        for i in 0..self.input_values.len() {
+            average += self.input_values[i].value * weights[i];
+        }
+        average /= weights_sum;
+        self.value = Ok(Some(Datum::new(new_time, average)));
     }
 }
