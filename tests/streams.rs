@@ -1015,9 +1015,6 @@ fn moving_average_stream() {
     assert_eq!(stream.get().unwrap().unwrap().value, 110.0);
     input.borrow_mut().update();
     stream.update();
-    assert_eq!(stream.get().unwrap().unwrap().value, 110.0);
-    input.borrow_mut().update();
-    stream.update();
     assert_eq!(stream.get().unwrap().unwrap().value, 110.4);
     input.borrow_mut().update();
     stream.update();

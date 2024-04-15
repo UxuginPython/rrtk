@@ -567,10 +567,6 @@ impl<E: Copy + Debug> Stream<f32, E> for EWMAStream<E> {
         self.update_time = Some(output.time);
     }
 }
-//Expect the moving average to be delayed by one update compared to the actual data. This is
-//because MovingAverageStream reports the average with the window ending at the timestamp of the
-//new input value. Thus, the new input has a timespan of zero within the window when it is first
-//received, and so it is weighted as zero and excluded.
 pub struct MovingAverageStream<E: Copy + Debug> {
     input: InputStream<f32, E>,
     window: f32,
@@ -594,64 +590,54 @@ impl<E: Copy + Debug> Stream<f32, E> for MovingAverageStream<E> {
     fn update(&mut self) {
         let output = self.input.borrow().get();
         match output {
-            Err(error) => {
-                self.value = Err(error);
-                self.input_values = VecDeque::new();
-                return;
-            }
+            Ok(Some(_)) => {}
             Ok(None) => {
                 match self.value {
+                    Ok(_) => {}
                     Err(_) => {
+                        //We got an Ok(None) from input, so there's not a problem anymore, but we
+                        //still don't have a value. Set it to Ok(None) and leave input_values
+                        //empty.
                         self.value = Ok(None);
                         return;
                     }
-                    Ok(_) => {}
                 }
+            }
+            Err(error) => {
+                self.value = Err(error);
+                self.input_values.clear();
                 return;
             }
-            Ok(Some(_)) => {}
         }
         let output = output.unwrap().unwrap();
-        let new_time = output.time;
-        match self.input_values.len() {
-            0 => {
-                self.input_values.push_back(output.clone());
-                self.value = Ok(Some(output.clone()));
-                return;
-            }
-            _ => {}
+        self.input_values.push_back(output.clone());
+        if self.input_values.len() == 0 {
+            self.value = Ok(Some(output));
+            return;
         }
-        if self.input_values.len() >= 2 {
-            while new_time - self.input_values[1].time >= self.window {
-                self.input_values.remove(0);
-            }
+        while self.input_values[0].time <= output.time - self.window {
+            self.input_values.pop_front();
         }
-        self.input_values.push_back(output);
-        let mut start_times = Vec::<f32>::with_capacity(self.input_values.len());
-        start_times.push(new_time - self.window);
-        for i in &self.input_values {
-            start_times.push(i.time);
-        }
-        start_times.remove(1);
-        let mut end_times = Vec::<f32>::with_capacity(self.input_values.len());
+        let mut end_times = Vec::new();
         for i in &self.input_values {
             end_times.push(i.time);
         }
-        end_times.push(new_time);
-        end_times.remove(0);
+        let mut start_times = VecDeque::from(end_times.clone());
+        start_times.pop_back();
+        start_times.push_front(output.time - self.window);
         let mut weights = Vec::<f32>::with_capacity(self.input_values.len());
         for i in 0..self.input_values.len() {
             weights.push(end_times[i] - start_times[i]);
         }
-        let mut weights_sum = 0f32;
+        let mut weights_sum = 0.0;
         for i in &weights {
             weights_sum += i;
         }
-        let mut average = 0f32;
+        let mut value = 0.0;
         for i in 0..self.input_values.len() {
-            average += self.input_values[i].value * weights[i];
+            value += self.input_values[i].value * weights[i];
         }
-        average /= weights_sum;
-        self.value = Ok(Some(Datum::new(new_time, average)));
+        value /= weights_sum;
+        self.value = Ok(Some(Datum::new(output.time, value)));
     }
 }
