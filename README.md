@@ -43,3 +43,5 @@ Add an update method to motors, allow easier detection of parts of motion profil
 Start new stream system.
 ### 0.3.0-alpha.2
 Reorganize a bit and add [EWMA](https://www.itl.nist.gov/div898/handbook/pmc/section3/pmc324.htm) stream.
+### 0.3.0-alpha.3
+Add moving average stream.

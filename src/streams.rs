@@ -11,10 +11,10 @@ Copyright 2024 UxuginPython on GitHub
     You should have received a copy of the GNU Lesser General Public License along with Rust Robotics ToolKit. If not, see <https://www.gnu.org/licenses/>.
 */
 use crate::*;
-#[cfg(feature = "std")]
-use std::collections::vec_deque::VecDeque;
 #[cfg(not(feature = "std"))]
 use alloc::collections::vec_deque::VecDeque;
+#[cfg(feature = "std")]
+use std::collections::vec_deque::VecDeque;
 pub struct Constant<T, E> {
     time_getter: InputTimeGetter<E>,
     value: T,
