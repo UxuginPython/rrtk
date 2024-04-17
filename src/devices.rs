@@ -13,15 +13,6 @@ Copyright 2024 UxuginPython on GitHub
 //!Control motors and encoders.
 //!This module is available only with the `devices` feature enabled.
 use crate::*;
-///A trait for encoders.
-pub trait Encoder {
-    ///Get the current acceleration, velocity, and position and the time at which they were
-    ///recorded.
-    fn get_state(&mut self) -> Datum<State>;
-    ///This should be run continually while the device is enabled. If your encoder does not need a
-    ///function like this, just implement it as `{}`.
-    fn update(&mut self);
-}
 ///Data needed by all `SimpleEncoder` types.
 pub struct SimpleEncoderData {
     pub encoder_type: MotorMode,
@@ -44,7 +35,7 @@ impl SimpleEncoderData {
 }
 ///An encoder trait that does the calculus for you. You just need to supply a position, velocity,
 ///or acceleration, and the others will be calculated.
-pub trait SimpleEncoder: Encoder {
+pub trait SimpleEncoder<E> {
     ///Get an immutable reference to the object's `SimpleEncoderData` object.
     fn get_simple_encoder_data_ref(&self) -> &SimpleEncoderData;
     ///Get a mutable reference to the object's `SimpleEncoderData` object.
@@ -52,13 +43,14 @@ pub trait SimpleEncoder: Encoder {
     ///Get a new position, velocity, or acceleration from the encoder along with a time.
     fn device_update(&mut self) -> Datum<f32>;
 }
-impl<T: SimpleEncoder> Encoder for T {
-    fn get_state(&mut self) -> Datum<State> {
+//impl<E: Copy + Debug> Stream<State, E> for dyn SimpleEncoder<E> {
+impl<T: SimpleEncoder<E>, E: Copy + Debug> Stream<State, E> for T {
+    fn get(&self) -> StreamOutput<State, E> {
         let data = self.get_simple_encoder_data_ref();
-        Datum::new(
+        Ok(Some(Datum::new(
             data.time,
             State::new(data.position, data.velocity, data.acceleration),
-        )
+        )))
     }
     fn update(&mut self) {
         let device_out = self.device_update();
@@ -350,10 +342,10 @@ pub trait NonFeedbackMotor {
 ///Use an encoder connected directly to a motor without feedback and a PID controller to control it
 ///like a servo. Requires `std` and `pid` features.
 #[cfg(all(feature = "std", feature = "pid"))]
-pub struct MotorEncoderPair {
+pub struct MotorEncoderPair<E> {
     feedback_motor_data: FeedbackMotorData,
     motor: Box<dyn NonFeedbackMotor>,
-    encoder: Box<dyn Encoder>,
+    encoder: InputStream<State, E>,
     pid: Option<PIDControllerShift>,
     mode: Option<MotorMode>,
     pos_kp: f32,
@@ -367,11 +359,11 @@ pub struct MotorEncoderPair {
     acc_kd: f32,
 }
 #[cfg(all(feature = "std", feature = "pid"))]
-impl MotorEncoderPair {
+impl<E> MotorEncoderPair<E> {
     ///Constructor for `MotorEncoderPair`.
     pub fn new(
         motor: Box<dyn NonFeedbackMotor>,
-        encoder: Box<dyn Encoder>,
+        encoder: InputStream<State, E>,
         pos_kp: f32,
         pos_ki: f32,
         pos_kd: f32,
@@ -381,7 +373,7 @@ impl MotorEncoderPair {
         acc_kp: f32,
         acc_ki: f32,
         acc_kd: f32,
-    ) -> MotorEncoderPair {
+    ) -> MotorEncoderPair<E> {
         MotorEncoderPair {
             feedback_motor_data: FeedbackMotorData::new(),
             motor: motor,
@@ -401,7 +393,7 @@ impl MotorEncoderPair {
     }
 }
 #[cfg(all(feature = "std", feature = "pid"))]
-impl FeedbackMotor for MotorEncoderPair {
+impl<E: Copy + Debug> FeedbackMotor for MotorEncoderPair<E> {
     fn get_feedback_motor_data_ref(&self) -> &FeedbackMotorData {
         &self.feedback_motor_data
     }
@@ -409,7 +401,7 @@ impl FeedbackMotor for MotorEncoderPair {
         &mut self.feedback_motor_data
     }
     fn get_state(&mut self) -> Datum<State> {
-        self.encoder.get_state()
+        self.encoder.borrow().get().unwrap().unwrap()
     }
     fn set_acceleration(&mut self, acceleration: f32) {
         self.mode = Some(MotorMode::Acceleration);
@@ -442,7 +434,7 @@ impl FeedbackMotor for MotorEncoderPair {
         ));
     }
     fn update(&mut self) {
-        self.encoder.update();
+        self.encoder.borrow_mut().update();
         let output = self.get_state();
         if self.pid.is_some() {
             let pid_out = self.pid.as_mut().unwrap().update(
