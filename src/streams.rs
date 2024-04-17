@@ -499,6 +499,156 @@ impl<E: Copy + Debug + 'static> Stream<f32, E> for StreamPID<E> {
         self.drv.borrow_mut().update();
     }
 }
+pub struct AccelerationToState<E: Copy + Debug> {
+    acc: InputStream<f32, E>,
+    vel: InputStream<f32, E>,
+    pos: InputStream<f32, E>,
+}
+impl<E: Copy + Debug + 'static> AccelerationToState<E> {
+    pub fn new(acc: InputStream<f32, E>) -> Self {
+        let vel = make_stream_input!(IntegralStream::new(Rc::clone(&acc)), f32, E);
+        let pos = make_stream_input!(IntegralStream::new(Rc::clone(&vel)), f32, E);
+        Self {
+            acc: acc,
+            vel: vel,
+            pos: pos,
+        }
+    }
+}
+impl<E: Copy + Debug> Stream<State, E> for AccelerationToState<E> {
+    fn get(&self) -> StreamOutput<State, E> {
+        let acc = self.acc.borrow().get()?;
+        let vel = self.vel.borrow().get()?;
+        let pos = self.pos.borrow().get()?;
+        match acc {
+            Some(_) => {}
+            None => {return Ok(None);}
+        }
+        match vel {
+            Some(_) => {}
+            None => {return Ok(None);}
+        }
+        match pos {
+            Some(_) => {}
+            None => {return Ok(None);}
+        }
+        let acc = acc.unwrap();
+        let vel = vel.unwrap();
+        let pos = pos.unwrap();
+        let mut time = acc.time;
+        if vel.time > time {
+            time = vel.time;
+        }
+        if pos.time > time {
+            time = pos.time;
+        }
+        Ok(Some(Datum::new(time, State::new(pos.value, vel.value, acc.value))))
+    }
+    fn update(&mut self) {
+        self.vel.borrow_mut().update();
+        self.pos.borrow_mut().update();
+    }
+}
+pub struct VelocityToState<E: Copy + Debug> {
+    acc: InputStream<f32, E>,
+    vel: InputStream<f32, E>,
+    pos: InputStream<f32, E>,
+}
+impl<E: Copy + Debug + 'static> VelocityToState<E> {
+    pub fn new(vel: InputStream<f32, E>) -> Self {
+        let acc = make_stream_input!(DerivativeStream::new(Rc::clone(&vel)), f32, E);
+        let pos = make_stream_input!(IntegralStream::new(Rc::clone(&vel)), f32, E);
+        Self {
+            acc: acc,
+            vel: vel,
+            pos: pos,
+        }
+    }
+}
+impl<E: Copy + Debug> Stream<State, E> for VelocityToState<E> {
+    fn get(&self) -> StreamOutput<State, E> {
+        let acc = self.acc.borrow().get()?;
+        let vel = self.vel.borrow().get()?;
+        let pos = self.pos.borrow().get()?;
+        match acc {
+            Some(_) => {}
+            None => {return Ok(None);}
+        }
+        match vel {
+            Some(_) => {}
+            None => {return Ok(None);}
+        }
+        match pos {
+            Some(_) => {}
+            None => {return Ok(None);}
+        }
+        let acc = acc.unwrap();
+        let vel = vel.unwrap();
+        let pos = pos.unwrap();
+        let mut time = acc.time;
+        if vel.time > time {
+            time = vel.time;
+        }
+        if pos.time > time {
+            time = pos.time;
+        }
+        Ok(Some(Datum::new(time, State::new(pos.value, vel.value, acc.value))))
+    }
+    fn update(&mut self) {
+        self.acc.borrow_mut().update();
+        self.pos.borrow_mut().update();
+    }
+}
+pub struct PositionToStream<E: Copy + Debug> {
+    acc: InputStream<f32, E>,
+    vel: InputStream<f32, E>,
+    pos: InputStream<f32, E>,
+}
+impl<E: Copy + Debug + 'static> PositionToStream<E> {
+    pub fn new(pos: InputStream<f32, E>) -> Self {
+        let vel = make_stream_input!(DerivativeStream::new(Rc::clone(&pos)), f32, E);
+        let acc = make_stream_input!(DerivativeStream::new(Rc::clone(&vel)), f32, E);
+        Self {
+            acc: acc,
+            vel: vel,
+            pos: pos,
+        }
+    }
+}
+impl<E: Copy + Debug> Stream<State, E> for PositionToStream<E> {
+    fn get(&self) -> StreamOutput<State, E> {
+        let acc = self.acc.borrow().get()?;
+        let vel = self.vel.borrow().get()?;
+        let pos = self.pos.borrow().get()?;
+        match acc {
+            Some(_) => {}
+            None => {return Ok(None);}
+        }
+        match vel {
+            Some(_) => {}
+            None => {return Ok(None);}
+        }
+        match pos {
+            Some(_) => {}
+            None => {return Ok(None);}
+        }
+        let acc = acc.unwrap();
+        let vel = vel.unwrap();
+        let pos = pos.unwrap();
+        let mut time = acc.time;
+        if vel.time > time {
+            time = vel.time;
+        }
+        if pos.time > time {
+            time = pos.time;
+        }
+        Ok(Some(Datum::new(time, State::new(pos.value, vel.value, acc.value))))
+    }
+    fn update(&mut self) {
+        self.vel.borrow_mut().update();
+        self.acc.borrow_mut().update();
+    }
+}
 //https://www.itl.nist.gov/div898/handbook/pmc/section3/pmc324.htm
 pub struct EWMAStream<E: Copy + Debug> {
     input: InputStream<f32, E>,
