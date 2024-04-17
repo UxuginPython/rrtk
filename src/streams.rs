@@ -779,15 +779,11 @@ impl<E: Copy + Debug> Stream<f32, E> for MovingAverageStream<E> {
         for i in 0..self.input_values.len() {
             weights.push(end_times[i] - start_times[i]);
         }
-        let mut weights_sum = 0.0;
-        for i in &weights {
-            weights_sum += i;
-        }
         let mut value = 0.0;
         for i in 0..self.input_values.len() {
             value += self.input_values[i].value * weights[i];
         }
-        value /= weights_sum;
+        value /= self.window;
         self.value = Ok(Some(Datum::new(output.time, value)));
     }
 }
