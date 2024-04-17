@@ -16,9 +16,29 @@ use rrtk::devices::*;
 use rrtk::*;
 #[test]
 #[cfg(feature = "devices")]
+fn encoder() {
+    struct DummyEncoder {}
+    impl DummyEncoder {
+        fn new() -> DummyEncoder {
+            DummyEncoder {}
+        }
+    }
+    impl Encoder for DummyEncoder {
+        fn get_state(&mut self) -> Datum<State> {
+            Datum::new(1.0, State::new(2.0, 3.0, 4.0))
+        }
+        fn update(&mut self) {}
+    }
+    let mut my_encoder = DummyEncoder::new();
+    let output = my_encoder.get_state();
+    assert_eq!(output.time, 1.0);
+    assert_eq!(output.value.position, 2.0);
+    assert_eq!(output.value.velocity, 3.0);
+    assert_eq!(output.value.acceleration, 4.0);
+}
+#[test]
+#[cfg(feature = "devices")]
 fn simple_encoder_position() {
-    #[derive(Clone, Copy, Debug)]
-    struct DummyError;
     struct DummySimpleEncoder {
         simple_encoder_data: SimpleEncoderData,
         time: f32,
@@ -36,7 +56,7 @@ fn simple_encoder_position() {
             }
         }
     }
-    impl SimpleEncoder<DummyError> for DummySimpleEncoder {
+    impl SimpleEncoder for DummySimpleEncoder {
         fn get_simple_encoder_data_ref(&self) -> &SimpleEncoderData {
             &self.simple_encoder_data
         }
@@ -50,13 +70,13 @@ fn simple_encoder_position() {
         }
     }
     let mut my_simple_encoder = DummySimpleEncoder::new(Datum::new(1.0, State::new(2.0, 3.0, 4.0)));
-    let output = my_simple_encoder.get().unwrap().unwrap();
+    let output = my_simple_encoder.get_state();
     assert_eq!(output.time, 1.0);
     assert_eq!(output.value.position, 2.0);
     assert_eq!(output.value.velocity, 3.0);
     assert_eq!(output.value.acceleration, 4.0);
     my_simple_encoder.update();
-    let output = my_simple_encoder.get().unwrap().unwrap(0);
+    let output = my_simple_encoder.get_state();
     assert_eq!(output.time, 1.1);
     assert_eq!(output.value.position, 4.0);
     //floating point errors
@@ -66,8 +86,6 @@ fn simple_encoder_position() {
 #[test]
 #[cfg(feature = "devices")]
 fn simple_encoder_velocity() {
-    #[derive(Clone, Copy, Debug)]
-    struct DummyError;
     struct DummySimpleEncoder {
         simple_encoder_data: SimpleEncoderData,
         time: f32,
@@ -85,7 +103,7 @@ fn simple_encoder_velocity() {
             }
         }
     }
-    impl SimpleEncoder<DummyError> for DummySimpleEncoder {
+    impl SimpleEncoder for DummySimpleEncoder {
         fn get_simple_encoder_data_ref(&self) -> &SimpleEncoderData {
             &self.simple_encoder_data
         }
@@ -99,13 +117,13 @@ fn simple_encoder_velocity() {
         }
     }
     let mut my_simple_encoder = DummySimpleEncoder::new(Datum::new(1.0, State::new(2.0, 3.0, 4.0)));
-    let output = my_simple_encoder.get().unwrap().unwrap();
+    let output = my_simple_encoder.get_state();
     assert_eq!(output.time, 1.0);
     assert_eq!(output.value.position, 2.0);
     assert_eq!(output.value.velocity, 3.0);
     assert_eq!(output.value.acceleration, 4.0);
     my_simple_encoder.update();
-    let output = my_simple_encoder.get().unwrap().unwrap();
+    let output = my_simple_encoder.get_state();
     assert_eq!(output.time, 1.1);
     assert_eq!(output.value.position, 2.4);
     assert_eq!(output.value.velocity, 5.0);
@@ -114,8 +132,6 @@ fn simple_encoder_velocity() {
 #[test]
 #[cfg(feature = "devices")]
 fn simple_encoder_acceleration() {
-    #[derive(Clone, Copy, Debug)]
-    struct DummyError;
     struct DummySimpleEncoder {
         simple_encoder_data: SimpleEncoderData,
         time: f32,
@@ -133,7 +149,7 @@ fn simple_encoder_acceleration() {
             }
         }
     }
-    impl SimpleEncoder<DummyError> for DummySimpleEncoder {
+    impl SimpleEncoder for DummySimpleEncoder {
         fn get_simple_encoder_data_ref(&self) -> &SimpleEncoderData {
             &self.simple_encoder_data
         }
@@ -147,13 +163,13 @@ fn simple_encoder_acceleration() {
         }
     }
     let mut my_simple_encoder = DummySimpleEncoder::new(Datum::new(1.0, State::new(2.0, 3.0, 4.0)));
-    let output = my_simple_encoder.get().unwrap().unwrap();
+    let output = my_simple_encoder.get_state();
     assert_eq!(output.time, 1.0);
     assert_eq!(output.value.position, 2.0);
     assert_eq!(output.value.velocity, 3.0);
     assert_eq!(output.value.acceleration, 4.0);
     my_simple_encoder.update();
-    let output = my_simple_encoder.get().unwrap().unwrap();
+    let output = my_simple_encoder.get_state();
     assert_eq!(output.time, 1.1);
     assert_eq!(output.value.position, 2.325);
     assert_eq!(output.value.velocity, 3.5);
@@ -311,8 +327,6 @@ fn non_feedback_motor() {
 #[test]
 #[cfg(all(feature = "std", feature = "devices", feature = "pid"))]
 fn motor_encoder_pair() {
-    #[derive(Clone, Copy, Debug)]
-    struct DummyError;
     struct DummyNonFeedbackMotor {
         pub power: f32,
         pub time: f32,
@@ -351,7 +365,7 @@ fn motor_encoder_pair() {
             }
         }
     }
-    impl SimpleEncoder<DummyError> for DummySimpleEncoder {
+    impl SimpleEncoder for DummySimpleEncoder {
         fn get_simple_encoder_data_ref(&self) -> &SimpleEncoderData {
             &self.simple_encoder_data
         }
