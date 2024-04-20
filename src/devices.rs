@@ -13,6 +13,104 @@ Copyright 2024 UxuginPython on GitHub
 //!Control motors and encoders.
 //!This module is available only with the `devices` feature enabled.
 use crate::*;
+///A trait for encoders.
+pub trait Encoder {
+    ///Get the current acceleration, velocity, and position and the time at which they were
+    ///recorded.
+    fn get_state(&mut self) -> Datum<State>;
+    ///This should be run continually while the device is enabled. If your encoder does not need a
+    ///function like this, just implement it as `{}`.
+    fn update(&mut self);
+}
+///Data needed by all `SimpleEncoder` types.
+pub struct SimpleEncoderData {
+    pub encoder_type: MotorMode,
+    pub time: f32,
+    pub position: f32,
+    pub velocity: f32,
+    pub acceleration: f32,
+}
+impl SimpleEncoderData {
+    ///Constructor for `SimpleEncoderData`.
+    pub fn new(encoder_type: MotorMode, start_state: Datum<State>) -> SimpleEncoderData {
+        SimpleEncoderData {
+            encoder_type: encoder_type,
+            time: start_state.time,
+            position: start_state.value.position,
+            velocity: start_state.value.velocity,
+            acceleration: start_state.value.acceleration,
+        }
+    }
+}
+///An encoder trait that does the calculus for you. You just need to supply a position, velocity,
+///or acceleration, and the others will be calculated.
+pub trait SimpleEncoder: Encoder {
+    ///Get an immutable reference to the object's `SimpleEncoderData` object.
+    fn get_simple_encoder_data_ref(&self) -> &SimpleEncoderData;
+    ///Get a mutable reference to the object's `SimpleEncoderData` object.
+    fn get_simple_encoder_data_mut(&mut self) -> &mut SimpleEncoderData;
+    ///Get a new position, velocity, or acceleration from the encoder along with a time.
+    fn device_update(&mut self) -> Datum<f32>;
+}
+impl<T: SimpleEncoder> Encoder for T {
+    fn get_state(&mut self) -> Datum<State> {
+        let data = self.get_simple_encoder_data_ref();
+        Datum::new(
+            data.time,
+            State::new(data.position, data.velocity, data.acceleration),
+        )
+    }
+    fn update(&mut self) {
+        let device_out = self.device_update();
+        let data = self.get_simple_encoder_data_ref();
+        let old_time = data.time;
+        let old_pos = data.position;
+        let old_vel = data.velocity;
+        let old_acc = data.acceleration;
+        let new_time = device_out.time;
+        let delta_time = new_time - old_time;
+        match data.encoder_type {
+            MotorMode::Position => {
+                let new_pos = device_out.value;
+                let new_vel = (new_pos - old_pos) / delta_time;
+                let new_acc = (new_vel - old_vel) / delta_time;
+                let data = self.get_simple_encoder_data_mut();
+                data.time = new_time;
+                data.position = new_pos;
+                data.velocity = new_vel;
+                data.acceleration = new_acc;
+            }
+            MotorMode::Velocity => {
+                let new_vel = device_out.value;
+                let new_acc = (new_vel - old_vel) / delta_time;
+                let new_pos = old_pos + delta_time * (old_vel + new_vel) / 2.0;
+                let data = self.get_simple_encoder_data_mut();
+                data.time = new_time;
+                data.position = new_pos;
+                data.velocity = new_vel;
+                data.acceleration = new_acc;
+            }
+            MotorMode::Acceleration => {
+                let new_acc = device_out.value;
+                let new_vel = old_vel + delta_time * (old_acc + new_acc) / 2.0;
+                let new_pos = old_pos + delta_time * (old_vel + new_vel) / 2.0;
+                let data = self.get_simple_encoder_data_mut();
+                data.time = new_time;
+                data.position = new_pos;
+                data.velocity = new_vel;
+                data.acceleration = new_acc;
+            }
+        }
+    }
+}
+///Where you are in following a motion profile.
+pub enum MotionProfileState {
+    BeforeStart,
+    InitialAccel,
+    ConstantVel,
+    EndAccel,
+    Complete,
+}
 ///Data needed by all `FeedbackMotor` objects.
 pub enum FeedbackMotorData {
     WithoutMotionProfile,
@@ -20,7 +118,7 @@ pub enum FeedbackMotorData {
     WithMotionProfile {
         motion_profile: MotionProfile,
         start_time: Option<f32>,
-        state: MotionProfilePiece,
+        state: MotionProfileState,
     },
 }
 impl FeedbackMotorData {
@@ -33,7 +131,7 @@ impl FeedbackMotorData {
         FeedbackMotorData::WithMotionProfile {
             motion_profile: motion_profile,
             start_time: None,
-            state: MotionProfilePiece::BeforeStart,
+            state: MotionProfileState::BeforeStart,
         }
     }
 }
@@ -72,33 +170,33 @@ pub trait FeedbackMotor {
                 state,
             } => {
                 match state {
-                    MotionProfilePiece::BeforeStart => {
-                        *state = MotionProfilePiece::InitialAcceleration;
+                    MotionProfileState::BeforeStart => {
+                        *state = MotionProfileState::InitialAccel;
                         *start_time = Some(output.time);
                         let new_acc = motion_profile.max_acc;
                         self.set_acceleration(new_acc);
                     }
-                    MotionProfilePiece::InitialAcceleration => {
+                    MotionProfileState::InitialAccel => {
                         if output.time
                             - start_time.expect("start_time is only none when state is BeforeStart")
                             >= motion_profile.t1
                         {
-                            *state = MotionProfilePiece::ConstantVelocity;
+                            *state = MotionProfileState::ConstantVel;
                             let max_vel = motion_profile.max_acc * motion_profile.t1
                                 + motion_profile.start_vel;
                             self.set_velocity(max_vel);
                         }
                     }
-                    MotionProfilePiece::ConstantVelocity => {
+                    MotionProfileState::ConstantVel => {
                         if output.time - start_time.unwrap() >= motion_profile.t2 {
-                            *state = MotionProfilePiece::EndAcceleration;
+                            *state = MotionProfileState::EndAccel;
                             let new_acc = -motion_profile.max_acc;
                             self.set_acceleration(new_acc);
                         }
                     }
-                    MotionProfilePiece::EndAcceleration => {
+                    MotionProfileState::EndAccel => {
                         if output.time - start_time.unwrap() >= motion_profile.t3 {
-                            *state = MotionProfilePiece::Complete;
+                            *state = MotionProfileState::Complete;
                             let max_vel = motion_profile.max_acc * motion_profile.t1
                                 + motion_profile.start_vel;
                             let t1_pos = 0.5
@@ -117,7 +215,7 @@ pub trait FeedbackMotor {
                             self.set_position(t3_pos);
                         }
                     }
-                    MotionProfilePiece::Complete => {}
+                    MotionProfileState::Complete => {}
                 }
             }
         }
@@ -252,10 +350,10 @@ pub trait NonFeedbackMotor {
 ///Use an encoder connected directly to a motor without feedback and a PID controller to control it
 ///like a servo. Requires `std` and `pid` features.
 #[cfg(all(feature = "std", feature = "pid"))]
-pub struct MotorEncoderPair<E> {
+pub struct MotorEncoderPair {
     feedback_motor_data: FeedbackMotorData,
     motor: Box<dyn NonFeedbackMotor>,
-    encoder: InputStream<State, E>,
+    encoder: Box<dyn Encoder>,
     pid: Option<PIDControllerShift>,
     mode: Option<MotorMode>,
     pos_kp: f32,
@@ -269,11 +367,11 @@ pub struct MotorEncoderPair<E> {
     acc_kd: f32,
 }
 #[cfg(all(feature = "std", feature = "pid"))]
-impl<E> MotorEncoderPair<E> {
+impl MotorEncoderPair {
     ///Constructor for `MotorEncoderPair`.
     pub fn new(
         motor: Box<dyn NonFeedbackMotor>,
-        encoder: InputStream<State, E>,
+        encoder: Box<dyn Encoder>,
         pos_kp: f32,
         pos_ki: f32,
         pos_kd: f32,
@@ -283,7 +381,7 @@ impl<E> MotorEncoderPair<E> {
         acc_kp: f32,
         acc_ki: f32,
         acc_kd: f32,
-    ) -> MotorEncoderPair<E> {
+    ) -> MotorEncoderPair {
         MotorEncoderPair {
             feedback_motor_data: FeedbackMotorData::new(),
             motor: motor,
@@ -303,7 +401,7 @@ impl<E> MotorEncoderPair<E> {
     }
 }
 #[cfg(all(feature = "std", feature = "pid"))]
-impl<E: Copy + Debug> FeedbackMotor for MotorEncoderPair<E> {
+impl FeedbackMotor for MotorEncoderPair {
     fn get_feedback_motor_data_ref(&self) -> &FeedbackMotorData {
         &self.feedback_motor_data
     }
@@ -311,7 +409,7 @@ impl<E: Copy + Debug> FeedbackMotor for MotorEncoderPair<E> {
         &mut self.feedback_motor_data
     }
     fn get_state(&mut self) -> Datum<State> {
-        self.encoder.borrow().get().unwrap().unwrap()
+        self.encoder.get_state()
     }
     fn set_acceleration(&mut self, acceleration: f32) {
         self.mode = Some(MotorMode::Acceleration);
@@ -344,7 +442,7 @@ impl<E: Copy + Debug> FeedbackMotor for MotorEncoderPair<E> {
         ));
     }
     fn update(&mut self) {
-        self.encoder.borrow_mut().update();
+        self.encoder.update();
         let output = self.get_state();
         if self.pid.is_some() {
             let pid_out = self.pid.as_mut().unwrap().update(

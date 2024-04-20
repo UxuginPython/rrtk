@@ -14,16 +14,167 @@ Copyright 2024 UxuginPython on GitHub
 use rrtk::devices::*;
 #[cfg(feature = "devices")]
 use rrtk::*;
-#[cfg(feature = "std")]
-use std::rc::Rc;
-#[cfg(feature = "std")]
-use std::cell::RefCell;
-#[cfg(not(feature = "std"))]
-extern crate alloc;
-#[cfg(not(feature = "std"))]
-use alloc::rc::Rc;
-#[cfg(not(feature = "std"))]
-use core::cell::RefCell;
+#[test]
+#[cfg(feature = "devices")]
+fn encoder() {
+    struct DummyEncoder {}
+    impl DummyEncoder {
+        fn new() -> DummyEncoder {
+            DummyEncoder {}
+        }
+    }
+    impl Encoder for DummyEncoder {
+        fn get_state(&mut self) -> Datum<State> {
+            Datum::new(1.0, State::new(2.0, 3.0, 4.0))
+        }
+        fn update(&mut self) {}
+    }
+    let mut my_encoder = DummyEncoder::new();
+    let output = my_encoder.get_state();
+    assert_eq!(output.time, 1.0);
+    assert_eq!(output.value.position, 2.0);
+    assert_eq!(output.value.velocity, 3.0);
+    assert_eq!(output.value.acceleration, 4.0);
+}
+#[test]
+#[cfg(feature = "devices")]
+fn simple_encoder_position() {
+    struct DummySimpleEncoder {
+        simple_encoder_data: SimpleEncoderData,
+        time: f32,
+        pos: f32,
+    }
+    impl DummySimpleEncoder {
+        fn new(start_state: Datum<State>) -> DummySimpleEncoder {
+            DummySimpleEncoder {
+                simple_encoder_data: SimpleEncoderData::new(
+                    MotorMode::Position,
+                    start_state.clone(),
+                ),
+                time: start_state.time,
+                pos: start_state.value.position,
+            }
+        }
+    }
+    impl SimpleEncoder for DummySimpleEncoder {
+        fn get_simple_encoder_data_ref(&self) -> &SimpleEncoderData {
+            &self.simple_encoder_data
+        }
+        fn get_simple_encoder_data_mut(&mut self) -> &mut SimpleEncoderData {
+            &mut self.simple_encoder_data
+        }
+        fn device_update(&mut self) -> Datum<f32> {
+            self.time += 0.1;
+            self.pos += 2.0;
+            Datum::new(self.time, self.pos)
+        }
+    }
+    let mut my_simple_encoder = DummySimpleEncoder::new(Datum::new(1.0, State::new(2.0, 3.0, 4.0)));
+    let output = my_simple_encoder.get_state();
+    assert_eq!(output.time, 1.0);
+    assert_eq!(output.value.position, 2.0);
+    assert_eq!(output.value.velocity, 3.0);
+    assert_eq!(output.value.acceleration, 4.0);
+    my_simple_encoder.update();
+    let output = my_simple_encoder.get_state();
+    assert_eq!(output.time, 1.1);
+    assert_eq!(output.value.position, 4.0);
+    //floating point errors
+    assert!(19.999 < output.value.velocity && output.value.velocity < 20.001);
+    assert!(169.999 < output.value.acceleration && output.value.acceleration < 170.001);
+}
+#[test]
+#[cfg(feature = "devices")]
+fn simple_encoder_velocity() {
+    struct DummySimpleEncoder {
+        simple_encoder_data: SimpleEncoderData,
+        time: f32,
+        vel: f32,
+    }
+    impl DummySimpleEncoder {
+        fn new(start_state: Datum<State>) -> DummySimpleEncoder {
+            DummySimpleEncoder {
+                simple_encoder_data: SimpleEncoderData::new(
+                    MotorMode::Velocity,
+                    start_state.clone(),
+                ),
+                time: start_state.time,
+                vel: start_state.value.velocity,
+            }
+        }
+    }
+    impl SimpleEncoder for DummySimpleEncoder {
+        fn get_simple_encoder_data_ref(&self) -> &SimpleEncoderData {
+            &self.simple_encoder_data
+        }
+        fn get_simple_encoder_data_mut(&mut self) -> &mut SimpleEncoderData {
+            &mut self.simple_encoder_data
+        }
+        fn device_update(&mut self) -> Datum<f32> {
+            self.time += 0.1;
+            self.vel += 2.0;
+            Datum::new(self.time, self.vel)
+        }
+    }
+    let mut my_simple_encoder = DummySimpleEncoder::new(Datum::new(1.0, State::new(2.0, 3.0, 4.0)));
+    let output = my_simple_encoder.get_state();
+    assert_eq!(output.time, 1.0);
+    assert_eq!(output.value.position, 2.0);
+    assert_eq!(output.value.velocity, 3.0);
+    assert_eq!(output.value.acceleration, 4.0);
+    my_simple_encoder.update();
+    let output = my_simple_encoder.get_state();
+    assert_eq!(output.time, 1.1);
+    assert_eq!(output.value.position, 2.4);
+    assert_eq!(output.value.velocity, 5.0);
+    assert!(19.999 < output.value.acceleration && output.value.acceleration < 20.001);
+}
+#[test]
+#[cfg(feature = "devices")]
+fn simple_encoder_acceleration() {
+    struct DummySimpleEncoder {
+        simple_encoder_data: SimpleEncoderData,
+        time: f32,
+        acc: f32,
+    }
+    impl DummySimpleEncoder {
+        fn new(start_state: Datum<State>) -> DummySimpleEncoder {
+            DummySimpleEncoder {
+                simple_encoder_data: SimpleEncoderData::new(
+                    MotorMode::Acceleration,
+                    start_state.clone(),
+                ),
+                time: start_state.time,
+                acc: start_state.value.acceleration,
+            }
+        }
+    }
+    impl SimpleEncoder for DummySimpleEncoder {
+        fn get_simple_encoder_data_ref(&self) -> &SimpleEncoderData {
+            &self.simple_encoder_data
+        }
+        fn get_simple_encoder_data_mut(&mut self) -> &mut SimpleEncoderData {
+            &mut self.simple_encoder_data
+        }
+        fn device_update(&mut self) -> Datum<f32> {
+            self.time += 0.1;
+            self.acc += 2.0;
+            Datum::new(self.time, self.acc)
+        }
+    }
+    let mut my_simple_encoder = DummySimpleEncoder::new(Datum::new(1.0, State::new(2.0, 3.0, 4.0)));
+    let output = my_simple_encoder.get_state();
+    assert_eq!(output.time, 1.0);
+    assert_eq!(output.value.position, 2.0);
+    assert_eq!(output.value.velocity, 3.0);
+    assert_eq!(output.value.acceleration, 4.0);
+    my_simple_encoder.update();
+    let output = my_simple_encoder.get_state();
+    assert_eq!(output.time, 1.1);
+    assert_eq!(output.value.position, 2.325);
+    assert_eq!(output.value.velocity, 3.5);
+    assert_eq!(output.value.acceleration, 6.0);
+}
 #[test]
 #[cfg(feature = "devices")]
 fn feedback_motor() {
@@ -176,8 +327,6 @@ fn non_feedback_motor() {
 #[test]
 #[cfg(all(feature = "std", feature = "devices", feature = "pid"))]
 fn motor_encoder_pair() {
-    #[derive(Copy, Clone, Debug)]
-    struct DummyError;
     struct DummyNonFeedbackMotor {
         pub power: f32,
         pub time: f32,
@@ -199,30 +348,42 @@ fn motor_encoder_pair() {
             }
         }
     }
-    struct DummyEncoder {
+    struct DummySimpleEncoder {
+        simple_encoder_data: SimpleEncoderData,
         time: f32,
         velocity: f32,
     }
-    impl DummyEncoder {
-        fn new(start_state: Datum<State>) -> DummyEncoder {
-            DummyEncoder {
+    impl DummySimpleEncoder {
+        fn new(start_state: Datum<State>) -> DummySimpleEncoder {
+            DummySimpleEncoder {
+                simple_encoder_data: SimpleEncoderData::new(
+                    MotorMode::Velocity,
+                    start_state.clone(),
+                ),
                 time: start_state.time,
                 velocity: start_state.value.velocity,
             }
         }
     }
-    impl Stream<f32, DummyError> for DummyEncoder {
-        fn get(&self) -> StreamOutput<f32, DummyError> {
-            Ok(Some(Datum::new(self.time, self.velocity)))
+    impl SimpleEncoder for DummySimpleEncoder {
+        fn get_simple_encoder_data_ref(&self) -> &SimpleEncoderData {
+            &self.simple_encoder_data
         }
-        fn update(&mut self) {
+        fn get_simple_encoder_data_mut(&mut self) -> &mut SimpleEncoderData {
+            &mut self.simple_encoder_data
+        }
+        fn device_update(&mut self) -> Datum<f32> {
             self.time += 2.0;
             self.velocity += 1.0;
+            Datum::new(self.time, self.velocity)
         }
     }
     let mut pair = MotorEncoderPair::new(
         Box::new(DummyNonFeedbackMotor::new()),
-        make_stream_input!(streams::VelocityToState::new(make_stream_input!(DummyEncoder::new(Datum::new(-1.0, State::new(0.0, -1.0, 0.0))), f32, DummyError)), State, DummyError),
+        Box::new(DummySimpleEncoder::new(Datum::new(
+            -1.0,
+            State::new(0.0, -1.0, 0.0),
+        ))),
         1.0,
         0.01,
         0.1,
