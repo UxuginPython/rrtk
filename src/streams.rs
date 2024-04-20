@@ -183,15 +183,15 @@ impl<E: Copy + Debug> Stream<f32, E> for DifferenceStream<E> {
     }
     fn update(&mut self) {}
 }
-pub struct ProductStream<E> {
-    factors: Vec<InputStream<f32, E>>,
+pub struct ProductStream<const N: usize, E> {
+    factors: [InputStream<f32, E>; N],
 }
-impl<E> ProductStream<E> {
-    pub fn new(factors: Vec<InputStream<f32, E>>) -> Self {
+impl<const N: usize, E> ProductStream<N, E> {
+    pub fn new(factors: [InputStream<f32, E>; N]) -> Self {
         Self { factors: factors }
     }
 }
-impl<E: Copy + Debug> Stream<f32, E> for ProductStream<E> {
+impl<const N: usize, E: Copy + Debug> Stream<f32, E> for ProductStream<N, E> {
     fn get(&self) -> StreamOutput<f32, E> {
         if self.factors.is_empty() {
             return Err(Error::EmptyFactorVec);
@@ -464,17 +464,17 @@ impl<E: Copy + Debug + 'static> StreamPID<E> {
             E
         );
         let kp_mul = make_stream_input!(
-            ProductStream::new(vec![Rc::clone(&kp), Rc::clone(&error)]),
+            ProductStream::new([Rc::clone(&kp), Rc::clone(&error)]),
             f32,
             E
         );
         let ki_mul = make_stream_input!(
-            ProductStream::new(vec![Rc::clone(&ki), Rc::clone(&int_zeroer)]),
+            ProductStream::new([Rc::clone(&ki), Rc::clone(&int_zeroer)]),
             f32,
             E
         );
         let kd_mul = make_stream_input!(
-            ProductStream::new(vec![Rc::clone(&kd), Rc::clone(&drv_zeroer)]),
+            ProductStream::new([Rc::clone(&kd), Rc::clone(&drv_zeroer)]),
             f32,
             E
         );

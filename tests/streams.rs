@@ -509,7 +509,7 @@ fn product_stream() {
     let normal = Rc::new(RefCell::new(
         Box::new(NormalStream::new()) as Box<dyn Stream<f32, Nothing>>
     ));
-    let stream = ProductStream::new(vec![Rc::clone(&erroring), Rc::clone(&normal)]);
+    let stream = ProductStream::new([Rc::clone(&erroring), Rc::clone(&normal)]);
     match stream.get() {
         Ok(_) => {
             panic!("error not propagated")
