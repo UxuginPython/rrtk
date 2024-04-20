@@ -299,7 +299,7 @@ fn sum_stream() {
     let normal = Rc::new(RefCell::new(
         Box::new(NormalStream::new()) as Box<dyn Stream<f32, Nothing>>
     ));
-    let stream = SumStream::new(vec![Rc::clone(&erroring), Rc::clone(&normal)]);
+    let stream = SumStream::new([Rc::clone(&erroring), Rc::clone(&normal)]);
     match stream.get() {
         Ok(_) => {
             panic!("error not propagated")

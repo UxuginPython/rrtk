@@ -87,15 +87,15 @@ impl<T: Clone, E: Copy + Debug> Stream<T, E> for NoneToValue<T, E> {
     }
     fn update(&mut self) {}
 }
-pub struct SumStream<E> {
-    addends: Vec<InputStream<f32, E>>,
+pub struct SumStream<const N: usize, E> {
+    addends: [InputStream<f32, E>; N]
 }
-impl<E> SumStream<E> {
-    pub fn new(addends: Vec<InputStream<f32, E>>) -> Self {
+impl<const N: usize, E> SumStream<N, E> {
+    pub fn new(addends: [InputStream<f32, E>; N]) -> Self {
         Self { addends: addends }
     }
 }
-impl<E: Copy + Debug> Stream<f32, E> for SumStream<E> {
+impl<const N: usize, E: Copy + Debug> Stream<f32, E> for SumStream<N, E> {
     fn get(&self) -> StreamOutput<f32, E> {
         if self.addends.is_empty() {
             return Err(Error::EmptyAddendVec);
@@ -433,7 +433,7 @@ impl<E: Copy + Debug> Stream<f32, E> for IntegralStream<E> {
 pub struct StreamPID<E: Copy + Debug> {
     int: InputStream<f32, E>,
     drv: InputStream<f32, E>,
-    output: SumStream<E>,
+    output: SumStream<3, E>,
 }
 impl<E: Copy + Debug + 'static> StreamPID<E> {
     pub fn new(input: InputStream<f32, E>, setpoint: f32, kp: f32, ki: f32, kd: f32) -> Self {
@@ -478,7 +478,7 @@ impl<E: Copy + Debug + 'static> StreamPID<E> {
             f32,
             E
         );
-        let output = SumStream::new(vec![
+        let output = SumStream::new([
             Rc::clone(&kp_mul),
             Rc::clone(&ki_mul),
             Rc::clone(&kd_mul),
