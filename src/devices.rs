@@ -103,14 +103,6 @@ impl<T: SimpleEncoder> Encoder for T {
         }
     }
 }
-///Where you are in following a motion profile.
-pub enum MotionProfileState {
-    BeforeStart,
-    InitialAccel,
-    ConstantVel,
-    EndAccel,
-    Complete,
-}
 ///Data needed by all `FeedbackMotor` objects.
 pub enum FeedbackMotorData {
     WithoutMotionProfile,
@@ -118,7 +110,7 @@ pub enum FeedbackMotorData {
     WithMotionProfile {
         motion_profile: MotionProfile,
         start_time: Option<f32>,
-        state: MotionProfileState,
+        state: MotionProfilePiece,
     },
 }
 impl FeedbackMotorData {
@@ -131,7 +123,7 @@ impl FeedbackMotorData {
         FeedbackMotorData::WithMotionProfile {
             motion_profile: motion_profile,
             start_time: None,
-            state: MotionProfileState::BeforeStart,
+            state: MotionProfilePiece::BeforeStart,
         }
     }
 }
@@ -170,33 +162,33 @@ pub trait FeedbackMotor {
                 state,
             } => {
                 match state {
-                    MotionProfileState::BeforeStart => {
-                        *state = MotionProfileState::InitialAccel;
+                    MotionProfilePiece::BeforeStart => {
+                        *state = MotionProfilePiece::InitialAcceleration;
                         *start_time = Some(output.time);
                         let new_acc = motion_profile.max_acc;
                         self.set_acceleration(new_acc);
                     }
-                    MotionProfileState::InitialAccel => {
+                    MotionProfilePiece::InitialAcceleration => {
                         if output.time
                             - start_time.expect("start_time is only none when state is BeforeStart")
                             >= motion_profile.t1
                         {
-                            *state = MotionProfileState::ConstantVel;
+                            *state = MotionProfilePiece::ConstantVelocity;
                             let max_vel = motion_profile.max_acc * motion_profile.t1
                                 + motion_profile.start_vel;
                             self.set_velocity(max_vel);
                         }
                     }
-                    MotionProfileState::ConstantVel => {
+                    MotionProfilePiece::ConstantVelocity => {
                         if output.time - start_time.unwrap() >= motion_profile.t2 {
-                            *state = MotionProfileState::EndAccel;
+                            *state = MotionProfilePiece::EndAcceleration;
                             let new_acc = -motion_profile.max_acc;
                             self.set_acceleration(new_acc);
                         }
                     }
-                    MotionProfileState::EndAccel => {
+                    MotionProfilePiece::EndAcceleration => {
                         if output.time - start_time.unwrap() >= motion_profile.t3 {
-                            *state = MotionProfileState::Complete;
+                            *state = MotionProfilePiece::Complete;
                             let max_vel = motion_profile.max_acc * motion_profile.t1
                                 + motion_profile.start_vel;
                             let t1_pos = 0.5
@@ -215,7 +207,7 @@ pub trait FeedbackMotor {
                             self.set_position(t3_pos);
                         }
                     }
-                    MotionProfileState::Complete => {}
+                    MotionProfilePiece::Complete => {}
                 }
             }
         }
