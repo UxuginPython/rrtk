@@ -242,6 +242,25 @@ pub struct MotionProfile {
     max_acc: f32,
 }
 #[cfg(feature = "motionprofile")]
+impl History<State> for MotionProfile {
+    fn get(&self, time: f32) -> Option<Datum<State>> {
+        let pos = match self.get_position(time) {
+            Ok(value) => value,
+            Err(_) => {return None;}
+        };
+        let vel = match self.get_velocity(time) {
+            Ok(value) => value,
+            Err(_) => {return None;}
+        };
+        let acc = match self.get_acceleration(time) {
+            Ok(value) => value,
+            Err(_) => {return None;}
+        };
+        Some(Datum::new(time, State::new(pos, vel, acc)))
+    }
+    fn update(&mut self) {}
+}
+#[cfg(feature = "motionprofile")]
 impl MotionProfile {
     ///Constructor for `MotionProfile` using start and end states.
     pub fn new(start_state: State, end_state: State, max_vel: f32, max_acc: f32) -> MotionProfile {
@@ -384,6 +403,10 @@ impl<T: Clone, E: Copy + Debug> TimeGetter<E> for TimeGetterFromStream<T, E> {
 }
 pub trait Stream<T: Clone, E: Copy + Debug> {
     fn get(&self) -> StreamOutput<T, E>;
+    fn update(&mut self);
+}
+pub trait History<T: Clone> {
+    fn get(&self, time: f32) -> Option<Datum<T>>;
     fn update(&mut self);
 }
 #[macro_export]
