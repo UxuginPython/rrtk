@@ -92,14 +92,14 @@ pub struct SumStream<const N: usize, E> {
 }
 impl<const N: usize, E> SumStream<N, E> {
     pub fn new(addends: [InputStream<f32, E>; N]) -> Self {
+        if N < 1 {
+            panic!("rrtk::streams::SumStream must have at least one input stream");
+        }
         Self { addends: addends }
     }
 }
 impl<const N: usize, E: Copy + Debug> Stream<f32, E> for SumStream<N, E> {
     fn get(&self) -> StreamOutput<f32, E> {
-        if self.addends.is_empty() {
-            return Err(Error::EmptyAddendVec);
-        }
         //Err(...) -> return Err immediately
         //Ok(None) -> skip
         //Ok(Some(...)) -> add to value
@@ -188,14 +188,14 @@ pub struct ProductStream<const N: usize, E> {
 }
 impl<const N: usize, E> ProductStream<N, E> {
     pub fn new(factors: [InputStream<f32, E>; N]) -> Self {
+        if N < 1 {
+            panic!("rrtk::streams::ProductStream must have at least one input stream");
+        }
         Self { factors: factors }
     }
 }
 impl<const N: usize, E: Copy + Debug> Stream<f32, E> for ProductStream<N, E> {
     fn get(&self) -> StreamOutput<f32, E> {
-        if self.factors.is_empty() {
-            return Err(Error::EmptyFactorVec);
-        }
         let mut outputs = Vec::new();
         for i in &self.factors {
             outputs.push(i.borrow().get()?);
