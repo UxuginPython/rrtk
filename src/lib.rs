@@ -276,12 +276,12 @@ pub trait TimeGetter<E: Copy + Debug> {
     fn update(&mut self);
 }
 pub struct TimeGetterFromStream<T: Clone, E> {
-    elevator: streams::NoneToError<T, E>,
+    elevator: streams::converters::NoneToError<T, E>,
 }
 impl<T: Clone, E> TimeGetterFromStream<T, E> {
     pub fn new(stream: Rc<RefCell<Box<dyn Stream<T, E>>>>) -> Self {
         Self {
-            elevator: streams::NoneToError::new(Rc::clone(&stream)),
+            elevator: streams::converters::NoneToError::new(Rc::clone(&stream)),
         }
     }
 }

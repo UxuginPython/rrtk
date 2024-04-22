@@ -12,6 +12,9 @@ Copyright 2024 UxuginPython on GitHub
 */
 use rrtk::streams::*;
 use rrtk::*;
+use rrtk::streams::math::*;
+use rrtk::streams::converters::*;
+use rrtk::streams::control::*;
 #[cfg(feature = "std")]
 use std::cell::RefCell;
 #[cfg(feature = "std")]
