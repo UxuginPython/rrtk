@@ -12,14 +12,6 @@ Copyright 2024 UxuginPython on GitHub
 */
 use rrtk::*;
 #[test]
-#[cfg(all(feature = "std", feature = "pid"))]
-fn pidshift_shift() {
-    let mut pid = PIDControllerShift::new(5.0, 1.0, 0.01, 0.1, 1);
-    let _ = pid.update(1.0, 0.0);
-    let new_control = pid.update(3.0, 1.0);
-    assert_eq!(new_control, 9.04);
-}
-#[test]
 fn state_new() {
     let state = State::new(1.0, 2.0, 3.0);
     assert_eq!(state.position, 1.0);

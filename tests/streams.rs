@@ -908,7 +908,7 @@ fn stream_pid() {
         }
     }
     let input = make_stream_input!(DummyStream::new(), f32, DummyError);
-    let mut stream = StreamPID::new(Rc::clone(&input), 5.0, 1.0, 0.01, 0.1);
+    let mut stream = PIDController::new(Rc::clone(&input), 5.0, 1.0, 0.01, 0.1);
     stream.update();
     assert_eq!(stream.get().unwrap().unwrap().time, 0.0);
     assert_eq!(stream.get().unwrap().unwrap().value, 5.0);

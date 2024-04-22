@@ -27,7 +27,6 @@ exclude = ["generatetestall.py", "testall.sh"]
 std = []
 devices = []
 motionprofile = []
-pid = []
 default = ["std"]
 [package.metadata.docs.rs]
 all-features = true
