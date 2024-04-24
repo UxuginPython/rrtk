@@ -38,21 +38,15 @@ impl FeedbackMotorData {
     }
 }
 ///A trait for motors with some form of feedback, regardless if we can see it or not.
-pub trait FeedbackMotor {
+pub trait FeedbackMotor<E: Copy + Debug>: Stream<State, E> {
     fn get_feedback_motor_data_ref(&self) -> &FeedbackMotorData;
     fn get_feedback_motor_data_mut(&mut self) -> &mut FeedbackMotorData;
-    ///Get the motor's current acceleration, velocity, and position and the time at which they
-    ///were recorded.
-    fn get_state(&mut self) -> Datum<State>;
     ///Make the motor run at a given acceleration.
     fn set_acceleration(&mut self, acceleration: f32);
     ///Make the motor run at a given velocity.
     fn set_velocity(&mut self, velocity: f32);
     ///Make the mootr go to a given position.
     fn set_position(&mut self, position: f32);
-    ///This should be run continually while the device is enabled. If your motor does not need a
-    ///function like this, just implement it as `{}`.
-    fn update(&mut self);
     ///Set up the object to follow a motion profile.
     #[cfg(feature = "motionprofile")]
     fn start_motion_profile(&mut self, motion_profile: MotionProfile) {
@@ -62,7 +56,7 @@ pub trait FeedbackMotor {
     ///Call this repeatedly until the motion profile finishes.
     #[cfg(feature = "motionprofile")]
     fn update_motion_profile(&mut self) {
-        let output = self.get_state();
+        let output = self.get().unwrap().unwrap();
         let data = self.get_feedback_motor_data_mut();
         match data {
             FeedbackMotorData::WithoutMotionProfile => {}
@@ -137,39 +131,39 @@ pub trait FeedbackMotor {
             + max_vel * (motion_profile.t3 - motion_profile.t2)
             + t2_pos;
         let mut time = 0.0;
-        let output = self.get_state();
+        let output = self.get().unwrap().unwrap();
         let start_time = output.time;
         self.set_acceleration(motion_profile.max_acc);
         while time - start_time < motion_profile.t1 {
             self.update();
-            time = self.get_state().time;
+            time = self.get().unwrap().unwrap().time;
         }
         self.set_velocity(max_vel);
         while time - start_time < motion_profile.t2 {
             self.update();
-            time = self.get_state().time;
+            time = self.get().unwrap().unwrap().time;
         }
         self.set_acceleration(-motion_profile.max_acc);
         while time - start_time < motion_profile.t3 {
             self.update();
-            time = self.get_state().time;
+            time = self.get().unwrap().unwrap().time;
         }
         self.set_position(t3_pos);
     }
 }
-///A container for data required by all `ServoMotor` objects.
-pub struct ServoMotorData {
+pub struct ServoMotor {
     pub feedback_motor_data: FeedbackMotorData,
+    pub methods: Box<dyn ServoMotorMethods>,
     pub acceleration: f32,
     pub velocity: f32,
     pub position: f32,
     pub time: f32,
 }
-impl ServoMotorData {
-    ///Constructor for `ServoMotorData`.
-    pub fn new(start_state: Datum<State>) -> ServoMotorData {
-        ServoMotorData {
+impl ServoMotor {
+    pub fn new(start_state: Datum<State>, methods: Box<dyn ServoMotorMethods>) -> Self {
+        Self {
             feedback_motor_data: FeedbackMotorData::new(),
+            methods: methods,
             acceleration: start_state.value.acceleration,
             velocity: start_state.value.velocity,
             position: start_state.value.position,
@@ -177,13 +171,7 @@ impl ServoMotorData {
         }
     }
 }
-///A trait for servo motors that do their own control theory and do not give us details about their
-///measured state.
-pub trait ServoMotor: FeedbackMotor {
-    ///Get an immutable reference to the object's `ServoMotorData` field.
-    fn get_servo_motor_data_ref(&self) -> &ServoMotorData;
-    ///Get a mutable reference to the object's `ServoMotorData` field.
-    fn get_servo_motor_data_mut(&mut self) -> &mut ServoMotorData;
+pub trait ServoMotorMethods {
     ///Get a new time from the computer.
     fn device_get_time(&mut self) -> f32;
     ///Tell the motor to accelerate at a given acceleration.
@@ -196,51 +184,46 @@ pub trait ServoMotor: FeedbackMotor {
     ///function like this, just implement it as `{}`.
     fn device_update(&mut self);
 }
-impl<T: ServoMotor> FeedbackMotor for T {
+impl<E: Copy + Debug> FeedbackMotor<E> for ServoMotor {
     fn get_feedback_motor_data_ref(&self) -> &FeedbackMotorData {
-        let data = self.get_servo_motor_data_ref();
-        &data.feedback_motor_data
+        &self.feedback_motor_data
     }
     fn get_feedback_motor_data_mut(&mut self) -> &mut FeedbackMotorData {
-        let data = self.get_servo_motor_data_mut();
-        &mut data.feedback_motor_data
-    }
-    fn get_state(&mut self) -> Datum<State> {
-        let data = self.get_servo_motor_data_ref();
-        Datum::new(
-            data.time,
-            State::new(data.position, data.velocity, data.acceleration),
-        )
+        &mut self.feedback_motor_data
     }
     fn set_acceleration(&mut self, acceleration: f32) {
-        self.device_set_acceleration(acceleration);
-        let time = self.device_get_time();
-        let data = self.get_servo_motor_data_mut();
-        data.acceleration = acceleration;
-        data.time = time;
+        self.methods.device_set_acceleration(acceleration);
+        let time = self.methods.device_get_time();
+        self.acceleration = acceleration;
+        self.time = time;
     }
     fn set_velocity(&mut self, velocity: f32) {
-        self.device_set_velocity(velocity);
-        let time = self.device_get_time();
-        let data = self.get_servo_motor_data_mut();
-        data.acceleration = 0.0;
-        data.velocity = velocity;
-        data.time = time;
+        self.methods.device_set_velocity(velocity);
+        let time = self.methods.device_get_time();
+        self.acceleration = 0.0;
+        self.velocity = velocity;
+        self.time = time;
     }
     fn set_position(&mut self, position: f32) {
-        self.device_set_position(position);
-        let time = self.device_get_time();
-        let data = self.get_servo_motor_data_mut();
-        data.acceleration = 0.0;
-        data.velocity = 0.0;
-        data.position = position;
-        data.time = time;
+        self.methods.device_set_position(position);
+        let time = self.methods.device_get_time();
+        self.acceleration = 0.0;
+        self.velocity = 0.0;
+        self.position = position;
+        self.time = time;
+    }
+}
+impl<E: Copy + Debug> Stream<State, E> for ServoMotor {
+    fn get(&self) -> StreamOutput<State, E> {
+        Ok(Some(Datum::new(
+            self.time,
+            State::new(self.position, self.velocity, self.acceleration),
+        )))
     }
     fn update(&mut self) {
-        self.device_update();
-        let time = self.device_get_time();
-        let data = self.get_servo_motor_data_mut();
-        data.time = time;
+        self.methods.device_update();
+        let time = self.methods.device_get_time();
+        self.time = time;
     }
 }
 ///A trait for motors without feedback.
