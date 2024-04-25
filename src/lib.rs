@@ -90,8 +90,8 @@ impl PIDController {
     }
 }
 ///A PID controller that will integrate the control variable a given number of times to simplify
-///control of some systems such as motors. Requires `std` and `pid` features.
-#[cfg(all(feature = "std", feature = "pid"))]
+///control of some systems such as motors. Requires `pid` feature.
+#[cfg(feature = "pid")]
 pub struct PIDControllerShift {
     setpoint: f32,
     kp: f32,
@@ -102,7 +102,7 @@ pub struct PIDControllerShift {
     int_error: f32,
     shifts: Vec<f32>,
 }
-#[cfg(all(feature = "std", feature = "pid"))]
+#[cfg(feature = "pid")]
 impl PIDControllerShift {
     ///Constructor for `PIDControllerShift`.
     pub fn new(setpoint: f32, kp: f32, ki: f32, kd: f32, shift: u8) -> PIDControllerShift {
@@ -460,7 +460,7 @@ mod tests {
         assert_eq!(pid.int_error, 9.0);
     }
     #[test]
-    #[cfg(all(feature = "std", feature = "pid"))]
+    #[cfg(feature = "pid")]
     fn pidshift_no_shift() {
         let mut pid = PIDControllerShift::new(5.0, 1.0, 0.01, 0.1, 0);
         let _ = pid.update(1.0, 0.0);

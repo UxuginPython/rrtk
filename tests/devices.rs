@@ -325,7 +325,7 @@ fn non_feedback_motor() {
     my_non_feedback_motor.set_power(0.39);
 }
 #[test]
-#[cfg(all(feature = "std", feature = "devices", feature = "pid"))]
+#[cfg(all(feature = "devices", feature = "pid"))]
 fn motor_encoder_pair() {
     struct DummyNonFeedbackMotor {
         pub power: f32,

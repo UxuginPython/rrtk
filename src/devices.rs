@@ -341,7 +341,7 @@ pub trait NonFeedbackMotor {
 }
 ///Use an encoder connected directly to a motor without feedback and a PID controller to control it
 ///like a servo. Requires `std` and `pid` features.
-#[cfg(all(feature = "std", feature = "pid"))]
+#[cfg(feature = "pid")]
 pub struct MotorEncoderPair {
     feedback_motor_data: FeedbackMotorData,
     motor: Box<dyn NonFeedbackMotor>,
@@ -358,7 +358,7 @@ pub struct MotorEncoderPair {
     acc_ki: f32,
     acc_kd: f32,
 }
-#[cfg(all(feature = "std", feature = "pid"))]
+#[cfg(feature = "pid")]
 impl MotorEncoderPair {
     ///Constructor for `MotorEncoderPair`.
     pub fn new(
@@ -392,7 +392,7 @@ impl MotorEncoderPair {
         }
     }
 }
-#[cfg(all(feature = "std", feature = "pid"))]
+#[cfg(feature = "pid")]
 impl FeedbackMotor for MotorEncoderPair {
     fn get_feedback_motor_data_ref(&self) -> &FeedbackMotorData {
         &self.feedback_motor_data
