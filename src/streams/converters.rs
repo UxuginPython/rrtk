@@ -12,7 +12,6 @@ Copyright 2024 UxuginPython on GitHub
 */
 use crate::streams::math::*;
 use crate::streams::*;
-use crate::*;
 pub struct NoneToError<T: Clone, E> {
     input: InputStream<T, E>,
 }
