@@ -10,10 +10,10 @@ Copyright 2024 UxuginPython on GitHub
 
     You should have received a copy of the GNU Lesser General Public License along with Rust Robotics ToolKit. If not, see <https://www.gnu.org/licenses/>.
 */
-use crate::*;
-use crate::streams::*;
-use crate::streams::math::*;
 use crate::streams::converters::*;
+use crate::streams::math::*;
+use crate::streams::*;
+use crate::*;
 pub struct StreamPID<E: Copy + Debug> {
     int: InputStream<f32, E>,
     drv: InputStream<f32, E>,
@@ -62,11 +62,7 @@ impl<E: Copy + Debug + 'static> StreamPID<E> {
             f32,
             E
         );
-        let output = SumStream::new([
-            Rc::clone(&kp_mul),
-            Rc::clone(&ki_mul),
-            Rc::clone(&kd_mul),
-        ]);
+        let output = SumStream::new([Rc::clone(&kp_mul), Rc::clone(&ki_mul), Rc::clone(&kd_mul)]);
         Self {
             int: Rc::clone(&int),
             drv: Rc::clone(&drv),

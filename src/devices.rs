@@ -441,27 +441,20 @@ impl FeedbackMotor for MotorEncoderPair {
         let output = self.get_state();
         match &mut self.pid {
             Some(MEPairPID::Position(ref mut pid)) => {
-                let pid_out = pid.update(
-                    output.time,
-                    output.value.position,
-                );
+                let pid_out = pid.update(output.time, output.value.position);
                 self.motor.set_power(pid_out);
             }
             Some(MEPairPID::Velocity(ref mut pid)) => {
-                let pid_out = pid.update(
-                    output.time,
-                    output.value.velocity,
-                );
+                let pid_out = pid.update(output.time, output.value.velocity);
                 self.motor.set_power(pid_out);
             }
             Some(MEPairPID::Acceleration(ref mut pid)) => {
-                let pid_out = pid.update(
-                    output.time,
-                    output.value.acceleration,
-                );
+                let pid_out = pid.update(output.time, output.value.acceleration);
                 self.motor.set_power(pid_out);
             }
-            None => {return;}
+            None => {
+                return;
+            }
         }
     }
 }

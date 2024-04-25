@@ -10,9 +10,9 @@ Copyright 2024 UxuginPython on GitHub
 
     You should have received a copy of the GNU Lesser General Public License along with Rust Robotics ToolKit. If not, see <https://www.gnu.org/licenses/>.
 */
-use crate::*;
-use crate::streams::*;
 use crate::streams::math::*;
+use crate::streams::*;
+use crate::*;
 pub struct NoneToError<T: Clone, E> {
     input: InputStream<T, E>,
 }
@@ -89,15 +89,21 @@ impl<E: Copy + Debug> Stream<State, E> for AccelerationToState<E> {
         let pos = self.pos.borrow().get()?;
         match acc {
             Some(_) => {}
-            None => {return Ok(None);}
+            None => {
+                return Ok(None);
+            }
         }
         match vel {
             Some(_) => {}
-            None => {return Ok(None);}
+            None => {
+                return Ok(None);
+            }
         }
         match pos {
             Some(_) => {}
-            None => {return Ok(None);}
+            None => {
+                return Ok(None);
+            }
         }
         let acc = acc.unwrap();
         let vel = vel.unwrap();
@@ -109,7 +115,10 @@ impl<E: Copy + Debug> Stream<State, E> for AccelerationToState<E> {
         if pos.time > time {
             time = pos.time;
         }
-        Ok(Some(Datum::new(time, State::new(pos.value, vel.value, acc.value))))
+        Ok(Some(Datum::new(
+            time,
+            State::new(pos.value, vel.value, acc.value),
+        )))
     }
     fn update(&mut self) {
         self.vel.borrow_mut().update();
@@ -139,15 +148,21 @@ impl<E: Copy + Debug> Stream<State, E> for VelocityToState<E> {
         let pos = self.pos.borrow().get()?;
         match acc {
             Some(_) => {}
-            None => {return Ok(None);}
+            None => {
+                return Ok(None);
+            }
         }
         match vel {
             Some(_) => {}
-            None => {return Ok(None);}
+            None => {
+                return Ok(None);
+            }
         }
         match pos {
             Some(_) => {}
-            None => {return Ok(None);}
+            None => {
+                return Ok(None);
+            }
         }
         let acc = acc.unwrap();
         let vel = vel.unwrap();
@@ -159,7 +174,10 @@ impl<E: Copy + Debug> Stream<State, E> for VelocityToState<E> {
         if pos.time > time {
             time = pos.time;
         }
-        Ok(Some(Datum::new(time, State::new(pos.value, vel.value, acc.value))))
+        Ok(Some(Datum::new(
+            time,
+            State::new(pos.value, vel.value, acc.value),
+        )))
     }
     fn update(&mut self) {
         self.acc.borrow_mut().update();
@@ -189,15 +207,21 @@ impl<E: Copy + Debug> Stream<State, E> for PositionToStream<E> {
         let pos = self.pos.borrow().get()?;
         match acc {
             Some(_) => {}
-            None => {return Ok(None);}
+            None => {
+                return Ok(None);
+            }
         }
         match vel {
             Some(_) => {}
-            None => {return Ok(None);}
+            None => {
+                return Ok(None);
+            }
         }
         match pos {
             Some(_) => {}
-            None => {return Ok(None);}
+            None => {
+                return Ok(None);
+            }
         }
         let acc = acc.unwrap();
         let vel = vel.unwrap();
@@ -209,7 +233,10 @@ impl<E: Copy + Debug> Stream<State, E> for PositionToStream<E> {
         if pos.time > time {
             time = pos.time;
         }
-        Ok(Some(Datum::new(time, State::new(pos.value, vel.value, acc.value))))
+        Ok(Some(Datum::new(
+            time,
+            State::new(pos.value, vel.value, acc.value),
+        )))
     }
     fn update(&mut self) {
         self.vel.borrow_mut().update();

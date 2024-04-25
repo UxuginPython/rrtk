@@ -45,3 +45,12 @@ Start new stream system.
 Reorganize a bit and add [EWMA](https://www.itl.nist.gov/div898/handbook/pmc/section3/pmc324.htm) stream.
 ### 0.3.0-alpha.3
 Add moving average stream.
+### 0.3.0-alpha.4
+- performance improvements
+    - use array instead of vec for inputs to `SumStream` and `ProductStream`
+    - avoid unnecessary weight sum calculation in `MovingAverageStream`
+    - make the number of shifts in `PIDControllerShift` a constant
+- replace all instances of `MotionProfileState` with `MotionProfilePiece`
+- add `History` trait, which is like a `Stream` but you specify a time when you `get`
+- reorganize streams into modules
+- remove unnecessary `std` requirement for a couple types

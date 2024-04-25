@@ -15,9 +15,9 @@ use crate::*;
 use alloc::collections::vec_deque::VecDeque;
 #[cfg(feature = "std")]
 use std::collections::vec_deque::VecDeque;
-pub mod math;
-pub mod converters;
 pub mod control;
+pub mod converters;
+pub mod math;
 pub struct Constant<T, E> {
     time_getter: InputTimeGetter<E>,
     value: T,

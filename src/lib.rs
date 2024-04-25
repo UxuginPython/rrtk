@@ -244,15 +244,21 @@ impl History<State> for MotionProfile {
     fn get(&self, time: f32) -> Option<Datum<State>> {
         let pos = match self.get_position(time) {
             Ok(value) => value,
-            Err(_) => {return None;}
+            Err(_) => {
+                return None;
+            }
         };
         let vel = match self.get_velocity(time) {
             Ok(value) => value,
-            Err(_) => {return None;}
+            Err(_) => {
+                return None;
+            }
         };
         let acc = match self.get_acceleration(time) {
             Ok(value) => value,
-            Err(_) => {return None;}
+            Err(_) => {
+                return None;
+            }
         };
         Some(Datum::new(time, State::new(pos, vel, acc)))
     }
