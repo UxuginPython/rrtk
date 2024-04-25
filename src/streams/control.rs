@@ -14,12 +14,12 @@ use crate::*;
 use crate::streams::*;
 use crate::streams::math::*;
 use crate::streams::converters::*;
-pub struct PIDController<E: Copy + Debug> {
+pub struct StreamPID<E: Copy + Debug> {
     int: InputStream<f32, E>,
     drv: InputStream<f32, E>,
     output: SumStream<3, E>,
 }
-impl<E: Copy + Debug + 'static> PIDController<E> {
+impl<E: Copy + Debug + 'static> StreamPID<E> {
     pub fn new(input: InputStream<f32, E>, setpoint: f32, kp: f32, ki: f32, kd: f32) -> Self {
         let time_getter = make_time_getter_input!(TimeGetterFromStream::new(Rc::clone(&input)), E);
         let setpoint = make_stream_input!(Constant::new(Rc::clone(&time_getter), setpoint), f32, E);
@@ -74,7 +74,7 @@ impl<E: Copy + Debug + 'static> PIDController<E> {
         }
     }
 }
-impl<E: Copy + Debug + 'static> Stream<f32, E> for PIDController<E> {
+impl<E: Copy + Debug + 'static> Stream<f32, E> for StreamPID<E> {
     fn get(&self) -> StreamOutput<f32, E> {
         self.output.get()
     }
