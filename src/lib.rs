@@ -91,8 +91,9 @@ impl PIDController {
 }
 ///A PID controller that will integrate the control variable a given number of times to simplify
 ///control of some systems such as motors. Requires `pid` feature.
+//N is one more than shift count
 #[cfg(feature = "pid")]
-pub struct PIDControllerShift {
+pub struct PIDControllerShift<const N: usize> {
     setpoint: f32,
     kp: f32,
     ki: f32,
@@ -100,17 +101,13 @@ pub struct PIDControllerShift {
     last_update_time: Option<f32>,
     prev_error: Option<f32>,
     int_error: f32,
-    shifts: Vec<f32>,
+    shifts: [f32; N],
 }
 #[cfg(feature = "pid")]
-impl PIDControllerShift {
+impl<const N: usize> PIDControllerShift<N> {
     ///Constructor for `PIDControllerShift`.
-    pub fn new(setpoint: f32, kp: f32, ki: f32, kd: f32, shift: u8) -> PIDControllerShift {
-        let mut shifts = Vec::new();
-        for _ in 0..shift + 1 {
-            shifts.push(0.0);
-        }
-        PIDControllerShift {
+    pub fn new(setpoint: f32, kp: f32, ki: f32, kd: f32) -> Self {
+        Self {
             setpoint: setpoint,
             kp: kp,
             ki: ki,
@@ -118,7 +115,7 @@ impl PIDControllerShift {
             last_update_time: None,
             prev_error: None,
             int_error: 0.0,
-            shifts: shifts,
+            shifts: [0.0; N],
         }
     }
     ///Update the PID controller. Give it a new time and process variable value, and it will give
@@ -141,10 +138,11 @@ impl PIDControllerShift {
         self.last_update_time = Some(time);
         self.prev_error = Some(error);
         let control = self.kp * error + self.ki * self.int_error + self.kd * drv_error;
-        let mut new_shifts = vec![control];
-        for i in 1..self.shifts.len() {
+        let mut new_shifts = [0.0; N];
+        new_shifts[0] = control;
+        for i in 1..N {
             let prev_int = self.shifts[i];
-            new_shifts.push(prev_int + delta_time * (self.shifts[i - 1] + new_shifts[i - 1]) / 2.0);
+            new_shifts[i] = prev_int + delta_time * (self.shifts[i - 1] + new_shifts[i - 1]) / 2.0;
         }
         self.shifts = new_shifts;
         self.shifts[self.shifts.len() - 1]
@@ -462,11 +460,11 @@ mod tests {
     #[test]
     #[cfg(feature = "pid")]
     fn pidshift_no_shift() {
-        let mut pid = PIDControllerShift::new(5.0, 1.0, 0.01, 0.1, 0);
+        let mut pid = PIDControllerShift::<1>::new(5.0, 1.0, 0.01, 0.1);
         let _ = pid.update(1.0, 0.0);
         let new_control = pid.update(3.0, 1.0);
         assert_eq!(new_control, 4.04);
-        assert_eq!(pid.shifts, vec![4.04]);
+        assert_eq!(pid.shifts, [4.04]);
     }
     #[test]
     #[cfg(feature = "motionprofile")]

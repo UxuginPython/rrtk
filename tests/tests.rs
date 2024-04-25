@@ -14,7 +14,7 @@ use rrtk::*;
 #[test]
 #[cfg(feature = "pid")]
 fn pidshift_shift() {
-    let mut pid = PIDControllerShift::new(5.0, 1.0, 0.01, 0.1, 1);
+    let mut pid = PIDControllerShift::<2>::new(5.0, 1.0, 0.01, 0.1);
     let _ = pid.update(1.0, 0.0);
     let new_control = pid.update(3.0, 1.0);
     assert_eq!(new_control, 9.04);

@@ -339,6 +339,12 @@ pub trait NonFeedbackMotor {
     ///roughly proportional to them.
     fn set_power(&mut self, power: f32);
 }
+#[cfg(feature = "pid")]
+enum MEPairPID {
+    Position(PIDControllerShift<1>),
+    Velocity(PIDControllerShift<2>),
+    Acceleration(PIDControllerShift<3>),
+}
 ///Use an encoder connected directly to a motor without feedback and a PID controller to control it
 ///like a servo. Requires `std` and `pid` features.
 #[cfg(feature = "pid")]
@@ -346,7 +352,7 @@ pub struct MotorEncoderPair {
     feedback_motor_data: FeedbackMotorData,
     motor: Box<dyn NonFeedbackMotor>,
     encoder: Box<dyn Encoder>,
-    pid: Option<PIDControllerShift>,
+    pid: Option<MEPairPID>,
     mode: Option<MotorMode>,
     pos_kp: f32,
     pos_ki: f32,
@@ -405,47 +411,57 @@ impl FeedbackMotor for MotorEncoderPair {
     }
     fn set_acceleration(&mut self, acceleration: f32) {
         self.mode = Some(MotorMode::Acceleration);
-        self.pid = Some(PIDControllerShift::new(
+        self.pid = Some(MEPairPID::Acceleration(PIDControllerShift::<3>::new(
             acceleration,
             self.acc_kp,
             self.acc_ki,
             self.acc_kd,
-            2,
-        ));
+        )));
     }
     fn set_velocity(&mut self, velocity: f32) {
         self.mode = Some(MotorMode::Velocity);
-        self.pid = Some(PIDControllerShift::new(
+        self.pid = Some(MEPairPID::Velocity(PIDControllerShift::<2>::new(
             velocity,
             self.vel_kp,
             self.vel_ki,
             self.vel_kd,
-            1,
-        ));
+        )));
     }
     fn set_position(&mut self, position: f32) {
         self.mode = Some(MotorMode::Position);
-        self.pid = Some(PIDControllerShift::new(
+        self.pid = Some(MEPairPID::Position(PIDControllerShift::<1>::new(
             position,
             self.pos_kp,
             self.pos_ki,
             self.pos_kd,
-            0,
-        ));
+        )));
     }
     fn update(&mut self) {
         self.encoder.update();
         let output = self.get_state();
-        if self.pid.is_some() {
-            let pid_out = self.pid.as_mut().unwrap().update(
-                output.time,
-                match self.mode.as_ref().expect("if pid is Some, mode is too") {
-                    MotorMode::Position => output.value.position,
-                    MotorMode::Velocity => output.value.velocity,
-                    MotorMode::Acceleration => output.value.acceleration,
-                },
-            );
-            self.motor.set_power(pid_out);
+        match &mut self.pid {
+            Some(MEPairPID::Position(ref mut pid)) => {
+                let pid_out = pid.update(
+                    output.time,
+                    output.value.position,
+                );
+                self.motor.set_power(pid_out);
+            }
+            Some(MEPairPID::Velocity(ref mut pid)) => {
+                let pid_out = pid.update(
+                    output.time,
+                    output.value.velocity,
+                );
+                self.motor.set_power(pid_out);
+            }
+            Some(MEPairPID::Acceleration(ref mut pid)) => {
+                let pid_out = pid.update(
+                    output.time,
+                    output.value.acceleration,
+                );
+                self.motor.set_power(pid_out);
+            }
+            None => {return;}
         }
     }
 }
