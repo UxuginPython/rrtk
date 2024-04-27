@@ -12,18 +12,18 @@ Copyright 2024 UxuginPython on GitHub
 */
 use crate::streams::*;
 pub struct SumStream<const N: usize, E> {
-    addends: [InputStream<f32, E>; N],
+    addends: [InputGetter<f32, E>; N],
 }
 impl<const N: usize, E> SumStream<N, E> {
-    pub fn new(addends: [InputStream<f32, E>; N]) -> Self {
+    pub fn new(addends: [InputGetter<f32, E>; N]) -> Self {
         if N < 1 {
             panic!("rrtk::streams::SumStream must have at least one input stream");
         }
         Self { addends: addends }
     }
 }
-impl<const N: usize, E: Copy + Debug> Stream<f32, E> for SumStream<N, E> {
-    fn get(&self) -> StreamOutput<f32, E> {
+impl<const N: usize, E: Copy + Debug> Getter<f32, E> for SumStream<N, E> {
+    fn get(&self) -> Output<f32, E> {
         //Err(...) -> return Err immediately
         //Ok(None) -> skip
         //Ok(Some(...)) -> add to value
@@ -65,22 +65,24 @@ impl<const N: usize, E: Copy + Debug> Stream<f32, E> for SumStream<N, E> {
             }
         }
     }
+}
+impl<const N: usize, E: Copy + Debug> Updatable for SumStream<N, E> {
     fn update(&mut self) {}
 }
 pub struct DifferenceStream<E> {
-    minuend: InputStream<f32, E>,
-    subtrahend: InputStream<f32, E>,
+    minuend: InputGetter<f32, E>,
+    subtrahend: InputGetter<f32, E>,
 }
 impl<E> DifferenceStream<E> {
-    pub fn new(minuend: InputStream<f32, E>, subtrahend: InputStream<f32, E>) -> Self {
+    pub fn new(minuend: InputGetter<f32, E>, subtrahend: InputGetter<f32, E>) -> Self {
         Self {
             minuend: minuend,
             subtrahend: subtrahend,
         }
     }
 }
-impl<E: Copy + Debug> Stream<f32, E> for DifferenceStream<E> {
-    fn get(&self) -> StreamOutput<f32, E> {
+impl<E: Copy + Debug> Getter<f32, E> for DifferenceStream<E> {
+    fn get(&self) -> Output<f32, E> {
         let minuend_output = self.minuend.borrow().get()?;
         let subtrahend_output = self.subtrahend.borrow().get()?;
         match minuend_output {
@@ -105,21 +107,23 @@ impl<E: Copy + Debug> Stream<f32, E> for DifferenceStream<E> {
         };
         Ok(Some(Datum::new(time, value)))
     }
+}
+impl<E: Copy + Debug> Updatable for DifferenceStream<E> {
     fn update(&mut self) {}
 }
 pub struct ProductStream<const N: usize, E> {
-    factors: [InputStream<f32, E>; N],
+    factors: [InputGetter<f32, E>; N],
 }
 impl<const N: usize, E> ProductStream<N, E> {
-    pub fn new(factors: [InputStream<f32, E>; N]) -> Self {
+    pub fn new(factors: [InputGetter<f32, E>; N]) -> Self {
         if N < 1 {
             panic!("rrtk::streams::ProductStream must have at least one input stream");
         }
         Self { factors: factors }
     }
 }
-impl<const N: usize, E: Copy + Debug> Stream<f32, E> for ProductStream<N, E> {
-    fn get(&self) -> StreamOutput<f32, E> {
+impl<const N: usize, E: Copy + Debug> Getter<f32, E> for ProductStream<N, E> {
+    fn get(&self) -> Output<f32, E> {
         let mut outputs = Vec::new();
         for i in &self.factors {
             outputs.push(i.borrow().get()?);
@@ -158,22 +162,24 @@ impl<const N: usize, E: Copy + Debug> Stream<f32, E> for ProductStream<N, E> {
             }
         }
     }
+}
+impl<const N: usize, E: Copy + Debug> Updatable for ProductStream<N, E> {
     fn update(&mut self) {}
 }
 pub struct QuotientStream<E> {
-    dividend: InputStream<f32, E>,
-    divisor: InputStream<f32, E>,
+    dividend: InputGetter<f32, E>,
+    divisor: InputGetter<f32, E>,
 }
 impl<E> QuotientStream<E> {
-    pub fn new(dividend: InputStream<f32, E>, divisor: InputStream<f32, E>) -> Self {
+    pub fn new(dividend: InputGetter<f32, E>, divisor: InputGetter<f32, E>) -> Self {
         Self {
             dividend: dividend,
             divisor: divisor,
         }
     }
 }
-impl<E: Copy + Debug> Stream<f32, E> for QuotientStream<E> {
-    fn get(&self) -> StreamOutput<f32, E> {
+impl<E: Copy + Debug> Getter<f32, E> for QuotientStream<E> {
+    fn get(&self) -> Output<f32, E> {
         let dividend_output = self.dividend.borrow().get()?;
         let divisor_output = self.divisor.borrow().get()?;
         match dividend_output {
@@ -198,16 +204,18 @@ impl<E: Copy + Debug> Stream<f32, E> for QuotientStream<E> {
         };
         Ok(Some(Datum::new(time, value)))
     }
+}
+impl<E: Copy + Debug> Updatable for QuotientStream<E> {
     fn update(&mut self) {}
 }
 #[cfg(feature = "std")]
 pub struct ExponentStream<E> {
-    base: InputStream<f32, E>,
-    exponent: InputStream<f32, E>,
+    base: InputGetter<f32, E>,
+    exponent: InputGetter<f32, E>,
 }
 #[cfg(feature = "std")]
 impl<E> ExponentStream<E> {
-    pub fn new(base: InputStream<f32, E>, exponent: InputStream<f32, E>) -> Self {
+    pub fn new(base: InputGetter<f32, E>, exponent: InputGetter<f32, E>) -> Self {
         Self {
             base: base,
             exponent: exponent,
@@ -215,8 +223,8 @@ impl<E> ExponentStream<E> {
     }
 }
 #[cfg(feature = "std")]
-impl<E: Copy + Debug> Stream<f32, E> for ExponentStream<E> {
-    fn get(&self) -> StreamOutput<f32, E> {
+impl<E: Copy + Debug> Getter<f32, E> for ExponentStream<E> {
+    fn get(&self) -> Output<f32, E> {
         let base_output = self.base.borrow().get()?;
         let exponent_output = self.exponent.borrow().get()?;
         match base_output {
@@ -241,16 +249,19 @@ impl<E: Copy + Debug> Stream<f32, E> for ExponentStream<E> {
         };
         Ok(Some(Datum::new(time, value)))
     }
+}
+#[cfg(feature = "std")]
+impl<E: Copy + Debug> Updatable for ExponentStream<E> {
     fn update(&mut self) {}
 }
 pub struct DerivativeStream<E: Copy + Debug> {
-    input: InputStream<f32, E>,
-    value: StreamOutput<f32, E>,
+    input: InputGetter<f32, E>,
+    value: Output<f32, E>,
     //doesn't matter if this is an Err or Ok(None) - we can't use it either way if it's not Some
     prev_output: Option<Datum<f32>>,
 }
 impl<E: Copy + Debug> DerivativeStream<E> {
-    pub fn new(input: InputStream<f32, E>) -> Self {
+    pub fn new(input: InputGetter<f32, E>) -> Self {
         Self {
             input: input,
             value: Ok(None),
@@ -258,10 +269,12 @@ impl<E: Copy + Debug> DerivativeStream<E> {
         }
     }
 }
-impl<E: Copy + Debug> Stream<f32, E> for DerivativeStream<E> {
-    fn get(&self) -> StreamOutput<f32, E> {
+impl<E: Copy + Debug> Getter<f32, E> for DerivativeStream<E> {
+    fn get(&self) -> Output<f32, E> {
         self.value.clone()
     }
+}
+impl<E: Copy + Debug> Updatable for DerivativeStream<E> {
     fn update(&mut self) {
         let output = self.input.borrow().get();
         match output {
@@ -296,12 +309,12 @@ impl<E: Copy + Debug> Stream<f32, E> for DerivativeStream<E> {
     }
 }
 pub struct IntegralStream<E: Copy + Debug> {
-    input: InputStream<f32, E>,
-    value: StreamOutput<f32, E>,
+    input: InputGetter<f32, E>,
+    value: Output<f32, E>,
     prev_output: Option<Datum<f32>>,
 }
 impl<E: Copy + Debug> IntegralStream<E> {
-    pub fn new(input: InputStream<f32, E>) -> Self {
+    pub fn new(input: InputGetter<f32, E>) -> Self {
         Self {
             input: input,
             value: Ok(None),
@@ -309,10 +322,12 @@ impl<E: Copy + Debug> IntegralStream<E> {
         }
     }
 }
-impl<E: Copy + Debug> Stream<f32, E> for IntegralStream<E> {
-    fn get(&self) -> StreamOutput<f32, E> {
+impl<E: Copy + Debug> Getter<f32, E> for IntegralStream<E> {
+    fn get(&self) -> Output<f32, E> {
         self.value.clone()
     }
+}
+impl<E: Copy + Debug> Updatable for IntegralStream<E> {
     fn update(&mut self) {
         let output = self.input.borrow().get();
         match output {

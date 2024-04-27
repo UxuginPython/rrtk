@@ -14,49 +14,49 @@ use crate::streams::converters::*;
 use crate::streams::math::*;
 use crate::streams::*;
 pub struct StreamPID<E: Copy + Debug> {
-    int: InputStream<f32, E>,
-    drv: InputStream<f32, E>,
+    int: InputGetter<f32, E>,
+    drv: InputGetter<f32, E>,
     output: SumStream<3, E>,
 }
 impl<E: Copy + Debug + 'static> StreamPID<E> {
-    pub fn new(input: InputStream<f32, E>, setpoint: f32, kp: f32, ki: f32, kd: f32) -> Self {
-        let time_getter = make_time_getter_input!(TimeGetterFromStream::new(Rc::clone(&input)), E);
-        let setpoint = make_stream_input!(Constant::new(Rc::clone(&time_getter), setpoint), f32, E);
-        let kp = make_stream_input!(Constant::new(Rc::clone(&time_getter), kp), f32, E);
-        let ki = make_stream_input!(Constant::new(Rc::clone(&time_getter), ki), f32, E);
-        let kd = make_stream_input!(Constant::new(Rc::clone(&time_getter), kd), f32, E);
-        let error = make_stream_input!(
+    pub fn new(input: InputGetter<f32, E>, setpoint: f32, kp: f32, ki: f32, kd: f32) -> Self {
+        let time_getter = make_input_time_getter!(TimeGetterFromStream::new(Rc::clone(&input)), E);
+        let setpoint = make_input_getter!(Constant::new(Rc::clone(&time_getter), setpoint), f32, E);
+        let kp = make_input_getter!(Constant::new(Rc::clone(&time_getter), kp), f32, E);
+        let ki = make_input_getter!(Constant::new(Rc::clone(&time_getter), ki), f32, E);
+        let kd = make_input_getter!(Constant::new(Rc::clone(&time_getter), kd), f32, E);
+        let error = make_input_getter!(
             DifferenceStream::new(Rc::clone(&setpoint), Rc::clone(&input)),
             f32,
             E
         );
-        let int = make_stream_input!(IntegralStream::new(Rc::clone(&error)), f32, E);
-        let drv = make_stream_input!(DerivativeStream::new(Rc::clone(&error)), f32, E);
+        let int = make_input_getter!(IntegralStream::new(Rc::clone(&error)), f32, E);
+        let drv = make_input_getter!(DerivativeStream::new(Rc::clone(&error)), f32, E);
         //`ProductStream`'s behavior is to treat all `None` values as 1.0 so that it's as if they
         //were not included. However, this is not what we want with the coefficient. `NoneToValue`
         //is used to convert all `None` values to `Some(0.0)` to effectively exlude them from the
         //final sum.
-        let int_zeroer = make_stream_input!(
+        let int_zeroer = make_input_getter!(
             NoneToValue::new(Rc::clone(&int), Rc::clone(&time_getter), 0.0),
             f32,
             E
         );
-        let drv_zeroer = make_stream_input!(
+        let drv_zeroer = make_input_getter!(
             NoneToValue::new(Rc::clone(&drv), Rc::clone(&time_getter), 0.0),
             f32,
             E
         );
-        let kp_mul = make_stream_input!(
+        let kp_mul = make_input_getter!(
             ProductStream::new([Rc::clone(&kp), Rc::clone(&error)]),
             f32,
             E
         );
-        let ki_mul = make_stream_input!(
+        let ki_mul = make_input_getter!(
             ProductStream::new([Rc::clone(&ki), Rc::clone(&int_zeroer)]),
             f32,
             E
         );
-        let kd_mul = make_stream_input!(
+        let kd_mul = make_input_getter!(
             ProductStream::new([Rc::clone(&kd), Rc::clone(&drv_zeroer)]),
             f32,
             E
@@ -69,10 +69,12 @@ impl<E: Copy + Debug + 'static> StreamPID<E> {
         }
     }
 }
-impl<E: Copy + Debug + 'static> Stream<f32, E> for StreamPID<E> {
-    fn get(&self) -> StreamOutput<f32, E> {
+impl<E: Copy + Debug + 'static> Getter<f32, E> for StreamPID<E> {
+    fn get(&self) -> Output<f32, E> {
         self.output.get()
     }
+}
+impl<E: Copy + Debug + 'static> Updatable for StreamPID<E> {
     fn update(&mut self) {
         self.int.borrow_mut().update();
         self.drv.borrow_mut().update();
@@ -80,15 +82,15 @@ impl<E: Copy + Debug + 'static> Stream<f32, E> for StreamPID<E> {
 }
 //https://www.itl.nist.gov/div898/handbook/pmc/section3/pmc324.htm
 pub struct EWMAStream<E: Copy + Debug> {
-    input: InputStream<f32, E>,
+    input: InputGetter<f32, E>,
     //As data may not come in at regular intervals as is assumed by a standard EWMA, this value
     //will be multiplied by delta time before being used.
     smoothing_constant: f32,
-    value: StreamOutput<f32, E>,
+    value: Output<f32, E>,
     update_time: Option<f32>,
 }
 impl<E: Copy + Debug> EWMAStream<E> {
-    pub fn new(input: InputStream<f32, E>, smoothing_constant: f32) -> Self {
+    pub fn new(input: InputGetter<f32, E>, smoothing_constant: f32) -> Self {
         Self {
             input: input,
             smoothing_constant: smoothing_constant,
@@ -97,10 +99,12 @@ impl<E: Copy + Debug> EWMAStream<E> {
         }
     }
 }
-impl<E: Copy + Debug> Stream<f32, E> for EWMAStream<E> {
-    fn get(&self) -> StreamOutput<f32, E> {
+impl<E: Copy + Debug> Getter<f32, E> for EWMAStream<E> {
+    fn get(&self) -> Output<f32, E> {
         self.value.clone()
     }
+}
+impl<E: Copy + Debug> Updatable for EWMAStream<E> {
     fn update(&mut self) {
         let output = self.input.borrow().get();
         match output {
@@ -147,13 +151,13 @@ impl<E: Copy + Debug> Stream<f32, E> for EWMAStream<E> {
     }
 }
 pub struct MovingAverageStream<E: Copy + Debug> {
-    input: InputStream<f32, E>,
+    input: InputGetter<f32, E>,
     window: f32,
-    value: StreamOutput<f32, E>,
+    value: Output<f32, E>,
     input_values: VecDeque<Datum<f32>>,
 }
 impl<E: Copy + Debug> MovingAverageStream<E> {
-    pub fn new(input: InputStream<f32, E>, window: f32) -> Self {
+    pub fn new(input: InputGetter<f32, E>, window: f32) -> Self {
         Self {
             input: input,
             window: window,
@@ -162,10 +166,12 @@ impl<E: Copy + Debug> MovingAverageStream<E> {
         }
     }
 }
-impl<E: Copy + Debug> Stream<f32, E> for MovingAverageStream<E> {
-    fn get(&self) -> StreamOutput<f32, E> {
+impl<E: Copy + Debug> Getter<f32, E> for MovingAverageStream<E> {
+    fn get(&self) -> Output<f32, E> {
         self.value.clone()
     }
+}
+impl<E: Copy + Debug> Updatable for MovingAverageStream<E> {
     fn update(&mut self) {
         let output = self.input.borrow().get();
         match output {

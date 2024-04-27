@@ -13,15 +13,15 @@ Copyright 2024 UxuginPython on GitHub
 use crate::streams::math::*;
 use crate::streams::*;
 pub struct NoneToError<T: Clone, E> {
-    input: InputStream<T, E>,
+    input: InputGetter<T, E>,
 }
 impl<T: Clone, E> NoneToError<T, E> {
-    pub fn new(input: InputStream<T, E>) -> Self {
+    pub fn new(input: InputGetter<T, E>) -> Self {
         Self { input: input }
     }
 }
-impl<T: Clone, E: Copy + Debug> Stream<T, E> for NoneToError<T, E> {
-    fn get(&self) -> StreamOutput<T, E> {
+impl<T: Clone, E: Copy + Debug> Getter<T, E> for NoneToError<T, E> {
+    fn get(&self) -> Output<T, E> {
         let output = self.input.borrow().get()?;
         match output {
             Some(_) => {
@@ -32,15 +32,17 @@ impl<T: Clone, E: Copy + Debug> Stream<T, E> for NoneToError<T, E> {
             }
         }
     }
+}
+impl<T: Clone, E: Copy + Debug> Updatable for NoneToError<T, E> {
     fn update(&mut self) {}
 }
 pub struct NoneToValue<T, E> {
-    input: InputStream<T, E>,
+    input: InputGetter<T, E>,
     time_getter: InputTimeGetter<E>,
     none_value: T,
 }
 impl<T, E> NoneToValue<T, E> {
-    pub fn new(input: InputStream<T, E>, time_getter: InputTimeGetter<E>, none_value: T) -> Self {
+    pub fn new(input: InputGetter<T, E>, time_getter: InputTimeGetter<E>, none_value: T) -> Self {
         Self {
             input: input,
             time_getter: time_getter,
@@ -48,8 +50,8 @@ impl<T, E> NoneToValue<T, E> {
         }
     }
 }
-impl<T: Clone, E: Copy + Debug> Stream<T, E> for NoneToValue<T, E> {
-    fn get(&self) -> StreamOutput<T, E> {
+impl<T: Clone, E: Copy + Debug> Getter<T, E> for NoneToValue<T, E> {
+    fn get(&self) -> Output<T, E> {
         let output = self.input.borrow().get()?;
         match output {
             Some(_) => {
@@ -63,17 +65,19 @@ impl<T: Clone, E: Copy + Debug> Stream<T, E> for NoneToValue<T, E> {
             }
         }
     }
+}
+impl<T: Clone, E: Copy + Debug> Updatable for NoneToValue<T, E> {
     fn update(&mut self) {}
 }
 pub struct AccelerationToState<E: Copy + Debug> {
-    acc: InputStream<f32, E>,
-    vel: InputStream<f32, E>,
-    pos: InputStream<f32, E>,
+    acc: InputGetter<f32, E>,
+    vel: InputGetter<f32, E>,
+    pos: InputGetter<f32, E>,
 }
 impl<E: Copy + Debug + 'static> AccelerationToState<E> {
-    pub fn new(acc: InputStream<f32, E>) -> Self {
-        let vel = make_stream_input!(IntegralStream::new(Rc::clone(&acc)), f32, E);
-        let pos = make_stream_input!(IntegralStream::new(Rc::clone(&vel)), f32, E);
+    pub fn new(acc: InputGetter<f32, E>) -> Self {
+        let vel = make_input_getter!(IntegralStream::new(Rc::clone(&acc)), f32, E);
+        let pos = make_input_getter!(IntegralStream::new(Rc::clone(&vel)), f32, E);
         Self {
             acc: acc,
             vel: vel,
@@ -81,8 +85,8 @@ impl<E: Copy + Debug + 'static> AccelerationToState<E> {
         }
     }
 }
-impl<E: Copy + Debug> Stream<State, E> for AccelerationToState<E> {
-    fn get(&self) -> StreamOutput<State, E> {
+impl<E: Copy + Debug> Getter<State, E> for AccelerationToState<E> {
+    fn get(&self) -> Output<State, E> {
         let acc = self.acc.borrow().get()?;
         let vel = self.vel.borrow().get()?;
         let pos = self.pos.borrow().get()?;
@@ -119,20 +123,22 @@ impl<E: Copy + Debug> Stream<State, E> for AccelerationToState<E> {
             State::new(pos.value, vel.value, acc.value),
         )))
     }
+}
+impl<E: Copy + Debug> Updatable for AccelerationToState<E> {
     fn update(&mut self) {
         self.vel.borrow_mut().update();
         self.pos.borrow_mut().update();
     }
 }
 pub struct VelocityToState<E: Copy + Debug> {
-    acc: InputStream<f32, E>,
-    vel: InputStream<f32, E>,
-    pos: InputStream<f32, E>,
+    acc: InputGetter<f32, E>,
+    vel: InputGetter<f32, E>,
+    pos: InputGetter<f32, E>,
 }
 impl<E: Copy + Debug + 'static> VelocityToState<E> {
-    pub fn new(vel: InputStream<f32, E>) -> Self {
-        let acc = make_stream_input!(DerivativeStream::new(Rc::clone(&vel)), f32, E);
-        let pos = make_stream_input!(IntegralStream::new(Rc::clone(&vel)), f32, E);
+    pub fn new(vel: InputGetter<f32, E>) -> Self {
+        let acc = make_input_getter!(DerivativeStream::new(Rc::clone(&vel)), f32, E);
+        let pos = make_input_getter!(IntegralStream::new(Rc::clone(&vel)), f32, E);
         Self {
             acc: acc,
             vel: vel,
@@ -140,8 +146,8 @@ impl<E: Copy + Debug + 'static> VelocityToState<E> {
         }
     }
 }
-impl<E: Copy + Debug> Stream<State, E> for VelocityToState<E> {
-    fn get(&self) -> StreamOutput<State, E> {
+impl<E: Copy + Debug> Getter<State, E> for VelocityToState<E> {
+    fn get(&self) -> Output<State, E> {
         let acc = self.acc.borrow().get()?;
         let vel = self.vel.borrow().get()?;
         let pos = self.pos.borrow().get()?;
@@ -178,20 +184,22 @@ impl<E: Copy + Debug> Stream<State, E> for VelocityToState<E> {
             State::new(pos.value, vel.value, acc.value),
         )))
     }
+}
+impl<E: Copy + Debug> Updatable for VelocityToState<E> {
     fn update(&mut self) {
         self.acc.borrow_mut().update();
         self.pos.borrow_mut().update();
     }
 }
 pub struct PositionToStream<E: Copy + Debug> {
-    acc: InputStream<f32, E>,
-    vel: InputStream<f32, E>,
-    pos: InputStream<f32, E>,
+    acc: InputGetter<f32, E>,
+    vel: InputGetter<f32, E>,
+    pos: InputGetter<f32, E>,
 }
 impl<E: Copy + Debug + 'static> PositionToStream<E> {
-    pub fn new(pos: InputStream<f32, E>) -> Self {
-        let vel = make_stream_input!(DerivativeStream::new(Rc::clone(&pos)), f32, E);
-        let acc = make_stream_input!(DerivativeStream::new(Rc::clone(&vel)), f32, E);
+    pub fn new(pos: InputGetter<f32, E>) -> Self {
+        let vel = make_input_getter!(DerivativeStream::new(Rc::clone(&pos)), f32, E);
+        let acc = make_input_getter!(DerivativeStream::new(Rc::clone(&vel)), f32, E);
         Self {
             acc: acc,
             vel: vel,
@@ -199,8 +207,8 @@ impl<E: Copy + Debug + 'static> PositionToStream<E> {
         }
     }
 }
-impl<E: Copy + Debug> Stream<State, E> for PositionToStream<E> {
-    fn get(&self) -> StreamOutput<State, E> {
+impl<E: Copy + Debug> Getter<State, E> for PositionToStream<E> {
+    fn get(&self) -> Output<State, E> {
         let acc = self.acc.borrow().get()?;
         let vel = self.vel.borrow().get()?;
         let pos = self.pos.borrow().get()?;
@@ -237,6 +245,8 @@ impl<E: Copy + Debug> Stream<State, E> for PositionToStream<E> {
             State::new(pos.value, vel.value, acc.value),
         )))
     }
+}
+impl<E: Copy + Debug> Updatable for PositionToStream<E> {
     fn update(&mut self) {
         self.vel.borrow_mut().update();
         self.acc.borrow_mut().update();

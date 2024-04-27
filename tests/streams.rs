@@ -39,23 +39,26 @@ fn time_getter_from_stream() {
             Self { time: 0.0 }
         }
     }
-    impl<E: Copy + Debug> Stream<f32, E> for DummyStream {
-        fn get(&self) -> StreamOutput<f32, E> {
+    impl<E: Copy + Debug> Getter<f32, E> for DummyStream {
+        fn get(&self) -> Output<f32, E> {
             Ok(Some(Datum::new(self.time, 0.0)))
         }
+    }
+    impl Updatable for DummyStream {
         fn update(&mut self) {
             self.time += 1.0;
         }
     }
-    let stream = Rc::new(RefCell::new(
+    /*let stream = Rc::new(RefCell::new(
         Box::new(DummyStream::new()) as Box<dyn Stream<f32, u8>>
-    ));
+    ));*/
+    let stream = make_input_getter!(DummyStream::new(), f32, u8);
     let time_getter = TimeGetterFromStream::new(Rc::clone(&stream));
     stream.borrow_mut().update();
     assert_eq!(time_getter.get().unwrap(), 1.0);
 }
 #[test]
-fn make_stream_input_() {
+fn make_input_getter_() {
     #[derive(Clone, Copy, Debug)]
     struct Nothing;
     struct DummyStream {
@@ -66,17 +69,19 @@ fn make_stream_input_() {
             Self { time: 0.0 }
         }
     }
-    impl<E: Copy + Debug> Stream<f32, E> for DummyStream {
-        fn get(&self) -> StreamOutput<f32, E> {
+    impl<E: Copy + Debug> Getter<f32, E> for DummyStream {
+        fn get(&self) -> Output<f32, E> {
             Ok(Some(Datum::new(self.time, 0.0)))
         }
+    }
+    impl Updatable for DummyStream {
         fn update(&mut self) {
             self.time += 1.0;
         }
     }
-    let tg_stream = make_stream_input!(DummyStream::new(), f32, Nothing);
+    let tg_stream = make_input_getter!(DummyStream::new(), f32, Nothing);
     let time_getter =
-        make_time_getter_input!(TimeGetterFromStream::new(Rc::clone(&tg_stream)), Nothing);
+        make_input_time_getter!(TimeGetterFromStream::new(Rc::clone(&tg_stream)), Nothing);
     let stream = Constant::new(Rc::clone(&time_getter), 20u8);
     assert_eq!(stream.get().unwrap().unwrap().value, 20);
     tg_stream.borrow_mut().update();
@@ -94,17 +99,20 @@ fn constant() {
             Self { time: 0.0 }
         }
     }
-    impl<E: Copy + Debug> Stream<f32, E> for DummyStream {
-        fn get(&self) -> StreamOutput<f32, E> {
+    impl<E: Copy + Debug> Getter<f32, E> for DummyStream {
+        fn get(&self) -> Output<f32, E> {
             Ok(Some(Datum::new(self.time, 0.0)))
         }
+    }
+    impl Updatable for DummyStream {
         fn update(&mut self) {
             self.time += 1.0;
         }
     }
-    let tg_stream = Rc::new(RefCell::new(
+    /*let tg_stream = Rc::new(RefCell::new(
         Box::new(DummyStream::new()) as Box<dyn Stream<f32, Nothing>>
-    ));
+    ));*/
+    let tg_stream = make_input_getter!(DummyStream::new(), f32, Nothing);
     let time_getter = Rc::new(RefCell::new(Box::new(TimeGetterFromStream::new(Rc::clone(
         &tg_stream,
     ))) as Box<dyn TimeGetter<Nothing>>));
@@ -127,8 +135,8 @@ fn none_to_error() {
             Self { index: 0 }
         }
     }
-    impl Stream<f32, Nothing> for DummyStream {
-        fn get(&self) -> StreamOutput<f32, Nothing> {
+    impl Getter<f32, Nothing> for DummyStream {
+        fn get(&self) -> Output<f32, Nothing> {
             if self.index == 1 {
                 return Ok(None);
             } else if self.index == 2 {
@@ -136,13 +144,16 @@ fn none_to_error() {
             }
             return Ok(Some(Datum::new(0.0, 0.0)));
         }
+    }
+    impl Updatable for DummyStream {
         fn update(&mut self) {
             self.index += 1;
         }
     }
-    let input = Rc::new(RefCell::new(
+    /*let input = Rc::new(RefCell::new(
         Box::new(DummyStream::new()) as Box<dyn Stream<f32, Nothing>>
-    ));
+    ));*/
+    let input = make_input_getter!(DummyStream::new(), f32, Nothing);
     let stream = NoneToError::new(Rc::clone(&input));
     match stream.get() {
         Ok(option) => match option {
@@ -188,8 +199,8 @@ fn none_to_value() {
             Self { index: 0 }
         }
     }
-    impl Stream<f32, Nothing> for DummyStream {
-        fn get(&self) -> StreamOutput<f32, Nothing> {
+    impl Getter<f32, Nothing> for DummyStream {
+        fn get(&self) -> Output<f32, Nothing> {
             if self.index == 1 {
                 return Ok(None);
             } else if self.index == 2 {
@@ -197,6 +208,8 @@ fn none_to_value() {
             }
             return Ok(Some(Datum::new(0.0, 1.0)));
         }
+    }
+    impl Updatable for DummyStream {
         fn update(&mut self) {
             self.index += 1;
         }
@@ -210,19 +223,22 @@ fn none_to_value() {
         }
     }
     impl<E: Copy + Debug> TimeGetter<E> for DummyTimeGetter {
-        fn get(&self) -> TimeGetterOutput<E> {
+        fn get(&self) -> TimeOutput<E> {
             Ok(self.time)
         }
+    }
+    impl Updatable for DummyTimeGetter {
         fn update(&mut self) {
             self.time += 1.0;
         }
     }
-    let input = Rc::new(RefCell::new(
+    /*let input = Rc::new(RefCell::new(
         Box::new(DummyStream::new()) as Box<dyn Stream<f32, Nothing>>
-    ));
+    ));*/
+    let input = make_input_getter!(DummyStream::new(), f32, Nothing);
     let stream = NoneToValue::new(
         Rc::clone(&input),
-        make_time_getter_input!(DummyTimeGetter::new(), Nothing),
+        make_input_time_getter!(DummyTimeGetter::new(), Nothing),
         2.0,
     );
     match stream.get() {
@@ -270,8 +286,8 @@ fn sum_stream() {
             Self { index: 0 }
         }
     }
-    impl Stream<f32, Nothing> for ErroringStream {
-        fn get(&self) -> StreamOutput<f32, Nothing> {
+    impl Getter<f32, Nothing> for ErroringStream {
+        fn get(&self) -> Output<f32, Nothing> {
             if self.index == 0 {
                 return Err(Error::Other(Nothing));
             } else if self.index == 1 {
@@ -280,6 +296,8 @@ fn sum_stream() {
                 return Ok(Some(Datum::new(2.0, 1.0)));
             }
         }
+    }
+    impl Updatable for ErroringStream {
         fn update(&mut self) {
             self.index += 1;
         }
@@ -290,18 +308,22 @@ fn sum_stream() {
             Self {}
         }
     }
-    impl Stream<f32, Nothing> for NormalStream {
-        fn get(&self) -> StreamOutput<f32, Nothing> {
+    impl Getter<f32, Nothing> for NormalStream {
+        fn get(&self) -> Output<f32, Nothing> {
             Ok(Some(Datum::new(1.0, 1.0)))
         }
+    }
+    impl Updatable for NormalStream {
         fn update(&mut self) {}
     }
-    let erroring = Rc::new(RefCell::new(
+    /*let erroring = Rc::new(RefCell::new(
         Box::new(ErroringStream::new()) as Box<dyn Stream<f32, Nothing>>
-    ));
-    let normal = Rc::new(RefCell::new(
+    ));*/
+    let erroring = make_input_getter!(ErroringStream::new(), f32, Nothing);
+    /*let normal = Rc::new(RefCell::new(
         Box::new(NormalStream::new()) as Box<dyn Stream<f32, Nothing>>
-    ));
+    ));*/
+    let normal = make_input_getter!(NormalStream::new(), f32, Nothing);
     let stream = SumStream::new([Rc::clone(&erroring), Rc::clone(&normal)]);
     match stream.get() {
         Ok(_) => {
@@ -329,8 +351,8 @@ fn difference_stream() {
             Self { index: 0 }
         }
     }
-    impl Stream<f32, DummyError> for Stream1 {
-        fn get(&self) -> StreamOutput<f32, DummyError> {
+    impl Getter<f32, DummyError> for Stream1 {
+        fn get(&self) -> Output<f32, DummyError> {
             if self.index == 0 || self.index == 1 || self.index == 2 {
                 return Err(Error::Other(DummyError));
             } else if self.index == 3 || self.index == 4 || self.index == 5 {
@@ -338,6 +360,8 @@ fn difference_stream() {
             }
             return Ok(Some(Datum::new(1.0, 10.0)));
         }
+    }
+    impl Updatable for Stream1 {
         fn update(&mut self) {
             self.index += 1;
         }
@@ -350,8 +374,8 @@ fn difference_stream() {
             Self { index: 0 }
         }
     }
-    impl Stream<f32, DummyError> for Stream2 {
-        fn get(&self) -> StreamOutput<f32, DummyError> {
+    impl Getter<f32, DummyError> for Stream2 {
+        fn get(&self) -> Output<f32, DummyError> {
             if self.index == 0 || self.index == 3 || self.index == 6 {
                 return Err(Error::Other(DummyError));
             } else if self.index == 1 || self.index == 4 || self.index == 7 {
@@ -359,16 +383,20 @@ fn difference_stream() {
             }
             return Ok(Some(Datum::new(2.0, 3.0)));
         }
+    }
+    impl Updatable for Stream2 {
         fn update(&mut self) {
             self.index += 1;
         }
     }
-    let stream1 = Rc::new(RefCell::new(
+    /*let stream1 = Rc::new(RefCell::new(
         Box::new(Stream1::new()) as Box<dyn Stream<f32, DummyError>>
-    ));
-    let stream2 = Rc::new(RefCell::new(
+    ));*/
+    let stream1 = make_input_getter!(Stream1::new(), f32, DummyError);
+    /*let stream2 = Rc::new(RefCell::new(
         Box::new(Stream2::new()) as Box<dyn Stream<f32, DummyError>>
-    ));
+    ));*/
+    let stream2 = make_input_getter!(Stream2::new(), f32, DummyError);
     let stream = DifferenceStream::new(Rc::clone(&stream1), Rc::clone(&stream2));
     //Err, Err
     match stream.get() {
@@ -480,8 +508,8 @@ fn product_stream() {
             Self { index: 0 }
         }
     }
-    impl Stream<f32, Nothing> for ErroringStream {
-        fn get(&self) -> StreamOutput<f32, Nothing> {
+    impl Getter<f32, Nothing> for ErroringStream {
+        fn get(&self) -> Output<f32, Nothing> {
             if self.index == 0 {
                 return Err(Error::Other(Nothing));
             } else if self.index == 1 {
@@ -490,6 +518,8 @@ fn product_stream() {
                 return Ok(Some(Datum::new(2.0, 3.0)));
             }
         }
+    }
+    impl Updatable for ErroringStream {
         fn update(&mut self) {
             self.index += 1;
         }
@@ -500,18 +530,22 @@ fn product_stream() {
             Self {}
         }
     }
-    impl Stream<f32, Nothing> for NormalStream {
-        fn get(&self) -> StreamOutput<f32, Nothing> {
+    impl Getter<f32, Nothing> for NormalStream {
+        fn get(&self) -> Output<f32, Nothing> {
             Ok(Some(Datum::new(1.0, 5.0)))
         }
+    }
+    impl Updatable for NormalStream {
         fn update(&mut self) {}
     }
-    let erroring = Rc::new(RefCell::new(
+    /*let erroring = Rc::new(RefCell::new(
         Box::new(ErroringStream::new()) as Box<dyn Stream<f32, Nothing>>
-    ));
-    let normal = Rc::new(RefCell::new(
+    ));*/
+    let erroring = make_input_getter!(ErroringStream::new(), f32, Nothing);
+    /*let normal = Rc::new(RefCell::new(
         Box::new(NormalStream::new()) as Box<dyn Stream<f32, Nothing>>
-    ));
+    ));*/
+    let normal = make_input_getter!(NormalStream::new(), f32, Nothing);
     let stream = ProductStream::new([Rc::clone(&erroring), Rc::clone(&normal)]);
     match stream.get() {
         Ok(_) => {
@@ -539,8 +573,8 @@ fn quotient_stream() {
             Self { index: 0 }
         }
     }
-    impl Stream<f32, DummyError> for Stream1 {
-        fn get(&self) -> StreamOutput<f32, DummyError> {
+    impl Getter<f32, DummyError> for Stream1 {
+        fn get(&self) -> Output<f32, DummyError> {
             if self.index == 0 || self.index == 1 || self.index == 2 {
                 return Err(Error::Other(DummyError));
             } else if self.index == 3 || self.index == 4 || self.index == 5 {
@@ -548,6 +582,8 @@ fn quotient_stream() {
             }
             return Ok(Some(Datum::new(1.0, 12.0)));
         }
+    }
+    impl Updatable for Stream1 {
         fn update(&mut self) {
             self.index += 1;
         }
@@ -560,8 +596,8 @@ fn quotient_stream() {
             Self { index: 0 }
         }
     }
-    impl Stream<f32, DummyError> for Stream2 {
-        fn get(&self) -> StreamOutput<f32, DummyError> {
+    impl Getter<f32, DummyError> for Stream2 {
+        fn get(&self) -> Output<f32, DummyError> {
             if self.index == 0 || self.index == 3 || self.index == 6 {
                 return Err(Error::Other(DummyError));
             } else if self.index == 1 || self.index == 4 || self.index == 7 {
@@ -569,16 +605,20 @@ fn quotient_stream() {
             }
             return Ok(Some(Datum::new(2.0, 3.0)));
         }
+    }
+    impl Updatable for Stream2 {
         fn update(&mut self) {
             self.index += 1;
         }
     }
-    let stream1 = Rc::new(RefCell::new(
+    /*let stream1 = Rc::new(RefCell::new(
         Box::new(Stream1::new()) as Box<dyn Stream<f32, DummyError>>
-    ));
-    let stream2 = Rc::new(RefCell::new(
+    ));*/
+    let stream1 = make_input_getter!(Stream1::new(), f32, DummyError);
+    /*let stream2 = Rc::new(RefCell::new(
         Box::new(Stream2::new()) as Box<dyn Stream<f32, DummyError>>
-    ));
+    ));*/
+    let stream2 = make_input_getter!(Stream2::new(), f32, DummyError);
     let stream = QuotientStream::new(Rc::clone(&stream1), Rc::clone(&stream2));
     //Err, Err
     match stream.get() {
@@ -691,8 +731,8 @@ fn exponent_stream() {
             Self { index: 0 }
         }
     }
-    impl Stream<f32, DummyError> for Stream1 {
-        fn get(&self) -> StreamOutput<f32, DummyError> {
+    impl Getter<f32, DummyError> for Stream1 {
+        fn get(&self) -> Output<f32, DummyError> {
             if self.index == 0 || self.index == 1 || self.index == 2 {
                 return Err(Error::Other(DummyError));
             } else if self.index == 3 || self.index == 4 || self.index == 5 {
@@ -700,6 +740,8 @@ fn exponent_stream() {
             }
             return Ok(Some(Datum::new(1.0, 5.0)));
         }
+    }
+    impl Updatable for Stream1 {
         fn update(&mut self) {
             self.index += 1;
         }
@@ -712,8 +754,8 @@ fn exponent_stream() {
             Self { index: 0 }
         }
     }
-    impl Stream<f32, DummyError> for Stream2 {
-        fn get(&self) -> StreamOutput<f32, DummyError> {
+    impl Getter<f32, DummyError> for Stream2 {
+        fn get(&self) -> Output<f32, DummyError> {
             if self.index == 0 || self.index == 3 || self.index == 6 {
                 return Err(Error::Other(DummyError));
             } else if self.index == 1 || self.index == 4 || self.index == 7 {
@@ -721,16 +763,20 @@ fn exponent_stream() {
             }
             return Ok(Some(Datum::new(2.0, 3.0)));
         }
+    }
+    impl Updatable for Stream2 {
         fn update(&mut self) {
             self.index += 1;
         }
     }
-    let stream1 = Rc::new(RefCell::new(
+    /*let stream1 = Rc::new(RefCell::new(
         Box::new(Stream1::new()) as Box<dyn Stream<f32, DummyError>>
-    ));
-    let stream2 = Rc::new(RefCell::new(
+    ));*/
+    let stream1 = make_input_getter!(Stream1::new(), f32, DummyError);
+    /*let stream2 = Rc::new(RefCell::new(
         Box::new(Stream2::new()) as Box<dyn Stream<f32, DummyError>>
-    ));
+    ));*/
+    let stream2 = make_input_getter!(Stream2::new(), f32, DummyError);
     let stream = ExponentStream::new(Rc::clone(&stream1), Rc::clone(&stream2));
     //Err, Err
     match stream.get() {
@@ -842,17 +888,20 @@ fn derivative_stream() {
             Self { time: 0.0 }
         }
     }
-    impl Stream<f32, DummyError> for DummyStream {
-        fn get(&self) -> StreamOutput<f32, DummyError> {
+    impl Getter<f32, DummyError> for DummyStream {
+        fn get(&self) -> Output<f32, DummyError> {
             Ok(Some(Datum::new(self.time * 2.0, self.time * 3.0)))
         }
+    }
+    impl Updatable for DummyStream {
         fn update(&mut self) {
             self.time += 2.0;
         }
     }
-    let input = Rc::new(RefCell::new(
+    /*let input = Rc::new(RefCell::new(
         Box::new(DummyStream::new()) as Box<dyn Stream<f32, DummyError>>
-    ));
+    ));*/
+    let input = make_input_getter!(DummyStream::new(), f32, DummyError);
     let mut stream = DerivativeStream::new(Rc::clone(&input));
     input.borrow_mut().update();
     stream.update();
@@ -873,15 +922,17 @@ fn integral_stream() {
             Self { time: 0.0 }
         }
     }
-    impl Stream<f32, DummyError> for DummyStream {
-        fn get(&self) -> StreamOutput<f32, DummyError> {
+    impl Getter<f32, DummyError> for DummyStream {
+        fn get(&self) -> Output<f32, DummyError> {
             Ok(Some(Datum::new(self.time, 1.0)))
         }
+    }
+    impl Updatable for DummyStream {
         fn update(&mut self) {
             self.time += 1.0;
         }
     }
-    let input = make_stream_input!(DummyStream::new(), f32, DummyError);
+    let input = make_input_getter!(DummyStream::new(), f32, DummyError);
     let mut stream = IntegralStream::new(Rc::clone(&input));
     input.borrow_mut().update();
     stream.update();
@@ -902,15 +953,17 @@ fn stream_pid() {
             Self { time: 0.0 }
         }
     }
-    impl Stream<f32, DummyError> for DummyStream {
-        fn get(&self) -> StreamOutput<f32, DummyError> {
+    impl Getter<f32, DummyError> for DummyStream {
+        fn get(&self) -> Output<f32, DummyError> {
             Ok(Some(Datum::new(self.time, self.time / 2.0)))
         }
+    }
+    impl Updatable for DummyStream {
         fn update(&mut self) {
             self.time += 2.0;
         }
     }
-    let input = make_stream_input!(DummyStream::new(), f32, DummyError);
+    let input = make_input_getter!(DummyStream::new(), f32, DummyError);
     let mut stream = StreamPID::new(Rc::clone(&input), 5.0, 1.0, 0.01, 0.1);
     stream.update();
     assert_eq!(stream.get().unwrap().unwrap().time, 0.0);
@@ -932,8 +985,8 @@ fn ewma_stream() {
             Self { time: 0 }
         }
     }
-    impl Stream<f32, DummyError> for DummyStream {
-        fn get(&self) -> StreamOutput<f32, DummyError> {
+    impl Getter<f32, DummyError> for DummyStream {
+        fn get(&self) -> Output<f32, DummyError> {
             let value = match self.time {
                 2 => 110.0,
                 4 => 111.0,
@@ -947,11 +1000,13 @@ fn ewma_stream() {
             };
             Ok(Some(Datum::new(self.time as f32, value)))
         }
+    }
+    impl Updatable for DummyStream {
         fn update(&mut self) {
             self.time += 2;
         }
     }
-    let input = make_stream_input!(DummyStream::new(), f32, DummyError);
+    let input = make_input_getter!(DummyStream::new(), f32, DummyError);
     let mut stream = EWMAStream::new(Rc::clone(&input), 0.25);
     input.borrow_mut().update();
     stream.update();
@@ -992,8 +1047,8 @@ fn moving_average_stream() {
             Self { time: 0 }
         }
     }
-    impl Stream<f32, DummyError> for DummyStream {
-        fn get(&self) -> StreamOutput<f32, DummyError> {
+    impl Getter<f32, DummyError> for DummyStream {
+        fn get(&self) -> Output<f32, DummyError> {
             let value = match self.time {
                 2 => 110.0,
                 4 => 111.0,
@@ -1007,11 +1062,13 @@ fn moving_average_stream() {
             };
             Ok(Some(Datum::new(self.time as f32, value)))
         }
+    }
+    impl Updatable for DummyStream {
         fn update(&mut self) {
             self.time += 2;
         }
     }
-    let input = make_stream_input!(DummyStream::new(), f32, DummyError);
+    let input = make_input_getter!(DummyStream::new(), f32, DummyError);
     let mut stream = MovingAverageStream::new(Rc::clone(&input), 5.0);
     input.borrow_mut().update();
     stream.update();

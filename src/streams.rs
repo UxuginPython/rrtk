@@ -30,10 +30,12 @@ impl<T, E> Constant<T, E> {
         }
     }
 }
-impl<T: Clone, E: Copy + Debug> Stream<T, E> for Constant<T, E> {
-    fn get(&self) -> StreamOutput<T, E> {
+impl<T: Clone, E: Copy + Debug> Getter<T, E> for Constant<T, E> {
+    fn get(&self) -> Output<T, E> {
         let time = self.time_getter.borrow().get()?;
         Ok(Some(Datum::new(time, self.value.clone())))
     }
+}
+impl<T: Clone, E: Copy + Debug> Updatable for Constant<T, E> {
     fn update(&mut self) {}
 }

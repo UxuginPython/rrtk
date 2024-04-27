@@ -103,19 +103,18 @@ pub enum PositionDerivative {
     Velocity,
     Acceleration,
 }
-pub type StreamOutput<T, E> = Result<Option<Datum<T>>, Error<E>>;
-pub type TimeGetterOutput<E> = Result<f32, Error<E>>;
-pub type InputStream<T, E> = Rc<RefCell<Box<dyn Stream<T, E>>>>;
+pub type Output<T, E> = Result<Option<Datum<T>>, Error<E>>;
+pub type TimeOutput<E> = Result<f32, Error<E>>;
+pub type InputGetter<T, E> = Rc<RefCell<Box<dyn Getter<T, E>>>>;
 pub type InputTimeGetter<E> = Rc<RefCell<Box<dyn TimeGetter<E>>>>;
-pub trait TimeGetter<E: Copy + Debug> {
-    fn get(&self) -> Result<f32, Error<E>>;
-    fn update(&mut self);
+pub trait TimeGetter<E: Copy + Debug>: Updatable {
+    fn get(&self) -> TimeOutput<E>;
 }
 pub struct TimeGetterFromStream<T: Clone, E> {
     elevator: streams::converters::NoneToError<T, E>,
 }
 impl<T: Clone, E> TimeGetterFromStream<T, E> {
-    pub fn new(stream: Rc<RefCell<Box<dyn Stream<T, E>>>>) -> Self {
+    pub fn new(stream: Rc<RefCell<Box<dyn Getter<T, E>>>>) -> Self {
         Self {
             elevator: streams::converters::NoneToError::new(Rc::clone(&stream)),
         }
@@ -127,35 +126,37 @@ impl<T: Clone, E: Copy + Debug> TimeGetter<E> for TimeGetterFromStream<T, E> {
         let output = output.expect("`NoneToError` made all `Ok(None)`s into `Err(_)`s, and `?` returned all `Err(_)`s, so we're sure this is now an `Ok(Some(_))`.");
         return Ok(output.time);
     }
-    fn update(&mut self) {}
 }
-pub trait Stream<T: Clone, E: Copy + Debug> {
-    fn get(&self) -> StreamOutput<T, E>;
-    fn update(&mut self);
+impl<T: Clone, E: Copy + Debug> Updatable for TimeGetterFromStream<T, E> {
+    fn update(&mut self) {}
 }
 pub trait History<T: Clone> {
     fn get(&self, time: f32) -> Option<Datum<T>>;
     fn update(&mut self);
 }
+pub struct Command {
+    pub position_derivative: PositionDerivative,
+    pub value: f32,
+}
 pub trait Updatable {
     fn update(&mut self);
 }
 pub trait Getter<G, E: Copy + Debug>: Updatable {
-    fn get(&self) -> StreamOutput<G, E>;
+    fn get(&self) -> Output<G, E>;
 }
-pub trait Setter<S, E: Copy + Debug>: Updatable {
+pub trait Settable<S, E: Copy + Debug>: Updatable {
     fn set(&mut self, value: S) -> Result<(), Error<E>>;
 }
 #[macro_export]
-macro_rules! make_stream_input {
+macro_rules! make_input_getter {
     ($stream:expr, $ttype:tt, $etype:tt) => {
         Rc::new(RefCell::new(
-            Box::new($stream) as Box<dyn Stream<$ttype, $etype>>
+            Box::new($stream) as Box<dyn Getter<$ttype, $etype>>
         ))
     };
 }
 #[macro_export]
-macro_rules! make_time_getter_input {
+macro_rules! make_input_time_getter {
     ($time_getter:expr, $etype:tt) => {
         Rc::new(RefCell::new(
             Box::new($time_getter) as Box<dyn TimeGetter<$etype>>
