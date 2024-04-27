@@ -24,7 +24,7 @@ pub trait Encoder {
 }
 ///Data needed by all `SimpleEncoder` types.
 pub struct SimpleEncoderData {
-    pub encoder_type: MotorMode,
+    pub encoder_type: PositionDerivative,
     pub time: f32,
     pub position: f32,
     pub velocity: f32,
@@ -32,7 +32,7 @@ pub struct SimpleEncoderData {
 }
 impl SimpleEncoderData {
     ///Constructor for `SimpleEncoderData`.
-    pub fn new(encoder_type: MotorMode, start_state: Datum<State>) -> SimpleEncoderData {
+    pub fn new(encoder_type: PositionDerivative, start_state: Datum<State>) -> SimpleEncoderData {
         SimpleEncoderData {
             encoder_type: encoder_type,
             time: start_state.time,
@@ -70,7 +70,7 @@ impl<T: SimpleEncoder> Encoder for T {
         let new_time = device_out.time;
         let delta_time = new_time - old_time;
         match data.encoder_type {
-            MotorMode::Position => {
+            PositionDerivative::Position => {
                 let new_pos = device_out.value;
                 let new_vel = (new_pos - old_pos) / delta_time;
                 let new_acc = (new_vel - old_vel) / delta_time;
@@ -80,7 +80,7 @@ impl<T: SimpleEncoder> Encoder for T {
                 data.velocity = new_vel;
                 data.acceleration = new_acc;
             }
-            MotorMode::Velocity => {
+            PositionDerivative::Velocity => {
                 let new_vel = device_out.value;
                 let new_acc = (new_vel - old_vel) / delta_time;
                 let new_pos = old_pos + delta_time * (old_vel + new_vel) / 2.0;
@@ -90,7 +90,7 @@ impl<T: SimpleEncoder> Encoder for T {
                 data.velocity = new_vel;
                 data.acceleration = new_acc;
             }
-            MotorMode::Acceleration => {
+            PositionDerivative::Acceleration => {
                 let new_acc = device_out.value;
                 let new_vel = old_vel + delta_time * (old_acc + new_acc) / 2.0;
                 let new_pos = old_pos + delta_time * (old_vel + new_vel) / 2.0;
@@ -353,7 +353,7 @@ pub struct MotorEncoderPair {
     motor: Box<dyn NonFeedbackMotor>,
     encoder: Box<dyn Encoder>,
     pid: Option<MEPairPID>,
-    mode: Option<MotorMode>,
+    mode: Option<PositionDerivative>,
     pos_kp: f32,
     pos_ki: f32,
     pos_kd: f32,
@@ -410,7 +410,7 @@ impl FeedbackMotor for MotorEncoderPair {
         self.encoder.get_state()
     }
     fn set_acceleration(&mut self, acceleration: f32) {
-        self.mode = Some(MotorMode::Acceleration);
+        self.mode = Some(PositionDerivative::Acceleration);
         self.pid = Some(MEPairPID::Acceleration(PIDControllerShift::<3>::new(
             acceleration,
             self.acc_kp,
@@ -419,7 +419,7 @@ impl FeedbackMotor for MotorEncoderPair {
         )));
     }
     fn set_velocity(&mut self, velocity: f32) {
-        self.mode = Some(MotorMode::Velocity);
+        self.mode = Some(PositionDerivative::Velocity);
         self.pid = Some(MEPairPID::Velocity(PIDControllerShift::<2>::new(
             velocity,
             self.vel_kp,
@@ -428,7 +428,7 @@ impl FeedbackMotor for MotorEncoderPair {
         )));
     }
     fn set_position(&mut self, position: f32) {
-        self.mode = Some(MotorMode::Position);
+        self.mode = Some(PositionDerivative::Position);
         self.pid = Some(MEPairPID::Position(PIDControllerShift::<1>::new(
             position,
             self.pos_kp,
