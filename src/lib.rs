@@ -42,6 +42,117 @@ pub enum Error<O: Copy + Debug> {
     StreamNotSome,
     Other(O),
 }
+///A one-dimensional motion state with position, velocity, and acceleration.
+#[derive(Clone)]
+pub struct State {
+    pub position: f32,
+    pub velocity: f32,
+    pub acceleration: f32,
+}
+impl State {
+    ///Constructor for `State`.
+    pub fn new(position: f32, velocity: f32, acceleration: f32) -> State {
+        State {
+            position: position,
+            velocity: velocity,
+            acceleration: acceleration,
+        }
+    }
+    ///Calculate the future state assuming a constant acceleration.
+    pub fn update(&mut self, delta_time: f32) {
+        let new_velocity = self.velocity + delta_time * self.acceleration;
+        let new_position = self.position + delta_time * (self.velocity + new_velocity) / 2.0;
+        self.position = new_position;
+        self.velocity = new_velocity;
+    }
+    ///Set the acceleration.
+    pub fn set_constant_acceleration(&mut self, acceleration: f32) {
+        self.acceleration = acceleration;
+    }
+    ///Set the velocity to a given value and acceleration to zero.
+    pub fn set_constant_velocity(&mut self, velocity: f32) {
+        self.acceleration = 0.0;
+        self.velocity = velocity;
+    }
+    ///Set the position to a given value and the velocity and acceleration to zero.
+    pub fn set_constant_position(&mut self, position: f32) {
+        self.acceleration = 0.0;
+        self.velocity = 0.0;
+        self.position = position;
+    }
+}
+///A container for a time and something else, usually an `f32` or a `State`.
+#[derive(Clone, Debug)]
+pub struct Datum<T> {
+    pub time: f32,
+    pub value: T,
+}
+impl<T> Datum<T> {
+    ///Constructor for Datum type.
+    pub fn new(time: f32, value: T) -> Datum<T> {
+        Datum {
+            time: time,
+            value: value,
+        }
+    }
+}
+///What a motor is currently controlling: position, velocity, or acceleration.
+#[derive(Debug, PartialEq)]
+pub enum MotorMode {
+    Position,
+    Velocity,
+    Acceleration,
+}
+pub type StreamOutput<T, E> = Result<Option<Datum<T>>, Error<E>>;
+pub type TimeGetterOutput<E> = Result<f32, Error<E>>;
+pub type InputStream<T, E> = Rc<RefCell<Box<dyn Stream<T, E>>>>;
+pub type InputTimeGetter<E> = Rc<RefCell<Box<dyn TimeGetter<E>>>>;
+pub trait TimeGetter<E: Copy + Debug> {
+    fn get(&self) -> Result<f32, Error<E>>;
+    fn update(&mut self);
+}
+pub struct TimeGetterFromStream<T: Clone, E> {
+    elevator: streams::converters::NoneToError<T, E>,
+}
+impl<T: Clone, E> TimeGetterFromStream<T, E> {
+    pub fn new(stream: Rc<RefCell<Box<dyn Stream<T, E>>>>) -> Self {
+        Self {
+            elevator: streams::converters::NoneToError::new(Rc::clone(&stream)),
+        }
+    }
+}
+impl<T: Clone, E: Copy + Debug> TimeGetter<E> for TimeGetterFromStream<T, E> {
+    fn get(&self) -> Result<f32, Error<E>> {
+        let output = self.elevator.get()?;
+        let output = output.expect("`NoneToError` made all `Ok(None)`s into `Err(_)`s, and `?` returned all `Err(_)`s, so we're sure this is now an `Ok(Some(_))`.");
+        return Ok(output.time);
+    }
+    fn update(&mut self) {}
+}
+pub trait Stream<T: Clone, E: Copy + Debug> {
+    fn get(&self) -> StreamOutput<T, E>;
+    fn update(&mut self);
+}
+pub trait History<T: Clone> {
+    fn get(&self, time: f32) -> Option<Datum<T>>;
+    fn update(&mut self);
+}
+#[macro_export]
+macro_rules! make_stream_input {
+    ($stream:expr, $ttype:tt, $etype:tt) => {
+        Rc::new(RefCell::new(
+            Box::new($stream) as Box<dyn Stream<$ttype, $etype>>
+        ))
+    };
+}
+#[macro_export]
+macro_rules! make_time_getter_input {
+    ($time_getter:expr, $etype:tt) => {
+        Rc::new(RefCell::new(
+            Box::new($time_getter) as Box<dyn TimeGetter<$etype>>
+        ))
+    };
+}
 ///A proportional-integral-derivative controller. Requires `pid` feature.
 #[cfg(feature = "pid")]
 pub struct PIDController {
@@ -147,67 +258,6 @@ impl<const N: usize> PIDControllerShift<N> {
         self.shifts = new_shifts;
         self.shifts[self.shifts.len() - 1]
     }
-}
-///A one-dimensional motion state with position, velocity, and acceleration.
-#[derive(Clone)]
-pub struct State {
-    pub position: f32,
-    pub velocity: f32,
-    pub acceleration: f32,
-}
-impl State {
-    ///Constructor for `State`.
-    pub fn new(position: f32, velocity: f32, acceleration: f32) -> State {
-        State {
-            position: position,
-            velocity: velocity,
-            acceleration: acceleration,
-        }
-    }
-    ///Calculate the future state assuming a constant acceleration.
-    pub fn update(&mut self, delta_time: f32) {
-        let new_velocity = self.velocity + delta_time * self.acceleration;
-        let new_position = self.position + delta_time * (self.velocity + new_velocity) / 2.0;
-        self.position = new_position;
-        self.velocity = new_velocity;
-    }
-    ///Set the acceleration.
-    pub fn set_constant_acceleration(&mut self, acceleration: f32) {
-        self.acceleration = acceleration;
-    }
-    ///Set the velocity to a given value and acceleration to zero.
-    pub fn set_constant_velocity(&mut self, velocity: f32) {
-        self.acceleration = 0.0;
-        self.velocity = velocity;
-    }
-    ///Set the position to a given value and the velocity and acceleration to zero.
-    pub fn set_constant_position(&mut self, position: f32) {
-        self.acceleration = 0.0;
-        self.velocity = 0.0;
-        self.position = position;
-    }
-}
-///A container for a time and something else, usually an `f32` or a `State`.
-#[derive(Clone, Debug)]
-pub struct Datum<T> {
-    pub time: f32,
-    pub value: T,
-}
-impl<T> Datum<T> {
-    ///Constructor for Datum type.
-    pub fn new(time: f32, value: T) -> Datum<T> {
-        Datum {
-            time: time,
-            value: value,
-        }
-    }
-}
-///What a motor is currently controlling: position, velocity, or acceleration.
-#[derive(Debug, PartialEq)]
-pub enum MotorMode {
-    Position,
-    Velocity,
-    Acceleration,
 }
 ///Compute absolute value without the standard library. Requires `motionprofile` feature.
 //abs method of f32 does not exist in no_std
@@ -378,56 +428,6 @@ impl MotionProfile {
             return Err("time invalid");
         }
     }
-}
-pub type StreamOutput<T, E> = Result<Option<Datum<T>>, Error<E>>;
-pub type TimeGetterOutput<E> = Result<f32, Error<E>>;
-pub type InputStream<T, E> = Rc<RefCell<Box<dyn Stream<T, E>>>>;
-pub type InputTimeGetter<E> = Rc<RefCell<Box<dyn TimeGetter<E>>>>;
-pub trait TimeGetter<E: Copy + Debug> {
-    fn get(&self) -> Result<f32, Error<E>>;
-    fn update(&mut self);
-}
-pub struct TimeGetterFromStream<T: Clone, E> {
-    elevator: streams::converters::NoneToError<T, E>,
-}
-impl<T: Clone, E> TimeGetterFromStream<T, E> {
-    pub fn new(stream: Rc<RefCell<Box<dyn Stream<T, E>>>>) -> Self {
-        Self {
-            elevator: streams::converters::NoneToError::new(Rc::clone(&stream)),
-        }
-    }
-}
-impl<T: Clone, E: Copy + Debug> TimeGetter<E> for TimeGetterFromStream<T, E> {
-    fn get(&self) -> Result<f32, Error<E>> {
-        let output = self.elevator.get()?;
-        let output = output.expect("`NoneToError` made all `Ok(None)`s into `Err(_)`s, and `?` returned all `Err(_)`s, so we're sure this is now an `Ok(Some(_))`.");
-        return Ok(output.time);
-    }
-    fn update(&mut self) {}
-}
-pub trait Stream<T: Clone, E: Copy + Debug> {
-    fn get(&self) -> StreamOutput<T, E>;
-    fn update(&mut self);
-}
-pub trait History<T: Clone> {
-    fn get(&self, time: f32) -> Option<Datum<T>>;
-    fn update(&mut self);
-}
-#[macro_export]
-macro_rules! make_stream_input {
-    ($stream:expr, $ttype:tt, $etype:tt) => {
-        Rc::new(RefCell::new(
-            Box::new($stream) as Box<dyn Stream<$ttype, $etype>>
-        ))
-    };
-}
-#[macro_export]
-macro_rules! make_time_getter_input {
-    ($time_getter:expr, $etype:tt) => {
-        Rc::new(RefCell::new(
-            Box::new($time_getter) as Box<dyn TimeGetter<$etype>>
-        ))
-    };
 }
 #[cfg(test)]
 mod tests {
