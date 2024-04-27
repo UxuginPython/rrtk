@@ -130,9 +130,8 @@ impl<T: Clone, E: Copy + Debug> TimeGetter<E> for TimeGetterFromStream<T, E> {
 impl<T: Clone, E: Copy + Debug> Updatable for TimeGetterFromStream<T, E> {
     fn update(&mut self) {}
 }
-pub trait History<T: Clone> {
+pub trait History<T: Clone>: Updatable {
     fn get(&self, time: f32) -> Option<Datum<T>>;
-    fn update(&mut self);
 }
 pub struct Command {
     pub position_derivative: PositionDerivative,
@@ -322,6 +321,9 @@ impl History<State> for MotionProfile {
         };
         Some(Datum::new(time, State::new(pos, vel, acc)))
     }
+}
+#[cfg(feature = "motionprofile")]
+impl Updatable for MotionProfile {
     fn update(&mut self) {}
 }
 #[cfg(feature = "motionprofile")]
