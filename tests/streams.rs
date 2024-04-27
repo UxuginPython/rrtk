@@ -49,9 +49,6 @@ fn time_getter_from_stream() {
             self.time += 1.0;
         }
     }
-    /*let stream = Rc::new(RefCell::new(
-        Box::new(DummyStream::new()) as Box<dyn Stream<f32, u8>>
-    ));*/
     let stream = make_input_getter!(DummyStream::new(), f32, u8);
     let time_getter = TimeGetterFromStream::new(Rc::clone(&stream));
     stream.borrow_mut().update();
@@ -109,9 +106,6 @@ fn constant() {
             self.time += 1.0;
         }
     }
-    /*let tg_stream = Rc::new(RefCell::new(
-        Box::new(DummyStream::new()) as Box<dyn Stream<f32, Nothing>>
-    ));*/
     let tg_stream = make_input_getter!(DummyStream::new(), f32, Nothing);
     let time_getter = Rc::new(RefCell::new(Box::new(TimeGetterFromStream::new(Rc::clone(
         &tg_stream,
@@ -150,9 +144,6 @@ fn none_to_error() {
             self.index += 1;
         }
     }
-    /*let input = Rc::new(RefCell::new(
-        Box::new(DummyStream::new()) as Box<dyn Stream<f32, Nothing>>
-    ));*/
     let input = make_input_getter!(DummyStream::new(), f32, Nothing);
     let stream = NoneToError::new(Rc::clone(&input));
     match stream.get() {
@@ -232,9 +223,6 @@ fn none_to_value() {
             self.time += 1.0;
         }
     }
-    /*let input = Rc::new(RefCell::new(
-        Box::new(DummyStream::new()) as Box<dyn Stream<f32, Nothing>>
-    ));*/
     let input = make_input_getter!(DummyStream::new(), f32, Nothing);
     let stream = NoneToValue::new(
         Rc::clone(&input),
@@ -316,13 +304,7 @@ fn sum_stream() {
     impl Updatable for NormalStream {
         fn update(&mut self) {}
     }
-    /*let erroring = Rc::new(RefCell::new(
-        Box::new(ErroringStream::new()) as Box<dyn Stream<f32, Nothing>>
-    ));*/
     let erroring = make_input_getter!(ErroringStream::new(), f32, Nothing);
-    /*let normal = Rc::new(RefCell::new(
-        Box::new(NormalStream::new()) as Box<dyn Stream<f32, Nothing>>
-    ));*/
     let normal = make_input_getter!(NormalStream::new(), f32, Nothing);
     let stream = SumStream::new([Rc::clone(&erroring), Rc::clone(&normal)]);
     match stream.get() {
@@ -389,13 +371,7 @@ fn difference_stream() {
             self.index += 1;
         }
     }
-    /*let stream1 = Rc::new(RefCell::new(
-        Box::new(Stream1::new()) as Box<dyn Stream<f32, DummyError>>
-    ));*/
     let stream1 = make_input_getter!(Stream1::new(), f32, DummyError);
-    /*let stream2 = Rc::new(RefCell::new(
-        Box::new(Stream2::new()) as Box<dyn Stream<f32, DummyError>>
-    ));*/
     let stream2 = make_input_getter!(Stream2::new(), f32, DummyError);
     let stream = DifferenceStream::new(Rc::clone(&stream1), Rc::clone(&stream2));
     //Err, Err
@@ -538,13 +514,7 @@ fn product_stream() {
     impl Updatable for NormalStream {
         fn update(&mut self) {}
     }
-    /*let erroring = Rc::new(RefCell::new(
-        Box::new(ErroringStream::new()) as Box<dyn Stream<f32, Nothing>>
-    ));*/
     let erroring = make_input_getter!(ErroringStream::new(), f32, Nothing);
-    /*let normal = Rc::new(RefCell::new(
-        Box::new(NormalStream::new()) as Box<dyn Stream<f32, Nothing>>
-    ));*/
     let normal = make_input_getter!(NormalStream::new(), f32, Nothing);
     let stream = ProductStream::new([Rc::clone(&erroring), Rc::clone(&normal)]);
     match stream.get() {
@@ -611,13 +581,7 @@ fn quotient_stream() {
             self.index += 1;
         }
     }
-    /*let stream1 = Rc::new(RefCell::new(
-        Box::new(Stream1::new()) as Box<dyn Stream<f32, DummyError>>
-    ));*/
     let stream1 = make_input_getter!(Stream1::new(), f32, DummyError);
-    /*let stream2 = Rc::new(RefCell::new(
-        Box::new(Stream2::new()) as Box<dyn Stream<f32, DummyError>>
-    ));*/
     let stream2 = make_input_getter!(Stream2::new(), f32, DummyError);
     let stream = QuotientStream::new(Rc::clone(&stream1), Rc::clone(&stream2));
     //Err, Err
@@ -769,13 +733,7 @@ fn exponent_stream() {
             self.index += 1;
         }
     }
-    /*let stream1 = Rc::new(RefCell::new(
-        Box::new(Stream1::new()) as Box<dyn Stream<f32, DummyError>>
-    ));*/
     let stream1 = make_input_getter!(Stream1::new(), f32, DummyError);
-    /*let stream2 = Rc::new(RefCell::new(
-        Box::new(Stream2::new()) as Box<dyn Stream<f32, DummyError>>
-    ));*/
     let stream2 = make_input_getter!(Stream2::new(), f32, DummyError);
     let stream = ExponentStream::new(Rc::clone(&stream1), Rc::clone(&stream2));
     //Err, Err
@@ -898,9 +856,6 @@ fn derivative_stream() {
             self.time += 2.0;
         }
     }
-    /*let input = Rc::new(RefCell::new(
-        Box::new(DummyStream::new()) as Box<dyn Stream<f32, DummyError>>
-    ));*/
     let input = make_input_getter!(DummyStream::new(), f32, DummyError);
     let mut stream = DerivativeStream::new(Rc::clone(&input));
     input.borrow_mut().update();
