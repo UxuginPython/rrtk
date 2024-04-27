@@ -137,6 +137,15 @@ pub trait History<T: Clone> {
     fn get(&self, time: f32) -> Option<Datum<T>>;
     fn update(&mut self);
 }
+pub trait Updatable {
+    fn update(&mut self);
+}
+pub trait Getter<G, E: Copy + Debug>: Updatable {
+    fn get(&self) -> StreamOutput<G, E>;
+}
+pub trait Setter<S, E: Copy + Debug>: Updatable {
+    fn set(&mut self, value: S) -> Result<(), Error<E>>;
+}
 #[macro_export]
 macro_rules! make_stream_input {
     ($stream:expr, $ttype:tt, $etype:tt) => {
