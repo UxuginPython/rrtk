@@ -48,7 +48,7 @@ fn simple_encoder_position() {
         fn new(start_state: Datum<State>) -> DummySimpleEncoder {
             DummySimpleEncoder {
                 simple_encoder_data: SimpleEncoderData::new(
-                    MotorMode::Position,
+                    PositionDerivative::Position,
                     start_state.clone(),
                 ),
                 time: start_state.time,
@@ -95,7 +95,7 @@ fn simple_encoder_velocity() {
         fn new(start_state: Datum<State>) -> DummySimpleEncoder {
             DummySimpleEncoder {
                 simple_encoder_data: SimpleEncoderData::new(
-                    MotorMode::Velocity,
+                    PositionDerivative::Velocity,
                     start_state.clone(),
                 ),
                 time: start_state.time,
@@ -141,7 +141,7 @@ fn simple_encoder_acceleration() {
         fn new(start_state: Datum<State>) -> DummySimpleEncoder {
             DummySimpleEncoder {
                 simple_encoder_data: SimpleEncoderData::new(
-                    MotorMode::Acceleration,
+                    PositionDerivative::Acceleration,
                     start_state.clone(),
                 ),
                 time: start_state.time,
@@ -357,7 +357,7 @@ fn motor_encoder_pair() {
         fn new(start_state: Datum<State>) -> DummySimpleEncoder {
             DummySimpleEncoder {
                 simple_encoder_data: SimpleEncoderData::new(
-                    MotorMode::Velocity,
+                    PositionDerivative::Velocity,
                     start_state.clone(),
                 ),
                 time: start_state.time,

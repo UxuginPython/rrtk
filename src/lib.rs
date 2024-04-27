@@ -98,7 +98,7 @@ impl<T> Datum<T> {
 }
 ///What a motor is currently controlling: position, velocity, or acceleration.
 #[derive(Debug, PartialEq)]
-pub enum MotorMode {
+pub enum PositionDerivative {
     Position,
     Velocity,
     Acceleration,
@@ -353,16 +353,16 @@ impl MotionProfile {
             max_acc: max_acc,
         }
     }
-    ///Get the intended `MotorMode` at a given time.
-    pub fn get_mode(&self, t: f32) -> Result<MotorMode, &'static str> {
+    ///Get the intended `PositionDerivative` at a given time.
+    pub fn get_mode(&self, t: f32) -> Result<PositionDerivative, &'static str> {
         if t < 0.0 {
             return Err("time invalid");
         } else if t < self.t1 {
-            return Ok(MotorMode::Acceleration);
+            return Ok(PositionDerivative::Acceleration);
         } else if t < self.t2 {
-            return Ok(MotorMode::Velocity);
+            return Ok(PositionDerivative::Velocity);
         } else if t < self.t3 {
-            return Ok(MotorMode::Acceleration);
+            return Ok(PositionDerivative::Acceleration);
         } else {
             return Err("time invalid");
         }
