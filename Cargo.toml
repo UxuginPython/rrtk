@@ -28,6 +28,6 @@ std = []
 devices = []
 motionprofile = []
 pid = []
-default = ["std"]
+default = ["std", "pid"]
 [package.metadata.docs.rs]
 all-features = true

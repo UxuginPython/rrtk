@@ -103,6 +103,21 @@ pub enum PositionDerivative {
     Velocity,
     Acceleration,
 }
+pub struct PIDKValues {
+    pub kp: f32,
+    pub ki: f32,
+    pub kd: f32,
+}
+pub struct PositionDerivativeDependentPIDKValues {
+    pub position: PIDKValues,
+    pub velocity: PIDKValues,
+    pub acceleration: PIDKValues,
+}
+enum PositionDerivativeDependentPIDControllerShift {
+    Position(PIDControllerShift<1>),
+    Velocity(PIDControllerShift<2>),
+    Acceleration(PIDControllerShift<3>),
+}
 pub type Output<T, E> = Result<Option<Datum<T>>, Error<E>>;
 pub type TimeOutput<E> = Result<f32, Error<E>>;
 pub type InputGetter<T, E> = Rc<RefCell<Box<dyn Getter<T, E>>>>;
@@ -145,6 +160,66 @@ pub trait Getter<G, E: Copy + Debug>: Updatable {
 }
 pub trait Settable<S, E: Copy + Debug>: Updatable {
     fn set(&mut self, value: S) -> Result<(), Error<E>>;
+}
+pub trait GetterSettable<G, S, E: Copy + Debug>: Getter<G, E> + Settable<S, E> {}
+pub enum Device<E> {
+    Read(Box<dyn Getter<State, E>>),
+    ImpreciseWrite(Box<dyn Settable<f32, E>>, PositionDerivativeDependentPIDKValues),
+    PreciseWrite(Box<dyn Settable<Command, E>>),
+    ReadWrite(Box<dyn GetterSettable<State, Command, E>>),
+}
+impl<E: Copy + Debug> Updatable for Device<E> {
+    fn update(&mut self) {
+        match self {
+            Self::Read(device) => {device.update();}
+            Self::ImpreciseWrite(device, _) => {device.update();}
+            Self::PreciseWrite(device) => {device.update();}
+            Self::ReadWrite(device) => {device.update();}
+        }
+    }
+}
+pub struct Axle<const N: usize, E: Copy + Debug> {
+    devices: [Device<E>; N],
+    pids: [Option<PositionDerivativeDependentPIDControllerShift>; N],
+    has_imprecise_write: bool,
+}
+impl<const N: usize, E: Copy + Debug> Axle<N, E> {
+    pub fn new(devices: [Device<E>; N]) -> Self {
+        let mut has_imprecise_write = false;
+        for i in &devices {
+            match i {
+                Device::ImpreciseWrite(_, _) => {has_imprecise_write = true;}
+                _ => {}
+            }
+        }
+        const RUST_IS_PEDANTIC: Option<PositionDerivativeDependentPIDControllerShift> = None;
+        Self {
+            devices: devices,
+            pids: [RUST_IS_PEDANTIC; N],
+            has_imprecise_write: has_imprecise_write
+        }
+    }
+}
+impl<const N: usize, E: Copy + Debug> GetterSettable<State, Command, E> for Axle<N, E> {}
+impl<const N: usize, E: Copy + Debug> Updatable for Axle<N, E> {
+    fn update(&mut self) {
+        if self.has_imprecise_write {
+            todo!();
+        }
+        for i in &mut self.devices {
+            i.update();
+        }
+    }
+}
+impl<const N: usize, E: Copy + Debug> Getter<State, E> for Axle<N, E> {
+    fn get(&self) -> Output<State, E> {
+        todo!();
+    }
+}
+impl<const N: usize, E: Copy + Debug> Settable<Command, E> for Axle<N, E> {
+    fn set(&mut self, value: Command) -> Result<(), Error<E>> {
+        todo!();
+    }
 }
 #[macro_export]
 macro_rules! make_input_getter {
