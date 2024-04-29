@@ -213,7 +213,49 @@ impl<const N: usize, E: Copy + Debug> Updatable for Axle<N, E> {
 }
 impl<const N: usize, E: Copy + Debug> Getter<State, E> for Axle<N, E> {
     fn get(&self) -> Output<State, E> {
-        todo!();
+        let mut time = -999999999f32;
+        let mut pos_sum = 0f32;
+        let mut vel_sum = 0f32;
+        let mut acc_sum = 0f32;
+        let mut valid_read_count = 0u8;
+        for i in &self.devices {
+            match i {
+                Device::Read(device) => {
+                    match device.get()? {
+                        Some(datum) => {
+                            if datum.time > time {
+                                time = datum.time;
+                            }
+                            pos_sum += datum.value.position;
+                            vel_sum += datum.value.velocity;
+                            acc_sum += datum.value.acceleration;
+                            valid_read_count += 1;
+                        }
+                        None => {}
+                    }
+                }
+                Device::ReadWrite(device) => {
+                    match device.get()? {
+                        Some(datum) => {
+                            if datum.time > time {
+                                time = datum.time;
+                            }
+                            pos_sum += datum.value.position;
+                            vel_sum += datum.value.velocity;
+                            acc_sum += datum.value.acceleration;
+                            valid_read_count += 1;
+                        }
+                        None => {}
+                    }
+                }
+                _ => {}
+            }
+        }
+        let valid_read_count = valid_read_count as f32;
+        let pos = pos_sum / valid_read_count;
+        let vel = vel_sum / valid_read_count;
+        let acc = acc_sum / valid_read_count;
+        Ok(Some(Datum::new(time, State::new(pos, vel, acc))))
     }
 }
 impl<const N: usize, E: Copy + Debug> Settable<Command, E> for Axle<N, E> {
