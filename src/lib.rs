@@ -97,7 +97,7 @@ impl<T> Datum<T> {
     }
 }
 ///What a motor is currently controlling: position, velocity, or acceleration.
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum PositionDerivative {
     Position,
     Velocity,
@@ -148,6 +148,7 @@ impl<T: Clone, E: Copy + Debug> Updatable for TimeGetterFromStream<T, E> {
 pub trait History<T: Clone>: Updatable {
     fn get(&self, time: f32) -> Option<Datum<T>>;
 }
+#[derive(Clone, Copy)]
 pub struct Command {
     pub position_derivative: PositionDerivative,
     pub value: f32,
@@ -252,6 +253,9 @@ impl<const N: usize, E: Copy + Debug> Getter<State, E> for Axle<N, E> {
             }
         }
         let valid_read_count = valid_read_count as f32;
+        if valid_read_count < 1 {
+            return Ok(None);
+        }
         let pos = pos_sum / valid_read_count;
         let vel = vel_sum / valid_read_count;
         let acc = acc_sum / valid_read_count;
@@ -260,7 +264,31 @@ impl<const N: usize, E: Copy + Debug> Getter<State, E> for Axle<N, E> {
 }
 impl<const N: usize, E: Copy + Debug> Settable<Command, E> for Axle<N, E> {
     fn set(&mut self, value: Command) -> Result<(), Error<E>> {
-        todo!();
+        for i in 0..N {
+            match &mut self.devices[i] {
+                Device::ImpreciseWrite(device, posderdepkvals) => {
+                    match value.position_derivative {
+                        PositionDerivative::Position => {
+                            self.pids[i] = Some(PositionDerivativeDependentPIDControllerShift::Position(PIDControllerShift::<1>::new(value.value, posderdepkvals.position.kp, posderdepkvals.position.ki, posderdepkvals.position.kd)));
+                        }
+                        PositionDerivative::Velocity => {
+                            self.pids[i] = Some(PositionDerivativeDependentPIDControllerShift::Velocity(PIDControllerShift::<2>::new(value.value, posderdepkvals.velocity.kp, posderdepkvals.velocity.ki, posderdepkvals.velocity.kd)));
+                        }
+                        PositionDerivative::Acceleration => {
+                            self.pids[i] = Some(PositionDerivativeDependentPIDControllerShift::Acceleration(PIDControllerShift::<3>::new(value.value, posderdepkvals.acceleration.kp, posderdepkvals.acceleration.ki, posderdepkvals.acceleration.kd)));
+                        }
+                    }
+                }
+                Device::PreciseWrite(device) => {
+                    device.set(value)?;
+                }
+                Device::ReadWrite(device) => {
+                    device.set(value)?;
+                }
+                Device::Read(_) => {}
+            }
+        }
+        Ok(())
     }
 }
 #[macro_export]
