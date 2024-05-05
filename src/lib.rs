@@ -204,11 +204,38 @@ impl<const N: usize, E: Copy + Debug> Axle<N, E> {
 impl<const N: usize, E: Copy + Debug> GetterSettable<State, Command, E> for Axle<N, E> {}
 impl<const N: usize, E: Copy + Debug> Updatable for Axle<N, E> {
     fn update(&mut self) {
-        if self.has_imprecise_write {
-            todo!();
-        }
+        //This will update the ImpreciseWrite motors twice. This shouldn't cause issues but maybe
+        //should be changed at some point.
         for i in &mut self.devices {
             i.update();
+        }
+        if self.has_imprecise_write {
+            let state = match self.get() {
+                Ok(Some(state)) => state,
+                Ok(None) => {return;}
+                Err(_) => {return;}
+            };
+            for i in 0..N {
+                match &mut self.devices[i] {
+                    Device::ImpreciseWrite(device, _) => {
+                        match self.pids[i].as_mut().expect("Every ImpreciseWrite should have a Some(_) in pids") {
+                            PositionDerivativeDependentPIDControllerShift::Position(pid) => {
+                                let new_value = pid.update(state.time, state.value.position);
+                                let _ = device.set(new_value).unwrap();
+                            }
+                            PositionDerivativeDependentPIDControllerShift::Velocity(pid) => {
+                                let new_value = pid.update(state.time, state.value.velocity);
+                                let _ = device.set(new_value).unwrap();
+                            }
+                            PositionDerivativeDependentPIDControllerShift::Acceleration(pid) => {
+                                let new_value = pid.update(state.time, state.value.acceleration);
+                                let _ = device.set(new_value).unwrap();
+                            }
+                        }
+                    }
+                    _ => {}
+                }
+            }
         }
     }
 }
@@ -252,10 +279,10 @@ impl<const N: usize, E: Copy + Debug> Getter<State, E> for Axle<N, E> {
                 _ => {}
             }
         }
-        let valid_read_count = valid_read_count as f32;
         if valid_read_count < 1 {
             return Ok(None);
         }
+        let valid_read_count = valid_read_count as f32;
         let pos = pos_sum / valid_read_count;
         let vel = vel_sum / valid_read_count;
         let acc = acc_sum / valid_read_count;
@@ -270,12 +297,15 @@ impl<const N: usize, E: Copy + Debug> Settable<Command, E> for Axle<N, E> {
                     match value.position_derivative {
                         PositionDerivative::Position => {
                             self.pids[i] = Some(PositionDerivativeDependentPIDControllerShift::Position(PIDControllerShift::<1>::new(value.value, posderdepkvals.position.kp, posderdepkvals.position.ki, posderdepkvals.position.kd)));
+                            device.update();
                         }
                         PositionDerivative::Velocity => {
                             self.pids[i] = Some(PositionDerivativeDependentPIDControllerShift::Velocity(PIDControllerShift::<2>::new(value.value, posderdepkvals.velocity.kp, posderdepkvals.velocity.ki, posderdepkvals.velocity.kd)));
+                            device.update();
                         }
                         PositionDerivative::Acceleration => {
                             self.pids[i] = Some(PositionDerivativeDependentPIDControllerShift::Acceleration(PIDControllerShift::<3>::new(value.value, posderdepkvals.acceleration.kp, posderdepkvals.acceleration.ki, posderdepkvals.acceleration.kd)));
+                            device.update();
                         }
                     }
                 }
