@@ -31,8 +31,6 @@ use alloc::vec::Vec;
 use core::cell::RefCell;
 #[cfg(not(feature = "std"))]
 use core::fmt::Debug;
-#[cfg(feature = "devices")]
-pub mod devices;
 pub mod streams;
 #[derive(Clone, Copy, Debug)]
 pub enum Error<O: Copy + Debug> {
