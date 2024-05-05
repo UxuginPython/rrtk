@@ -293,19 +293,16 @@ impl<const N: usize, E: Copy + Debug> Settable<Command, E> for Axle<N, E> {
     fn set(&mut self, value: Command) -> Result<(), Error<E>> {
         for i in 0..N {
             match &mut self.devices[i] {
-                Device::ImpreciseWrite(device, posderdepkvals) => {
+                Device::ImpreciseWrite(_, posderdepkvals) => {
                     match value.position_derivative {
                         PositionDerivative::Position => {
                             self.pids[i] = Some(PositionDerivativeDependentPIDControllerShift::Position(PIDControllerShift::<1>::new(value.value, posderdepkvals.position.kp, posderdepkvals.position.ki, posderdepkvals.position.kd)));
-                            device.update();
                         }
                         PositionDerivative::Velocity => {
                             self.pids[i] = Some(PositionDerivativeDependentPIDControllerShift::Velocity(PIDControllerShift::<2>::new(value.value, posderdepkvals.velocity.kp, posderdepkvals.velocity.ki, posderdepkvals.velocity.kd)));
-                            device.update();
                         }
                         PositionDerivative::Acceleration => {
                             self.pids[i] = Some(PositionDerivativeDependentPIDControllerShift::Acceleration(PIDControllerShift::<3>::new(value.value, posderdepkvals.acceleration.kp, posderdepkvals.acceleration.ki, posderdepkvals.acceleration.kd)));
-                            device.update();
                         }
                     }
                 }
