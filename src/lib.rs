@@ -335,7 +335,6 @@ macro_rules! make_input_time_getter {
     };
 }
 ///A proportional-integral-derivative controller. Requires `pid` feature.
-#[cfg(feature = "pid")]
 pub struct PIDController {
     setpoint: f32,
     kp: f32,
@@ -345,7 +344,6 @@ pub struct PIDController {
     prev_error: Option<f32>,
     int_error: f32,
 }
-#[cfg(feature = "pid")]
 impl PIDController {
     ///Constructor for `PIDController`.
     pub fn new(setpoint: f32, kp: f32, ki: f32, kd: f32) -> PIDController {
@@ -384,7 +382,6 @@ impl PIDController {
 ///A PID controller that will integrate the control variable a given number of times to simplify
 ///control of some systems such as motors. Requires `pid` feature.
 //N is one more than shift count
-#[cfg(feature = "pid")]
 pub struct PIDControllerShift<const N: usize> {
     setpoint: f32,
     kp: f32,
@@ -395,7 +392,6 @@ pub struct PIDControllerShift<const N: usize> {
     int_error: f32,
     shifts: [f32; N],
 }
-#[cfg(feature = "pid")]
 impl<const N: usize> PIDControllerShift<N> {
     ///Constructor for `PIDControllerShift`.
     pub fn new(setpoint: f32, kp: f32, ki: f32, kd: f32) -> Self {
@@ -617,7 +613,6 @@ impl MotionProfile {
 mod tests {
     use super::*;
     #[test]
-    #[cfg(feature = "pid")]
     fn pid_new() {
         let pid = PIDController::new(5.0, 1.0, 0.01, 0.1);
         assert_eq!(pid.setpoint, 5.0);
@@ -629,7 +624,6 @@ mod tests {
         assert_eq!(pid.int_error, 0.0);
     }
     #[test]
-    #[cfg(feature = "pid")]
     fn pid_initial_update() {
         let mut pid = PIDController::new(5.0, 1.0, 0.01, 0.1);
         let new_control = pid.update(1.0, 0.0);
@@ -639,7 +633,6 @@ mod tests {
         assert_eq!(pid.int_error, 0.0);
     }
     #[test]
-    #[cfg(feature = "pid")]
     fn pid_subsequent_update() {
         let mut pid = PIDController::new(5.0, 1.0, 0.01, 0.1);
         let _ = pid.update(1.0, 0.0);
@@ -648,7 +641,6 @@ mod tests {
         assert_eq!(pid.int_error, 9.0);
     }
     #[test]
-    #[cfg(feature = "pid")]
     fn pidshift_no_shift() {
         let mut pid = PIDControllerShift::<1>::new(5.0, 1.0, 0.01, 0.1);
         let _ = pid.update(1.0, 0.0);

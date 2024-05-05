@@ -339,7 +339,6 @@ pub trait NonFeedbackMotor {
     ///roughly proportional to them.
     fn set_power(&mut self, power: f32);
 }
-#[cfg(feature = "pid")]
 enum MEPairPID {
     Position(PIDControllerShift<1>),
     Velocity(PIDControllerShift<2>),
@@ -347,7 +346,6 @@ enum MEPairPID {
 }
 ///Use an encoder connected directly to a motor without feedback and a PID controller to control it
 ///like a servo. Requires `std` and `pid` features.
-#[cfg(feature = "pid")]
 pub struct MotorEncoderPair {
     feedback_motor_data: FeedbackMotorData,
     motor: Box<dyn NonFeedbackMotor>,
@@ -364,7 +362,6 @@ pub struct MotorEncoderPair {
     acc_ki: f32,
     acc_kd: f32,
 }
-#[cfg(feature = "pid")]
 impl MotorEncoderPair {
     ///Constructor for `MotorEncoderPair`.
     pub fn new(
@@ -398,7 +395,6 @@ impl MotorEncoderPair {
         }
     }
 }
-#[cfg(feature = "pid")]
 impl FeedbackMotor for MotorEncoderPair {
     fn get_feedback_motor_data_ref(&self) -> &FeedbackMotorData {
         &self.feedback_motor_data

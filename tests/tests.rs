@@ -12,7 +12,6 @@ Copyright 2024 UxuginPython on GitHub
 */
 use rrtk::*;
 #[test]
-#[cfg(feature = "pid")]
 fn pidshift_shift() {
     let mut pid = PIDControllerShift::<2>::new(5.0, 1.0, 0.01, 0.1);
     let _ = pid.update(1.0, 0.0);
