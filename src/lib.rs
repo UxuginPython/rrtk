@@ -100,10 +100,20 @@ pub enum PositionDerivative {
     Velocity,
     Acceleration,
 }
+#[derive(Clone, Copy)]
 pub struct PIDKValues {
     pub kp: f32,
     pub ki: f32,
     pub kd: f32,
+}
+impl PIDKValues {
+    pub fn new(kp: f32, ki: f32, kd: f32) -> Self {
+        Self {
+            kp: kp,
+            ki: ki,
+            kd: kd,
+        }
+    }
 }
 pub struct PositionDerivativeDependentPIDKValues {
     pub position: PIDKValues,
@@ -293,13 +303,13 @@ impl<const N: usize, E: Copy + Debug> Settable<Command, E> for Axle<N, E> {
                 Device::ImpreciseWrite(_, posderdepkvals) => {
                     match value.position_derivative {
                         PositionDerivative::Position => {
-                            self.pids[i] = Some(PositionDerivativeDependentPIDControllerShift::Position(PIDControllerShift::<1>::new(value.value, posderdepkvals.position.kp, posderdepkvals.position.ki, posderdepkvals.position.kd)));
+                            self.pids[i] = Some(PositionDerivativeDependentPIDControllerShift::Position(PIDControllerShift::<1>::new(value.value, posderdepkvals.position)));
                         }
                         PositionDerivative::Velocity => {
-                            self.pids[i] = Some(PositionDerivativeDependentPIDControllerShift::Velocity(PIDControllerShift::<2>::new(value.value, posderdepkvals.velocity.kp, posderdepkvals.velocity.ki, posderdepkvals.velocity.kd)));
+                            self.pids[i] = Some(PositionDerivativeDependentPIDControllerShift::Velocity(PIDControllerShift::<2>::new(value.value, posderdepkvals.velocity)));
                         }
                         PositionDerivative::Acceleration => {
-                            self.pids[i] = Some(PositionDerivativeDependentPIDControllerShift::Acceleration(PIDControllerShift::<3>::new(value.value, posderdepkvals.acceleration.kp, posderdepkvals.acceleration.ki, posderdepkvals.acceleration.kd)));
+                            self.pids[i] = Some(PositionDerivativeDependentPIDControllerShift::Acceleration(PIDControllerShift::<3>::new(value.value, posderdepkvals.acceleration)));
                         }
                     }
                 }
@@ -343,12 +353,12 @@ pub struct PIDController {
 }
 impl PIDController {
     ///Constructor for `PIDController`.
-    pub fn new(setpoint: f32, kp: f32, ki: f32, kd: f32) -> PIDController {
+    pub fn new(setpoint: f32, kvalues: PIDKValues) -> Self {
         PIDController {
             setpoint: setpoint,
-            kp: kp,
-            ki: ki,
-            kd: kd,
+            kp: kvalues.kp,
+            ki: kvalues.ki,
+            kd: kvalues.kd,
             last_update_time: None,
             prev_error: None,
             int_error: 0.0,
@@ -391,12 +401,13 @@ pub struct PIDControllerShift<const N: usize> {
 }
 impl<const N: usize> PIDControllerShift<N> {
     ///Constructor for `PIDControllerShift`.
-    pub fn new(setpoint: f32, kp: f32, ki: f32, kd: f32) -> Self {
+    //pub fn new(setpoint: f32, kp: f32, ki: f32, kd: f32) -> Self {
+    pub fn new(setpoint: f32, kvalues: PIDKValues) -> Self {
         Self {
             setpoint: setpoint,
-            kp: kp,
-            ki: ki,
-            kd: kd,
+            kp: kvalues.kp,
+            ki: kvalues.ki,
+            kd: kvalues.kd,
             last_update_time: None,
             prev_error: None,
             int_error: 0.0,
@@ -611,7 +622,7 @@ mod tests {
     use super::*;
     #[test]
     fn pid_new() {
-        let pid = PIDController::new(5.0, 1.0, 0.01, 0.1);
+        let pid = PIDController::new(5.0, PIDKValues::new(1.0, 0.01, 0.1));
         assert_eq!(pid.setpoint, 5.0);
         assert_eq!(pid.kp, 1.0);
         assert_eq!(pid.ki, 0.01);
@@ -622,7 +633,7 @@ mod tests {
     }
     #[test]
     fn pid_initial_update() {
-        let mut pid = PIDController::new(5.0, 1.0, 0.01, 0.1);
+        let mut pid = PIDController::new(5.0, PIDKValues::new(1.0, 0.01, 0.1));
         let new_control = pid.update(1.0, 0.0);
         assert_eq!(new_control, 5.0);
         assert_eq!(pid.last_update_time, Some(1.0));
@@ -631,7 +642,7 @@ mod tests {
     }
     #[test]
     fn pid_subsequent_update() {
-        let mut pid = PIDController::new(5.0, 1.0, 0.01, 0.1);
+        let mut pid = PIDController::new(5.0, PIDKValues::new(1.0, 0.01, 0.1));
         let _ = pid.update(1.0, 0.0);
         let new_control = pid.update(3.0, 1.0);
         assert_eq!(new_control, 4.04);
@@ -639,7 +650,7 @@ mod tests {
     }
     #[test]
     fn pidshift_no_shift() {
-        let mut pid = PIDControllerShift::<1>::new(5.0, 1.0, 0.01, 0.1);
+        let mut pid = PIDControllerShift::<1>::new(5.0, PIDKValues::new(1.0, 0.01, 0.1));
         let _ = pid.update(1.0, 0.0);
         let new_control = pid.update(3.0, 1.0);
         assert_eq!(new_control, 4.04);

@@ -13,7 +13,7 @@ Copyright 2024 UxuginPython on GitHub
 use rrtk::*;
 #[test]
 fn pidshift_shift() {
-    let mut pid = PIDControllerShift::<2>::new(5.0, 1.0, 0.01, 0.1);
+    let mut pid = PIDControllerShift::<2>::new(5.0, PIDKValues::new(1.0, 0.01, 0.1));
     let _ = pid.update(1.0, 0.0);
     let new_control = pid.update(3.0, 1.0);
     assert_eq!(new_control, 9.04);
