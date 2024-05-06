@@ -401,7 +401,6 @@ pub struct PIDControllerShift<const N: usize> {
 }
 impl<const N: usize> PIDControllerShift<N> {
     ///Constructor for `PIDControllerShift`.
-    //pub fn new(setpoint: f32, kp: f32, ki: f32, kd: f32) -> Self {
     pub fn new(setpoint: f32, kvalues: PIDKValues) -> Self {
         Self {
             setpoint: setpoint,
