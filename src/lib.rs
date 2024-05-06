@@ -94,7 +94,6 @@ impl<T> Datum<T> {
         }
     }
 }
-///What a motor is currently controlling: position, velocity, or acceleration.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum PositionDerivative {
     Position,
@@ -191,10 +190,10 @@ impl<const N: usize, E: Copy + Debug> Axle<N, E> {
                 _ => {}
             }
         }
-        const RUST_IS_PEDANTIC: Option<PositionDerivativeDependentPIDControllerShift> = None;
+        const ARRAY_REPEAT_VALUE: Option<PositionDerivativeDependentPIDControllerShift> = None;
         Self {
             devices: devices,
-            pids: [RUST_IS_PEDANTIC; N],
+            pids: [ARRAY_REPEAT_VALUE; N],
             has_imprecise_write: has_imprecise_write
         }
     }
@@ -239,7 +238,7 @@ impl<const N: usize, E: Copy + Debug> Updatable for Axle<N, E> {
 }
 impl<const N: usize, E: Copy + Debug> Getter<State, E> for Axle<N, E> {
     fn get(&self) -> Output<State, E> {
-        let mut time = -999999999f32;
+        let mut time = -f32::INFINITY;
         let mut pos_sum = 0f32;
         let mut vel_sum = 0f32;
         let mut acc_sum = 0f32;
