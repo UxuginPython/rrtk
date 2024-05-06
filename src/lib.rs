@@ -341,7 +341,7 @@ macro_rules! make_input_time_getter {
         ))
     };
 }
-///A proportional-integral-derivative controller. Requires `pid` feature.
+///A proportional-integral-derivative controller.
 pub struct PIDController {
     setpoint: f32,
     kp: f32,
@@ -387,8 +387,8 @@ impl PIDController {
     }
 }
 ///A PID controller that will integrate the control variable a given number of times to simplify
-///control of some systems such as motors. Requires `pid` feature.
-//N is one more than shift count
+///control of some systems such as motors. `N` is one more than the number of times it integrates.
+///Do not set `N` to 0.
 pub struct PIDControllerShift<const N: usize> {
     setpoint: f32,
     kp: f32,
@@ -402,6 +402,9 @@ pub struct PIDControllerShift<const N: usize> {
 impl<const N: usize> PIDControllerShift<N> {
     ///Constructor for `PIDControllerShift`.
     pub fn new(setpoint: f32, kvalues: PIDKValues) -> Self {
+        if N < 1 {
+            panic!("PIDControllerShift N must be at least 1. N is one more than the number of times it integrates.")
+        }
         Self {
             setpoint: setpoint,
             kp: kvalues.kp,
