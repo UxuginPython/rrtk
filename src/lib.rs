@@ -161,7 +161,7 @@ pub struct Command {
     pub position_derivative: PositionDerivative,
     pub value: f32,
 }
-pub trait Updatable<E> {
+pub trait Updatable<E: Copy + Debug> {
     fn update(&mut self) -> Result<(), Error<E>>;
 }
 pub trait Getter<G, E: Copy + Debug>: Updatable<E> {
@@ -180,10 +180,10 @@ pub enum Device<E> {
 impl<E: Copy + Debug> Updatable<E> for Device<E> {
     fn update(&mut self) -> Result<(), Error<E>> {
         match self {
-            Self::Read(device) => {device.update();}
-            Self::ImpreciseWrite(device, _) => {device.update();}
-            Self::PreciseWrite(device) => {device.update();}
-            Self::ReadWrite(device) => {device.update();}
+            Self::Read(device) => {device.update()?;}
+            Self::ImpreciseWrite(device, _) => {device.update()?;}
+            Self::PreciseWrite(device) => {device.update()?;}
+            Self::ReadWrite(device) => {device.update()?;}
         }
         Ok(())
     }
@@ -216,13 +216,13 @@ impl<const N: usize, E: Copy + Debug> Updatable<E> for Axle<N, E> {
         //This will update the ImpreciseWrite motors twice. This shouldn't cause issues but maybe
         //should be changed at some point.
         for i in &mut self.devices {
-            i.update();
+            i.update()?;
         }
         if self.has_imprecise_write {
             let state = match self.get() {
                 Ok(Some(state)) => state,
-                Ok(None) => {return;}
-                Err(_) => {return;}
+                Ok(None) => {return Ok(());}
+                Err(error) => {return Err(error);}
             };
             for i in 0..N {
                 match &mut self.devices[i] {
