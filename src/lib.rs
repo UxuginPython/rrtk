@@ -129,7 +129,7 @@ pub type Output<T, E> = Result<Option<Datum<T>>, Error<E>>;
 pub type TimeOutput<E> = Result<f32, Error<E>>;
 pub type InputGetter<T, E> = Rc<RefCell<Box<dyn Getter<T, E>>>>;
 pub type InputTimeGetter<E> = Rc<RefCell<Box<dyn TimeGetter<E>>>>;
-pub trait TimeGetter<E: Copy + Debug>: Updatable {
+pub trait TimeGetter<E: Copy + Debug>: Updatable<E> {
     fn get(&self) -> TimeOutput<E>;
 }
 pub struct TimeGetterFromStream<T: Clone, E> {
@@ -149,10 +149,10 @@ impl<T: Clone, E: Copy + Debug> TimeGetter<E> for TimeGetterFromStream<T, E> {
         return Ok(output.time);
     }
 }
-impl<T: Clone, E: Copy + Debug> Updatable for TimeGetterFromStream<T, E> {
+impl<T: Clone, E: Copy + Debug> Updatable<E> for TimeGetterFromStream<T, E> {
     fn update(&mut self) {}
 }
-pub trait History<T: Clone>: Updatable {
+pub trait History<T: Clone, E: Copy + Debug>: Updatable<E> {
     fn get(&self, time: f32) -> Option<Datum<T>>;
 }
 #[derive(Clone, Copy)]
@@ -160,13 +160,13 @@ pub struct Command {
     pub position_derivative: PositionDerivative,
     pub value: f32,
 }
-pub trait Updatable {
-    fn update(&mut self);
+pub trait Updatable<E> {
+    fn update(&mut self) -> Result<(), Error<E>>;
 }
-pub trait Getter<G, E: Copy + Debug>: Updatable {
+pub trait Getter<G, E: Copy + Debug>: Updatable<E> {
     fn get(&self) -> Output<G, E>;
 }
-pub trait Settable<S, E: Copy + Debug>: Updatable {
+pub trait Settable<S, E: Copy + Debug>: Updatable<E> {
     fn set(&mut self, value: S) -> Result<(), Error<E>>;
 }
 pub trait GetterSettable<G, S, E: Copy + Debug>: Getter<G, E> + Settable<S, E> {}
@@ -176,7 +176,7 @@ pub enum Device<E> {
     PreciseWrite(Box<dyn Settable<Command, E>>),
     ReadWrite(Box<dyn GetterSettable<State, Command, E>>),
 }
-impl<E: Copy + Debug> Updatable for Device<E> {
+impl<E: Copy + Debug> Updatable<E> for Device<E> {
     fn update(&mut self) {
         match self {
             Self::Read(device) => {device.update();}
@@ -209,7 +209,7 @@ impl<const N: usize, E: Copy + Debug> Axle<N, E> {
     }
 }
 impl<const N: usize, E: Copy + Debug> GetterSettable<State, Command, E> for Axle<N, E> {}
-impl<const N: usize, E: Copy + Debug> Updatable for Axle<N, E> {
+impl<const N: usize, E: Copy + Debug> Updatable<E> for Axle<N, E> {
     fn update(&mut self) {
         //This will update the ImpreciseWrite motors twice. This shouldn't cause issues but maybe
         //should be changed at some point.
@@ -501,7 +501,7 @@ impl History<State> for MotionProfile {
     }
 }
 #[cfg(feature = "motionprofile")]
-impl Updatable for MotionProfile {
+impl<E: Copy + Debug> Updatable<E> for MotionProfile {
     fn update(&mut self) {}
 }
 #[cfg(feature = "motionprofile")]
