@@ -480,7 +480,7 @@ pub struct MotionProfile {
     max_acc: f32,
 }
 #[cfg(feature = "motionprofile")]
-impl History<State> for MotionProfile {
+impl<E: Copy + Debug> History<State, E> for MotionProfile {
     fn get(&self, time: f32) -> Option<Datum<State>> {
         let pos = match self.get_position(time) {
             Ok(value) => value,
