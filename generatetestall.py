@@ -23,6 +23,7 @@ def powerset(iterable):
 file = open('Cargo.toml')
 cargo = file.read()
 file.close()
+version=re.search(r'(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<patch>0|[1-9]\d*)(?:-(?P<prerelease>(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+(?P<buildmetadata>[0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?', cargo).group(0)
 cargo = cargo.split('[features]')
 cargo = cargo[1]
 cargo = cargo.split('\n')
@@ -48,4 +49,4 @@ for i in features:
             if not(i in k[1] and j in k[1]):
                 new_combinations.append(k[1])
         combinations = new_combinations
-print(f'#!/bin/bash\n#Generated automatically by rrtk 0.3.0-alpha.4\nset -e\n{'\n'.join(f'echo {' '.join(i)}\ncargo test --no-default-features{' --features' if len(i) > 0 else ''} {','.join(i)}' for i in combinations)}')
+print(f'#!/bin/bash\n#Generated automatically by rrtk {version}\nset -e\n{'\n'.join(f'echo {' '.join(i)}\ncargo test --no-default-features{' --features' if len(i) > 0 else ''} {','.join(i)}' for i in combinations)}')
