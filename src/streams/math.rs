@@ -66,8 +66,8 @@ impl<const N: usize, E: Copy + Debug> Getter<f32, E> for SumStream<N, E> {
         }
     }
 }
-impl<const N: usize, E: Copy + Debug> Updatable for SumStream<N, E> {
-    fn update(&mut self) {}
+impl<const N: usize, E: Copy + Debug> Updatable<E> for SumStream<N, E> {
+    fn update(&mut self) -> UpdateOutput<E> {Ok(())}
 }
 pub struct DifferenceStream<E> {
     minuend: InputGetter<f32, E>,
@@ -108,8 +108,8 @@ impl<E: Copy + Debug> Getter<f32, E> for DifferenceStream<E> {
         Ok(Some(Datum::new(time, value)))
     }
 }
-impl<E: Copy + Debug> Updatable for DifferenceStream<E> {
-    fn update(&mut self) {}
+impl<E: Copy + Debug> Updatable<E> for DifferenceStream<E> {
+    fn update(&mut self) -> UpdateOutput<E> {Ok(())}
 }
 pub struct ProductStream<const N: usize, E> {
     factors: [InputGetter<f32, E>; N],
@@ -163,8 +163,8 @@ impl<const N: usize, E: Copy + Debug> Getter<f32, E> for ProductStream<N, E> {
         }
     }
 }
-impl<const N: usize, E: Copy + Debug> Updatable for ProductStream<N, E> {
-    fn update(&mut self) {}
+impl<const N: usize, E: Copy + Debug> Updatable<E> for ProductStream<N, E> {
+    fn update(&mut self) -> UpdateOutput<E> {Ok(())}
 }
 pub struct QuotientStream<E> {
     dividend: InputGetter<f32, E>,
@@ -205,8 +205,8 @@ impl<E: Copy + Debug> Getter<f32, E> for QuotientStream<E> {
         Ok(Some(Datum::new(time, value)))
     }
 }
-impl<E: Copy + Debug> Updatable for QuotientStream<E> {
-    fn update(&mut self) {}
+impl<E: Copy + Debug> Updatable<E> for QuotientStream<E> {
+    fn update(&mut self) -> UpdateOutput<E> {Ok(())}
 }
 #[cfg(feature = "std")]
 pub struct ExponentStream<E> {
@@ -251,8 +251,8 @@ impl<E: Copy + Debug> Getter<f32, E> for ExponentStream<E> {
     }
 }
 #[cfg(feature = "std")]
-impl<E: Copy + Debug> Updatable for ExponentStream<E> {
-    fn update(&mut self) {}
+impl<E: Copy + Debug> Updatable<E> for ExponentStream<E> {
+    fn update(&mut self) -> UpdateOutput<E> {Ok(())}
 }
 pub struct DerivativeStream<E: Copy + Debug> {
     input: InputGetter<f32, E>,
@@ -274,15 +274,15 @@ impl<E: Copy + Debug> Getter<f32, E> for DerivativeStream<E> {
         self.value.clone()
     }
 }
-impl<E: Copy + Debug> Updatable for DerivativeStream<E> {
-    fn update(&mut self) {
+impl<E: Copy + Debug> Updatable<E> for DerivativeStream<E> {
+    fn update(&mut self) -> UpdateOutput<E> {
         let output = self.input.borrow().get();
         match output {
             Ok(_) => {}
             Err(error) => {
                 self.value = Err(error);
                 self.prev_output = None;
-                return;
+                return Err(error);
             }
         }
         let output = output.unwrap();
@@ -291,7 +291,7 @@ impl<E: Copy + Debug> Updatable for DerivativeStream<E> {
             None => {
                 self.value = Ok(None);
                 self.prev_output = None;
-                return;
+                return Ok(());
             }
         }
         let output = output.unwrap();
@@ -299,13 +299,14 @@ impl<E: Copy + Debug> Updatable for DerivativeStream<E> {
             Some(_) => {}
             None => {
                 self.prev_output = Some(output);
-                return;
+                return Ok(());
             }
         }
         let prev_output = self.prev_output.as_ref().unwrap();
         let value = (output.value - prev_output.value) / (output.time - prev_output.time);
         self.value = Ok(Some(Datum::new(output.time, value)));
         self.prev_output = Some(output);
+        Ok(())
     }
 }
 pub struct IntegralStream<E: Copy + Debug> {
@@ -327,15 +328,15 @@ impl<E: Copy + Debug> Getter<f32, E> for IntegralStream<E> {
         self.value.clone()
     }
 }
-impl<E: Copy + Debug> Updatable for IntegralStream<E> {
-    fn update(&mut self) {
+impl<E: Copy + Debug> Updatable<E> for IntegralStream<E> {
+    fn update(&mut self) -> UpdateOutput<E> {
         let output = self.input.borrow().get();
         match output {
             Ok(_) => {}
             Err(error) => {
                 self.value = Err(error);
                 self.prev_output = None;
-                return;
+                return Err(error);
             }
         }
         let output = output.unwrap();
@@ -344,7 +345,7 @@ impl<E: Copy + Debug> Updatable for IntegralStream<E> {
             None => {
                 self.value = Ok(None);
                 self.prev_output = None;
-                return;
+                return Ok(());
             }
         }
         let output = output.unwrap();
@@ -352,7 +353,7 @@ impl<E: Copy + Debug> Updatable for IntegralStream<E> {
             Some(_) => {}
             None => {
                 self.prev_output = Some(output);
-                return;
+                return Ok(());
             }
         }
         let prev_output = self.prev_output.as_ref().unwrap();
@@ -367,5 +368,6 @@ impl<E: Copy + Debug> Updatable for IntegralStream<E> {
             + (output.time - prev_output.time) * (prev_output.value + output.value) / 2.0;
         self.value = Ok(Some(Datum::new(output.time, value)));
         self.prev_output = Some(output);
+        return Ok(());
     }
 }

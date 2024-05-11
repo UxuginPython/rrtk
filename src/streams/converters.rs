@@ -33,8 +33,8 @@ impl<T: Clone, E: Copy + Debug> Getter<T, E> for NoneToError<T, E> {
         }
     }
 }
-impl<T: Clone, E: Copy + Debug> Updatable for NoneToError<T, E> {
-    fn update(&mut self) {}
+impl<T: Clone, E: Copy + Debug> Updatable<E> for NoneToError<T, E> {
+    fn update(&mut self) -> UpdateOutput<E> {Ok(())}
 }
 pub struct NoneToValue<T, E> {
     input: InputGetter<T, E>,
@@ -66,8 +66,8 @@ impl<T: Clone, E: Copy + Debug> Getter<T, E> for NoneToValue<T, E> {
         }
     }
 }
-impl<T: Clone, E: Copy + Debug> Updatable for NoneToValue<T, E> {
-    fn update(&mut self) {}
+impl<T: Clone, E: Copy + Debug> Updatable<E> for NoneToValue<T, E> {
+    fn update(&mut self) -> UpdateOutput<E> {Ok(())}
 }
 pub struct AccelerationToState<E: Copy + Debug> {
     acc: InputGetter<f32, E>,
@@ -124,10 +124,11 @@ impl<E: Copy + Debug> Getter<State, E> for AccelerationToState<E> {
         )))
     }
 }
-impl<E: Copy + Debug> Updatable for AccelerationToState<E> {
-    fn update(&mut self) {
-        self.vel.borrow_mut().update();
-        self.pos.borrow_mut().update();
+impl<E: Copy + Debug> Updatable<E> for AccelerationToState<E> {
+    fn update(&mut self) -> UpdateOutput<E> {
+        self.vel.borrow_mut().update()?;
+        self.pos.borrow_mut().update()?;
+        Ok(())
     }
 }
 pub struct VelocityToState<E: Copy + Debug> {
@@ -185,10 +186,11 @@ impl<E: Copy + Debug> Getter<State, E> for VelocityToState<E> {
         )))
     }
 }
-impl<E: Copy + Debug> Updatable for VelocityToState<E> {
-    fn update(&mut self) {
-        self.acc.borrow_mut().update();
-        self.pos.borrow_mut().update();
+impl<E: Copy + Debug> Updatable<E> for VelocityToState<E> {
+    fn update(&mut self) -> UpdateOutput<E> {
+        self.acc.borrow_mut().update()?;
+        self.pos.borrow_mut().update()?;
+        Ok(())
     }
 }
 pub struct PositionToStream<E: Copy + Debug> {
@@ -246,9 +248,10 @@ impl<E: Copy + Debug> Getter<State, E> for PositionToStream<E> {
         )))
     }
 }
-impl<E: Copy + Debug> Updatable for PositionToStream<E> {
-    fn update(&mut self) {
-        self.vel.borrow_mut().update();
-        self.acc.borrow_mut().update();
+impl<E: Copy + Debug> Updatable<E> for PositionToStream<E> {
+    fn update(&mut self) -> UpdateOutput<E> {
+        self.vel.borrow_mut().update()?;
+        self.acc.borrow_mut().update()?;
+        Ok(())
     }
 }

@@ -74,10 +74,11 @@ impl<E: Copy + Debug + 'static> Getter<f32, E> for StreamPID<E> {
         self.output.get()
     }
 }
-impl<E: Copy + Debug + 'static> Updatable for StreamPID<E> {
-    fn update(&mut self) {
-        self.int.borrow_mut().update();
-        self.drv.borrow_mut().update();
+impl<E: Copy + Debug + 'static> Updatable<E> for StreamPID<E> {
+    fn update(&mut self) -> UpdateOutput<E> {
+        self.int.borrow_mut().update()?;
+        self.drv.borrow_mut().update()?;
+        Ok(())
     }
 }
 //https://www.itl.nist.gov/div898/handbook/pmc/section3/pmc324.htm
@@ -104,14 +105,14 @@ impl<E: Copy + Debug> Getter<f32, E> for EWMAStream<E> {
         self.value.clone()
     }
 }
-impl<E: Copy + Debug> Updatable for EWMAStream<E> {
-    fn update(&mut self) {
+impl<E: Copy + Debug> Updatable<E> for EWMAStream<E> {
+    fn update(&mut self) -> UpdateOutput<E> {
         let output = self.input.borrow().get();
         match output {
             Err(error) => {
                 self.value = Err(error);
                 self.update_time = None;
-                return;
+                return Err(error);
             }
             Ok(None) => {
                 match self.value {
@@ -121,7 +122,7 @@ impl<E: Copy + Debug> Updatable for EWMAStream<E> {
                     }
                     Ok(_) => {}
                 }
-                return;
+                return Ok(());
             }
             Ok(Some(_)) => {}
         }
@@ -148,6 +149,7 @@ impl<E: Copy + Debug> Updatable for EWMAStream<E> {
         };
         self.value = Ok(Some(Datum::new(output.time, value)));
         self.update_time = Some(output.time);
+        Ok(())
     }
 }
 pub struct MovingAverageStream<E: Copy + Debug> {
@@ -171,8 +173,8 @@ impl<E: Copy + Debug> Getter<f32, E> for MovingAverageStream<E> {
         self.value.clone()
     }
 }
-impl<E: Copy + Debug> Updatable for MovingAverageStream<E> {
-    fn update(&mut self) {
+impl<E: Copy + Debug> Updatable<E> for MovingAverageStream<E> {
+    fn update(&mut self) -> UpdateOutput<E> {
         let output = self.input.borrow().get();
         match output {
             Ok(Some(_)) => {}
@@ -184,21 +186,21 @@ impl<E: Copy + Debug> Updatable for MovingAverageStream<E> {
                         //still don't have a value. Set it to Ok(None) and leave input_values
                         //empty.
                         self.value = Ok(None);
-                        return;
+                        return Ok(());
                     }
                 }
             }
             Err(error) => {
                 self.value = Err(error);
                 self.input_values.clear();
-                return;
+                return Err(error);
             }
         }
         let output = output.unwrap().unwrap();
         self.input_values.push_back(output.clone());
         if self.input_values.len() == 0 {
             self.value = Ok(Some(output));
-            return;
+            return Ok(());
         }
         while self.input_values[0].time <= output.time - self.window {
             self.input_values.pop_front();
@@ -220,5 +222,6 @@ impl<E: Copy + Debug> Updatable for MovingAverageStream<E> {
         }
         value /= self.window;
         self.value = Ok(Some(Datum::new(output.time, value)));
+        Ok(())
     }
 }

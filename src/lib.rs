@@ -129,6 +129,7 @@ pub type Output<T, E> = Result<Option<Datum<T>>, Error<E>>;
 pub type TimeOutput<E> = Result<f32, Error<E>>;
 pub type InputGetter<T, E> = Rc<RefCell<Box<dyn Getter<T, E>>>>;
 pub type InputTimeGetter<E> = Rc<RefCell<Box<dyn TimeGetter<E>>>>;
+pub type UpdateOutput<E> = Result<(), Error<E>>;
 pub trait TimeGetter<E: Copy + Debug>: Updatable<E> {
     fn get(&self) -> TimeOutput<E>;
 }
@@ -150,7 +151,7 @@ impl<T: Clone, E: Copy + Debug> TimeGetter<E> for TimeGetterFromStream<T, E> {
     }
 }
 impl<T: Clone, E: Copy + Debug> Updatable<E> for TimeGetterFromStream<T, E> {
-    fn update(&mut self) {}
+    fn update(&mut self) -> Result<(), Error<E>> {Ok(())}
 }
 pub trait History<T: Clone, E: Copy + Debug>: Updatable<E> {
     fn get(&self, time: f32) -> Option<Datum<T>>;
@@ -177,13 +178,14 @@ pub enum Device<E> {
     ReadWrite(Box<dyn GetterSettable<State, Command, E>>),
 }
 impl<E: Copy + Debug> Updatable<E> for Device<E> {
-    fn update(&mut self) {
+    fn update(&mut self) -> Result<(), Error<E>> {
         match self {
             Self::Read(device) => {device.update();}
             Self::ImpreciseWrite(device, _) => {device.update();}
             Self::PreciseWrite(device) => {device.update();}
             Self::ReadWrite(device) => {device.update();}
         }
+        Ok(())
     }
 }
 pub struct Axle<const N: usize, E: Copy + Debug> {
@@ -210,7 +212,7 @@ impl<const N: usize, E: Copy + Debug> Axle<N, E> {
 }
 impl<const N: usize, E: Copy + Debug> GetterSettable<State, Command, E> for Axle<N, E> {}
 impl<const N: usize, E: Copy + Debug> Updatable<E> for Axle<N, E> {
-    fn update(&mut self) {
+    fn update(&mut self) -> Result<(), Error<E>> {
         //This will update the ImpreciseWrite motors twice. This shouldn't cause issues but maybe
         //should be changed at some point.
         for i in &mut self.devices {
@@ -228,15 +230,15 @@ impl<const N: usize, E: Copy + Debug> Updatable<E> for Axle<N, E> {
                         match self.pids[i].as_mut().expect("Every ImpreciseWrite should have a Some(_) in pids") {
                             PositionDerivativeDependentPIDControllerShift::Position(pid) => {
                                 let new_value = pid.update(state.time, state.value.position);
-                                let _ = device.set(new_value).unwrap();
+                                let _ = device.set(new_value)?;
                             }
                             PositionDerivativeDependentPIDControllerShift::Velocity(pid) => {
                                 let new_value = pid.update(state.time, state.value.velocity);
-                                let _ = device.set(new_value).unwrap();
+                                let _ = device.set(new_value)?;
                             }
                             PositionDerivativeDependentPIDControllerShift::Acceleration(pid) => {
                                 let new_value = pid.update(state.time, state.value.acceleration);
-                                let _ = device.set(new_value).unwrap();
+                                let _ = device.set(new_value)?;
                             }
                         }
                     }
@@ -244,6 +246,7 @@ impl<const N: usize, E: Copy + Debug> Updatable<E> for Axle<N, E> {
                 }
             }
         }
+        Ok(())
     }
 }
 impl<const N: usize, E: Copy + Debug> Getter<State, E> for Axle<N, E> {
@@ -502,7 +505,7 @@ impl History<State> for MotionProfile {
 }
 #[cfg(feature = "motionprofile")]
 impl<E: Copy + Debug> Updatable<E> for MotionProfile {
-    fn update(&mut self) {}
+    fn update(&mut self) -> Result<(), Error<E>> {Ok(())}
 }
 #[cfg(feature = "motionprofile")]
 impl MotionProfile {
