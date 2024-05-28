@@ -55,7 +55,6 @@ fn state_position() {
     assert_eq!(state.acceleration, 0.0);
 }
 #[test]
-#[cfg(feature = "motionprofile")]
 fn motion_profile_get_mode() {
     let motion_profile = MotionProfile::new(
         State::new(0.0, 0.0, 0.0),
@@ -77,7 +76,6 @@ fn motion_profile_get_mode() {
     );
 }
 #[test]
-#[cfg(feature = "motionprofile")]
 fn motion_profile_get_acceleration() {
     let motion_profile = MotionProfile::new(
         State::new(0.0, 0.0, 0.0),
@@ -90,7 +88,6 @@ fn motion_profile_get_acceleration() {
     assert_eq!(motion_profile.get_acceleration(3.5), Ok(-1.0));
 }
 #[test]
-#[cfg(feature = "motionprofile")]
 fn motion_profile_get_velocity() {
     let motion_profile = MotionProfile::new(
         State::new(0.0, 0.0, 0.0),
@@ -103,7 +100,6 @@ fn motion_profile_get_velocity() {
     assert_eq!(motion_profile.get_velocity(3.5), Ok(0.5));
 }
 #[test]
-#[cfg(feature = "motionprofile")]
 fn motion_profile_get_velocity_2() {
     let motion_profile = MotionProfile::new(
         State::new(1.0, 0.0, 3.0),
@@ -116,7 +112,6 @@ fn motion_profile_get_velocity_2() {
     assert_eq!(motion_profile.get_velocity(3.5), Ok(0.5));
 }
 #[test]
-#[cfg(feature = "motionprofile")]
 fn motion_profile_get_velocity_3() {
     let motion_profile = MotionProfile::new(
         State::new(1.0, 1.0, 3.0),
@@ -129,7 +124,6 @@ fn motion_profile_get_velocity_3() {
     assert_eq!(motion_profile.get_velocity(2.5), Ok(1.5));
 }
 #[test]
-#[cfg(feature = "motionprofile")]
 fn motion_profile_get_position() {
     let motion_profile = MotionProfile::new(
         State::new(0.0, 0.0, 0.0),
@@ -142,7 +136,6 @@ fn motion_profile_get_position() {
     assert_eq!(motion_profile.get_position(3.5), Ok(2.875));
 }
 #[test]
-#[cfg(feature = "motionprofile")]
 fn motion_profile_get_position_2() {
     let motion_profile = MotionProfile::new(
         State::new(1.0, 0.0, 3.0),
@@ -155,7 +148,6 @@ fn motion_profile_get_position_2() {
     assert_eq!(motion_profile.get_position(3.5), Ok(3.875));
 }
 #[test]
-#[cfg(feature = "motionprofile")]
 fn motion_profile_get_position_3() {
     let motion_profile = MotionProfile::new(
         State::new(1.0, 1.0, 3.0),

@@ -25,7 +25,6 @@ exclude = ["generatetestall.py", "testall.sh"]
 [dependencies]
 [features]
 std = []
-motionprofile = []
 default = ["std"]
 [package.metadata.docs.rs]
 all-features = true

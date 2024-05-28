@@ -477,9 +477,9 @@ impl<const N: usize> PIDControllerShift<N> {
         self.shifts[self.shifts.len() - 1]
     }
 }
-///Compute absolute value without the standard library. Requires `motionprofile` feature.
+///Compute absolute value without the standard library.
 //abs method of f32 does not exist in no_std
-#[cfg(all(not(feature = "std"), feature = "motionprofile"))]
+#[cfg(not(feature = "std"))]
 #[inline]
 fn my_abs_f32(num: f32) -> f32 {
     if num >= 0.0 {
@@ -488,8 +488,7 @@ fn my_abs_f32(num: f32) -> f32 {
         -num
     }
 }
-///Where you are in following a motion profile. Requires `motionprofile` feature.
-#[cfg(feature = "motionprofile")]
+///Where you are in following a motion profile.
 pub enum MotionProfilePiece {
     BeforeStart,
     InitialAcceleration,
@@ -497,8 +496,7 @@ pub enum MotionProfilePiece {
     EndAcceleration,
     Complete,
 }
-///A motion profile for getting from one state to another. Requires `motionprofile` feature.
-#[cfg(feature = "motionprofile")]
+///A motion profile for getting from one state to another.
 pub struct MotionProfile {
     start_pos: f32,
     start_vel: f32,
@@ -507,7 +505,6 @@ pub struct MotionProfile {
     t3: f32,
     max_acc: f32,
 }
-#[cfg(feature = "motionprofile")]
 impl<E: Copy + Debug> History<State, E> for MotionProfile {
     fn get(&self, time: f32) -> Option<Datum<State>> {
         let pos = match self.get_position(time) {
@@ -531,13 +528,11 @@ impl<E: Copy + Debug> History<State, E> for MotionProfile {
         Some(Datum::new(time, State::new(pos, vel, acc)))
     }
 }
-#[cfg(feature = "motionprofile")]
 impl<E: Copy + Debug> Updatable<E> for MotionProfile {
     fn update(&mut self) -> Result<(), Error<E>> {
         Ok(())
     }
 }
-#[cfg(feature = "motionprofile")]
 impl MotionProfile {
     ///Constructor for `MotionProfile` using start and end states.
     pub fn new(start_state: State, end_state: State, max_vel: f32, max_acc: f32) -> MotionProfile {
@@ -692,7 +687,6 @@ mod tests {
         assert_eq!(pid.shifts, [4.04]);
     }
     #[test]
-    #[cfg(feature = "motionprofile")]
     fn motion_profile_new_1() {
         let motion_profile = MotionProfile::new(
             State::new(0.0, 0.0, 0.0),
@@ -706,7 +700,6 @@ mod tests {
         assert_eq!(motion_profile.max_acc, 1.0);
     }
     #[test]
-    #[cfg(feature = "motionprofile")]
     fn motion_profile_new_2() {
         let motion_profile = MotionProfile::new(
             State::new(1.0, 0.0, 0.0),
@@ -720,7 +713,6 @@ mod tests {
         assert_eq!(motion_profile.max_acc, 1.0);
     }
     #[test]
-    #[cfg(feature = "motionprofile")]
     fn motion_profile_new_3() {
         let motion_profile = MotionProfile::new(
             State::new(0.0, 1.0, 0.0),
@@ -734,7 +726,6 @@ mod tests {
         assert_eq!(motion_profile.max_acc, 1.0);
     }
     #[test]
-    #[cfg(feature = "motionprofile")]
     fn motion_profile_new_4() {
         let motion_profile = MotionProfile::new(
             State::new(0.0, 0.0, 1.0),
@@ -748,7 +739,6 @@ mod tests {
         assert_eq!(motion_profile.max_acc, 1.0);
     }
     #[test]
-    #[cfg(feature = "motionprofile")]
     fn motion_profile_new_5() {
         let motion_profile = MotionProfile::new(
             State::new(0.0, 0.0, 0.0),
@@ -762,7 +752,6 @@ mod tests {
         assert_eq!(motion_profile.max_acc, 1.0);
     }
     #[test]
-    #[cfg(feature = "motionprofile")]
     fn motion_profile_new_6() {
         let motion_profile = MotionProfile::new(
             State::new(0.0, 0.0, 0.0),
@@ -776,7 +765,6 @@ mod tests {
         assert_eq!(motion_profile.max_acc, 2.0);
     }
     #[test]
-    #[cfg(feature = "motionprofile")]
     fn motion_profile_new_7() {
         let motion_profile = MotionProfile::new(
             State::new(0.0, 0.0, 0.0),
