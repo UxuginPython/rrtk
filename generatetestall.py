@@ -49,4 +49,4 @@ for i in features:
             if not(i in k[1] and j in k[1]):
                 new_combinations.append(k[1])
         combinations = new_combinations
-print(f'#!/bin/bash\n#Generated automatically by rrtk {version}\nset -e\n{'\n'.join(f'echo {' '.join(i)}\ncargo test --no-default-features{' --features' if len(i) > 0 else ''} {','.join(i)}' for i in combinations)}')
+print('\n'.join(i.rstrip() for i in f'#!/bin/bash\n#Generated automatically by rrtk {version}\nset -e\n{'\n'.join(f'echo {' '.join(i)}\ncargo test --no-default-features{' --features' if len(i) > 0 else ''} {','.join(i)}' for i in combinations)}'.split('\n')).strip())
