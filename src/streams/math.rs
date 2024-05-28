@@ -67,7 +67,9 @@ impl<const N: usize, E: Copy + Debug> Getter<f32, E> for SumStream<N, E> {
     }
 }
 impl<const N: usize, E: Copy + Debug> Updatable<E> for SumStream<N, E> {
-    fn update(&mut self) -> UpdateOutput<E> {Ok(())}
+    fn update(&mut self) -> UpdateOutput<E> {
+        Ok(())
+    }
 }
 pub struct DifferenceStream<E> {
     minuend: InputGetter<f32, E>,
@@ -109,7 +111,9 @@ impl<E: Copy + Debug> Getter<f32, E> for DifferenceStream<E> {
     }
 }
 impl<E: Copy + Debug> Updatable<E> for DifferenceStream<E> {
-    fn update(&mut self) -> UpdateOutput<E> {Ok(())}
+    fn update(&mut self) -> UpdateOutput<E> {
+        Ok(())
+    }
 }
 pub struct ProductStream<const N: usize, E> {
     factors: [InputGetter<f32, E>; N],
@@ -164,7 +168,9 @@ impl<const N: usize, E: Copy + Debug> Getter<f32, E> for ProductStream<N, E> {
     }
 }
 impl<const N: usize, E: Copy + Debug> Updatable<E> for ProductStream<N, E> {
-    fn update(&mut self) -> UpdateOutput<E> {Ok(())}
+    fn update(&mut self) -> UpdateOutput<E> {
+        Ok(())
+    }
 }
 pub struct QuotientStream<E> {
     dividend: InputGetter<f32, E>,
@@ -206,7 +212,9 @@ impl<E: Copy + Debug> Getter<f32, E> for QuotientStream<E> {
     }
 }
 impl<E: Copy + Debug> Updatable<E> for QuotientStream<E> {
-    fn update(&mut self) -> UpdateOutput<E> {Ok(())}
+    fn update(&mut self) -> UpdateOutput<E> {
+        Ok(())
+    }
 }
 #[cfg(feature = "std")]
 pub struct ExponentStream<E> {
@@ -252,7 +260,9 @@ impl<E: Copy + Debug> Getter<f32, E> for ExponentStream<E> {
 }
 #[cfg(feature = "std")]
 impl<E: Copy + Debug> Updatable<E> for ExponentStream<E> {
-    fn update(&mut self) -> UpdateOutput<E> {Ok(())}
+    fn update(&mut self) -> UpdateOutput<E> {
+        Ok(())
+    }
 }
 pub struct DerivativeStream<E: Copy + Debug> {
     input: InputGetter<f32, E>,

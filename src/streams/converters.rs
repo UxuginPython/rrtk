@@ -34,7 +34,9 @@ impl<T: Clone, E: Copy + Debug> Getter<T, E> for NoneToError<T, E> {
     }
 }
 impl<T: Clone, E: Copy + Debug> Updatable<E> for NoneToError<T, E> {
-    fn update(&mut self) -> UpdateOutput<E> {Ok(())}
+    fn update(&mut self) -> UpdateOutput<E> {
+        Ok(())
+    }
 }
 pub struct NoneToValue<T, E> {
     input: InputGetter<T, E>,
@@ -67,7 +69,9 @@ impl<T: Clone, E: Copy + Debug> Getter<T, E> for NoneToValue<T, E> {
     }
 }
 impl<T: Clone, E: Copy + Debug> Updatable<E> for NoneToValue<T, E> {
-    fn update(&mut self) -> UpdateOutput<E> {Ok(())}
+    fn update(&mut self) -> UpdateOutput<E> {
+        Ok(())
+    }
 }
 pub struct AccelerationToState<E: Copy + Debug> {
     acc: InputGetter<f32, E>,

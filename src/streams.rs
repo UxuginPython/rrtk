@@ -37,5 +37,7 @@ impl<T: Clone, E: Copy + Debug> Getter<T, E> for Constant<T, E> {
     }
 }
 impl<T: Clone, E: Copy + Debug> Updatable<E> for Constant<T, E> {
-    fn update(&mut self) -> UpdateOutput<E> {Ok(())}
+    fn update(&mut self) -> UpdateOutput<E> {
+        Ok(())
+    }
 }

@@ -54,3 +54,9 @@ Add moving average stream.
 - add `History` trait, which is like a `Stream` but you specify a time when you `get`
 - reorganize streams into modules
 - remove unnecessary `std` requirement for a couple types
+### 0.3.0-alpha.5
+- Move from `Stream` and the previous device system to `Getter` and `Settable`. `Getter` is like a stream or encoder and `Settable` is like a writable device.
+- Add `Device` type which makes raw `Getter`s and `Settable`s work together better as mechanical devices in a system. This should represent a physical device.
+- Add `Axle` type which contains multiple `Device` objects. It uses the capabilities of each device to control the real-life system. Eg. Data is gathered from `Getter` devices (`Device::Read` for encoders and `Device::ReadWrite` for servos) and used to control motors that do not contain their own control theory processing (`Device::ImpreciseWrite`), but motors that can do this on their own (`Device::ReadWrite` and `Device::PreciseWrite` depending on whether the internal data can be read) do not need this control. This object should represent a physical linkage between devices.
+- Don't require a feature to be enabled for PID controller types
+- Change API for PID controller types to be constructed with a k-values type rather than three individual `f32`s.

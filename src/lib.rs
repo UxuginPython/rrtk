@@ -151,7 +151,9 @@ impl<T: Clone, E: Copy + Debug> TimeGetter<E> for TimeGetterFromStream<T, E> {
     }
 }
 impl<T: Clone, E: Copy + Debug> Updatable<E> for TimeGetterFromStream<T, E> {
-    fn update(&mut self) -> Result<(), Error<E>> {Ok(())}
+    fn update(&mut self) -> Result<(), Error<E>> {
+        Ok(())
+    }
 }
 pub trait History<T: Clone, E: Copy + Debug>: Updatable<E> {
     fn get(&self, time: f32) -> Option<Datum<T>>;
@@ -173,17 +175,28 @@ pub trait Settable<S, E: Copy + Debug>: Updatable<E> {
 pub trait GetterSettable<G, S, E: Copy + Debug>: Getter<G, E> + Settable<S, E> {}
 pub enum Device<E> {
     Read(Box<dyn Getter<State, E>>),
-    ImpreciseWrite(Box<dyn Settable<f32, E>>, PositionDerivativeDependentPIDKValues),
+    ImpreciseWrite(
+        Box<dyn Settable<f32, E>>,
+        PositionDerivativeDependentPIDKValues,
+    ),
     PreciseWrite(Box<dyn Settable<Command, E>>),
     ReadWrite(Box<dyn GetterSettable<State, Command, E>>),
 }
 impl<E: Copy + Debug> Updatable<E> for Device<E> {
     fn update(&mut self) -> Result<(), Error<E>> {
         match self {
-            Self::Read(device) => {device.update()?;}
-            Self::ImpreciseWrite(device, _) => {device.update()?;}
-            Self::PreciseWrite(device) => {device.update()?;}
-            Self::ReadWrite(device) => {device.update()?;}
+            Self::Read(device) => {
+                device.update()?;
+            }
+            Self::ImpreciseWrite(device, _) => {
+                device.update()?;
+            }
+            Self::PreciseWrite(device) => {
+                device.update()?;
+            }
+            Self::ReadWrite(device) => {
+                device.update()?;
+            }
         }
         Ok(())
     }
@@ -198,7 +211,9 @@ impl<const N: usize, E: Copy + Debug> Axle<N, E> {
         let mut has_imprecise_write = false;
         for i in &devices {
             match i {
-                Device::ImpreciseWrite(_, _) => {has_imprecise_write = true;}
+                Device::ImpreciseWrite(_, _) => {
+                    has_imprecise_write = true;
+                }
                 _ => {}
             }
         }
@@ -206,7 +221,7 @@ impl<const N: usize, E: Copy + Debug> Axle<N, E> {
         Self {
             devices: devices,
             pids: [ARRAY_REPEAT_VALUE; N],
-            has_imprecise_write: has_imprecise_write
+            has_imprecise_write: has_imprecise_write,
         }
     }
 }
@@ -221,13 +236,20 @@ impl<const N: usize, E: Copy + Debug> Updatable<E> for Axle<N, E> {
         if self.has_imprecise_write {
             let state = match self.get() {
                 Ok(Some(state)) => state,
-                Ok(None) => {return Ok(());}
-                Err(error) => {return Err(error);}
+                Ok(None) => {
+                    return Ok(());
+                }
+                Err(error) => {
+                    return Err(error);
+                }
             };
             for i in 0..N {
                 match &mut self.devices[i] {
                     Device::ImpreciseWrite(device, _) => {
-                        match self.pids[i].as_mut().expect("Every ImpreciseWrite should have a Some(_) in pids") {
+                        match self.pids[i]
+                            .as_mut()
+                            .expect("Every ImpreciseWrite should have a Some(_) in pids")
+                        {
                             PositionDerivativeDependentPIDControllerShift::Position(pid) => {
                                 let new_value = pid.update(state.time, state.value.position);
                                 let _ = device.set(new_value)?;
@@ -258,34 +280,30 @@ impl<const N: usize, E: Copy + Debug> Getter<State, E> for Axle<N, E> {
         let mut valid_read_count = 0u8;
         for i in &self.devices {
             match i {
-                Device::Read(device) => {
-                    match device.get()? {
-                        Some(datum) => {
-                            if datum.time > time {
-                                time = datum.time;
-                            }
-                            pos_sum += datum.value.position;
-                            vel_sum += datum.value.velocity;
-                            acc_sum += datum.value.acceleration;
-                            valid_read_count += 1;
+                Device::Read(device) => match device.get()? {
+                    Some(datum) => {
+                        if datum.time > time {
+                            time = datum.time;
                         }
-                        None => {}
+                        pos_sum += datum.value.position;
+                        vel_sum += datum.value.velocity;
+                        acc_sum += datum.value.acceleration;
+                        valid_read_count += 1;
                     }
-                }
-                Device::ReadWrite(device) => {
-                    match device.get()? {
-                        Some(datum) => {
-                            if datum.time > time {
-                                time = datum.time;
-                            }
-                            pos_sum += datum.value.position;
-                            vel_sum += datum.value.velocity;
-                            acc_sum += datum.value.acceleration;
-                            valid_read_count += 1;
+                    None => {}
+                },
+                Device::ReadWrite(device) => match device.get()? {
+                    Some(datum) => {
+                        if datum.time > time {
+                            time = datum.time;
                         }
-                        None => {}
+                        pos_sum += datum.value.position;
+                        vel_sum += datum.value.velocity;
+                        acc_sum += datum.value.acceleration;
+                        valid_read_count += 1;
                     }
-                }
+                    None => {}
+                },
                 _ => {}
             }
         }
@@ -303,19 +321,29 @@ impl<const N: usize, E: Copy + Debug> Settable<Command, E> for Axle<N, E> {
     fn set(&mut self, value: Command) -> Result<(), Error<E>> {
         for i in 0..N {
             match &mut self.devices[i] {
-                Device::ImpreciseWrite(_, posderdepkvals) => {
-                    match value.position_derivative {
-                        PositionDerivative::Position => {
-                            self.pids[i] = Some(PositionDerivativeDependentPIDControllerShift::Position(PIDControllerShift::<1>::new(value.value, posderdepkvals.position)));
-                        }
-                        PositionDerivative::Velocity => {
-                            self.pids[i] = Some(PositionDerivativeDependentPIDControllerShift::Velocity(PIDControllerShift::<2>::new(value.value, posderdepkvals.velocity)));
-                        }
-                        PositionDerivative::Acceleration => {
-                            self.pids[i] = Some(PositionDerivativeDependentPIDControllerShift::Acceleration(PIDControllerShift::<3>::new(value.value, posderdepkvals.acceleration)));
-                        }
+                Device::ImpreciseWrite(_, posderdepkvals) => match value.position_derivative {
+                    PositionDerivative::Position => {
+                        self.pids[i] =
+                            Some(PositionDerivativeDependentPIDControllerShift::Position(
+                                PIDControllerShift::<1>::new(value.value, posderdepkvals.position),
+                            ));
                     }
-                }
+                    PositionDerivative::Velocity => {
+                        self.pids[i] =
+                            Some(PositionDerivativeDependentPIDControllerShift::Velocity(
+                                PIDControllerShift::<2>::new(value.value, posderdepkvals.velocity),
+                            ));
+                    }
+                    PositionDerivative::Acceleration => {
+                        self.pids[i] =
+                            Some(PositionDerivativeDependentPIDControllerShift::Acceleration(
+                                PIDControllerShift::<3>::new(
+                                    value.value,
+                                    posderdepkvals.acceleration,
+                                ),
+                            ));
+                    }
+                },
                 Device::PreciseWrite(device) => {
                     device.set(value)?;
                 }
@@ -505,7 +533,9 @@ impl<E: Copy + Debug> History<State, E> for MotionProfile {
 }
 #[cfg(feature = "motionprofile")]
 impl<E: Copy + Debug> Updatable<E> for MotionProfile {
-    fn update(&mut self) -> Result<(), Error<E>> {Ok(())}
+    fn update(&mut self) -> Result<(), Error<E>> {
+        Ok(())
+    }
 }
 #[cfg(feature = "motionprofile")]
 impl MotionProfile {

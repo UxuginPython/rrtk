@@ -309,7 +309,9 @@ fn sum_stream() {
         }
     }
     impl Updatable<Nothing> for NormalStream {
-        fn update(&mut self) -> UpdateOutput<Nothing> {Ok(())}
+        fn update(&mut self) -> UpdateOutput<Nothing> {
+            Ok(())
+        }
     }
     let erroring = make_input_getter!(ErroringStream::new(), f32, Nothing);
     let normal = make_input_getter!(NormalStream::new(), f32, Nothing);
@@ -522,7 +524,9 @@ fn product_stream() {
         }
     }
     impl Updatable<Nothing> for NormalStream {
-        fn update(&mut self) -> UpdateOutput<Nothing> {Ok(())}
+        fn update(&mut self) -> UpdateOutput<Nothing> {
+            Ok(())
+        }
     }
     let erroring = make_input_getter!(ErroringStream::new(), f32, Nothing);
     let normal = make_input_getter!(NormalStream::new(), f32, Nothing);
