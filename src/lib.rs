@@ -183,21 +183,21 @@ impl<G, E: Copy + Debug> GetterFromHistory<G, E> {
             time_delta: 0f32,
         }
     }
-    pub fn new_start_at_zero(history: Box<dyn History<G, E>>, time_getter: InputTimeGetter<E>) -> Self {
-        let time_delta = -time_getter.borrow().get().expect("remove this expect later");
-        Self {
+    pub fn new_start_at_zero(history: Box<dyn History<G, E>>, time_getter: InputTimeGetter<E>) -> Result<Self, Error<E>> {
+        let time_delta = -time_getter.borrow().get()?;
+        Ok(Self {
             history: history,
             time_getter: time_getter,
             time_delta: time_delta,
-        }
+        })
     }
-    pub fn new_custom_start(history: Box<dyn History<G, E>>, time_getter: InputTimeGetter<E>, start: f32) -> Self {
-        let time_delta = start - time_getter.borrow().get().expect("remove this expect later");
-        Self {
+    pub fn new_custom_start(history: Box<dyn History<G, E>>, time_getter: InputTimeGetter<E>, start: f32) -> Result<Self, Error<E>> {
+        let time_delta = start - time_getter.borrow().get()?;
+        Ok(Self {
             history: history,
             time_getter: time_getter,
             time_delta: time_delta,
-        }
+        })
     }
     pub fn new_custom_delta(history: Box<dyn History<G, E>>, time_getter: InputTimeGetter<E>, time_delta: f32) -> Self {
         Self {
@@ -208,7 +208,7 @@ impl<G, E: Copy + Debug> GetterFromHistory<G, E> {
     }
 }
 impl<E: Copy + Debug> GetterFromHistory<State, E> {
-    pub fn new_for_motion_profile(motion_profile: MotionProfile, time_getter: InputTimeGetter<E>) -> Self {
+    pub fn new_for_motion_profile(motion_profile: MotionProfile, time_getter: InputTimeGetter<E>) -> Result<Self, Error<E>> {
         Self::new_start_at_zero(Box::new(motion_profile) as Box<dyn History<State, E>>, time_getter)
     }
 }
