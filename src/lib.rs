@@ -241,6 +241,26 @@ pub trait Follower<S, E: Copy + Debug>: Settable<S, E> {
         let data = self.get_follower_data_mut();
         *data = FollowerData::Idle;
     }
+    fn following_update(&mut self) -> UpdateOutput<E> {
+        let data = self.get_follower_data_mut();
+        match data {
+            FollowerData::Idle => {},
+            FollowerData::Following(getter) => {
+                let new_value = getter.borrow().get()?;
+                match new_value {
+                    None => {
+                        self.update()?;
+                        return Ok(());
+                    }
+                    Some(datum) => {
+                        self.set(datum.value)?;
+                    }
+                }
+            }
+        }
+        self.update()?;
+        Ok(())
+    }
 }
 pub trait GetterSettable<G, S, E: Copy + Debug>: Getter<G, E> + Settable<S, E> {}
 pub enum Device<E> {
