@@ -172,6 +172,48 @@ pub trait Getter<G, E: Copy + Debug>: Updatable<E> {
 pub trait Settable<S, E: Copy + Debug>: Updatable<E> {
     fn set(&mut self, value: S) -> Result<(), Error<E>>;
 }
+pub struct GetterFromHistory<G, E: Copy + Debug> {
+    history: Box<dyn History<G, E>>,
+    time_getter: InputTimeGetter<E>,
+}
+impl<G, E: Copy + Debug> GetterFromHistory<G, E> {
+    pub fn new(history: Box<dyn History<G, E>>, time_getter: InputTimeGetter<E>) -> Self {
+        Self {
+            history: history,
+            time_getter: time_getter,
+        }
+    }
+}
+impl<G, E: Copy + Debug> Updatable<E> for GetterFromHistory<G, E> {
+    fn update(&mut self) -> UpdateOutput<E> {
+        self.history.update()?;
+        self.time_getter.borrow_mut().update()?;
+        Ok(())
+    }
+}
+impl<G: Clone, E: Copy + Debug> Getter<G, E> for GetterFromHistory<G, E> {
+    fn get(&self) -> Output<G, E> {
+        Ok(self.history.get(self.time_getter.borrow().get()?))
+    }
+}
+pub enum FollowerData<S, E: Copy + Debug> {
+    Idle,
+    Following(InputGetter<S, E>),
+}
+pub trait Follower<S, E: Copy + Debug>: Settable<S, E> {
+    fn get_follower_data_ref(&self) -> &FollowerData<S, E>;
+    fn get_follower_data_mut(&mut self) -> &mut FollowerData<S, E>;
+    ///Begin following a `Getter` of the same type.
+    fn follow(&mut self, getter: InputGetter<S, E>) {
+        let data = self.get_follower_data_mut();
+        *data = FollowerData::Following(getter);
+    }
+    ///Stop following the `Getter`.
+    fn stop_following(&mut self) {
+        let data = self.get_follower_data_mut();
+        *data = FollowerData::Idle;
+    }
+}
 pub trait GetterSettable<G, S, E: Copy + Debug>: Getter<G, E> + Settable<S, E> {}
 pub enum Device<E> {
     Read(Box<dyn Getter<State, E>>),
