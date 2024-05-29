@@ -183,7 +183,10 @@ impl<G, E: Copy + Debug> GetterFromHistory<G, E> {
             time_delta: 0f32,
         }
     }
-    pub fn new_start_at_zero(history: Box<dyn History<G, E>>, time_getter: InputTimeGetter<E>) -> Result<Self, Error<E>> {
+    pub fn new_start_at_zero(
+        history: Box<dyn History<G, E>>,
+        time_getter: InputTimeGetter<E>,
+    ) -> Result<Self, Error<E>> {
         let time_delta = -time_getter.borrow().get()?;
         Ok(Self {
             history: history,
@@ -191,7 +194,11 @@ impl<G, E: Copy + Debug> GetterFromHistory<G, E> {
             time_delta: time_delta,
         })
     }
-    pub fn new_custom_start(history: Box<dyn History<G, E>>, time_getter: InputTimeGetter<E>, start: f32) -> Result<Self, Error<E>> {
+    pub fn new_custom_start(
+        history: Box<dyn History<G, E>>,
+        time_getter: InputTimeGetter<E>,
+        start: f32,
+    ) -> Result<Self, Error<E>> {
         let time_delta = start - time_getter.borrow().get()?;
         Ok(Self {
             history: history,
@@ -199,7 +206,11 @@ impl<G, E: Copy + Debug> GetterFromHistory<G, E> {
             time_delta: time_delta,
         })
     }
-    pub fn new_custom_delta(history: Box<dyn History<G, E>>, time_getter: InputTimeGetter<E>, time_delta: f32) -> Self {
+    pub fn new_custom_delta(
+        history: Box<dyn History<G, E>>,
+        time_getter: InputTimeGetter<E>,
+        time_delta: f32,
+    ) -> Self {
         Self {
             history: history,
             time_getter: time_getter,
@@ -208,8 +219,14 @@ impl<G, E: Copy + Debug> GetterFromHistory<G, E> {
     }
 }
 impl<E: Copy + Debug> GetterFromHistory<State, E> {
-    pub fn new_for_motion_profile(motion_profile: MotionProfile, time_getter: InputTimeGetter<E>) -> Result<Self, Error<E>> {
-        Self::new_start_at_zero(Box::new(motion_profile) as Box<dyn History<State, E>>, time_getter)
+    pub fn new_for_motion_profile(
+        motion_profile: MotionProfile,
+        time_getter: InputTimeGetter<E>,
+    ) -> Result<Self, Error<E>> {
+        Self::new_start_at_zero(
+            Box::new(motion_profile) as Box<dyn History<State, E>>,
+            time_getter,
+        )
     }
 }
 impl<G, E: Copy + Debug> Updatable<E> for GetterFromHistory<G, E> {
@@ -221,7 +238,9 @@ impl<G, E: Copy + Debug> Updatable<E> for GetterFromHistory<G, E> {
 }
 impl<G: Clone, E: Copy + Debug> Getter<G, E> for GetterFromHistory<G, E> {
     fn get(&self) -> Output<G, E> {
-        Ok(self.history.get(self.time_getter.borrow().get()? + self.time_delta))
+        Ok(self
+            .history
+            .get(self.time_getter.borrow().get()? + self.time_delta))
     }
 }
 pub enum FollowerData<S, E: Copy + Debug> {
@@ -244,7 +263,7 @@ pub trait Follower<S, E: Copy + Debug>: Settable<S, E> {
     fn following_update(&mut self) -> UpdateOutput<E> {
         let data = self.get_follower_data_mut();
         match data {
-            FollowerData::Idle => {},
+            FollowerData::Idle => {}
             FollowerData::Following(getter) => {
                 let new_value = getter.borrow().get()?;
                 match new_value {

@@ -60,3 +60,7 @@ Add moving average stream.
 - Add `Axle` type which contains multiple `Device` objects. It uses the capabilities of each device to control the real-life system. Eg. Data is gathered from `Getter` devices (`Device::Read` for encoders and `Device::ReadWrite` for servos) and used to control motors that do not contain their own control theory processing (`Device::ImpreciseWrite`), but motors that can do this on their own (`Device::ReadWrite` and `Device::PreciseWrite` depending on whether the internal data can be read) do not need this control. This object should represent a physical linkage between devices.
 - Don't require a feature to be enabled for PID controller types
 - Change API for PID controller types to be constructed with a k-values type rather than three individual `f32`s.
+### 0.3.0-beta.1
+- Don't require a feature to be enabled for motion profiles.
+- Add `Follower` trait allowing `Settable`s to follow `Getter`s of the same type.
+- Add `GetterFromHistory` struct allowing `History` objects to be used as `Getter`s.
