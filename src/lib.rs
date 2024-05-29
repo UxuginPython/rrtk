@@ -193,7 +193,7 @@ pub trait Settable<S, E: Copy + Debug>: Updatable<E> {
     fn following_update(&mut self) -> UpdateOutput<E> {
         let data = self.get_settable_data_mut();
         match data {
-            SettableData::Idle => {},
+            SettableData::Idle => {}
             SettableData::Following(getter) => {
                 let new_value = getter.borrow().get()?;
                 match new_value {

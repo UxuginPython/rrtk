@@ -62,5 +62,5 @@ Add moving average stream.
 - Change API for PID controller types to be constructed with a k-values type rather than three individual `f32`s.
 ### 0.3.0-beta.1
 - Don't require a feature to be enabled for motion profiles.
-- Add `Follower` trait allowing `Settable`s to follow `Getter`s of the same type.
+- Make `Settable` able to follow `Getter`s of the same type.
 - Add `GetterFromHistory` struct allowing `History` objects to be used as `Getter`s.
