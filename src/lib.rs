@@ -207,6 +207,11 @@ impl<G, E: Copy + Debug> GetterFromHistory<G, E> {
         }
     }
 }
+impl<E: Copy + Debug> GetterFromHistory<State, E> {
+    pub fn new_for_motion_profile(motion_profile: MotionProfile, time_getter: InputTimeGetter<E>) -> Self {
+        Self::new_start_at_zero(Box::new(motion_profile) as Box<dyn History<State, E>>, time_getter)
+    }
+}
 impl<G, E: Copy + Debug> Updatable<E> for GetterFromHistory<G, E> {
     fn update(&mut self) -> UpdateOutput<E> {
         self.history.update()?;
