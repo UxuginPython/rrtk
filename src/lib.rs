@@ -30,19 +30,27 @@ use core::cell::RefCell;
 #[cfg(not(feature = "std"))]
 use core::fmt::Debug;
 pub mod streams;
+///RRTK follows the enum style of error handling. This is the error type returned from nearly all
+///RRTK types, but you can add your own custom error type using `Other(O)`. It is strongly
+///recommended that you use a single `O` type across your crate.
 #[derive(Clone, Copy, Debug)]
 pub enum Error<O: Copy + Debug> {
     ///Returned when a `None` is elevated to an error by a `NoneToError`.
     FromNone,
     ///Returned when a `TimeGetterFromStream`'s `Stream` doesn't return `Ok(Some(_))`.
     StreamNotSome,
+    ///A custom error of a user-defined type. Not created by any RRTK type but can be propagated by
+    ///them.
     Other(O),
 }
 ///A one-dimensional motion state with position, velocity, and acceleration.
 #[derive(Clone)]
 pub struct State {
+    ///Where you are.
     pub position: f32,
+    ///How fast you're going.
     pub velocity: f32,
+    ///How fast how fast you're going's changing.
     pub acceleration: f32,
 }
 impl State {
@@ -80,7 +88,9 @@ impl State {
 ///A container for a time and something else, usually an `f32` or a `State`.
 #[derive(Clone, Debug)]
 pub struct Datum<T> {
+    ///Timestamp for the datum. This should probably be absolute.
     pub time: f32,
+    ///The thing with the timestamp.
     pub value: T,
 }
 impl<T> Datum<T> {
@@ -92,19 +102,28 @@ impl<T> Datum<T> {
         }
     }
 }
+///A derivative of position: position, velocity, or acceleration.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum PositionDerivative {
+    ///Where you are.
     Position,
+    ///How fast you're going.
     Velocity,
+    ///How fast how fast you're going's changing.
     Acceleration,
 }
+///Coefficients for a PID controller.
 #[derive(Clone, Copy)]
 pub struct PIDKValues {
+    ///Proportional coefficient.
     pub kp: f32,
+    ///Integral coefficient.
     pub ki: f32,
+    ///Derivative coefficient.
     pub kd: f32,
 }
 impl PIDKValues {
+    ///Constructor for `PIDKValues`.
     pub fn new(kp: f32, ki: f32, kd: f32) -> Self {
         Self {
             kp: kp,
@@ -113,28 +132,44 @@ impl PIDKValues {
         }
     }
 }
+///A set of PID k-values for controlling each position derivative.
 pub struct PositionDerivativeDependentPIDKValues {
+    ///Use these k-values when controlling position.
     pub position: PIDKValues,
+    ///Use these k-values when controlling velocity.
     pub velocity: PIDKValues,
+    ///Use these k-values when controlling acceleration.
     pub acceleration: PIDKValues,
 }
+///A container for `PIDControllerShift` objects with different k-values and "shifts."
 enum PositionDerivativeDependentPIDControllerShift {
     Position(PIDControllerShift<1>),
     Velocity(PIDControllerShift<2>),
     Acceleration(PIDControllerShift<3>),
 }
+///A generic output type when something may return an error, nothing, or something with a
+///timestamp.
 pub type Output<T, E> = Result<Option<Datum<T>>, Error<E>>;
+///Returned from `TimeGetter` objects, which may return either a time or an error.
 pub type TimeOutput<E> = Result<f32, Error<E>>;
+///Makes `Getter`s easier to work with by containing them in in `Rc<RefCell<Box<_>>>`.
 pub type InputGetter<T, E> = Rc<RefCell<Box<dyn Getter<T, E>>>>;
+///See `InputGetter`. This does the same thing but for `TimeGetter`s.
 pub type InputTimeGetter<E> = Rc<RefCell<Box<dyn TimeGetter<E>>>>;
+///Returned when something may return either nothing or an error.
 pub type UpdateOutput<E> = Result<(), Error<E>>;
+///An object for getting the absolute time.
 pub trait TimeGetter<E: Copy + Debug>: Updatable<E> {
+    ///Get the time.
     fn get(&self) -> TimeOutput<E>;
 }
+///Because `Stream`s always return a timestamp (as long as they don't return `Err(_)` or
+///`Ok(None)`), we can use this to treat them like `TimeGetter`s.
 pub struct TimeGetterFromStream<T: Clone, E> {
     elevator: streams::converters::NoneToError<T, E>,
 }
 impl<T: Clone, E> TimeGetterFromStream<T, E> {
+    ///Constructor for `TimeGetterFromStream`.
     pub fn new(stream: Rc<RefCell<Box<dyn Getter<T, E>>>>) -> Self {
         Self {
             elevator: streams::converters::NoneToError::new(Rc::clone(&stream)),
@@ -153,32 +188,56 @@ impl<T: Clone, E: Copy + Debug> Updatable<E> for TimeGetterFromStream<T, E> {
         Ok(())
     }
 }
+///An object that can return a value, like a `Getter`, for a given time.
 pub trait History<T: Clone, E: Copy + Debug>: Updatable<E> {
+    ///Get a value at a time.
     fn get(&self, time: f32) -> Option<Datum<T>>;
 }
+///A command for a motor to perform: go to a position, run at a velocity, or accelerate at a rate.
 #[derive(Clone, Copy)]
 pub struct Command {
+    ///Controls whether you go to a position, run at a velocity, or accelerate at a rate.
     pub position_derivative: PositionDerivative,
+    ///The position, velocity, or acceleration rate.
     pub value: f32,
 }
+///Something with an `update` method. Mostly for subtraiting.
 pub trait Updatable<E: Copy + Debug> {
+    ///As this trait is very generic, exactly what this does will be very dependent on the
+    ///implementor.
     fn update(&mut self) -> Result<(), Error<E>>;
 }
+///Something with a `get` method. Structs implementing this will often be chained for easier data
+///processing, with a struct having other implementors in fields which will have some operation
+///performed on their output before it being passed on. The other common use for this trait is
+///encoders, which will later be put in a `Device::Read`.
 pub trait Getter<G, E: Copy + Debug>: Updatable<E> {
+    ///Get something.
     fn get(&self) -> Output<G, E>;
 }
+///Internal data needed for following a `Getter` with a `Settable`. You should probably treat this like a black box.
 pub enum SettableData<S, E: Copy + Debug> {
     Idle,
     Following(InputGetter<S, E>),
 }
 impl<S, E: Copy + Debug> SettableData<S, E> {
+    ///Constructor for `SettableData`.
     pub fn new() -> Self {
         Self::Idle
     }
 }
+///Something with a `set` method. Usually used for motors and other mechanical components and
+///systems. This trait too is fairly broad.
 pub trait Settable<S, E: Copy + Debug>: Updatable<E> {
+    ///Set something.
     fn set(&mut self, value: S) -> Result<(), Error<E>>;
+    ///As traits cannot have fields, get functions and separate types are required. All you have to
+    ///do is make a field for a corresponding `SettableData` and make this return an immutable
+    ///reference to it.
     fn get_settable_data_ref(&self) -> &SettableData<S, E>;
+    ///As traits cannot have fields, get functions and separate types are required. All you have to
+    ///do is make a field for a corresponding `SettableData` and make this return a mutable
+    ///reference to it.
     fn get_settable_data_mut(&mut self) -> &mut SettableData<S, E>;
     ///Begin following a `Getter` of the same type.
     fn follow(&mut self, getter: InputGetter<S, E>) {
@@ -190,6 +249,9 @@ pub trait Settable<S, E: Copy + Debug>: Updatable<E> {
         let data = self.get_settable_data_mut();
         *data = SettableData::Idle;
     }
+    ///Get a new value from the `Getter` we're following and update ourselves accordingly. Note
+    ///that will call `self.update` regardless if we're following a `Getter`, so you can call with
+    ///in lieu of the standard `update` if you're following stuff.
     fn following_update(&mut self) -> UpdateOutput<E> {
         let data = self.get_settable_data_mut();
         match data {
@@ -211,12 +273,16 @@ pub trait Settable<S, E: Copy + Debug>: Updatable<E> {
         Ok(())
     }
 }
+///As histories return values at times, we can ask them to return values at the time of now or now
+///with a delta. This makes that much easier and is the recommended way of following
+///`MotionProfile`s.
 pub struct GetterFromHistory<G, E: Copy + Debug> {
     history: Box<dyn History<G, E>>,
     time_getter: InputTimeGetter<E>,
     time_delta: f32,
 }
 impl<G, E: Copy + Debug> GetterFromHistory<G, E> {
+    ///Constructor such that the time in the request will be exactly that returned from the `TimeGetter` with no delta.
     pub fn new_no_delta(history: Box<dyn History<G, E>>, time_getter: InputTimeGetter<E>) -> Self {
         Self {
             history: history,
@@ -224,6 +290,8 @@ impl<G, E: Copy + Debug> GetterFromHistory<G, E> {
             time_delta: 0f32,
         }
     }
+    ///Constructor such that the times requested from the `History` will begin at zero where zero
+    ///is defined as the moment of construction.
     pub fn new_start_at_zero(
         history: Box<dyn History<G, E>>,
         time_getter: InputTimeGetter<E>,
@@ -235,6 +303,8 @@ impl<G, E: Copy + Debug> GetterFromHistory<G, E> {
             time_delta: time_delta,
         })
     }
+    ///Constructor such that the times requested from the `History` will start at a given time with
+    ///that time defined as the moment of construction.
     pub fn new_custom_start(
         history: Box<dyn History<G, E>>,
         time_getter: InputTimeGetter<E>,
@@ -247,6 +317,7 @@ impl<G, E: Copy + Debug> GetterFromHistory<G, E> {
             time_delta: time_delta,
         })
     }
+    ///Constructor with a custom time delta.
     pub fn new_custom_delta(
         history: Box<dyn History<G, E>>,
         time_getter: InputTimeGetter<E>,
@@ -260,6 +331,7 @@ impl<G, E: Copy + Debug> GetterFromHistory<G, E> {
     }
 }
 impl<E: Copy + Debug> GetterFromHistory<State, E> {
+    ///Shortcut to make following motion profiles easier. Calls `new_start_at_zero` internally.
     pub fn new_for_motion_profile(
         motion_profile: MotionProfile,
         time_getter: InputTimeGetter<E>,
@@ -284,14 +356,21 @@ impl<G: Clone, E: Copy + Debug> Getter<G, E> for GetterFromHistory<G, E> {
             .get(self.time_getter.borrow().get()? + self.time_delta))
     }
 }
+///Solely for subtraiting. Allows you to require that a type implements both `Getter` and
+///`Settable` with a single trait. No methods and does nothing on its own.
 pub trait GetterSettable<G, S, E: Copy + Debug>: Getter<G, E> + Settable<S, E> {}
+///A motor or encoder on an axle.
 pub enum Device<E> {
+    ///An encoder.
     Read(Box<dyn Getter<State, E>>),
+    ///A standard DC motor with no internal sensors or control theory.
     ImpreciseWrite(
         Box<dyn Settable<f32, E>>,
         PositionDerivativeDependentPIDKValues,
     ),
+    ///A servo motor doing its own control theory and not returning sensor data.
     PreciseWrite(Box<dyn Settable<Command, E>>),
+    ///A servo motor doing its own control theory that does return sensor data.
     ReadWrite(Box<dyn GetterSettable<State, Command, E>>),
 }
 impl<E: Copy + Debug> Updatable<E> for Device<E> {
@@ -313,6 +392,7 @@ impl<E: Copy + Debug> Updatable<E> for Device<E> {
         Ok(())
     }
 }
+///A physical direct linkage. Manages devices connected together.
 pub struct Axle<const N: usize, E: Copy + Debug> {
     settable_data: SettableData<Command, E>,
     devices: [Device<E>; N],
@@ -320,6 +400,7 @@ pub struct Axle<const N: usize, E: Copy + Debug> {
     has_imprecise_write: bool,
 }
 impl<const N: usize, E: Copy + Debug> Axle<N, E> {
+    ///Constructor for `Axle`.
     pub fn new(devices: [Device<E>; N]) -> Self {
         let mut has_imprecise_write = false;
         for i in &devices {
@@ -476,6 +557,7 @@ impl<const N: usize, E: Copy + Debug> Settable<Command, E> for Axle<N, E> {
         Ok(())
     }
 }
+///A fast way to turn anything implementing `Getter` into an `InputGetter`.
 #[macro_export]
 macro_rules! make_input_getter {
     ($stream:expr, $ttype:tt, $etype:tt) => {
@@ -484,6 +566,7 @@ macro_rules! make_input_getter {
         ))
     };
 }
+///A fast way to turn anything implementing `TimeGetter` into an `InputTimeGetter`.
 #[macro_export]
 macro_rules! make_input_time_getter {
     ($time_getter:expr, $etype:tt) => {
@@ -610,10 +693,15 @@ fn my_abs_f32(num: f32) -> f32 {
 }
 ///Where you are in following a motion profile.
 pub enum MotionProfilePiece {
+    ///You have not yet started the motion profile.
     BeforeStart,
+    ///You are changing velocity at the beginning.
     InitialAcceleration,
+    ///You are moving at a constant speed.
     ConstantVelocity,
+    ///You are changing velocity at the end.
     EndAcceleration,
+    ///You are done with the motion profile.
     Complete,
 }
 ///A motion profile for getting from one state to another.
