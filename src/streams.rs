@@ -18,22 +18,37 @@ use std::collections::vec_deque::VecDeque;
 pub mod control;
 pub mod converters;
 pub mod math;
-pub struct Constant<T, E> {
+pub struct Constant<T, E: Copy + Debug> {
+    settable_data: SettableData<T, E>,
     time_getter: InputTimeGetter<E>,
     value: T,
 }
-impl<T, E> Constant<T, E> {
+impl<T, E: Copy + Debug> Constant<T, E> {
     pub fn new(time_getter: InputTimeGetter<E>, value: T) -> Self {
         Self {
+            settable_data: SettableData::new(),
             time_getter: time_getter,
             value: value,
         }
     }
 }
+impl<T: Clone, E: Copy + Debug> GetterSettable<T, T, E> for Constant<T, E> {}
 impl<T: Clone, E: Copy + Debug> Getter<T, E> for Constant<T, E> {
     fn get(&self) -> Output<T, E> {
         let time = self.time_getter.borrow().get()?;
         Ok(Some(Datum::new(time, self.value.clone())))
+    }
+}
+impl<T: Clone, E: Copy + Debug> Settable<T, E> for Constant<T, E> {
+    fn get_settable_data_ref(&self) -> &SettableData<T, E> {
+        &self.settable_data
+    }
+    fn get_settable_data_mut(&mut self) -> &mut SettableData<T, E> {
+        &mut self.settable_data
+    }
+    fn set(&mut self, value: T) -> Result<(), Error<E>> {
+        self.value = value;
+        Ok(())
     }
 }
 impl<T: Clone, E: Copy + Debug> Updatable<E> for Constant<T, E> {

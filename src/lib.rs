@@ -330,12 +330,12 @@ impl<G, E: Copy + Debug> GetterFromHistory<G, E> {
         }
     }
     ///Set the time delta.
-    fn set_delta(&mut self, time_delta: f32) {
+    pub fn set_delta(&mut self, time_delta: f32) {
         self.time_delta = time_delta;
     }
     ///Define now as a given time in the history. Mostly used when construction and use are far
     ///apart in time.
-    fn set_time(&mut self, time: f32) -> Result<(), Error<E>> {
+    pub fn set_time(&mut self, time: f32) -> Result<(), Error<E>> {
         let time_delta = time - self.time_getter.borrow().get()?;
         self.time_delta = time_delta;
         Ok(())
