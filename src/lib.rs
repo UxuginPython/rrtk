@@ -329,6 +329,17 @@ impl<G, E: Copy + Debug> GetterFromHistory<G, E> {
             time_delta: time_delta,
         }
     }
+    ///Set the time delta.
+    fn set_delta(&mut self, time_delta: f32) {
+        self.time_delta = time_delta;
+    }
+    ///Define now as a given time in the history. Mostly used when construction and use are far
+    ///apart in time.
+    fn set_time(&mut self, time: f32) -> Result<(), Error<E>> {
+        let time_delta = time - self.time_getter.borrow().get()?;
+        self.time_delta = time_delta;
+        Ok(())
+    }
 }
 impl<E: Copy + Debug> GetterFromHistory<State, E> {
     ///Shortcut to make following motion profiles easier. Calls `new_start_at_zero` internally.
