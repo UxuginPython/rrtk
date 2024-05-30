@@ -29,7 +29,7 @@ use alloc::vec::Vec;
 use core::cell::RefCell;
 #[cfg(not(feature = "std"))]
 use core::fmt::Debug;
-pub mod streams;
+pub mod getters;
 ///RRTK follows the enum style of error handling. This is the error type returned from nearly all
 ///RRTK types, but you can add your own custom error type using `Other(O)`. It is strongly
 ///recommended that you use a single `O` type across your crate.
@@ -37,8 +37,8 @@ pub mod streams;
 pub enum Error<O: Copy + Debug> {
     ///Returned when a `None` is elevated to an error by a `NoneToError`.
     FromNone,
-    ///Returned when a `TimeGetterFromStream`'s `Stream` doesn't return `Ok(Some(_))`.
-    StreamNotSome,
+    ///Returned when a `TimeGetterFromGetter`'s `Getter` doesn't return `Ok(Some(_))`.
+    GetterNotSome,
     ///A custom error of a user-defined type. Not created by any RRTK type but can be propagated by
     ///them.
     Other(O),
@@ -163,27 +163,27 @@ pub trait TimeGetter<E: Copy + Debug>: Updatable<E> {
     ///Get the time.
     fn get(&self) -> TimeOutput<E>;
 }
-///Because `Stream`s always return a timestamp (as long as they don't return `Err(_)` or
+///Because `Getter`s always return a timestamp (as long as they don't return `Err(_)` or
 ///`Ok(None)`), we can use this to treat them like `TimeGetter`s.
-pub struct TimeGetterFromStream<T: Clone, E> {
-    elevator: streams::converters::NoneToError<T, E>,
+pub struct TimeGetterFromGetter<T: Clone, E> {
+    elevator: getters::converters::NoneToError<T, E>,
 }
-impl<T: Clone, E> TimeGetterFromStream<T, E> {
-    ///Constructor for `TimeGetterFromStream`.
-    pub fn new(stream: Rc<RefCell<Box<dyn Getter<T, E>>>>) -> Self {
+impl<T: Clone, E> TimeGetterFromGetter<T, E> {
+    ///Constructor for `TimeGetterFromGetter`.
+    pub fn new(getter: Rc<RefCell<Box<dyn Getter<T, E>>>>) -> Self {
         Self {
-            elevator: streams::converters::NoneToError::new(Rc::clone(&stream)),
+            elevator: getters::converters::NoneToError::new(Rc::clone(&getter)),
         }
     }
 }
-impl<T: Clone, E: Copy + Debug> TimeGetter<E> for TimeGetterFromStream<T, E> {
+impl<T: Clone, E: Copy + Debug> TimeGetter<E> for TimeGetterFromGetter<T, E> {
     fn get(&self) -> Result<f32, Error<E>> {
         let output = self.elevator.get()?;
         let output = output.expect("`NoneToError` made all `Ok(None)`s into `Err(_)`s, and `?` returned all `Err(_)`s, so we're sure this is now an `Ok(Some(_))`.");
         return Ok(output.time);
     }
 }
-impl<T: Clone, E: Copy + Debug> Updatable<E> for TimeGetterFromStream<T, E> {
+impl<T: Clone, E: Copy + Debug> Updatable<E> for TimeGetterFromGetter<T, E> {
     fn update(&mut self) -> Result<(), Error<E>> {
         Ok(())
     }
@@ -571,9 +571,9 @@ impl<const N: usize, E: Copy + Debug> Settable<Command, E> for Axle<N, E> {
 ///A fast way to turn anything implementing `Getter` into an `InputGetter`.
 #[macro_export]
 macro_rules! make_input_getter {
-    ($stream:expr, $ttype:tt, $etype:tt) => {
+    ($getter:expr, $ttype:tt, $etype:tt) => {
         Rc::new(RefCell::new(
-            Box::new($stream) as Box<dyn Getter<$ttype, $etype>>
+            Box::new($getter) as Box<dyn Getter<$ttype, $etype>>
         ))
     };
 }

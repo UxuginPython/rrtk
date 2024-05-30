@@ -10,8 +10,8 @@ Copyright 2024 UxuginPython on GitHub
 
     You should have received a copy of the GNU Lesser General Public License along with Rust Robotics ToolKit. If not, see <https://www.gnu.org/licenses/>.
 */
-use crate::streams::math::*;
-use crate::streams::*;
+use crate::getters::math::*;
+use crate::getters::*;
 pub struct NoneToError<T: Clone, E> {
     input: InputGetter<T, E>,
 }
@@ -80,8 +80,8 @@ pub struct AccelerationToState<E: Copy + Debug> {
 }
 impl<E: Copy + Debug + 'static> AccelerationToState<E> {
     pub fn new(acc: InputGetter<f32, E>) -> Self {
-        let vel = make_input_getter!(IntegralStream::new(Rc::clone(&acc)), f32, E);
-        let pos = make_input_getter!(IntegralStream::new(Rc::clone(&vel)), f32, E);
+        let vel = make_input_getter!(IntegralGetter::new(Rc::clone(&acc)), f32, E);
+        let pos = make_input_getter!(IntegralGetter::new(Rc::clone(&vel)), f32, E);
         Self {
             acc: acc,
             vel: vel,
@@ -142,8 +142,8 @@ pub struct VelocityToState<E: Copy + Debug> {
 }
 impl<E: Copy + Debug + 'static> VelocityToState<E> {
     pub fn new(vel: InputGetter<f32, E>) -> Self {
-        let acc = make_input_getter!(DerivativeStream::new(Rc::clone(&vel)), f32, E);
-        let pos = make_input_getter!(IntegralStream::new(Rc::clone(&vel)), f32, E);
+        let acc = make_input_getter!(DerivativeGetter::new(Rc::clone(&vel)), f32, E);
+        let pos = make_input_getter!(IntegralGetter::new(Rc::clone(&vel)), f32, E);
         Self {
             acc: acc,
             vel: vel,
@@ -197,15 +197,15 @@ impl<E: Copy + Debug> Updatable<E> for VelocityToState<E> {
         Ok(())
     }
 }
-pub struct PositionToStream<E: Copy + Debug> {
+pub struct PositionToGetter<E: Copy + Debug> {
     acc: InputGetter<f32, E>,
     vel: InputGetter<f32, E>,
     pos: InputGetter<f32, E>,
 }
-impl<E: Copy + Debug + 'static> PositionToStream<E> {
+impl<E: Copy + Debug + 'static> PositionToGetter<E> {
     pub fn new(pos: InputGetter<f32, E>) -> Self {
-        let vel = make_input_getter!(DerivativeStream::new(Rc::clone(&pos)), f32, E);
-        let acc = make_input_getter!(DerivativeStream::new(Rc::clone(&vel)), f32, E);
+        let vel = make_input_getter!(DerivativeGetter::new(Rc::clone(&pos)), f32, E);
+        let acc = make_input_getter!(DerivativeGetter::new(Rc::clone(&vel)), f32, E);
         Self {
             acc: acc,
             vel: vel,
@@ -213,7 +213,7 @@ impl<E: Copy + Debug + 'static> PositionToStream<E> {
         }
     }
 }
-impl<E: Copy + Debug> Getter<State, E> for PositionToStream<E> {
+impl<E: Copy + Debug> Getter<State, E> for PositionToGetter<E> {
     fn get(&self) -> Output<State, E> {
         let acc = self.acc.borrow().get()?;
         let vel = self.vel.borrow().get()?;
@@ -252,7 +252,7 @@ impl<E: Copy + Debug> Getter<State, E> for PositionToStream<E> {
         )))
     }
 }
-impl<E: Copy + Debug> Updatable<E> for PositionToStream<E> {
+impl<E: Copy + Debug> Updatable<E> for PositionToGetter<E> {
     fn update(&mut self) -> UpdateOutput<E> {
         self.vel.borrow_mut().update()?;
         self.acc.borrow_mut().update()?;
