@@ -10,29 +10,29 @@ Copyright 2024 UxuginPython on GitHub
 
     You should have received a copy of the GNU Lesser General Public License along with Rust Robotics ToolKit. If not, see <https://www.gnu.org/licenses/>.
 */
-use crate::getters::converters::*;
-use crate::getters::math::*;
-use crate::getters::*;
-pub struct GetterPID<E: Copy + Debug> {
+use crate::streams::converters::*;
+use crate::streams::math::*;
+use crate::streams::*;
+pub struct StreamPID<E: Copy + Debug> {
     int: InputGetter<f32, E>,
     drv: InputGetter<f32, E>,
-    output: SumGetter<3, E>,
+    output: SumStream<3, E>,
 }
-impl<E: Copy + Debug + 'static> GetterPID<E> {
+impl<E: Copy + Debug + 'static> StreamPID<E> {
     pub fn new(input: InputGetter<f32, E>, setpoint: f32, kp: f32, ki: f32, kd: f32) -> Self {
-        let time_getter = make_input_time_getter!(TimeGetterFromGetter::new(Rc::clone(&input)), E);
+        let time_getter = make_input_time_getter!(TimeGetterFromStream::new(Rc::clone(&input)), E);
         let setpoint = make_input_getter!(Constant::new(Rc::clone(&time_getter), setpoint), f32, E);
         let kp = make_input_getter!(Constant::new(Rc::clone(&time_getter), kp), f32, E);
         let ki = make_input_getter!(Constant::new(Rc::clone(&time_getter), ki), f32, E);
         let kd = make_input_getter!(Constant::new(Rc::clone(&time_getter), kd), f32, E);
         let error = make_input_getter!(
-            DifferenceGetter::new(Rc::clone(&setpoint), Rc::clone(&input)),
+            DifferenceStream::new(Rc::clone(&setpoint), Rc::clone(&input)),
             f32,
             E
         );
-        let int = make_input_getter!(IntegralGetter::new(Rc::clone(&error)), f32, E);
-        let drv = make_input_getter!(DerivativeGetter::new(Rc::clone(&error)), f32, E);
-        //`ProductGetter`'s behavior is to treat all `None` values as 1.0 so that it's as if they
+        let int = make_input_getter!(IntegralStream::new(Rc::clone(&error)), f32, E);
+        let drv = make_input_getter!(DerivativeStream::new(Rc::clone(&error)), f32, E);
+        //`ProductStream`'s behavior is to treat all `None` values as 1.0 so that it's as if they
         //were not included. However, this is not what we want with the coefficient. `NoneToValue`
         //is used to convert all `None` values to `Some(0.0)` to effectively exlude them from the
         //final sum.
@@ -47,21 +47,21 @@ impl<E: Copy + Debug + 'static> GetterPID<E> {
             E
         );
         let kp_mul = make_input_getter!(
-            ProductGetter::new([Rc::clone(&kp), Rc::clone(&error)]),
+            ProductStream::new([Rc::clone(&kp), Rc::clone(&error)]),
             f32,
             E
         );
         let ki_mul = make_input_getter!(
-            ProductGetter::new([Rc::clone(&ki), Rc::clone(&int_zeroer)]),
+            ProductStream::new([Rc::clone(&ki), Rc::clone(&int_zeroer)]),
             f32,
             E
         );
         let kd_mul = make_input_getter!(
-            ProductGetter::new([Rc::clone(&kd), Rc::clone(&drv_zeroer)]),
+            ProductStream::new([Rc::clone(&kd), Rc::clone(&drv_zeroer)]),
             f32,
             E
         );
-        let output = SumGetter::new([Rc::clone(&kp_mul), Rc::clone(&ki_mul), Rc::clone(&kd_mul)]);
+        let output = SumStream::new([Rc::clone(&kp_mul), Rc::clone(&ki_mul), Rc::clone(&kd_mul)]);
         Self {
             int: Rc::clone(&int),
             drv: Rc::clone(&drv),
@@ -69,12 +69,12 @@ impl<E: Copy + Debug + 'static> GetterPID<E> {
         }
     }
 }
-impl<E: Copy + Debug + 'static> Getter<f32, E> for GetterPID<E> {
+impl<E: Copy + Debug + 'static> Getter<f32, E> for StreamPID<E> {
     fn get(&self) -> Output<f32, E> {
         self.output.get()
     }
 }
-impl<E: Copy + Debug + 'static> Updatable<E> for GetterPID<E> {
+impl<E: Copy + Debug + 'static> Updatable<E> for StreamPID<E> {
     fn update(&mut self) -> UpdateOutput<E> {
         self.int.borrow_mut().update()?;
         self.drv.borrow_mut().update()?;
@@ -82,7 +82,7 @@ impl<E: Copy + Debug + 'static> Updatable<E> for GetterPID<E> {
     }
 }
 //https://www.itl.nist.gov/div898/handbook/pmc/section3/pmc324.htm
-pub struct EWMAGetter<E: Copy + Debug> {
+pub struct EWMAStream<E: Copy + Debug> {
     input: InputGetter<f32, E>,
     //As data may not come in at regular intervals as is assumed by a standard EWMA, this value
     //will be multiplied by delta time before being used.
@@ -90,7 +90,7 @@ pub struct EWMAGetter<E: Copy + Debug> {
     value: Output<f32, E>,
     update_time: Option<f32>,
 }
-impl<E: Copy + Debug> EWMAGetter<E> {
+impl<E: Copy + Debug> EWMAStream<E> {
     pub fn new(input: InputGetter<f32, E>, smoothing_constant: f32) -> Self {
         Self {
             input: input,
@@ -100,12 +100,12 @@ impl<E: Copy + Debug> EWMAGetter<E> {
         }
     }
 }
-impl<E: Copy + Debug> Getter<f32, E> for EWMAGetter<E> {
+impl<E: Copy + Debug> Getter<f32, E> for EWMAStream<E> {
     fn get(&self) -> Output<f32, E> {
         self.value.clone()
     }
 }
-impl<E: Copy + Debug> Updatable<E> for EWMAGetter<E> {
+impl<E: Copy + Debug> Updatable<E> for EWMAStream<E> {
     fn update(&mut self) -> UpdateOutput<E> {
         let output = self.input.borrow().get();
         match output {
@@ -152,13 +152,13 @@ impl<E: Copy + Debug> Updatable<E> for EWMAGetter<E> {
         Ok(())
     }
 }
-pub struct MovingAverageGetter<E: Copy + Debug> {
+pub struct MovingAverageStream<E: Copy + Debug> {
     input: InputGetter<f32, E>,
     window: f32,
     value: Output<f32, E>,
     input_values: VecDeque<Datum<f32>>,
 }
-impl<E: Copy + Debug> MovingAverageGetter<E> {
+impl<E: Copy + Debug> MovingAverageStream<E> {
     pub fn new(input: InputGetter<f32, E>, window: f32) -> Self {
         Self {
             input: input,
@@ -168,12 +168,12 @@ impl<E: Copy + Debug> MovingAverageGetter<E> {
         }
     }
 }
-impl<E: Copy + Debug> Getter<f32, E> for MovingAverageGetter<E> {
+impl<E: Copy + Debug> Getter<f32, E> for MovingAverageStream<E> {
     fn get(&self) -> Output<f32, E> {
         self.value.clone()
     }
 }
-impl<E: Copy + Debug> Updatable<E> for MovingAverageGetter<E> {
+impl<E: Copy + Debug> Updatable<E> for MovingAverageStream<E> {
     fn update(&mut self) -> UpdateOutput<E> {
         let output = self.input.borrow().get();
         match output {
