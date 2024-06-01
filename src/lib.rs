@@ -209,13 +209,16 @@ pub trait Updatable<E: Copy + Debug> {
 }
 ///Something with a `get` method. Structs implementing this will often be chained for easier data
 ///processing, with a struct having other implementors in fields which will have some operation
-///performed on their output before it being passed on. The other common use for this trait is
-///encoders, which will later be put in a `Device::Read`.
+///performed on their output before it being passed on. Data processing Getters with other Getters
+///as fields can be referred to as streams, though this is only in naming and trait-wise there is
+///no distinction. The other common use for this trait is encoders, which will later be put in a
+///`Device::Read`. These should not be called streams.
 pub trait Getter<G, E: Copy + Debug>: Updatable<E> {
     ///Get something.
     fn get(&self) -> Output<G, E>;
 }
-///Internal data needed for following a `Getter` with a `Settable`. You should probably treat this like a black box.
+///Internal data needed for following a `Getter` with a `Settable`. You should probably treat this
+///like a black box.
 pub enum SettableData<S, E: Copy + Debug> {
     Idle,
     Following(InputGetter<S, E>),
@@ -282,7 +285,8 @@ pub struct GetterFromHistory<G, E: Copy + Debug> {
     time_delta: f32,
 }
 impl<G, E: Copy + Debug> GetterFromHistory<G, E> {
-    ///Constructor such that the time in the request will be exactly that returned from the `TimeGetter` with no delta.
+    ///Constructor such that the time in the request to the history will be directly that returned
+    ///from the `TimeGetter` with no delta.
     pub fn new_no_delta(history: Box<dyn History<G, E>>, time_getter: InputTimeGetter<E>) -> Self {
         Self {
             history: history,
@@ -291,7 +295,7 @@ impl<G, E: Copy + Debug> GetterFromHistory<G, E> {
         }
     }
     ///Constructor such that the times requested from the `History` will begin at zero where zero
-    ///is defined as the moment of construction.
+    ///is the moment this constructor is called.
     pub fn new_start_at_zero(
         history: Box<dyn History<G, E>>,
         time_getter: InputTimeGetter<E>,
