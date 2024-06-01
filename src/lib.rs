@@ -217,17 +217,28 @@ pub trait Getter<G, E: Copy + Debug>: Updatable<E> {
     ///Get something.
     fn get(&self) -> Output<G, E>;
 }
-///Internal data needed for following a `Getter` with a `Settable`. You should probably treat this
-///like a black box.
-pub enum SettableData<S, E: Copy + Debug> {
-    Idle,
-    Following(InputGetter<S, E>),
+///Internal data needed for following a `Getter` with a `Settable`.
+pub struct SettableData<S, E: Copy + Debug> {
+    following: SettableFollowing<S, E>,
+    last_request: Option<S>,
 }
 impl<S, E: Copy + Debug> SettableData<S, E> {
-    ///Constructor for `SettableData`.
     pub fn new() -> Self {
-        Self::Idle
+        Self {
+            following: SettableFollowing::Idle,
+            last_request: None,
+        }
     }
+    pub(crate) fn get_following(&self) -> &SettableFollowing<S, E> {
+        &self.following
+    }
+    pub(crate) fn set_following(&mut self, new_following: SettableFollowing<S, E>) {
+        self.following = new_following;
+    }
+}
+enum SettableFollowing<S, E: Copy + Debug> {
+    Idle,
+    Following(InputGetter<S, E>),
 }
 ///Something with a `set` method. Usually used for motors and other mechanical components and
 ///systems. This trait too is fairly broad.
@@ -245,21 +256,21 @@ pub trait Settable<S, E: Copy + Debug>: Updatable<E> {
     ///Begin following a `Getter` of the same type.
     fn follow(&mut self, getter: InputGetter<S, E>) {
         let data = self.get_settable_data_mut();
-        *data = SettableData::Following(getter);
+        data.set_following(SettableFollowing::Following(getter));
     }
     ///Stop following the `Getter`.
     fn stop_following(&mut self) {
         let data = self.get_settable_data_mut();
-        *data = SettableData::Idle;
+        data.set_following(SettableFollowing::Idle);
     }
     ///Get a new value from the `Getter` we're following and update ourselves accordingly. Note
     ///that will call `self.update` regardless if we're following a `Getter`, so you can call with
     ///in lieu of the standard `update` if you're following stuff.
     fn following_update(&mut self) -> UpdateOutput<E> {
         let data = self.get_settable_data_mut();
-        match data {
-            SettableData::Idle => {}
-            SettableData::Following(getter) => {
+        match data.get_following() {
+            SettableFollowing::Idle => {}
+            SettableFollowing::Following(getter) => {
                 let new_value = getter.borrow().get()?;
                 match new_value {
                     None => {
