@@ -46,7 +46,7 @@ impl<T: Clone, E: Copy + Debug> Settable<T, E> for Constant<T, E> {
     fn get_settable_data_mut(&mut self) -> &mut SettableData<T, E> {
         &mut self.settable_data
     }
-    fn set(&mut self, value: T) -> Result<(), Error<E>> {
+    fn direct_set(&mut self, value: T) -> Result<(), Error<E>> {
         self.value = value;
         Ok(())
     }

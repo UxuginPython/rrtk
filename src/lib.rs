@@ -254,8 +254,16 @@ enum SettableFollowing<S, E: Copy + Debug> {
 ///Something with a `set` method. Usually used for motors and other mechanical components and
 ///systems. This trait too is fairly broad.
 pub trait Settable<S: Clone, E: Copy + Debug>: Updatable<E> {
-    ///Set something.
-    fn set(&mut self, value: S) -> Result<(), Error<E>>;
+    ///Set something, not updating the internal `SettableData`. Due to current limitations of the
+    ///language, you must implement this but call `set`. Do not call this directly as it will make
+    ///`get_last_request` work incorrectly.
+    fn direct_set(&mut self, value: S) -> Result<(), Error<E>>;
+    fn set(&mut self, value: S) -> Result<(), Error<E>> {
+        self.direct_set(value.clone())?;
+        let data = self.get_settable_data_mut();
+        data.last_request = Some(value);
+        Ok(())
+    }
     ///As traits cannot have fields, get functions and separate types are required. All you have to
     ///do is make a field for a corresponding `SettableData` and make this return an immutable
     ///reference to it.
@@ -565,7 +573,7 @@ impl<const N: usize, E: Copy + Debug> Settable<Command, E> for Axle<N, E> {
     fn get_settable_data_mut(&mut self) -> &mut SettableData<Command, E> {
         &mut self.settable_data
     }
-    fn set(&mut self, value: Command) -> Result<(), Error<E>> {
+    fn direct_set(&mut self, value: Command) -> Result<(), Error<E>> {
         for i in 0..N {
             match &mut self.devices[i] {
                 Device::ImpreciseWrite(_, posderdepkvals) => match value.position_derivative {
