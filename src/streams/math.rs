@@ -67,7 +67,7 @@ impl<const N: usize, E: Copy + Debug> Getter<f32, E> for SumStream<N, E> {
     }
 }
 impl<const N: usize, E: Copy + Debug> Updatable<E> for SumStream<N, E> {
-    fn update(&mut self) -> UpdateOutput<E> {
+    fn update(&mut self) -> NothingOrError<E> {
         Ok(())
     }
 }
@@ -111,7 +111,7 @@ impl<E: Copy + Debug> Getter<f32, E> for DifferenceStream<E> {
     }
 }
 impl<E: Copy + Debug> Updatable<E> for DifferenceStream<E> {
-    fn update(&mut self) -> UpdateOutput<E> {
+    fn update(&mut self) -> NothingOrError<E> {
         Ok(())
     }
 }
@@ -168,7 +168,7 @@ impl<const N: usize, E: Copy + Debug> Getter<f32, E> for ProductStream<N, E> {
     }
 }
 impl<const N: usize, E: Copy + Debug> Updatable<E> for ProductStream<N, E> {
-    fn update(&mut self) -> UpdateOutput<E> {
+    fn update(&mut self) -> NothingOrError<E> {
         Ok(())
     }
 }
@@ -212,7 +212,7 @@ impl<E: Copy + Debug> Getter<f32, E> for QuotientStream<E> {
     }
 }
 impl<E: Copy + Debug> Updatable<E> for QuotientStream<E> {
-    fn update(&mut self) -> UpdateOutput<E> {
+    fn update(&mut self) -> NothingOrError<E> {
         Ok(())
     }
 }
@@ -260,7 +260,7 @@ impl<E: Copy + Debug> Getter<f32, E> for ExponentStream<E> {
 }
 #[cfg(feature = "std")]
 impl<E: Copy + Debug> Updatable<E> for ExponentStream<E> {
-    fn update(&mut self) -> UpdateOutput<E> {
+    fn update(&mut self) -> NothingOrError<E> {
         Ok(())
     }
 }
@@ -285,7 +285,7 @@ impl<E: Copy + Debug> Getter<f32, E> for DerivativeStream<E> {
     }
 }
 impl<E: Copy + Debug> Updatable<E> for DerivativeStream<E> {
-    fn update(&mut self) -> UpdateOutput<E> {
+    fn update(&mut self) -> NothingOrError<E> {
         let output = self.input.borrow().get();
         match output {
             Ok(_) => {}
@@ -339,7 +339,7 @@ impl<E: Copy + Debug> Getter<f32, E> for IntegralStream<E> {
     }
 }
 impl<E: Copy + Debug> Updatable<E> for IntegralStream<E> {
-    fn update(&mut self) -> UpdateOutput<E> {
+    fn update(&mut self) -> NothingOrError<E> {
         let output = self.input.borrow().get();
         match output {
             Ok(_) => {}

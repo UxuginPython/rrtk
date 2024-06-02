@@ -75,7 +75,7 @@ impl<E: Copy + Debug + 'static> Getter<f32, E> for StreamPID<E> {
     }
 }
 impl<E: Copy + Debug + 'static> Updatable<E> for StreamPID<E> {
-    fn update(&mut self) -> UpdateOutput<E> {
+    fn update(&mut self) -> NothingOrError<E> {
         self.int.borrow_mut().update()?;
         self.drv.borrow_mut().update()?;
         Ok(())
@@ -106,7 +106,7 @@ impl<E: Copy + Debug> Getter<f32, E> for EWMAStream<E> {
     }
 }
 impl<E: Copy + Debug> Updatable<E> for EWMAStream<E> {
-    fn update(&mut self) -> UpdateOutput<E> {
+    fn update(&mut self) -> NothingOrError<E> {
         let output = self.input.borrow().get();
         match output {
             Err(error) => {
@@ -174,7 +174,7 @@ impl<E: Copy + Debug> Getter<f32, E> for MovingAverageStream<E> {
     }
 }
 impl<E: Copy + Debug> Updatable<E> for MovingAverageStream<E> {
-    fn update(&mut self) -> UpdateOutput<E> {
+    fn update(&mut self) -> NothingOrError<E> {
         let output = self.input.borrow().get();
         match output {
             Ok(Some(_)) => {}

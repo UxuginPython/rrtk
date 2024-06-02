@@ -157,7 +157,7 @@ pub type InputGetter<T, E> = Rc<RefCell<Box<dyn Getter<T, E>>>>;
 ///See `InputGetter`. This does the same thing but for `TimeGetter`s.
 pub type InputTimeGetter<E> = Rc<RefCell<Box<dyn TimeGetter<E>>>>;
 ///Returned when something may return either nothing or an error.
-pub type UpdateOutput<E> = Result<(), Error<E>>;
+pub type NothingOrError<E> = Result<(), Error<E>>;
 ///An object for getting the absolute time.
 pub trait TimeGetter<E: Copy + Debug>: Updatable<E> {
     ///Get the time.
@@ -260,7 +260,7 @@ pub trait Settable<S: Clone, E: Copy + Debug>: Updatable<E> {
     ///Get a new value from the `Getter` we're following and update ourselves accordingly. Note
     ///that will call `self.update` regardless if we're following a `Getter`, so you can call with
     ///in lieu of the standard `update` if you're following stuff.
-    fn following_update(&mut self) -> UpdateOutput<E> {
+    fn following_update(&mut self) -> NothingOrError<E> {
         let data = self.get_settable_data_ref();
         match &data.following {
             SettableFollowing::Idle => {}
@@ -367,7 +367,7 @@ impl<E: Copy + Debug> GetterFromHistory<State, E> {
     }
 }
 impl<G, E: Copy + Debug> Updatable<E> for GetterFromHistory<G, E> {
-    fn update(&mut self) -> UpdateOutput<E> {
+    fn update(&mut self) -> NothingOrError<E> {
         self.history.update()?;
         self.time_getter.borrow_mut().update()?;
         Ok(())

@@ -45,7 +45,7 @@ fn time_getter_from_stream() {
         }
     }
     impl<E: Copy + Debug> Updatable<E> for DummyStream {
-        fn update(&mut self) -> UpdateOutput<E> {
+        fn update(&mut self) -> NothingOrError<E> {
             self.time += 1.0;
             Ok(())
         }
@@ -73,7 +73,7 @@ fn make_input_getter_() {
         }
     }
     impl<E: Copy + Debug> Updatable<E> for DummyStream {
-        fn update(&mut self) -> UpdateOutput<E> {
+        fn update(&mut self) -> NothingOrError<E> {
             self.time += 1.0;
             Ok(())
         }
@@ -104,7 +104,7 @@ fn constant() {
         }
     }
     impl<E: Copy + Debug> Updatable<E> for DummyStream {
-        fn update(&mut self) -> UpdateOutput<E> {
+        fn update(&mut self) -> NothingOrError<E> {
             self.time += 1.0;
             Ok(())
         }
@@ -143,7 +143,7 @@ fn none_to_error() {
         }
     }
     impl Updatable<Nothing> for DummyStream {
-        fn update(&mut self) -> UpdateOutput<Nothing> {
+        fn update(&mut self) -> NothingOrError<Nothing> {
             self.index += 1;
             Ok(())
         }
@@ -205,7 +205,7 @@ fn none_to_value() {
         }
     }
     impl Updatable<Nothing> for DummyStream {
-        fn update(&mut self) -> UpdateOutput<Nothing> {
+        fn update(&mut self) -> NothingOrError<Nothing> {
             self.index += 1;
             Ok(())
         }
@@ -224,7 +224,7 @@ fn none_to_value() {
         }
     }
     impl<E: Copy + Debug> Updatable<E> for DummyTimeGetter {
-        fn update(&mut self) -> UpdateOutput<E> {
+        fn update(&mut self) -> NothingOrError<E> {
             self.time += 1.0;
             Ok(())
         }
@@ -292,7 +292,7 @@ fn sum_stream() {
         }
     }
     impl Updatable<Nothing> for ErroringStream {
-        fn update(&mut self) -> UpdateOutput<Nothing> {
+        fn update(&mut self) -> NothingOrError<Nothing> {
             self.index += 1;
             Ok(())
         }
@@ -309,7 +309,7 @@ fn sum_stream() {
         }
     }
     impl Updatable<Nothing> for NormalStream {
-        fn update(&mut self) -> UpdateOutput<Nothing> {
+        fn update(&mut self) -> NothingOrError<Nothing> {
             Ok(())
         }
     }
@@ -353,7 +353,7 @@ fn difference_stream() {
         }
     }
     impl Updatable<DummyError> for Stream1 {
-        fn update(&mut self) -> UpdateOutput<DummyError> {
+        fn update(&mut self) -> NothingOrError<DummyError> {
             self.index += 1;
             Ok(())
         }
@@ -377,7 +377,7 @@ fn difference_stream() {
         }
     }
     impl Updatable<DummyError> for Stream2 {
-        fn update(&mut self) -> UpdateOutput<DummyError> {
+        fn update(&mut self) -> NothingOrError<DummyError> {
             self.index += 1;
             Ok(())
         }
@@ -507,7 +507,7 @@ fn product_stream() {
         }
     }
     impl Updatable<Nothing> for ErroringStream {
-        fn update(&mut self) -> UpdateOutput<Nothing> {
+        fn update(&mut self) -> NothingOrError<Nothing> {
             self.index += 1;
             Ok(())
         }
@@ -524,7 +524,7 @@ fn product_stream() {
         }
     }
     impl Updatable<Nothing> for NormalStream {
-        fn update(&mut self) -> UpdateOutput<Nothing> {
+        fn update(&mut self) -> NothingOrError<Nothing> {
             Ok(())
         }
     }
@@ -568,7 +568,7 @@ fn quotient_stream() {
         }
     }
     impl Updatable<DummyError> for Stream1 {
-        fn update(&mut self) -> UpdateOutput<DummyError> {
+        fn update(&mut self) -> NothingOrError<DummyError> {
             self.index += 1;
             Ok(())
         }
@@ -592,7 +592,7 @@ fn quotient_stream() {
         }
     }
     impl Updatable<DummyError> for Stream2 {
-        fn update(&mut self) -> UpdateOutput<DummyError> {
+        fn update(&mut self) -> NothingOrError<DummyError> {
             self.index += 1;
             Ok(())
         }
@@ -722,7 +722,7 @@ fn exponent_stream() {
         }
     }
     impl Updatable<DummyError> for Stream1 {
-        fn update(&mut self) -> UpdateOutput<DummyError> {
+        fn update(&mut self) -> NothingOrError<DummyError> {
             self.index += 1;
             Ok(())
         }
@@ -746,7 +746,7 @@ fn exponent_stream() {
         }
     }
     impl Updatable<DummyError> for Stream2 {
-        fn update(&mut self) -> UpdateOutput<DummyError> {
+        fn update(&mut self) -> NothingOrError<DummyError> {
             self.index += 1;
             Ok(())
         }
@@ -870,7 +870,7 @@ fn derivative_stream() {
         }
     }
     impl Updatable<DummyError> for DummyStream {
-        fn update(&mut self) -> UpdateOutput<DummyError> {
+        fn update(&mut self) -> NothingOrError<DummyError> {
             self.time += 2.0;
             Ok(())
         }
@@ -902,7 +902,7 @@ fn integral_stream() {
         }
     }
     impl Updatable<DummyError> for DummyStream {
-        fn update(&mut self) -> UpdateOutput<DummyError> {
+        fn update(&mut self) -> NothingOrError<DummyError> {
             self.time += 1.0;
             Ok(())
         }
@@ -934,7 +934,7 @@ fn stream_pid() {
         }
     }
     impl Updatable<DummyError> for DummyStream {
-        fn update(&mut self) -> UpdateOutput<DummyError> {
+        fn update(&mut self) -> NothingOrError<DummyError> {
             self.time += 2.0;
             Ok(())
         }
@@ -978,7 +978,7 @@ fn ewma_stream() {
         }
     }
     impl Updatable<DummyError> for DummyStream {
-        fn update(&mut self) -> UpdateOutput<DummyError> {
+        fn update(&mut self) -> NothingOrError<DummyError> {
             self.time += 2;
             Ok(())
         }
@@ -1041,7 +1041,7 @@ fn moving_average_stream() {
         }
     }
     impl Updatable<DummyError> for DummyStream {
-        fn update(&mut self) -> UpdateOutput<DummyError> {
+        fn update(&mut self) -> NothingOrError<DummyError> {
             self.time += 2;
             Ok(())
         }

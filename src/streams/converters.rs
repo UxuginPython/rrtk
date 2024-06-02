@@ -34,7 +34,7 @@ impl<T: Clone, E: Copy + Debug> Getter<T, E> for NoneToError<T, E> {
     }
 }
 impl<T: Clone, E: Copy + Debug> Updatable<E> for NoneToError<T, E> {
-    fn update(&mut self) -> UpdateOutput<E> {
+    fn update(&mut self) -> NothingOrError<E> {
         Ok(())
     }
 }
@@ -69,7 +69,7 @@ impl<T: Clone, E: Copy + Debug> Getter<T, E> for NoneToValue<T, E> {
     }
 }
 impl<T: Clone, E: Copy + Debug> Updatable<E> for NoneToValue<T, E> {
-    fn update(&mut self) -> UpdateOutput<E> {
+    fn update(&mut self) -> NothingOrError<E> {
         Ok(())
     }
 }
@@ -129,7 +129,7 @@ impl<E: Copy + Debug> Getter<State, E> for AccelerationToState<E> {
     }
 }
 impl<E: Copy + Debug> Updatable<E> for AccelerationToState<E> {
-    fn update(&mut self) -> UpdateOutput<E> {
+    fn update(&mut self) -> NothingOrError<E> {
         self.vel.borrow_mut().update()?;
         self.pos.borrow_mut().update()?;
         Ok(())
@@ -191,7 +191,7 @@ impl<E: Copy + Debug> Getter<State, E> for VelocityToState<E> {
     }
 }
 impl<E: Copy + Debug> Updatable<E> for VelocityToState<E> {
-    fn update(&mut self) -> UpdateOutput<E> {
+    fn update(&mut self) -> NothingOrError<E> {
         self.acc.borrow_mut().update()?;
         self.pos.borrow_mut().update()?;
         Ok(())
@@ -253,7 +253,7 @@ impl<E: Copy + Debug> Getter<State, E> for PositionToStream<E> {
     }
 }
 impl<E: Copy + Debug> Updatable<E> for PositionToStream<E> {
-    fn update(&mut self) -> UpdateOutput<E> {
+    fn update(&mut self) -> NothingOrError<E> {
         self.vel.borrow_mut().update()?;
         self.acc.borrow_mut().update()?;
         Ok(())
