@@ -219,8 +219,8 @@ pub trait Getter<G, E: Copy + Debug>: Updatable<E> {
 }
 ///Internal data needed for following a `Getter` with a `Settable`.
 pub struct SettableData<S, E: Copy + Debug> {
-    following: SettableFollowing<S, E>,
-    last_request: Option<S>,
+    pub(crate) following: SettableFollowing<S, E>,
+    pub(crate) last_request: Option<S>,
 }
 impl<S, E: Copy + Debug> SettableData<S, E> {
     pub fn new() -> Self {
@@ -229,12 +229,6 @@ impl<S, E: Copy + Debug> SettableData<S, E> {
             last_request: None,
         }
     }
-    pub(crate) fn get_following(&self) -> &SettableFollowing<S, E> {
-        &self.following
-    }
-    pub(crate) fn set_following(&mut self, new_following: SettableFollowing<S, E>) {
-        self.following = new_following;
-    }
 }
 enum SettableFollowing<S, E: Copy + Debug> {
     Idle,
@@ -242,7 +236,7 @@ enum SettableFollowing<S, E: Copy + Debug> {
 }
 ///Something with a `set` method. Usually used for motors and other mechanical components and
 ///systems. This trait too is fairly broad.
-pub trait Settable<S, E: Copy + Debug>: Updatable<E> {
+pub trait Settable<S: Clone, E: Copy + Debug>: Updatable<E> {
     ///Set something.
     fn set(&mut self, value: S) -> Result<(), Error<E>>;
     ///As traits cannot have fields, get functions and separate types are required. All you have to
@@ -256,19 +250,19 @@ pub trait Settable<S, E: Copy + Debug>: Updatable<E> {
     ///Begin following a `Getter` of the same type.
     fn follow(&mut self, getter: InputGetter<S, E>) {
         let data = self.get_settable_data_mut();
-        data.set_following(SettableFollowing::Following(getter));
+        data.following = SettableFollowing::Following(getter);
     }
     ///Stop following the `Getter`.
     fn stop_following(&mut self) {
         let data = self.get_settable_data_mut();
-        data.set_following(SettableFollowing::Idle);
+        data.following = SettableFollowing::Idle;
     }
     ///Get a new value from the `Getter` we're following and update ourselves accordingly. Note
     ///that will call `self.update` regardless if we're following a `Getter`, so you can call with
     ///in lieu of the standard `update` if you're following stuff.
     fn following_update(&mut self) -> UpdateOutput<E> {
-        let data = self.get_settable_data_mut();
-        match data.get_following() {
+        let data = self.get_settable_data_ref();
+        match &data.following {
             SettableFollowing::Idle => {}
             SettableFollowing::Following(getter) => {
                 let new_value = getter.borrow().get()?;
@@ -285,6 +279,10 @@ pub trait Settable<S, E: Copy + Debug>: Updatable<E> {
         }
         self.update()?;
         Ok(())
+    }
+    fn get_last_request(&self) -> Option<S> {
+        let data = self.get_settable_data_ref();
+        data.last_request.clone()
     }
 }
 ///As histories return values at times, we can ask them to return values at the time of now or now
@@ -384,7 +382,7 @@ impl<G: Clone, E: Copy + Debug> Getter<G, E> for GetterFromHistory<G, E> {
 }
 ///Solely for subtraiting. Allows you to require that a type implements both `Getter` and
 ///`Settable` with a single trait. No methods and does nothing on its own.
-pub trait GetterSettable<G, S, E: Copy + Debug>: Getter<G, E> + Settable<S, E> {}
+pub trait GetterSettable<G, S: Clone, E: Copy + Debug>: Getter<G, E> + Settable<S, E> {}
 ///A motor or encoder on an axle.
 pub enum Device<E> {
     ///An encoder.
