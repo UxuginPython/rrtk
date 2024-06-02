@@ -64,15 +64,15 @@ fn motion_profile_get_mode() {
     );
     assert_eq!(
         motion_profile.get_mode(0.5),
-        Ok(PositionDerivative::Acceleration)
+        Some(PositionDerivative::Acceleration)
     );
     assert_eq!(
         motion_profile.get_mode(2.5),
-        Ok(PositionDerivative::Velocity)
+        Some(PositionDerivative::Velocity)
     );
     assert_eq!(
         motion_profile.get_mode(3.5),
-        Ok(PositionDerivative::Acceleration)
+        Some(PositionDerivative::Acceleration)
     );
 }
 #[test]
@@ -83,9 +83,9 @@ fn motion_profile_get_acceleration() {
         1.0,
         1.0,
     );
-    assert_eq!(motion_profile.get_acceleration(0.5), Ok(1.0));
-    assert_eq!(motion_profile.get_acceleration(2.5), Ok(0.0));
-    assert_eq!(motion_profile.get_acceleration(3.5), Ok(-1.0));
+    assert_eq!(motion_profile.get_acceleration(0.5), Some(1.0));
+    assert_eq!(motion_profile.get_acceleration(2.5), Some(0.0));
+    assert_eq!(motion_profile.get_acceleration(3.5), Some(-1.0));
 }
 #[test]
 fn motion_profile_get_velocity() {
@@ -95,9 +95,9 @@ fn motion_profile_get_velocity() {
         1.0,
         1.0,
     );
-    assert_eq!(motion_profile.get_velocity(0.5), Ok(0.5));
-    assert_eq!(motion_profile.get_velocity(2.5), Ok(1.0));
-    assert_eq!(motion_profile.get_velocity(3.5), Ok(0.5));
+    assert_eq!(motion_profile.get_velocity(0.5), Some(0.5));
+    assert_eq!(motion_profile.get_velocity(2.5), Some(1.0));
+    assert_eq!(motion_profile.get_velocity(3.5), Some(0.5));
 }
 #[test]
 fn motion_profile_get_velocity_2() {
@@ -107,9 +107,9 @@ fn motion_profile_get_velocity_2() {
         1.0,
         1.0,
     );
-    assert_eq!(motion_profile.get_velocity(0.5), Ok(0.5));
-    assert_eq!(motion_profile.get_velocity(2.5), Ok(1.0));
-    assert_eq!(motion_profile.get_velocity(3.5), Ok(0.5));
+    assert_eq!(motion_profile.get_velocity(0.5), Some(0.5));
+    assert_eq!(motion_profile.get_velocity(2.5), Some(1.0));
+    assert_eq!(motion_profile.get_velocity(3.5), Some(0.5));
 }
 #[test]
 fn motion_profile_get_velocity_3() {
@@ -119,9 +119,9 @@ fn motion_profile_get_velocity_3() {
         2.0,
         1.0,
     );
-    assert_eq!(motion_profile.get_velocity(0.5), Ok(1.5));
-    assert_eq!(motion_profile.get_velocity(1.5), Ok(2.0));
-    assert_eq!(motion_profile.get_velocity(2.5), Ok(1.5));
+    assert_eq!(motion_profile.get_velocity(0.5), Some(1.5));
+    assert_eq!(motion_profile.get_velocity(1.5), Some(2.0));
+    assert_eq!(motion_profile.get_velocity(2.5), Some(1.5));
 }
 #[test]
 fn motion_profile_get_position() {
@@ -131,9 +131,9 @@ fn motion_profile_get_position() {
         1.0,
         1.0,
     );
-    assert_eq!(motion_profile.get_position(0.5), Ok(0.125));
-    assert_eq!(motion_profile.get_position(2.5), Ok(2.0));
-    assert_eq!(motion_profile.get_position(3.5), Ok(2.875));
+    assert_eq!(motion_profile.get_position(0.5), Some(0.125));
+    assert_eq!(motion_profile.get_position(2.5), Some(2.0));
+    assert_eq!(motion_profile.get_position(3.5), Some(2.875));
 }
 #[test]
 fn motion_profile_get_position_2() {
@@ -143,9 +143,9 @@ fn motion_profile_get_position_2() {
         1.0,
         1.0,
     );
-    assert_eq!(motion_profile.get_position(0.5), Ok(1.125));
-    assert_eq!(motion_profile.get_position(2.5), Ok(3.0));
-    assert_eq!(motion_profile.get_position(3.5), Ok(3.875));
+    assert_eq!(motion_profile.get_position(0.5), Some(1.125));
+    assert_eq!(motion_profile.get_position(2.5), Some(3.0));
+    assert_eq!(motion_profile.get_position(3.5), Some(3.875));
 }
 #[test]
 fn motion_profile_get_position_3() {
@@ -155,7 +155,7 @@ fn motion_profile_get_position_3() {
         2.0,
         1.0,
     );
-    assert_eq!(motion_profile.get_position(0.5), Ok(1.625));
-    assert_eq!(motion_profile.get_position(1.5), Ok(3.5));
-    assert_eq!(motion_profile.get_position(2.5), Ok(5.375));
+    assert_eq!(motion_profile.get_position(0.5), Some(1.625));
+    assert_eq!(motion_profile.get_position(1.5), Some(3.5));
+    assert_eq!(motion_profile.get_position(2.5), Some(5.375));
 }
