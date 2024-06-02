@@ -1,13 +1,3 @@
-#[cfg(feature = "std")]
-use std::rc::Rc;
-#[cfg(feature = "std")]
-use std::cell::RefCell;
-#[cfg(not(feature = "std"))]
-extern crate alloc;
-#[cfg(not(feature = "std"))]
-use alloc::rc::Rc;
-#[cfg(not(feature = "std"))]
-use core::cell::RefCell;
 use rrtk::*;
 #[test]
 fn devices() {
