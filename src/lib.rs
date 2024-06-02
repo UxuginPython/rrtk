@@ -740,20 +740,20 @@ pub struct MotionProfile {
 impl<E: Copy + Debug> History<State, E> for MotionProfile {
     fn get(&self, time: f32) -> Option<Datum<State>> {
         let pos = match self.get_position(time) {
-            Ok(value) => value,
-            Err(_) => {
+            Some(value) => value,
+            None => {
                 return None;
             }
         };
         let vel = match self.get_velocity(time) {
-            Ok(value) => value,
-            Err(_) => {
+            Some(value) => value,
+            None => {
                 return None;
             }
         };
         let acc = match self.get_acceleration(time) {
-            Ok(value) => value,
-            Err(_) => {
+            Some(value) => value,
+            None => {
                 return None;
             }
         };
@@ -804,17 +804,17 @@ impl MotionProfile {
         }
     }
     ///Get the intended `PositionDerivative` at a given time.
-    pub fn get_mode(&self, t: f32) -> Result<PositionDerivative, &'static str> {
+    pub fn get_mode(&self, t: f32) -> Option<PositionDerivative> {
         if t < 0.0 {
-            return Err("time invalid");
+            return None;
         } else if t < self.t1 {
-            return Ok(PositionDerivative::Acceleration);
+            return Some(PositionDerivative::Acceleration);
         } else if t < self.t2 {
-            return Ok(PositionDerivative::Velocity);
+            return Some(PositionDerivative::Velocity);
         } else if t < self.t3 {
-            return Ok(PositionDerivative::Acceleration);
+            return Some(PositionDerivative::Acceleration);
         } else {
-            return Err("time invalid");
+            return None;
         }
     }
     ///Get the `MotionProfilePiece` at a given time.
@@ -832,50 +832,50 @@ impl MotionProfile {
         }
     }
     ///Get the intended acceleration at a given time.
-    pub fn get_acceleration(&self, t: f32) -> Result<f32, &'static str> {
+    pub fn get_acceleration(&self, t: f32) -> Option<f32> {
         if t < 0.0 {
-            return Err("time invalid");
+            return None;
         } else if t < self.t1 {
-            return Ok(self.max_acc);
+            return Some(self.max_acc);
         } else if t < self.t2 {
-            return Ok(0.0);
+            return Some(0.0);
         } else if t < self.t3 {
-            return Ok(-self.max_acc);
+            return Some(-self.max_acc);
         } else {
-            return Err("time invalid");
+            return None;
         }
     }
     ///Get the intended velocity at a given time.
-    pub fn get_velocity(&self, t: f32) -> Result<f32, &'static str> {
+    pub fn get_velocity(&self, t: f32) -> Option<f32> {
         if t < 0.0 {
-            return Err("time invalid");
+            return None;
         } else if t < self.t1 {
-            return Ok(self.max_acc * t + self.start_vel);
+            return Some(self.max_acc * t + self.start_vel);
         } else if t < self.t2 {
-            return Ok(self.max_acc * self.t1 + self.start_vel);
+            return Some(self.max_acc * self.t1 + self.start_vel);
         } else if t < self.t3 {
-            return Ok(self.max_acc * (self.t1 + self.t2 - t) + self.start_vel);
+            return Some(self.max_acc * (self.t1 + self.t2 - t) + self.start_vel);
         } else {
-            return Err("time invalid");
+            return None;
         }
     }
     ///Get the intended position at a given time.
-    pub fn get_position(&self, t: f32) -> Result<f32, &'static str> {
+    pub fn get_position(&self, t: f32) -> Option<f32> {
         if t < 0.0 {
-            return Err("time invalid");
+            return None;
         } else if t < self.t1 {
-            return Ok(0.5 * self.max_acc * t * t + self.start_vel * t + self.start_pos);
+            return Some(0.5 * self.max_acc * t * t + self.start_vel * t + self.start_pos);
         } else if t < self.t2 {
-            return Ok(self.max_acc * self.t1 * (-0.5 * self.t1 + t)
+            return Some(self.max_acc * self.t1 * (-0.5 * self.t1 + t)
                 + self.start_vel * t
                 + self.start_pos);
         } else if t < self.t3 {
-            return Ok(self.max_acc * self.t1 * (-0.5 * self.t1 + self.t2)
+            return Some(self.max_acc * self.t1 * (-0.5 * self.t1 + self.t2)
                 - 0.5 * self.max_acc * (t - self.t2) * (t - 2.0 * self.t1 - self.t2)
                 + self.start_vel * t
                 + self.start_pos);
         } else {
-            return Err("time invalid");
+            return None;
         }
     }
 }
