@@ -141,6 +141,15 @@ pub struct PositionDerivativeDependentPIDKValues {
     ///Use these k-values when controlling acceleration.
     pub acceleration: PIDKValues,
 }
+impl PositionDerivativeDependentPIDKValues {
+    pub fn new(position: PIDKValues, velocity: PIDKValues, acceleration: PIDKValues) -> Self {
+        Self {
+            position: position,
+            velocity: velocity,
+            acceleration: acceleration,
+        }
+    }
+}
 ///A container for `PIDControllerShift` objects with different k-values and "shifts."
 enum PositionDerivativeDependentPIDControllerShift {
     Position(PIDControllerShift<1>),
@@ -200,6 +209,14 @@ pub struct Command {
     pub position_derivative: PositionDerivative,
     ///The position, velocity, or acceleration rate.
     pub value: f32,
+}
+impl Command {
+    pub fn new(position_derivative: PositionDerivative, value: f32) -> Self {
+        Self {
+            position_derivative: position_derivative,
+            value: value,
+        }
+    }
 }
 ///Something with an `update` method. Mostly for subtraiting.
 pub trait Updatable<E: Copy + Debug> {
@@ -462,28 +479,33 @@ impl<const N: usize, E: Copy + Debug> Updatable<E> for Axle<N, E> {
                     return Err(error);
                 }
             };
-            for i in 0..N {
-                match &mut self.devices[i] {
-                    Device::ImpreciseWrite(device, _) => {
-                        match self.pids[i]
-                            .as_mut()
-                            .expect("Every ImpreciseWrite should have a Some(_) in pids")
-                        {
-                            PositionDerivativeDependentPIDControllerShift::Position(pid) => {
-                                let new_value = pid.update(state.time, state.value.position);
-                                let _ = device.set(new_value)?;
+            match self.get_last_request()  {
+                None => {}
+                Some(_) => {
+                    for i in 0..N {
+                        match &mut self.devices[i] {
+                            Device::ImpreciseWrite(device, _) => {
+                                match self.pids[i]
+                                    .as_mut()
+                                    .expect("Every ImpreciseWrite should have a Some(_) in pids")
+                                {
+                                    PositionDerivativeDependentPIDControllerShift::Position(pid) => {
+                                        let new_value = pid.update(state.time, state.value.position);
+                                        let _ = device.set(new_value)?;
+                                    }
+                                    PositionDerivativeDependentPIDControllerShift::Velocity(pid) => {
+                                        let new_value = pid.update(state.time, state.value.velocity);
+                                        let _ = device.set(new_value)?;
+                                    }
+                                    PositionDerivativeDependentPIDControllerShift::Acceleration(pid) => {
+                                        let new_value = pid.update(state.time, state.value.acceleration);
+                                        let _ = device.set(new_value)?;
+                                    }
+                                }
                             }
-                            PositionDerivativeDependentPIDControllerShift::Velocity(pid) => {
-                                let new_value = pid.update(state.time, state.value.velocity);
-                                let _ = device.set(new_value)?;
-                            }
-                            PositionDerivativeDependentPIDControllerShift::Acceleration(pid) => {
-                                let new_value = pid.update(state.time, state.value.acceleration);
-                                let _ = device.set(new_value)?;
-                            }
+                            _ => {}
                         }
                     }
-                    _ => {}
                 }
             }
         }
