@@ -71,3 +71,83 @@ fn devices() {
     //Ensure that we actually ran the assert_eq! in DCMotor direct_set.
     assert!(axle.get().unwrap().unwrap().time > 3.0);
 }
+#[test]
+fn follow_motion_profile() {
+    struct ServoMotor {
+        pub time: f32,
+        pub state: State,
+        pub asserts: u8,
+        settable_data: SettableData<Command, ()>
+    }
+    impl ServoMotor {
+        pub fn new() -> Self {
+            Self {
+                time: 0.0,
+                state: State::new(0.0, 0.0, 0.0),
+                asserts: 0,
+                settable_data: SettableData::new(),
+            }
+        }
+    }
+    impl Settable<Command, ()> for ServoMotor {
+        fn get_settable_data_ref(&self) -> &SettableData<Command, ()> {
+            &self.settable_data
+        }
+        fn get_settable_data_mut(&mut self) -> &mut SettableData<Command, ()> {
+            &mut self.settable_data
+        }
+        fn direct_set(&mut self, command: Command) -> NothingOrError<()> {
+            match command.position_derivative {
+                PositionDerivative::Position => {
+                    self.state.set_constant_position(command.value);
+                }
+                PositionDerivative::Velocity => {
+                    self.state.set_constant_velocity(command.value);
+                }
+                PositionDerivative::Acceleration => {
+                    self.state.set_constant_acceleration(command.value);
+                }
+            }
+            Ok(())
+        }
+    }
+    impl Updatable<()> for ServoMotor {
+        fn update(&mut self) -> NothingOrError<()> {
+            self.time += 0.1;
+            if self.time == 0.5 {
+                assert_eq!(self.state.acceleration, 1.0);
+                self.asserts += 1;
+            }
+            if 2.499 < self.time && self.time < 2.501 {
+                assert_eq!(self.state.velocity, 1.0);
+                self.asserts += 1;
+            }
+            if 3.499 < self.time && self.time < 3.501 {
+                assert_eq!(self.state.acceleration, -1.0);
+            }
+            Ok(())
+        }
+    }
+    struct MyTimeGetter {
+        time: f32,
+    }
+    impl TimeGetter<()> for MyTimeGetter {
+        fn get(&self) -> TimeOutput<()> {
+            Ok(self.time)
+        }
+    }
+    impl Updatable<()> for MyTimeGetter {
+        fn update(&mut self) -> NothingOrError<()> {
+            self.time += 0.1;
+            Ok(())
+        }
+    }
+    let motion_profile = MotionProfile::new(
+        State::new(0.0, 0.0, 0.0),
+        State::new(3.0, 0.0, 0.0),
+        1.0,
+        1.0
+    );
+    let servo = Device::PreciseWrite(Box::new(ServoMotor::new()));
+    let mut axle = Axle::new([servo]);
+}
