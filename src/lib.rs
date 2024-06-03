@@ -63,7 +63,8 @@ impl State {
         }
     }
     ///Calculate the future state assuming a constant acceleration.
-    pub fn update(&mut self, delta_time: f32) {
+    pub fn update(&mut self, delta_time: i64) {
+        let delta_time = delta_time as f32;
         let new_velocity = self.velocity + delta_time * self.acceleration;
         let new_position = self.position + delta_time * (self.velocity + new_velocity) / 2.0;
         self.position = new_position;

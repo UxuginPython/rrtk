@@ -14,8 +14,8 @@ use rrtk::*;
 #[test]
 fn pidshift_shift() {
     let mut pid = PIDControllerShift::<2>::new(5.0, PIDKValues::new(1.0, 0.01, 0.1));
-    let _ = pid.update(1.0, 0.0);
-    let new_control = pid.update(3.0, 1.0);
+    let _ = pid.update(1, 0.0);
+    let new_control = pid.update(3, 1.0);
     assert_eq!(new_control, 9.04);
 }
 #[test]
@@ -28,7 +28,7 @@ fn state_new() {
 #[test]
 fn state_update() {
     let mut state = State::new(1.0, 2.0, 3.0);
-    state.update(4.0);
+    state.update(4);
     assert_eq!(state.position, 33.0);
     assert_eq!(state.velocity, 14.0);
     assert_eq!(state.acceleration, 3.0);
@@ -59,19 +59,19 @@ fn motion_profile_get_mode() {
     let motion_profile = MotionProfile::new(
         State::new(0.0, 0.0, 0.0),
         State::new(3.0, 0.0, 0.0),
-        1.0,
-        1.0,
+        0.1,
+        0.01,
     );
     assert_eq!(
-        motion_profile.get_mode(0.5),
+        motion_profile.get_mode(5),
         Some(PositionDerivative::Acceleration)
     );
     assert_eq!(
-        motion_profile.get_mode(2.5),
+        motion_profile.get_mode(25),
         Some(PositionDerivative::Velocity)
     );
     assert_eq!(
-        motion_profile.get_mode(3.5),
+        motion_profile.get_mode(35),
         Some(PositionDerivative::Acceleration)
     );
 }
@@ -80,82 +80,90 @@ fn motion_profile_get_acceleration() {
     let motion_profile = MotionProfile::new(
         State::new(0.0, 0.0, 0.0),
         State::new(3.0, 0.0, 0.0),
-        1.0,
-        1.0,
+        0.1,
+        0.01,
     );
-    assert_eq!(motion_profile.get_acceleration(0.5), Some(1.0));
-    assert_eq!(motion_profile.get_acceleration(2.5), Some(0.0));
-    assert_eq!(motion_profile.get_acceleration(3.5), Some(-1.0));
+    assert_eq!(motion_profile.get_acceleration(5), Some(0.01));
+    assert_eq!(motion_profile.get_acceleration(25), Some(0.0));
+    assert_eq!(motion_profile.get_acceleration(35), Some(-0.01));
 }
 #[test]
 fn motion_profile_get_velocity() {
     let motion_profile = MotionProfile::new(
         State::new(0.0, 0.0, 0.0),
         State::new(3.0, 0.0, 0.0),
-        1.0,
-        1.0,
+        0.1,
+        0.01,
     );
-    assert_eq!(motion_profile.get_velocity(0.5), Some(0.5));
-    assert_eq!(motion_profile.get_velocity(2.5), Some(1.0));
-    assert_eq!(motion_profile.get_velocity(3.5), Some(0.5));
+    let gv5 = motion_profile.get_velocity(5).unwrap();
+    assert!(0.049 < gv5 && gv5 < 0.051);
+    let gv25 = motion_profile.get_velocity(25).unwrap();
+    assert!(0.099 < gv25 && gv25 < 0.101);
+    let gv35 = motion_profile.get_velocity(35).unwrap();
+    assert!(0.049 < gv35 && gv35 < 0.051);
 }
 #[test]
 fn motion_profile_get_velocity_2() {
     let motion_profile = MotionProfile::new(
-        State::new(1.0, 0.0, 3.0),
+        State::new(1.0, 0.0, 0.03),
         State::new(4.0, 0.0, 0.0),
-        1.0,
-        1.0,
+        0.1,
+        0.01,
     );
-    assert_eq!(motion_profile.get_velocity(0.5), Some(0.5));
-    assert_eq!(motion_profile.get_velocity(2.5), Some(1.0));
-    assert_eq!(motion_profile.get_velocity(3.5), Some(0.5));
+    let gv5 = motion_profile.get_velocity(5).unwrap();
+    assert!(0.049 < gv5 && gv5 < 0.051);
+    let gv25 = motion_profile.get_velocity(25).unwrap();
+    assert!(0.099 < gv25 && gv25 < 0.101);
+    let gv35 = motion_profile.get_velocity(35).unwrap();
+    assert!(0.049 < gv35 && gv35 < 0.051);
 }
 #[test]
 fn motion_profile_get_velocity_3() {
     let motion_profile = MotionProfile::new(
-        State::new(1.0, 1.0, 3.0),
-        State::new(6.0, 1.0, 0.0),
-        2.0,
-        1.0,
+        State::new(1.0, 0.1, 0.03),
+        State::new(6.0, 0.1, 0.0),
+        0.2,
+        0.01,
     );
-    assert_eq!(motion_profile.get_velocity(0.5), Some(1.5));
-    assert_eq!(motion_profile.get_velocity(1.5), Some(2.0));
-    assert_eq!(motion_profile.get_velocity(2.5), Some(1.5));
+    assert_eq!(motion_profile.get_velocity(5), Some(0.15));
+    let gv15 = motion_profile.get_velocity(15).unwrap();
+    assert!(0.199 < gv15 && gv15 < 0.201);
+    assert_eq!(motion_profile.get_velocity(25), Some(0.15));
 }
 #[test]
 fn motion_profile_get_position() {
     let motion_profile = MotionProfile::new(
         State::new(0.0, 0.0, 0.0),
         State::new(3.0, 0.0, 0.0),
-        1.0,
-        1.0,
+        0.1,
+        0.01,
     );
-    assert_eq!(motion_profile.get_position(0.5), Some(0.125));
-    assert_eq!(motion_profile.get_position(2.5), Some(2.0));
-    assert_eq!(motion_profile.get_position(3.5), Some(2.875));
+    let gp5 = motion_profile.get_position(5).unwrap();
+    assert!(0.124 < gp5 && gp5 < 0.126);
+    assert_eq!(motion_profile.get_position(25), Some(2.0));
+    assert_eq!(motion_profile.get_position(35), Some(2.875));
 }
 #[test]
 fn motion_profile_get_position_2() {
     let motion_profile = MotionProfile::new(
-        State::new(1.0, 0.0, 3.0),
+        State::new(1.0, 0.0, 0.03),
         State::new(4.0, 0.0, 0.0),
-        1.0,
-        1.0,
+        0.1,
+        0.01,
     );
-    assert_eq!(motion_profile.get_position(0.5), Some(1.125));
-    assert_eq!(motion_profile.get_position(2.5), Some(3.0));
-    assert_eq!(motion_profile.get_position(3.5), Some(3.875));
+    assert_eq!(motion_profile.get_position(5), Some(1.125));
+    assert_eq!(motion_profile.get_position(25), Some(3.0));
+    assert_eq!(motion_profile.get_position(35), Some(3.875));
 }
 #[test]
 fn motion_profile_get_position_3() {
     let motion_profile = MotionProfile::new(
-        State::new(1.0, 1.0, 3.0),
-        State::new(6.0, 1.0, 0.0),
-        2.0,
-        1.0,
+        State::new(1.0, 0.1, 0.03),
+        State::new(6.0, 0.1, 0.0),
+        0.2,
+        0.01,
     );
-    assert_eq!(motion_profile.get_position(0.5), Some(1.625));
-    assert_eq!(motion_profile.get_position(1.5), Some(3.5));
-    assert_eq!(motion_profile.get_position(2.5), Some(5.375));
+    assert_eq!(motion_profile.get_position(5), Some(1.625));
+    assert_eq!(motion_profile.get_position(15), Some(3.5));
+    assert_eq!(motion_profile.get_position(25), Some(5.375));
 }
