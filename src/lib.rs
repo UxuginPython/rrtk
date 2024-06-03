@@ -89,13 +89,13 @@ impl State {
 #[derive(Clone, Debug)]
 pub struct Datum<T> {
     ///Timestamp for the datum. This should probably be absolute.
-    pub time: f32,
+    pub time: i64,
     ///The thing with the timestamp.
     pub value: T,
 }
 impl<T> Datum<T> {
     ///Constructor for Datum type.
-    pub fn new(time: f32, value: T) -> Datum<T> {
+    pub fn new(time: i64, value: T) -> Datum<T> {
         Datum {
             time: time,
             value: value,
@@ -160,7 +160,7 @@ enum PositionDerivativeDependentPIDControllerShift {
 ///timestamp.
 pub type Output<T, E> = Result<Option<Datum<T>>, Error<E>>;
 ///Returned from `TimeGetter` objects, which may return either a time or an error.
-pub type TimeOutput<E> = Result<f32, Error<E>>;
+pub type TimeOutput<E> = Result<i64, Error<E>>;
 ///Makes `Getter`s easier to work with by containing them in in `Rc<RefCell<Box<_>>>`.
 pub type InputGetter<T, E> = Rc<RefCell<Box<dyn Getter<T, E>>>>;
 ///See `InputGetter`. This does the same thing but for `TimeGetter`s.
@@ -186,21 +186,21 @@ impl<T: Clone, E> TimeGetterFromStream<T, E> {
     }
 }
 impl<T: Clone, E: Copy + Debug> TimeGetter<E> for TimeGetterFromStream<T, E> {
-    fn get(&self) -> Result<f32, Error<E>> {
+    fn get(&self) -> TimeOutput<E> {
         let output = self.elevator.get()?;
         let output = output.expect("`NoneToError` made all `Ok(None)`s into `Err(_)`s, and `?` returned all `Err(_)`s, so we're sure this is now an `Ok(Some(_))`.");
         return Ok(output.time);
     }
 }
 impl<T: Clone, E: Copy + Debug> Updatable<E> for TimeGetterFromStream<T, E> {
-    fn update(&mut self) -> Result<(), Error<E>> {
+    fn update(&mut self) -> NothingOrError<E> {
         Ok(())
     }
 }
 ///An object that can return a value, like a `Getter`, for a given time.
 pub trait History<T: Clone, E: Copy + Debug>: Updatable<E> {
     ///Get a value at a time.
-    fn get(&self, time: f32) -> Option<Datum<T>>;
+    fn get(&self, time: i64) -> Option<Datum<T>>;
 }
 ///A command for a motor to perform: go to a position, run at a velocity, or accelerate at a rate.
 #[derive(Clone, Copy)]
@@ -316,7 +316,7 @@ pub trait Settable<S: Clone, E: Copy + Debug>: Updatable<E> {
 pub struct GetterFromHistory<G, E: Copy + Debug> {
     history: Box<dyn History<G, E>>,
     time_getter: InputTimeGetter<E>,
-    time_delta: f32,
+    time_delta: i64,
 }
 impl<G, E: Copy + Debug> GetterFromHistory<G, E> {
     ///Constructor such that the time in the request to the history will be directly that returned
@@ -325,7 +325,7 @@ impl<G, E: Copy + Debug> GetterFromHistory<G, E> {
         Self {
             history: history,
             time_getter: time_getter,
-            time_delta: 0f32,
+            time_delta: 0,
         }
     }
     ///Constructor such that the times requested from the `History` will begin at zero where zero
@@ -346,7 +346,7 @@ impl<G, E: Copy + Debug> GetterFromHistory<G, E> {
     pub fn new_custom_start(
         history: Box<dyn History<G, E>>,
         time_getter: InputTimeGetter<E>,
-        start: f32,
+        start: i64,
     ) -> Result<Self, Error<E>> {
         let time_delta = start - time_getter.borrow().get()?;
         Ok(Self {
@@ -359,7 +359,7 @@ impl<G, E: Copy + Debug> GetterFromHistory<G, E> {
     pub fn new_custom_delta(
         history: Box<dyn History<G, E>>,
         time_getter: InputTimeGetter<E>,
-        time_delta: f32,
+        time_delta: i64,
     ) -> Self {
         Self {
             history: history,
@@ -368,12 +368,12 @@ impl<G, E: Copy + Debug> GetterFromHistory<G, E> {
         }
     }
     ///Set the time delta.
-    pub fn set_delta(&mut self, time_delta: f32) {
+    pub fn set_delta(&mut self, time_delta: i64) {
         self.time_delta = time_delta;
     }
     ///Define now as a given time in the history. Mostly used when construction and use are far
     ///apart in time.
-    pub fn set_time(&mut self, time: f32) -> Result<(), Error<E>> {
+    pub fn set_time(&mut self, time: i64) -> Result<(), Error<E>> {
         let time_delta = time - self.time_getter.borrow().get()?;
         self.time_delta = time_delta;
         Ok(())
@@ -423,7 +423,7 @@ pub enum Device<E> {
     ReadWrite(Box<dyn GetterSettable<State, Command, E>>),
 }
 impl<E: Copy + Debug> Updatable<E> for Device<E> {
-    fn update(&mut self) -> Result<(), Error<E>> {
+    fn update(&mut self) -> NothingOrError<E> {
         match self {
             Self::Read(device) => {
                 device.update()?;
@@ -471,7 +471,7 @@ impl<const N: usize, E: Copy + Debug> Axle<N, E> {
 }
 impl<const N: usize, E: Copy + Debug> GetterSettable<State, Command, E> for Axle<N, E> {}
 impl<const N: usize, E: Copy + Debug> Updatable<E> for Axle<N, E> {
-    fn update(&mut self) -> Result<(), Error<E>> {
+    fn update(&mut self) -> NothingOrError<E> {
         //This will update the ImpreciseWrite motors twice. This shouldn't cause issues but maybe
         //should be changed at some point.
         for i in &mut self.devices {
@@ -522,7 +522,7 @@ impl<const N: usize, E: Copy + Debug> Updatable<E> for Axle<N, E> {
 }
 impl<const N: usize, E: Copy + Debug> Getter<State, E> for Axle<N, E> {
     fn get(&self) -> Output<State, E> {
-        let mut time = -f32::INFINITY;
+        let mut time = i64::MIN;
         let mut pos_sum = 0f32;
         let mut vel_sum = 0f32;
         let mut acc_sum = 0f32;
@@ -573,7 +573,7 @@ impl<const N: usize, E: Copy + Debug> Settable<Command, E> for Axle<N, E> {
     fn get_settable_data_mut(&mut self) -> &mut SettableData<Command, E> {
         &mut self.settable_data
     }
-    fn direct_set(&mut self, value: Command) -> Result<(), Error<E>> {
+    fn direct_set(&mut self, value: Command) -> NothingOrError<E> {
         for i in 0..N {
             match &mut self.devices[i] {
                 Device::ImpreciseWrite(_, posderdepkvals) => match value.position_derivative {
@@ -635,7 +635,7 @@ pub struct PIDController {
     kp: f32,
     ki: f32,
     kd: f32,
-    last_update_time: Option<f32>,
+    last_update_time: Option<i64>,
     prev_error: Option<f32>,
     int_error: f32,
 }
@@ -655,18 +655,18 @@ impl PIDController {
     ///Update the PID controller. Give it a new time and process variable value, and it will give
     ///you a new control variable value.
     #[must_use]
-    pub fn update(&mut self, time: f32, process: f32) -> f32 {
+    pub fn update(&mut self, time: i64, process: f32) -> f32 {
         let error = self.setpoint - process;
         let delta_time = match self.last_update_time {
-            None => 0.0,
+            None => 0,
             Some(x) => time - x,
         };
         let drv_error = match self.prev_error {
             None => 0.0,
-            Some(x) => (error - x) / delta_time,
+            Some(x) => (error - x) / (delta_time as f32),
         };
         self.int_error += match self.prev_error {
-            Some(x) => delta_time * (x + error) / 2.0,
+            Some(x) => (delta_time as f32) * (x + error) / 2.0,
             None => 0.0,
         };
         self.last_update_time = Some(time);
@@ -682,7 +682,7 @@ pub struct PIDControllerShift<const N: usize> {
     kp: f32,
     ki: f32,
     kd: f32,
-    last_update_time: Option<f32>,
+    last_update_time: Option<i64>,
     prev_error: Option<f32>,
     int_error: f32,
     shifts: [f32; N],
@@ -707,18 +707,18 @@ impl<const N: usize> PIDControllerShift<N> {
     ///Update the PID controller. Give it a new time and process variable value, and it will give
     ///you a new control variable value.
     #[must_use]
-    pub fn update(&mut self, time: f32, process: f32) -> f32 {
+    pub fn update(&mut self, time: i64, process: f32) -> f32 {
         let error = self.setpoint - process;
         let delta_time = match self.last_update_time {
-            None => 0.0,
+            None => 0,
             Some(x) => time - x,
         };
         let drv_error = match self.prev_error {
             None => 0.0,
-            Some(x) => (error - x) / delta_time,
+            Some(x) => (error - x) / (delta_time as f32),
         };
         self.int_error += match self.prev_error {
-            Some(x) => delta_time * (x + error) / 2.0,
+            Some(x) => (delta_time as f32) * (x + error) / 2.0,
             None => 0.0,
         };
         self.last_update_time = Some(time);
@@ -728,7 +728,7 @@ impl<const N: usize> PIDControllerShift<N> {
         new_shifts[0] = control;
         for i in 1..N {
             let prev_int = self.shifts[i];
-            new_shifts[i] = prev_int + delta_time * (self.shifts[i - 1] + new_shifts[i - 1]) / 2.0;
+            new_shifts[i] = prev_int + (delta_time as f32) * (self.shifts[i - 1] + new_shifts[i - 1]) / 2.0;
         }
         self.shifts = new_shifts;
         self.shifts[self.shifts.len() - 1]
@@ -762,13 +762,13 @@ pub enum MotionProfilePiece {
 pub struct MotionProfile {
     start_pos: f32,
     start_vel: f32,
-    t1: f32,
-    t2: f32,
-    t3: f32,
+    t1: i64,
+    t2: i64,
+    t3: i64,
     max_acc: f32,
 }
 impl<E: Copy + Debug> History<Command, E> for MotionProfile {
-    fn get(&self, time: f32) -> Option<Datum<Command>> {
+    fn get(&self, time: i64) -> Option<Datum<Command>> {
         let pos = match self.get_position(time) {
             Some(value) => value,
             None => {
@@ -802,7 +802,7 @@ impl<E: Copy + Debug> History<Command, E> for MotionProfile {
     }
 }
 impl<E: Copy + Debug> Updatable<E> for MotionProfile {
-    fn update(&mut self) -> Result<(), Error<E>> {
+    fn update(&mut self) -> NothingOrError<E> {
         Ok(())
     }
 }
@@ -838,15 +838,15 @@ impl MotionProfile {
         MotionProfile {
             start_pos: start_state.position,
             start_vel: start_state.velocity,
-            t1: t1,
-            t2: t2,
-            t3: t3,
+            t1: t1 as i64,
+            t2: t2 as i64,
+            t3: t3 as i64,
             max_acc: max_acc,
         }
     }
     ///Get the intended `PositionDerivative` at a given time.
-    pub fn get_mode(&self, t: f32) -> Option<PositionDerivative> {
-        if t < 0.0 {
+    pub fn get_mode(&self, t: i64) -> Option<PositionDerivative> {
+        if t < 0 {
             return None;
         } else if t < self.t1 {
             return Some(PositionDerivative::Acceleration);
@@ -859,8 +859,8 @@ impl MotionProfile {
         }
     }
     ///Get the `MotionProfilePiece` at a given time.
-    pub fn get_piece(&self, t: f32) -> MotionProfilePiece {
-        if t < 0.0 {
+    pub fn get_piece(&self, t: i64) -> MotionProfilePiece {
+        if t < 0 {
             return MotionProfilePiece::BeforeStart;
         } else if t < self.t1 {
             return MotionProfilePiece::InitialAcceleration;
@@ -873,8 +873,8 @@ impl MotionProfile {
         }
     }
     ///Get the intended acceleration at a given time.
-    pub fn get_acceleration(&self, t: f32) -> Option<f32> {
-        if t < 0.0 {
+    pub fn get_acceleration(&self, t: i64) -> Option<f32> {
+        if t < 0 {
             return None;
         } else if t < self.t1 {
             return Some(self.max_acc);
@@ -887,33 +887,34 @@ impl MotionProfile {
         }
     }
     ///Get the intended velocity at a given time.
-    pub fn get_velocity(&self, t: f32) -> Option<f32> {
-        if t < 0.0 {
+    pub fn get_velocity(&self, t: i64) -> Option<f32> {
+        if t < 0 {
             return None;
         } else if t < self.t1 {
-            return Some(self.max_acc * t + self.start_vel);
+            return Some(self.max_acc * (t as f32) + self.start_vel);
         } else if t < self.t2 {
-            return Some(self.max_acc * self.t1 + self.start_vel);
+            return Some(self.max_acc * (self.t1 as f32) + self.start_vel);
         } else if t < self.t3 {
-            return Some(self.max_acc * (self.t1 + self.t2 - t) + self.start_vel);
+            return Some(self.max_acc * ((self.t1 + self.t2 - t) as f32) + self.start_vel);
         } else {
             return None;
         }
     }
     ///Get the intended position at a given time.
-    pub fn get_position(&self, t: f32) -> Option<f32> {
-        if t < 0.0 {
+    pub fn get_position(&self, t: i64) -> Option<f32> {
+        if t < 0 {
             return None;
         } else if t < self.t1 {
+            let t = t as f32;
             return Some(0.5 * self.max_acc * t * t + self.start_vel * t + self.start_pos);
         } else if t < self.t2 {
-            return Some(self.max_acc * self.t1 * (-0.5 * self.t1 + t)
-                + self.start_vel * t
+            return Some(self.max_acc * ((self.t1 * (-self.t1 / 2 + t)) as f32)
+                + self.start_vel * (t as f32)
                 + self.start_pos);
         } else if t < self.t3 {
-            return Some(self.max_acc * self.t1 * (-0.5 * self.t1 + self.t2)
-                - 0.5 * self.max_acc * (t - self.t2) * (t - 2.0 * self.t1 - self.t2)
-                + self.start_vel * t
+            return Some(self.max_acc * ((self.t1 * (-self.t1 / 2 + self.t2)) as f32)
+                - 0.5 * self.max_acc * (((t - self.t2) * (t - 2 * self.t1 - self.t2)) as f32)
+                + self.start_vel * (t as f32)
                 + self.start_pos);
         } else {
             return None;

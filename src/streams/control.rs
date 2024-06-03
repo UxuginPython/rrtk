@@ -88,7 +88,7 @@ pub struct EWMAStream<E: Copy + Debug> {
     //will be multiplied by delta time before being used.
     smoothing_constant: f32,
     value: Output<f32, E>,
-    update_time: Option<f32>,
+    update_time: Option<i64>,
 }
 impl<E: Copy + Debug> EWMAStream<E> {
     pub fn new(input: InputGetter<f32, E>, smoothing_constant: f32) -> Self {
@@ -138,7 +138,7 @@ impl<E: Copy + Debug> Updatable<E> for EWMAStream<E> {
         let prev_time = self
             .update_time
             .expect("update_time must be Some if value is");
-        let delta_time = output.time - prev_time;
+        let delta_time = (output.time - prev_time) as f32;
         let value = if delta_time * self.smoothing_constant < 1.0 {
             let value = prev_value.value;
             let value = value - (delta_time * self.smoothing_constant) * value;
@@ -154,12 +154,12 @@ impl<E: Copy + Debug> Updatable<E> for EWMAStream<E> {
 }
 pub struct MovingAverageStream<E: Copy + Debug> {
     input: InputGetter<f32, E>,
-    window: f32,
+    window: i64,
     value: Output<f32, E>,
     input_values: VecDeque<Datum<f32>>,
 }
 impl<E: Copy + Debug> MovingAverageStream<E> {
-    pub fn new(input: InputGetter<f32, E>, window: f32) -> Self {
+    pub fn new(input: InputGetter<f32, E>, window: i64) -> Self {
         Self {
             input: input,
             window: window,
@@ -212,15 +212,15 @@ impl<E: Copy + Debug> Updatable<E> for MovingAverageStream<E> {
         let mut start_times = VecDeque::from(end_times.clone());
         start_times.pop_back();
         start_times.push_front(output.time - self.window);
-        let mut weights = Vec::<f32>::with_capacity(self.input_values.len());
+        let mut weights = Vec::with_capacity(self.input_values.len());
         for i in 0..self.input_values.len() {
             weights.push(end_times[i] - start_times[i]);
         }
         let mut value = 0.0;
         for i in 0..self.input_values.len() {
-            value += self.input_values[i].value * weights[i];
+            value += self.input_values[i].value * (weights[i] as f32);
         }
-        value /= self.window;
+        value /= self.window as f32;
         self.value = Ok(Some(Datum::new(output.time, value)));
         Ok(())
     }

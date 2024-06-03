@@ -313,7 +313,7 @@ impl<E: Copy + Debug> Updatable<E> for DerivativeStream<E> {
             }
         }
         let prev_output = self.prev_output.as_ref().unwrap();
-        let value = (output.value - prev_output.value) / (output.time - prev_output.time);
+        let value = (output.value - prev_output.value) / ((output.time - prev_output.time) as f32);
         self.value = Ok(Some(Datum::new(output.time, value)));
         self.prev_output = Some(output);
         Ok(())
@@ -375,7 +375,7 @@ impl<E: Copy + Debug> Updatable<E> for IntegralStream<E> {
             Err(_) => 0.0,
         };
         let value = prev_value
-            + (output.time - prev_output.time) * (prev_output.value + output.value) / 2.0;
+            + ((output.time - prev_output.time) as f32) * (prev_output.value + output.value) / 2.0;
         self.value = Ok(Some(Datum::new(output.time, value)));
         self.prev_output = Some(output);
         return Ok(());
