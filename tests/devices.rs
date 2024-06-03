@@ -163,13 +163,13 @@ fn follow_motion_profile() {
         1.0
     );
     let motion_profile = GetterFromHistory::new_for_motion_profile(motion_profile, Rc::clone(&time_getter)).unwrap();
-    let motion_profile = make_input_getter!(motion_profile, State, ());
+    let motion_profile = make_input_getter!(motion_profile, Command, ());
     let servo = Device::PreciseWrite(Box::new(ServoMotor::new(Rc::clone(&time_getter))));
     let mut axle = Axle::new([servo]);
     axle.follow(motion_profile);
     for _ in 0..2000 {
-        time_getter.borrow_mut().update();
-        axle.following_update();
+        time_getter.borrow_mut().update().unwrap();
+        axle.following_update().unwrap();
     }
     println!("{:?}", time_getter.borrow().get().unwrap());
     assert!(time_getter.borrow().get().unwrap() > 3.5);

@@ -379,14 +379,14 @@ impl<G, E: Copy + Debug> GetterFromHistory<G, E> {
         Ok(())
     }
 }
-impl<E: Copy + Debug> GetterFromHistory<State, E> {
+impl<E: Copy + Debug> GetterFromHistory<Command, E> {
     ///Shortcut to make following motion profiles easier. Calls `new_start_at_zero` internally.
     pub fn new_for_motion_profile(
         motion_profile: MotionProfile,
         time_getter: InputTimeGetter<E>,
     ) -> Result<Self, Error<E>> {
         Self::new_start_at_zero(
-            Box::new(motion_profile) as Box<dyn History<State, E>>,
+            Box::new(motion_profile) as Box<dyn History<Command, E>>,
             time_getter,
         )
     }
@@ -767,8 +767,8 @@ pub struct MotionProfile {
     t3: f32,
     max_acc: f32,
 }
-impl<E: Copy + Debug> History<State, E> for MotionProfile {
-    fn get(&self, time: f32) -> Option<Datum<State>> {
+impl<E: Copy + Debug> History<Command, E> for MotionProfile {
+    fn get(&self, time: f32) -> Option<Datum<Command>> {
         let pos = match self.get_position(time) {
             Some(value) => value,
             None => {
@@ -787,7 +787,18 @@ impl<E: Copy + Debug> History<State, E> for MotionProfile {
                 return None;
             }
         };
-        Some(Datum::new(time, State::new(pos, vel, acc)))
+        let mode = match self.get_mode(time) {
+            Some(value) => value,
+            None => {
+                return None;
+            }
+        };
+        let value = match mode {
+            PositionDerivative::Position => pos,
+            PositionDerivative::Velocity => vel,
+            PositionDerivative::Acceleration => acc,
+        };
+        Some(Datum::new(time, Command::new(mode, value)))
     }
 }
 impl<E: Copy + Debug> Updatable<E> for MotionProfile {
