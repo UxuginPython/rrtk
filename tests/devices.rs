@@ -1,3 +1,5 @@
+use std::rc::Rc;
+use std::cell::RefCell;
 use rrtk::*;
 #[test]
 fn devices() {
@@ -74,15 +76,15 @@ fn devices() {
 #[test]
 fn follow_motion_profile() {
     struct ServoMotor {
-        pub time: f32,
+        pub time_getter: InputTimeGetter<()>,
         pub state: State,
         pub asserts: u8,
         settable_data: SettableData<Command, ()>
     }
     impl ServoMotor {
-        pub fn new() -> Self {
+        pub fn new(time_getter: InputTimeGetter<()>) -> Self {
             Self {
-                time: 0.0,
+                time_getter: time_getter,
                 state: State::new(0.0, 0.0, 0.0),
                 asserts: 0,
                 settable_data: SettableData::new(),
@@ -113,23 +115,34 @@ fn follow_motion_profile() {
     }
     impl Updatable<()> for ServoMotor {
         fn update(&mut self) -> NothingOrError<()> {
-            self.time += 0.1;
-            if self.time == 0.5 {
+            let time = self.time_getter.borrow().get().unwrap();
+            if time == 0.5 {
                 assert_eq!(self.state.acceleration, 1.0);
                 self.asserts += 1;
             }
-            if 2.499 < self.time && self.time < 2.501 {
+            if 2.499 < time && time < 2.501 {
                 assert_eq!(self.state.velocity, 1.0);
                 self.asserts += 1;
             }
-            if 3.499 < self.time && self.time < 3.501 {
+            if 3.499 < time && time < 3.501 {
                 assert_eq!(self.state.acceleration, -1.0);
+                self.asserts += 1;
+            }
+            if time > 3.5 {
+                assert_eq!(self.asserts, 3);
             }
             Ok(())
         }
     }
     struct MyTimeGetter {
         time: f32,
+    }
+    impl MyTimeGetter {
+        pub fn new() -> Self {
+            Self {
+                time: 0.0,
+            }
+        }
     }
     impl TimeGetter<()> for MyTimeGetter {
         fn get(&self) -> TimeOutput<()> {
@@ -142,12 +155,22 @@ fn follow_motion_profile() {
             Ok(())
         }
     }
+    let time_getter = make_input_time_getter!(MyTimeGetter::new(), ());
     let motion_profile = MotionProfile::new(
         State::new(0.0, 0.0, 0.0),
         State::new(3.0, 0.0, 0.0),
         1.0,
         1.0
     );
-    let servo = Device::PreciseWrite(Box::new(ServoMotor::new()));
+    let motion_profile = GetterFromHistory::new_for_motion_profile(motion_profile, Rc::clone(&time_getter)).unwrap();
+    let motion_profile = make_input_getter!(motion_profile, State, ());
+    let servo = Device::PreciseWrite(Box::new(ServoMotor::new(Rc::clone(&time_getter))));
     let mut axle = Axle::new([servo]);
+    axle.follow(motion_profile);
+    for _ in 0..2000 {
+        time_getter.borrow_mut().update();
+        axle.following_update();
+    }
+    println!("{:?}", time_getter.borrow().get().unwrap());
+    assert!(time_getter.borrow().get().unwrap() > 3.5);
 }
