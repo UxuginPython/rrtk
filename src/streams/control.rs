@@ -176,8 +176,8 @@ impl<E: Copy + Debug> Getter<f32, E> for MovingAverageStream<E> {
 impl<E: Copy + Debug> Updatable<E> for MovingAverageStream<E> {
     fn update(&mut self) -> NothingOrError<E> {
         let output = self.input.borrow().get();
-        match output {
-            Ok(Some(_)) => {}
+        let output = match output {
+            Ok(Some(thing)) => thing,
             Ok(None) => {
                 match self.value {
                     Ok(_) => {}
@@ -186,17 +186,16 @@ impl<E: Copy + Debug> Updatable<E> for MovingAverageStream<E> {
                         //still don't have a value. Set it to Ok(None) and leave input_values
                         //empty.
                         self.value = Ok(None);
-                        return Ok(());
                     }
                 }
+                return Ok(());
             }
             Err(error) => {
                 self.value = Err(error);
                 self.input_values.clear();
                 return Err(error);
             }
-        }
-        let output = output.unwrap().unwrap();
+        };
         self.input_values.push_back(output.clone());
         if self.input_values.len() == 0 {
             self.value = Ok(Some(output));
