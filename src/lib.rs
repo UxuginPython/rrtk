@@ -925,6 +925,7 @@ impl MotionProfile {
 #[cfg(test)]
 mod tests {
     use super::*;
+    //TODO: make PID tests work
     #[test]
     fn pid_new() {
         let pid = PIDController::new(5.0, PIDKValues::new(1.0, 0.01, 0.1));
@@ -966,90 +967,90 @@ mod tests {
         let motion_profile = MotionProfile::new(
             State::new(0.0, 0.0, 0.0),
             State::new(3.0, 0.0, 0.0),
-            1.0,
-            1.0,
+            0.1,
+            0.01,
         );
-        assert_eq!(motion_profile.t1, 1.0);
-        assert_eq!(motion_profile.t2, 3.0);
-        assert_eq!(motion_profile.t3, 4.0);
-        assert_eq!(motion_profile.max_acc, 1.0);
+        assert_eq!(motion_profile.t1, 10);
+        assert_eq!(motion_profile.t2, 30);
+        assert_eq!(motion_profile.t3, 40);
+        assert_eq!(motion_profile.max_acc, 0.01);
     }
     #[test]
     fn motion_profile_new_2() {
         let motion_profile = MotionProfile::new(
             State::new(1.0, 0.0, 0.0),
             State::new(3.0, 0.0, 0.0),
-            1.0,
-            1.0,
+            0.1,
+            0.01,
         );
-        assert_eq!(motion_profile.t1, 1.0);
-        assert_eq!(motion_profile.t2, 2.0);
-        assert_eq!(motion_profile.t3, 3.0);
-        assert_eq!(motion_profile.max_acc, 1.0);
+        assert_eq!(motion_profile.t1, 10);
+        assert_eq!(motion_profile.t2, 20);
+        assert_eq!(motion_profile.t3, 30);
+        assert_eq!(motion_profile.max_acc, 0.01);
     }
     #[test]
     fn motion_profile_new_3() {
         let motion_profile = MotionProfile::new(
-            State::new(0.0, 1.0, 0.0),
+            State::new(0.0, 0.1, 0.0),
             State::new(3.0, 0.0, 0.0),
-            1.0,
-            1.0,
+            0.1,
+            0.01,
         );
-        assert_eq!(motion_profile.t1, 0.0);
-        assert_eq!(motion_profile.t2, 2.5);
-        assert_eq!(motion_profile.t3, 3.5);
-        assert_eq!(motion_profile.max_acc, 1.0);
+        assert_eq!(motion_profile.t1, 0);
+        assert_eq!(motion_profile.t2, 25);
+        assert_eq!(motion_profile.t3, 35);
+        assert_eq!(motion_profile.max_acc, 0.01);
     }
     #[test]
     fn motion_profile_new_4() {
         let motion_profile = MotionProfile::new(
-            State::new(0.0, 0.0, 1.0),
+            State::new(0.0, 0.0, 0.01),
             State::new(3.0, 0.0, 0.0),
-            1.0,
-            1.0,
+            0.1,
+            0.01,
         );
-        assert_eq!(motion_profile.t1, 1.0);
-        assert_eq!(motion_profile.t2, 3.0);
-        assert_eq!(motion_profile.t3, 4.0);
-        assert_eq!(motion_profile.max_acc, 1.0);
+        assert_eq!(motion_profile.t1, 10);
+        assert_eq!(motion_profile.t2, 30);
+        assert_eq!(motion_profile.t3, 40);
+        assert_eq!(motion_profile.max_acc, 0.01);
     }
     #[test]
     fn motion_profile_new_5() {
         let motion_profile = MotionProfile::new(
             State::new(0.0, 0.0, 0.0),
             State::new(6.0, 0.0, 0.0),
-            2.0,
-            1.0,
+            0.2,
+            0.01,
         );
-        assert_eq!(motion_profile.t1, 2.0);
-        assert_eq!(motion_profile.t2, 3.0);
-        assert_eq!(motion_profile.t3, 5.0);
-        assert_eq!(motion_profile.max_acc, 1.0);
+        assert_eq!(motion_profile.t1, 20);
+        assert_eq!(motion_profile.t2, 30);
+        assert_eq!(motion_profile.t3, 50);
+        assert_eq!(motion_profile.max_acc, 0.01);
     }
     #[test]
     fn motion_profile_new_6() {
         let motion_profile = MotionProfile::new(
             State::new(0.0, 0.0, 0.0),
             State::new(3.0, 0.0, 0.0),
-            1.0,
-            2.0,
+            0.1,
+            0.02,
         );
-        assert_eq!(motion_profile.t1, 0.5);
-        assert_eq!(motion_profile.t2, 3.0);
-        assert_eq!(motion_profile.t3, 3.5);
-        assert_eq!(motion_profile.max_acc, 2.0);
+        assert_eq!(motion_profile.t1, 5);
+        assert_eq!(motion_profile.t2, 30);
+        assert_eq!(motion_profile.t3, 35);
+        assert_eq!(motion_profile.max_acc, 0.02);
     }
     #[test]
     fn motion_profile_new_7() {
         let motion_profile = MotionProfile::new(
             State::new(0.0, 0.0, 0.0),
             State::new(-3.0, 0.0, 0.0),
-            1.0,
-            1.0,
+            0.1,
+            0.01,
         );
-        assert_eq!(motion_profile.t1, 1.0);
-        assert_eq!(motion_profile.t2, 3.0);
-        assert_eq!(motion_profile.t3, 4.0);
-        assert_eq!(motion_profile.max_acc, -1.0);
+        assert_eq!(motion_profile.t1, 10);
+        assert_eq!(motion_profile.t2, 30);
+        assert_eq!(motion_profile.t3, 40);
+        assert_eq!(motion_profile.max_acc, -0.01);
     }
 }
