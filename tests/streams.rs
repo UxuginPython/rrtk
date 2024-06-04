@@ -32,11 +32,11 @@ use core::fmt::Debug;
 #[test]
 fn time_getter_from_stream() {
     struct DummyStream {
-        time: f32,
+        time: i64,
     }
     impl DummyStream {
         pub fn new() -> Self {
-            Self { time: 0.0 }
+            Self { time: 0 }
         }
     }
     impl<E: Copy + Debug> Getter<f32, E> for DummyStream {
@@ -46,25 +46,25 @@ fn time_getter_from_stream() {
     }
     impl<E: Copy + Debug> Updatable<E> for DummyStream {
         fn update(&mut self) -> NothingOrError<E> {
-            self.time += 1.0;
+            self.time += 1;
             Ok(())
         }
     }
     let stream = make_input_getter!(DummyStream::new(), f32, u8);
     let time_getter = TimeGetterFromStream::new(Rc::clone(&stream));
     stream.borrow_mut().update().unwrap();
-    assert_eq!(time_getter.get().unwrap(), 1.0);
+    assert_eq!(time_getter.get().unwrap(), 1);
 }
 #[test]
 fn make_input_getter_() {
     #[derive(Clone, Copy, Debug)]
     struct Nothing;
     struct DummyStream {
-        time: f32,
+        time: i64,
     }
     impl DummyStream {
         pub fn new() -> Self {
-            Self { time: 0.0 }
+            Self { time: 0 }
         }
     }
     impl<E: Copy + Debug> Getter<f32, E> for DummyStream {
@@ -74,7 +74,7 @@ fn make_input_getter_() {
     }
     impl<E: Copy + Debug> Updatable<E> for DummyStream {
         fn update(&mut self) -> NothingOrError<E> {
-            self.time += 1.0;
+            self.time += 1;
             Ok(())
         }
     }
@@ -91,11 +91,11 @@ fn constant() {
     #[derive(Clone, Copy, Debug)]
     struct Nothing;
     struct DummyStream {
-        time: f32,
+        time: i64,
     }
     impl DummyStream {
         pub fn new() -> Self {
-            Self { time: 0.0 }
+            Self { time: 0 }
         }
     }
     impl<E: Copy + Debug> Getter<f32, E> for DummyStream {
@@ -105,7 +105,7 @@ fn constant() {
     }
     impl<E: Copy + Debug> Updatable<E> for DummyStream {
         fn update(&mut self) -> NothingOrError<E> {
-            self.time += 1.0;
+            self.time += 1;
             Ok(())
         }
     }
@@ -139,7 +139,7 @@ fn none_to_error() {
             } else if self.index == 2 {
                 return Err(Error::Other(Nothing));
             }
-            return Ok(Some(Datum::new(0.0, 0.0)));
+            return Ok(Some(Datum::new(0, 0.0)));
         }
     }
     impl Updatable<Nothing> for DummyStream {
@@ -201,7 +201,7 @@ fn none_to_value() {
             } else if self.index == 2 {
                 return Err(Error::Other(Nothing));
             }
-            return Ok(Some(Datum::new(0.0, 1.0)));
+            return Ok(Some(Datum::new(0, 1.0)));
         }
     }
     impl Updatable<Nothing> for DummyStream {
@@ -211,11 +211,11 @@ fn none_to_value() {
         }
     }
     struct DummyTimeGetter {
-        time: f32,
+        time: i64,
     }
     impl DummyTimeGetter {
         pub fn new() -> Self {
-            Self { time: 0.0 }
+            Self { time: 0 }
         }
     }
     impl<E: Copy + Debug> TimeGetter<E> for DummyTimeGetter {
@@ -225,7 +225,7 @@ fn none_to_value() {
     }
     impl<E: Copy + Debug> Updatable<E> for DummyTimeGetter {
         fn update(&mut self) -> NothingOrError<E> {
-            self.time += 1.0;
+            self.time += 1;
             Ok(())
         }
     }
@@ -287,7 +287,7 @@ fn sum_stream() {
             } else if self.index == 1 {
                 return Ok(None);
             } else {
-                return Ok(Some(Datum::new(2.0, 1.0)));
+                return Ok(Some(Datum::new(2, 1.0)));
             }
         }
     }
@@ -305,7 +305,7 @@ fn sum_stream() {
     }
     impl Getter<f32, Nothing> for NormalStream {
         fn get(&self) -> Output<f32, Nothing> {
-            Ok(Some(Datum::new(1.0, 1.0)))
+            Ok(Some(Datum::new(1, 1.0)))
         }
     }
     impl Updatable<Nothing> for NormalStream {
@@ -324,10 +324,10 @@ fn sum_stream() {
     }
     //normal does not need update
     erroring.borrow_mut().update().unwrap();
-    assert_eq!(stream.get().unwrap().unwrap().time, 1.0);
+    assert_eq!(stream.get().unwrap().unwrap().time, 1);
     assert_eq!(stream.get().unwrap().unwrap().value, 1.0);
     erroring.borrow_mut().update().unwrap();
-    assert_eq!(stream.get().unwrap().unwrap().time, 2.0);
+    assert_eq!(stream.get().unwrap().unwrap().time, 2);
     assert_eq!(stream.get().unwrap().unwrap().value, 2.0);
 }
 #[test]
@@ -349,7 +349,7 @@ fn difference_stream() {
             } else if self.index == 3 || self.index == 4 || self.index == 5 {
                 return Ok(None);
             }
-            return Ok(Some(Datum::new(1.0, 10.0)));
+            return Ok(Some(Datum::new(1, 10.0)));
         }
     }
     impl Updatable<DummyError> for Stream1 {
@@ -373,7 +373,7 @@ fn difference_stream() {
             } else if self.index == 1 || self.index == 4 || self.index == 7 {
                 return Ok(None);
             }
-            return Ok(Some(Datum::new(2.0, 3.0)));
+            return Ok(Some(Datum::new(2, 3.0)));
         }
     }
     impl Updatable<DummyError> for Stream2 {
@@ -457,7 +457,7 @@ fn difference_stream() {
     //Some, None
     match stream.get() {
         Ok(Some(x)) => {
-            assert_eq!(x.time, 1.0);
+            assert_eq!(x.time, 1);
             assert_eq!(x.value, 10.0);
         }
         Ok(None) => {
@@ -472,7 +472,7 @@ fn difference_stream() {
     //Some, Some
     match stream.get() {
         Ok(Some(x)) => {
-            assert_eq!(x.time, 2.0);
+            assert_eq!(x.time, 2);
             assert_eq!(x.value, 7.0);
         }
         Ok(None) => {
@@ -502,7 +502,7 @@ fn product_stream() {
             } else if self.index == 1 {
                 return Ok(None);
             } else {
-                return Ok(Some(Datum::new(2.0, 3.0)));
+                return Ok(Some(Datum::new(2, 3.0)));
             }
         }
     }
@@ -520,7 +520,7 @@ fn product_stream() {
     }
     impl Getter<f32, Nothing> for NormalStream {
         fn get(&self) -> Output<f32, Nothing> {
-            Ok(Some(Datum::new(1.0, 5.0)))
+            Ok(Some(Datum::new(1, 5.0)))
         }
     }
     impl Updatable<Nothing> for NormalStream {
@@ -539,10 +539,10 @@ fn product_stream() {
     }
     //normal does not need update
     erroring.borrow_mut().update().unwrap();
-    assert_eq!(stream.get().unwrap().unwrap().time, 1.0);
+    assert_eq!(stream.get().unwrap().unwrap().time, 1);
     assert_eq!(stream.get().unwrap().unwrap().value, 5.0);
     erroring.borrow_mut().update().unwrap();
-    assert_eq!(stream.get().unwrap().unwrap().time, 2.0);
+    assert_eq!(stream.get().unwrap().unwrap().time, 2);
     assert_eq!(stream.get().unwrap().unwrap().value, 15.0);
 }
 #[test]
@@ -564,7 +564,7 @@ fn quotient_stream() {
             } else if self.index == 3 || self.index == 4 || self.index == 5 {
                 return Ok(None);
             }
-            return Ok(Some(Datum::new(1.0, 12.0)));
+            return Ok(Some(Datum::new(1, 12.0)));
         }
     }
     impl Updatable<DummyError> for Stream1 {
@@ -588,7 +588,7 @@ fn quotient_stream() {
             } else if self.index == 1 || self.index == 4 || self.index == 7 {
                 return Ok(None);
             }
-            return Ok(Some(Datum::new(2.0, 3.0)));
+            return Ok(Some(Datum::new(2, 3.0)));
         }
     }
     impl Updatable<DummyError> for Stream2 {
@@ -672,7 +672,7 @@ fn quotient_stream() {
     //Some, None
     match stream.get() {
         Ok(Some(x)) => {
-            assert_eq!(x.time, 1.0);
+            assert_eq!(x.time, 1);
             assert_eq!(x.value, 12.0);
         }
         Ok(None) => {
@@ -687,7 +687,7 @@ fn quotient_stream() {
     //Some, Some
     match stream.get() {
         Ok(Some(x)) => {
-            assert_eq!(x.time, 2.0);
+            assert_eq!(x.time, 2);
             assert_eq!(x.value, 4.0);
         }
         Ok(None) => {
@@ -718,7 +718,7 @@ fn exponent_stream() {
             } else if self.index == 3 || self.index == 4 || self.index == 5 {
                 return Ok(None);
             }
-            return Ok(Some(Datum::new(1.0, 5.0)));
+            return Ok(Some(Datum::new(1, 5.0)));
         }
     }
     impl Updatable<DummyError> for Stream1 {
@@ -742,7 +742,7 @@ fn exponent_stream() {
             } else if self.index == 1 || self.index == 4 || self.index == 7 {
                 return Ok(None);
             }
-            return Ok(Some(Datum::new(2.0, 3.0)));
+            return Ok(Some(Datum::new(2, 3.0)));
         }
     }
     impl Updatable<DummyError> for Stream2 {
@@ -826,7 +826,7 @@ fn exponent_stream() {
     //Some, None
     match stream.get() {
         Ok(Some(x)) => {
-            assert_eq!(x.time, 1.0);
+            assert_eq!(x.time, 1);
             assert_eq!(x.value, 5.0);
         }
         Ok(None) => {
@@ -841,7 +841,7 @@ fn exponent_stream() {
     //Some, Some
     match stream.get() {
         Ok(Some(x)) => {
-            assert_eq!(x.time, 2.0);
+            assert_eq!(x.time, 2);
             assert_eq!(x.value, 125.0);
         }
         Ok(None) => {
@@ -857,21 +857,21 @@ fn derivative_stream() {
     #[derive(Clone, Copy, Debug)]
     struct DummyError;
     struct DummyStream {
-        time: f32,
+        time: i64,
     }
     impl DummyStream {
         pub fn new() -> Self {
-            Self { time: 0.0 }
+            Self { time: 0 }
         }
     }
     impl Getter<f32, DummyError> for DummyStream {
         fn get(&self) -> Output<f32, DummyError> {
-            Ok(Some(Datum::new(self.time * 2.0, self.time * 3.0)))
+            Ok(Some(Datum::new(self.time * 2, (self.time * 3) as f32)))
         }
     }
     impl Updatable<DummyError> for DummyStream {
         fn update(&mut self) -> NothingOrError<DummyError> {
-            self.time += 2.0;
+            self.time += 2;
             Ok(())
         }
     }
@@ -881,7 +881,7 @@ fn derivative_stream() {
     stream.update().unwrap();
     input.borrow_mut().update().unwrap();
     stream.update().unwrap();
-    assert_eq!(stream.get().unwrap().unwrap().time, 8.0);
+    assert_eq!(stream.get().unwrap().unwrap().time, 8);
     assert_eq!(stream.get().unwrap().unwrap().value, 1.5);
 }
 #[test]
@@ -889,11 +889,11 @@ fn integral_stream() {
     #[derive(Clone, Copy, Debug)]
     struct DummyError;
     struct DummyStream {
-        time: f32,
+        time: i64,
     }
     impl DummyStream {
         pub fn new() -> Self {
-            Self { time: 0.0 }
+            Self { time: 0 }
         }
     }
     impl Getter<f32, DummyError> for DummyStream {
@@ -903,7 +903,7 @@ fn integral_stream() {
     }
     impl Updatable<DummyError> for DummyStream {
         fn update(&mut self) -> NothingOrError<DummyError> {
-            self.time += 1.0;
+            self.time += 1;
             Ok(())
         }
     }
@@ -913,7 +913,7 @@ fn integral_stream() {
     stream.update().unwrap();
     input.borrow_mut().update().unwrap();
     stream.update().unwrap();
-    assert_eq!(stream.get().unwrap().unwrap().time, 2.0);
+    assert_eq!(stream.get().unwrap().unwrap().time, 2);
     assert_eq!(stream.get().unwrap().unwrap().value, 1.0);
 }
 #[test]
@@ -921,32 +921,32 @@ fn stream_pid() {
     #[derive(Clone, Copy, Debug)]
     struct DummyError;
     struct DummyStream {
-        time: f32,
+        time: i64,
     }
     impl DummyStream {
         pub fn new() -> Self {
-            Self { time: 0.0 }
+            Self { time: 0 }
         }
     }
     impl Getter<f32, DummyError> for DummyStream {
         fn get(&self) -> Output<f32, DummyError> {
-            Ok(Some(Datum::new(self.time, self.time / 2.0)))
+            Ok(Some(Datum::new(self.time, (self.time / 2) as f32)))
         }
     }
     impl Updatable<DummyError> for DummyStream {
         fn update(&mut self) -> NothingOrError<DummyError> {
-            self.time += 2.0;
+            self.time += 2;
             Ok(())
         }
     }
     let input = make_input_getter!(DummyStream::new(), f32, DummyError);
     let mut stream = StreamPID::new(Rc::clone(&input), 5.0, 1.0, 0.01, 0.1);
     stream.update().unwrap();
-    assert_eq!(stream.get().unwrap().unwrap().time, 0.0);
+    assert_eq!(stream.get().unwrap().unwrap().time, 0);
     assert_eq!(stream.get().unwrap().unwrap().value, 5.0);
     input.borrow_mut().update().unwrap();
     stream.update().unwrap();
-    assert_eq!(stream.get().unwrap().unwrap().time, 2.0);
+    assert_eq!(stream.get().unwrap().unwrap().time, 2);
     assert_eq!(stream.get().unwrap().unwrap().value, 4.04);
 }
 #[test]
@@ -954,7 +954,7 @@ fn ewma_stream() {
     #[derive(Clone, Copy, Debug)]
     struct DummyError;
     struct DummyStream {
-        time: u8,
+        time: i64,
     }
     impl DummyStream {
         pub fn new() -> Self {
@@ -974,7 +974,7 @@ fn ewma_stream() {
                 16 => 100.0,
                 _ => 0.0,
             };
-            Ok(Some(Datum::new(self.time as f32, value)))
+            Ok(Some(Datum::new(self.time, value)))
         }
     }
     impl Updatable<DummyError> for DummyStream {
@@ -1017,7 +1017,7 @@ fn moving_average_stream() {
     #[derive(Clone, Copy, Debug)]
     struct DummyError;
     struct DummyStream {
-        time: u8,
+        time: i64,
     }
     impl DummyStream {
         pub fn new() -> Self {
@@ -1037,7 +1037,7 @@ fn moving_average_stream() {
                 16 => 100.0,
                 _ => 0.0,
             };
-            Ok(Some(Datum::new(self.time as f32, value)))
+            Ok(Some(Datum::new(self.time, value)))
         }
     }
     impl Updatable<DummyError> for DummyStream {
@@ -1047,7 +1047,7 @@ fn moving_average_stream() {
         }
     }
     let input = make_input_getter!(DummyStream::new(), f32, DummyError);
-    let mut stream = MovingAverageStream::new(Rc::clone(&input), 5.0);
+    let mut stream = MovingAverageStream::new(Rc::clone(&input), 5);
     input.borrow_mut().update().unwrap();
     stream.update().unwrap();
     assert_eq!(stream.get().unwrap().unwrap().value, 110.0);
