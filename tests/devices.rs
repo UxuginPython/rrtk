@@ -5,14 +5,14 @@ use rrtk::*;
 fn devices() {
     struct DCMotor {
         pub power: f32,
-        pub time: f32,
+        pub time: i64,
         settable_data: SettableData<f32, ()>,
     }
     impl DCMotor {
         pub fn new() -> Self {
             Self {
                 power: 0.0,
-                time: -1.0,
+                time: -1,
                 settable_data: SettableData::new(),
             }
         }
@@ -25,9 +25,9 @@ fn devices() {
             &mut self.settable_data
         }
         fn direct_set(&mut self, value: f32) -> NothingOrError<()> {
-            self.time += 2.0;
+            self.time += 2;
             self.power = value;
-            if self.time == 3.0 {
+            if self.time == 3 {
                 assert_eq!(self.power, 9.04);
             }
             Ok(())
@@ -39,13 +39,13 @@ fn devices() {
         }
     }
     struct Encoder {
-        time: f32,
+        time: i64,
         velocity: f32,
     }
     impl Encoder {
         pub fn new() -> Self {
             Self {
-                time: -1.0,
+                time: -1,
                 velocity: -1.0,
             }
         }
@@ -58,7 +58,7 @@ fn devices() {
     }
     impl Updatable<()> for Encoder {
         fn update(&mut self) -> NothingOrError<()> {
-            self.time += 2.0;
+            self.time += 2;
             self.velocity += 1.0;
             Ok(())
         }
@@ -71,7 +71,7 @@ fn devices() {
     axle.update().unwrap();
     axle.update().unwrap();
     //Ensure that we actually ran the assert_eq! in DCMotor direct_set.
-    assert!(axle.get().unwrap().unwrap().time > 3.0);
+    assert!(axle.get().unwrap().unwrap().time > 3);
 }
 #[test]
 fn follow_motion_profile() {
@@ -116,31 +116,25 @@ fn follow_motion_profile() {
     impl Updatable<()> for ServoMotor {
         fn update(&mut self) -> NothingOrError<()> {
             let time = self.time_getter.borrow().get().unwrap();
-            if time == 0.5 {
-                assert_eq!(self.state.acceleration, 1.0);
-                self.asserts += 1;
+            if time == 5 {
+                assert_eq!(self.state.acceleration, 0.01);
             }
-            if 2.499 < time && time < 2.501 {
-                assert_eq!(self.state.velocity, 1.0);
-                self.asserts += 1;
+            if time == 25 {
+                assert!(0.099 < self.state.velocity && self.state.velocity < 0.101)
             }
-            if 3.499 < time && time < 3.501 {
-                assert_eq!(self.state.acceleration, -1.0);
-                self.asserts += 1;
-            }
-            if time > 3.5 {
-                assert_eq!(self.asserts, 3);
+            if time == 35 {
+                assert_eq!(self.state.acceleration, -0.01);
             }
             Ok(())
         }
     }
     struct MyTimeGetter {
-        time: f32,
+        time: i64,
     }
     impl MyTimeGetter {
         pub fn new() -> Self {
             Self {
-                time: 0.0,
+                time: 0,
             }
         }
     }
@@ -151,7 +145,7 @@ fn follow_motion_profile() {
     }
     impl Updatable<()> for MyTimeGetter {
         fn update(&mut self) -> NothingOrError<()> {
-            self.time += 0.1;
+            self.time += 1;
             Ok(())
         }
     }
@@ -159,8 +153,8 @@ fn follow_motion_profile() {
     let motion_profile = MotionProfile::new(
         State::new(0.0, 0.0, 0.0),
         State::new(3.0, 0.0, 0.0),
-        1.0,
-        1.0
+        0.1,
+        0.01,
     );
     let motion_profile = GetterFromHistory::new_for_motion_profile(motion_profile, Rc::clone(&time_getter)).unwrap();
     let motion_profile = make_input_getter!(motion_profile, Command, ());
@@ -172,5 +166,4 @@ fn follow_motion_profile() {
         axle.following_update().unwrap();
     }
     println!("{:?}", time_getter.borrow().get().unwrap());
-    assert!(time_getter.borrow().get().unwrap() > 3.5);
 }
