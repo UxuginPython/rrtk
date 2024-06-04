@@ -78,7 +78,6 @@ fn follow_motion_profile() {
     struct ServoMotor {
         pub time_getter: InputTimeGetter<()>,
         pub state: State,
-        pub asserts: u8,
         settable_data: SettableData<Command, ()>
     }
     impl ServoMotor {
@@ -86,7 +85,6 @@ fn follow_motion_profile() {
             Self {
                 time_getter: time_getter,
                 state: State::new(0.0, 0.0, 0.0),
-                asserts: 0,
                 settable_data: SettableData::new(),
             }
         }
