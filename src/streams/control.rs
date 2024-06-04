@@ -213,11 +213,11 @@ impl<E: Copy + Debug> Updatable<E> for MovingAverageStream<E> {
         start_times.push_front(output.time - self.window);
         let mut weights = Vec::with_capacity(self.input_values.len());
         for i in 0..self.input_values.len() {
-            weights.push(end_times[i] - start_times[i]);
+            weights.push((end_times[i] - start_times[i]) as f32);
         }
         let mut value = 0.0;
         for i in 0..self.input_values.len() {
-            value += self.input_values[i].value * (weights[i] as f32);
+            value += self.input_values[i].value * weights[i] as f32;
         }
         value /= self.window as f32;
         self.value = Ok(Some(Datum::new(output.time, value)));
