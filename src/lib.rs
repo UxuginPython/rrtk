@@ -925,7 +925,6 @@ impl MotionProfile {
 #[cfg(test)]
 mod tests {
     use super::*;
-    //TODO: make PID tests work
     #[test]
     fn pid_new() {
         let pid = PIDController::new(5.0, PIDKValues::new(1.0, 0.01, 0.1));
@@ -940,25 +939,25 @@ mod tests {
     #[test]
     fn pid_initial_update() {
         let mut pid = PIDController::new(5.0, PIDKValues::new(1.0, 0.01, 0.1));
-        let new_control = pid.update(1.0, 0.0);
+        let new_control = pid.update(1, 0.0);
         assert_eq!(new_control, 5.0);
-        assert_eq!(pid.last_update_time, Some(1.0));
+        assert_eq!(pid.last_update_time, Some(1));
         assert_eq!(pid.prev_error, Some(5.0));
         assert_eq!(pid.int_error, 0.0);
     }
     #[test]
     fn pid_subsequent_update() {
         let mut pid = PIDController::new(5.0, PIDKValues::new(1.0, 0.01, 0.1));
-        let _ = pid.update(1.0, 0.0);
-        let new_control = pid.update(3.0, 1.0);
+        let _ = pid.update(1, 0.0);
+        let new_control = pid.update(3, 1.0);
         assert_eq!(new_control, 4.04);
         assert_eq!(pid.int_error, 9.0);
     }
     #[test]
     fn pidshift_no_shift() {
         let mut pid = PIDControllerShift::<1>::new(5.0, PIDKValues::new(1.0, 0.01, 0.1));
-        let _ = pid.update(1.0, 0.0);
-        let new_control = pid.update(3.0, 1.0);
+        let _ = pid.update(1, 0.0);
+        let new_control = pid.update(3, 1.0);
         assert_eq!(new_control, 4.04);
         assert_eq!(pid.shifts, [4.04]);
     }
