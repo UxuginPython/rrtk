@@ -13,7 +13,76 @@ Copyright 2024 UxuginPython on GitHub
 use crate::streams::converters::*;
 use crate::streams::math::*;
 use crate::streams::*;
+//This does store the timestamp twice, once in prev_error and once in output. Processor performance
+//and readability would suggest doing it this way, but 8 bytes could technically be saved here if
+//needed in the future. The difference is extremely minimal.
 pub struct StreamPID<E: Copy + Debug> {
+    input: InputGetter<f32, E>,
+    setpoint: f32,
+    kvals: PIDKValues,
+    prev_error: Option<Datum<f32>>,
+    int_error: f32,
+    output: Output<f32, E>,
+}
+impl<E: Copy + Debug> StreamPID<E> {
+    pub fn new(input: InputGetter<f32, E>, setpoint: f32, kvals: PIDKValues) -> Self {
+        Self {
+            input: input,
+            setpoint: setpoint,
+            kvals: kvals,
+            prev_error: None,
+            int_error: 0.0,
+            output: Ok(None),
+        }
+    }
+    #[inline]
+    fn reset(&mut self) {
+        self.prev_error = None;
+        self.int_error = 0.0;
+        self.output = Ok(None);
+    }
+}
+impl<E: Copy + Debug> Getter<f32, E> for StreamPID<E> {
+    fn get(&self) -> Output<f32, E> {
+        self.output.clone()
+    }
+}
+impl<E: Copy + Debug> Updatable<E> for StreamPID<E> {
+    fn update(&mut self) -> NothingOrError<E> {
+        let process = self.input.borrow().get();
+        let process = match process {
+            Ok(Some(value)) => value,
+            Ok(None) => {
+                self.reset();
+                return Ok(());
+            }
+            Err(error) => {
+                self.reset();
+                self.output = Err(error);
+                return Err(error);
+            }
+        };
+        let error = self.setpoint- process.value;
+        let [int_error_addend, drv_error] = match &self.prev_error {
+            Some(prev_error) => {
+                let delta_time = (process.time - prev_error.time) as f32;
+                let drv_error = (error - prev_error.value) / delta_time;
+                //Trapezoidal integral approximation is more precise than rectangular.
+                let int_error_addend = delta_time * (prev_error.value + error) / 2.0;
+                [int_error_addend, drv_error]
+            }
+            None => {
+                debug_assert_eq!(self.int_error, 0.0);
+                [0.0, 0.0]
+            }
+        };
+        self.int_error += int_error_addend;
+        self.output = Ok(Some(Datum::new(process.time, self.kvals.kp * error + self.kvals.ki * self.int_error + self.kvals.kd * drv_error)));
+        self.prev_error = Some(Datum::new(process.time, error));
+        Ok(())
+    }
+}
+/*pub struct StreamPID<E: Copy + Debug> {
     int: InputGetter<f32, E>,
     drv: InputGetter<f32, E>,
     output: SumStream<3, E>,
@@ -80,7 +149,7 @@ impl<E: Copy + Debug + 'static> Updatable<E> for StreamPID<E> {
         self.drv.borrow_mut().update()?;
         Ok(())
     }
-}
+}*/
 //https://www.itl.nist.gov/div898/handbook/pmc/section3/pmc324.htm
 pub struct EWMAStream<E: Copy + Debug> {
     input: InputGetter<f32, E>,
