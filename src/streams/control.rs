@@ -14,6 +14,7 @@ use crate::streams::*;
 //This does store the timestamp twice, once in prev_error and once in output. Processor performance
 //and readability would suggest doing it this way, but 8 bytes could technically be saved here if
 //needed in the future. The difference is extremely minimal.
+///A PID controller for use with the stream system.
 pub struct PIDControllerStream<E: Copy + Debug> {
     input: InputGetter<f32, E>,
     setpoint: f32,
@@ -80,7 +81,7 @@ impl<E: Copy + Debug> Updatable<E> for PIDControllerStream<E> {
         Ok(())
     }
 }
-//https://www.itl.nist.gov/div898/handbook/pmc/section3/pmc324.htm
+///An Exponentially Weighted Moving Average stream for use with the stream system. See <https://www.itl.nist.gov/div898/handbook/pmc/section3/pmc324.htm> for more information.
 pub struct EWMAStream<E: Copy + Debug> {
     input: InputGetter<f32, E>,
     //As data may not come in at regular intervals as is assumed by a standard EWMA, this value
@@ -151,6 +152,7 @@ impl<E: Copy + Debug> Updatable<E> for EWMAStream<E> {
         Ok(())
     }
 }
+///A moving average stream for use with the stream system.
 pub struct MovingAverageStream<E: Copy + Debug> {
     input: InputGetter<f32, E>,
     window: i64,

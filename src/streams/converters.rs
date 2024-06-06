@@ -12,6 +12,7 @@ Copyright 2024 UxuginPython on GitHub
 */
 use crate::streams::math::*;
 use crate::streams::*;
+///A stream converting all `Ok(None)` values from its input to `Err(_)` variants.
 pub struct NoneToError<T: Clone, E> {
     input: InputGetter<T, E>,
 }
@@ -34,10 +35,12 @@ impl<T: Clone, E: Copy + Debug> Getter<T, E> for NoneToError<T, E> {
     }
 }
 impl<T: Clone, E: Copy + Debug> Updatable<E> for NoneToError<T, E> {
+    ///This does not need to be called.
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
     }
 }
+///A stream converting all `Ok(None)` values from its input to a default `Ok(Some(_))` value.
 pub struct NoneToValue<T, E> {
     input: InputGetter<T, E>,
     time_getter: InputTimeGetter<E>,
@@ -73,6 +76,8 @@ impl<T: Clone, E: Copy + Debug> Updatable<E> for NoneToValue<T, E> {
         Ok(())
     }
 }
+///A stream that integrates an acceleration getter to construct a full state. Mostly useful for
+///encoders.
 pub struct AccelerationToState<E: Copy + Debug> {
     acc: InputGetter<f32, E>,
     vel: InputGetter<f32, E>,
@@ -135,6 +140,8 @@ impl<E: Copy + Debug> Updatable<E> for AccelerationToState<E> {
         Ok(())
     }
 }
+///A stream that integrates and derivates a velocity getter to construct a full state. Mostly
+///useful for encoders.
 pub struct VelocityToState<E: Copy + Debug> {
     acc: InputGetter<f32, E>,
     vel: InputGetter<f32, E>,
@@ -197,6 +204,7 @@ impl<E: Copy + Debug> Updatable<E> for VelocityToState<E> {
         Ok(())
     }
 }
+///A stream that derivates a position getter to construct a full state. Mostly useful for encoders.
 pub struct PositionToStream<E: Copy + Debug> {
     acc: InputGetter<f32, E>,
     vel: InputGetter<f32, E>,

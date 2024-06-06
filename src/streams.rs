@@ -18,6 +18,7 @@ use std::collections::vec_deque::VecDeque;
 pub mod control;
 pub mod converters;
 pub mod math;
+///Getter for returning a constant value.
 pub struct Constant<T, E: Copy + Debug> {
     settable_data: SettableData<T, E>,
     time_getter: InputTimeGetter<E>,
@@ -52,6 +53,7 @@ impl<T: Clone, E: Copy + Debug> Settable<T, E> for Constant<T, E> {
     }
 }
 impl<T: Clone, E: Copy + Debug> Updatable<E> for Constant<T, E> {
+    ///This does not need to be called.
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
     }

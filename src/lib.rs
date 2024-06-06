@@ -34,6 +34,7 @@ pub mod streams;
 ///RRTK types, but you can add your own custom error type using `Other(O)`. It is strongly
 ///recommended that you use a single `O` type across your crate.
 #[derive(Clone, Copy, Debug)]
+#[non_exhaustive]
 pub enum Error<O: Copy + Debug> {
     ///Returned when a `None` is elevated to an error by a `NoneToError`.
     FromNone,
@@ -162,9 +163,9 @@ enum PositionDerivativeDependentPIDControllerShift {
 pub type Output<T, E> = Result<Option<Datum<T>>, Error<E>>;
 ///Returned from `TimeGetter` objects, which may return either a time or an error.
 pub type TimeOutput<E> = Result<i64, Error<E>>;
-///Makes `Getter`s easier to work with by containing them in in `Rc<RefCell<Box<_>>>`.
+///Makes `Getter`s easier to work with by containing them in an `Rc<RefCell<Box<_>>>`.
 pub type InputGetter<T, E> = Rc<RefCell<Box<dyn Getter<T, E>>>>;
-///See `InputGetter`. This does the same thing but for `TimeGetter`s.
+///Makes `TimeGetter`s easier to work with by containing them in an `Rc<RefCell<Box<_>>>`.
 pub type InputTimeGetter<E> = Rc<RefCell<Box<dyn TimeGetter<E>>>>;
 ///Returned when something may return either nothing or an error.
 pub type NothingOrError<E> = Result<(), Error<E>>;
@@ -374,7 +375,7 @@ impl<G, E: Copy + Debug> GetterFromHistory<G, E> {
     }
     ///Define now as a given time in the history. Mostly used when construction and use are far
     ///apart in time.
-    pub fn set_time(&mut self, time: i64) -> Result<(), Error<E>> {
+    pub fn set_time(&mut self, time: i64) -> NothingOrError<E> {
         let time_delta = time - self.time_getter.borrow().get()?;
         self.time_delta = time_delta;
         Ok(())

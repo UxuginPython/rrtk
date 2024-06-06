@@ -11,6 +11,7 @@ Copyright 2024 UxuginPython on GitHub
     You should have received a copy of the GNU Lesser General Public License along with Rust Robotics ToolKit. If not, see <https://www.gnu.org/licenses/>.
 */
 use crate::streams::*;
+///A stream that adds all its inputs. If an input returns `Ok(None)`, it is excluded.
 pub struct SumStream<const N: usize, E> {
     addends: [InputGetter<f32, E>; N],
 }
@@ -71,6 +72,8 @@ impl<const N: usize, E: Copy + Debug> Updatable<E> for SumStream<N, E> {
         Ok(())
     }
 }
+///A stream that subtracts one of its inputs from the other. If the subtrahend stream returns
+///`Ok(None)`, the minuend's value will be returned directly.
 pub struct DifferenceStream<E> {
     minuend: InputGetter<f32, E>,
     subtrahend: InputGetter<f32, E>,
@@ -115,6 +118,10 @@ impl<E: Copy + Debug> Updatable<E> for DifferenceStream<E> {
         Ok(())
     }
 }
+///A stream that multiplies its inputs. If an input returns `Ok(None)`, it is excluded from the
+///calculation, effectively treating it as though it had returned 1. If this is not the desired
+///behavior, use `rrtk::streams::converters::NoneToValue` or
+///`rrtk::streams::converters::NoneToErroValuer`.
 pub struct ProductStream<const N: usize, E> {
     factors: [InputGetter<f32, E>; N],
 }
@@ -172,6 +179,8 @@ impl<const N: usize, E: Copy + Debug> Updatable<E> for ProductStream<N, E> {
         Ok(())
     }
 }
+///A stream that divides one if its inputs by the other. If the divisor returns `Ok(None)`, the
+///dividend's value is returned directly.
 pub struct QuotientStream<E> {
     dividend: InputGetter<f32, E>,
     divisor: InputGetter<f32, E>,
@@ -216,6 +225,8 @@ impl<E: Copy + Debug> Updatable<E> for QuotientStream<E> {
         Ok(())
     }
 }
+///A stream that exponentiates one of its inputs to the other. If the exponent input returns
+///`Ok(None)`, the base's value is returned directly. Only available with `std`.
 #[cfg(feature = "std")]
 pub struct ExponentStream<E> {
     base: InputGetter<f32, E>,
@@ -264,6 +275,7 @@ impl<E: Copy + Debug> Updatable<E> for ExponentStream<E> {
         Ok(())
     }
 }
+///A stream that computes the numerical derivative of its input.
 pub struct DerivativeStream<E: Copy + Debug> {
     input: InputGetter<f32, E>,
     value: Output<f32, E>,
@@ -319,6 +331,7 @@ impl<E: Copy + Debug> Updatable<E> for DerivativeStream<E> {
         Ok(())
     }
 }
+///A stream that computes the trapezoidal numerical integral of its input.
 pub struct IntegralStream<E: Copy + Debug> {
     input: InputGetter<f32, E>,
     value: Output<f32, E>,
