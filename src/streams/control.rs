@@ -14,7 +14,7 @@ use crate::streams::*;
 //This does store the timestamp twice, once in prev_error and once in output. Processor performance
 //and readability would suggest doing it this way, but 8 bytes could technically be saved here if
 //needed in the future. The difference is extremely minimal.
-pub struct StreamPID<E: Copy + Debug> {
+pub struct PIDControllerStream<E: Copy + Debug> {
     input: InputGetter<f32, E>,
     setpoint: f32,
     kvals: PIDKValues,
@@ -22,7 +22,7 @@ pub struct StreamPID<E: Copy + Debug> {
     int_error: f32,
     output: Output<f32, E>,
 }
-impl<E: Copy + Debug> StreamPID<E> {
+impl<E: Copy + Debug> PIDControllerStream<E> {
     pub fn new(input: InputGetter<f32, E>, setpoint: f32, kvals: PIDKValues) -> Self {
         Self {
             input: input,
@@ -40,12 +40,12 @@ impl<E: Copy + Debug> StreamPID<E> {
         self.output = Ok(None);
     }
 }
-impl<E: Copy + Debug> Getter<f32, E> for StreamPID<E> {
+impl<E: Copy + Debug> Getter<f32, E> for PIDControllerStream<E> {
     fn get(&self) -> Output<f32, E> {
         self.output.clone()
     }
 }
-impl<E: Copy + Debug> Updatable<E> for StreamPID<E> {
+impl<E: Copy + Debug> Updatable<E> for PIDControllerStream<E> {
     fn update(&mut self) -> NothingOrError<E> {
         let process = self.input.borrow().get();
         let process = match process {
