@@ -45,7 +45,7 @@ pub enum Error<O: Copy + Debug> {
     Other(O),
 }
 ///A one-dimensional motion state with position, velocity, and acceleration.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct State {
     ///Where you are.
     pub position: f32,

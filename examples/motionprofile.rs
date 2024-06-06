@@ -3,16 +3,19 @@ use std::rc::Rc;
 use std::cell::RefCell;
 struct ServoMotor {
     pub state: State,
+    pub time: i64,
     settable_data: SettableData<Command, ()>
 }
 impl ServoMotor {
     pub fn new() -> Self {
         Self {
             state: State::new(0.0, 0.0, 0.0),
+            time: 0,
             settable_data: SettableData::new(),
         }
     }
 }
+impl GetterSettable<State, Command, ()> for ServoMotor {}
 impl Settable<Command, ()> for ServoMotor {
     fn get_settable_data_ref(&self) -> &SettableData<Command, ()> {
         &self.settable_data
@@ -21,7 +24,7 @@ impl Settable<Command, ()> for ServoMotor {
         &mut self.settable_data
     }
     fn direct_set(&mut self, command: Command) -> NothingOrError<()> {
-        println!("{:?} {:?}", command.position_derivative, command.value);
+        //println!("{:?} {:?}", command.position_derivative, command.value);
         match command.position_derivative {
             PositionDerivative::Position => {
                 self.state.set_constant_position(command.value);
@@ -36,8 +39,14 @@ impl Settable<Command, ()> for ServoMotor {
         Ok(())
     }
 }
+impl Getter<State, ()> for ServoMotor {
+    fn get(&self) -> Output<State, ()> {
+        Ok(Some(Datum::new(self.time, self.state.clone())))
+    }
+}
 impl Updatable<()> for ServoMotor {
     fn update(&mut self) -> NothingOrError<()> {
+        self.state.update(1);
         Ok(())
     }
 }
@@ -73,11 +82,16 @@ fn main() {
     );
     let motion_profile = GetterFromHistory::new_for_motion_profile(motion_profile, Rc::clone(&time_getter)).unwrap();
     let motion_profile = make_input_getter!(motion_profile, Command, ());
-    let servo = Device::PreciseWrite(Box::new(ServoMotor::new()));
+    let servo = Device::ReadWrite(Box::new(ServoMotor::new()));
     let mut axle = Axle::new([servo]);
     axle.follow(motion_profile);
-    for _ in 0..2000 {
+    loop {
         time_getter.borrow_mut().update().unwrap();
         axle.following_update().unwrap();
+        let state = axle.get().unwrap().unwrap().value;
+        println!("{:?}", state);
+        if state.velocity == 0.0 {
+            break;
+        }
     }
 }
