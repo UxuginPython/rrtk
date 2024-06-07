@@ -46,6 +46,7 @@ impl Getter<State, ()> for ServoMotor {
 }
 impl Updatable<()> for ServoMotor {
     fn update(&mut self) -> NothingOrError<()> {
+        self.time += 1;
         self.state.update(1);
         Ok(())
     }
@@ -85,12 +86,15 @@ fn main() {
     let servo = Device::ReadWrite(Box::new(ServoMotor::new()));
     let mut axle = Axle::new([servo]);
     axle.follow(motion_profile);
+    axle.following_update().unwrap();
+    let statedatum = axle.get().unwrap().unwrap();
+    println!("{:?}", statedatum);
     loop {
         time_getter.borrow_mut().update().unwrap();
         axle.following_update().unwrap();
-        let state = axle.get().unwrap().unwrap().value;
-        println!("{:?}", state);
-        if state.velocity == 0.0 {
+        let statedatum = axle.get().unwrap().unwrap();
+        println!("{:?}", statedatum);
+        if statedatum.value.velocity == 0.0 {
             break;
         }
     }
