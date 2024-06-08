@@ -228,10 +228,10 @@ impl Command {
     ///Get the commanded constant position if there is one. If `position_derivative` is
     ///`PositionDerivative::Velocity` or `PositionDerivative::Acceleration`, this will return
     ///`None` as there is not a constant position.
-    pub fn get_position(&self) -> f32 {
+    pub fn get_position(&self) -> Option<f32> {
         match self.position_derivative {
-            PositionDerivative::Position => self.value,
-            _ => 0.0,
+            PositionDerivative::Position => Some(self.value),
+            _ => None,
         }
     }
     ///Get the commanded constant velocity if there is one. If `position_derivative` is
@@ -248,10 +248,10 @@ impl Command {
     ///Get the commanded constant acceleration if there is one. If `position_derivative` is not
     ///`PositionDerivative::Acceleration`, this will return `None` as there is not a constant
     ///acceleration.
-    pub fn get_acceleration(&self) -> Option<f32> {
+    pub fn get_acceleration(&self) -> f32 {
         match self.position_derivative {
-            PositionDerivative::Acceleration => Some(self.value),
-            _ => None,
+            PositionDerivative::Acceleration => self.value,
+            _ => 0.0,
         }
     }
 }
@@ -934,7 +934,7 @@ impl MotionProfile {
         } else if t < self.t3 {
             return Some(-self.max_acc);
         } else {
-            return self.end_command.get_acceleration();
+            return Some(self.end_command.get_acceleration());
         }
     }
     ///Get the intended velocity at a given time.
@@ -968,7 +968,7 @@ impl MotionProfile {
                 + self.start_vel * (t as f32)
                 + self.start_pos);
         } else {
-            return Some(self.end_command.get_position());
+            return self.end_command.get_position();
         }
     }
 }

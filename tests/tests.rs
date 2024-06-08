@@ -167,3 +167,18 @@ fn motion_profile_get_position_3() {
     assert_eq!(motion_profile.get_position(15), Some(3.5));
     assert_eq!(motion_profile.get_position(25), Some(5.375));
 }
+#[test]
+fn command() {
+    let command = Command::new(PositionDerivative::Position, 5.0);
+    assert_eq!(command.get_position(), Some(5.0));
+    assert_eq!(command.get_velocity(), Some(0.0));
+    assert_eq!(command.get_acceleration(), 0.0);
+    let command = Command::new(PositionDerivative::Velocity, 5.0);
+    assert_eq!(command.get_position(), None);
+    assert_eq!(command.get_velocity(), Some(5.0));
+    assert_eq!(command.get_acceleration(), 0.0);
+    let command = Command::new(PositionDerivative::Acceleration, 5.0);
+    assert_eq!(command.get_position(), None);
+    assert_eq!(command.get_velocity(), None);
+    assert_eq!(command.get_acceleration(), 5.0);
+}
