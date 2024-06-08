@@ -10,6 +10,9 @@ Copyright 2024 UxuginPython on GitHub
 
     You should have received a copy of the GNU Lesser General Public License along with Rust Robotics ToolKit. If not, see <https://www.gnu.org/licenses/>.
 */
+//!Streams that convert from one type to another. Some of these also do keep the same type and are
+//!for convenience in certain situations, for example when you do not want to handle a `None`
+//!variant yourself.
 use crate::streams::math::*;
 use crate::streams::*;
 ///A stream converting all `Ok(None)` values from its input to `Err(_)` variants.
@@ -17,6 +20,7 @@ pub struct NoneToError<T: Clone, E> {
     input: InputGetter<T, E>,
 }
 impl<T: Clone, E> NoneToError<T, E> {
+    ///Constructor for `NoneToError`.
     pub fn new(input: InputGetter<T, E>) -> Self {
         Self { input: input }
     }
@@ -47,6 +51,7 @@ pub struct NoneToValue<T, E> {
     none_value: T,
 }
 impl<T, E> NoneToValue<T, E> {
+    ///Constructor for `NoneToValue`.
     pub fn new(input: InputGetter<T, E>, time_getter: InputTimeGetter<E>, none_value: T) -> Self {
         Self {
             input: input,
@@ -84,6 +89,7 @@ pub struct AccelerationToState<E: Copy + Debug> {
     pos: InputGetter<f32, E>,
 }
 impl<E: Copy + Debug + 'static> AccelerationToState<E> {
+    ///Constructor for `AccelerationToState`.
     pub fn new(acc: InputGetter<f32, E>) -> Self {
         let vel = make_input_getter!(IntegralStream::new(Rc::clone(&acc)), f32, E);
         let pos = make_input_getter!(IntegralStream::new(Rc::clone(&vel)), f32, E);
@@ -148,6 +154,7 @@ pub struct VelocityToState<E: Copy + Debug> {
     pos: InputGetter<f32, E>,
 }
 impl<E: Copy + Debug + 'static> VelocityToState<E> {
+    ///Constructor for `VelocityToState`.
     pub fn new(vel: InputGetter<f32, E>) -> Self {
         let acc = make_input_getter!(DerivativeStream::new(Rc::clone(&vel)), f32, E);
         let pos = make_input_getter!(IntegralStream::new(Rc::clone(&vel)), f32, E);
@@ -211,6 +218,7 @@ pub struct PositionToStream<E: Copy + Debug> {
     pos: InputGetter<f32, E>,
 }
 impl<E: Copy + Debug + 'static> PositionToStream<E> {
+    ///Constructor for `PositionToStream`.
     pub fn new(pos: InputGetter<f32, E>) -> Self {
         let vel = make_input_getter!(DerivativeStream::new(Rc::clone(&pos)), f32, E);
         let acc = make_input_getter!(DerivativeStream::new(Rc::clone(&vel)), f32, E);

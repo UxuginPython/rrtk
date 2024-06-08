@@ -10,6 +10,7 @@ Copyright 2024 UxuginPython on GitHub
 
     You should have received a copy of the GNU Lesser General Public License along with Rust Robotics ToolKit. If not, see <https://www.gnu.org/licenses/>.
 */
+//!Streams performing control theory operations.
 use crate::streams::*;
 //This does store the timestamp twice, once in prev_error and once in output. Processor performance
 //and readability would suggest doing it this way, but 8 bytes could technically be saved here if
@@ -24,6 +25,7 @@ pub struct PIDControllerStream<E: Copy + Debug> {
     output: Output<f32, E>,
 }
 impl<E: Copy + Debug> PIDControllerStream<E> {
+    ///Constructor for `PIDControllerStream`.
     pub fn new(input: InputGetter<f32, E>, setpoint: f32, kvals: PIDKValues) -> Self {
         Self {
             input: input,
@@ -91,6 +93,7 @@ pub struct EWMAStream<E: Copy + Debug> {
     update_time: Option<i64>,
 }
 impl<E: Copy + Debug> EWMAStream<E> {
+    ///Constructor for `EWMAStream`.
     pub fn new(input: InputGetter<f32, E>, smoothing_constant: f32) -> Self {
         Self {
             input: input,
@@ -160,6 +163,7 @@ pub struct MovingAverageStream<E: Copy + Debug> {
     input_values: VecDeque<Datum<f32>>,
 }
 impl<E: Copy + Debug> MovingAverageStream<E> {
+    ///Constructor for `MovingAverageStream`.
     pub fn new(input: InputGetter<f32, E>, window: i64) -> Self {
         Self {
             input: input,

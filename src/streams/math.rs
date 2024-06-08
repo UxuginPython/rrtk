@@ -10,12 +10,14 @@ Copyright 2024 UxuginPython on GitHub
 
     You should have received a copy of the GNU Lesser General Public License along with Rust Robotics ToolKit. If not, see <https://www.gnu.org/licenses/>.
 */
+//!Streams that perform mathematical operations.
 use crate::streams::*;
 ///A stream that adds all its inputs. If an input returns `Ok(None)`, it is excluded.
 pub struct SumStream<const N: usize, E> {
     addends: [InputGetter<f32, E>; N],
 }
 impl<const N: usize, E> SumStream<N, E> {
+    ///Constructor for `SumStream`.
     pub fn new(addends: [InputGetter<f32, E>; N]) -> Self {
         if N < 1 {
             panic!("rrtk::streams::SumStream must have at least one input stream");
@@ -79,6 +81,7 @@ pub struct DifferenceStream<E> {
     subtrahend: InputGetter<f32, E>,
 }
 impl<E> DifferenceStream<E> {
+    ///Constructor for `DifferenceStream`.
     pub fn new(minuend: InputGetter<f32, E>, subtrahend: InputGetter<f32, E>) -> Self {
         Self {
             minuend: minuend,
@@ -126,6 +129,7 @@ pub struct ProductStream<const N: usize, E> {
     factors: [InputGetter<f32, E>; N],
 }
 impl<const N: usize, E> ProductStream<N, E> {
+    ///Constructor for `ProductStream`.
     pub fn new(factors: [InputGetter<f32, E>; N]) -> Self {
         if N < 1 {
             panic!("rrtk::streams::ProductStream must have at least one input stream");
@@ -186,6 +190,7 @@ pub struct QuotientStream<E> {
     divisor: InputGetter<f32, E>,
 }
 impl<E> QuotientStream<E> {
+    ///Constructor for `QuotientStream`.
     pub fn new(dividend: InputGetter<f32, E>, divisor: InputGetter<f32, E>) -> Self {
         Self {
             dividend: dividend,
@@ -234,6 +239,7 @@ pub struct ExponentStream<E> {
 }
 #[cfg(feature = "std")]
 impl<E> ExponentStream<E> {
+    ///Constructor for `ExponentStream`.
     pub fn new(base: InputGetter<f32, E>, exponent: InputGetter<f32, E>) -> Self {
         Self {
             base: base,
@@ -283,6 +289,7 @@ pub struct DerivativeStream<E: Copy + Debug> {
     prev_output: Option<Datum<f32>>,
 }
 impl<E: Copy + Debug> DerivativeStream<E> {
+    ///Constructor for `DerivativeStream`.
     pub fn new(input: InputGetter<f32, E>) -> Self {
         Self {
             input: input,
@@ -338,6 +345,7 @@ pub struct IntegralStream<E: Copy + Debug> {
     prev_output: Option<Datum<f32>>,
 }
 impl<E: Copy + Debug> IntegralStream<E> {
+    ///Constructor for `IntegralStream`.
     pub fn new(input: InputGetter<f32, E>) -> Self {
         Self {
             input: input,

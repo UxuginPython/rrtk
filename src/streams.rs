@@ -10,6 +10,9 @@ Copyright 2024 UxuginPython on GitHub
 
     You should have received a copy of the GNU Lesser General Public License along with Rust Robotics ToolKit. If not, see <https://www.gnu.org/licenses/>.
 */
+//!Getters that do data processing and have other getters as inputs are called streams. These are
+//!some helpful builtin streams for controlling your robot. See the `pid` example to learn more
+//!about how to use the stream system.
 use crate::*;
 #[cfg(not(feature = "std"))]
 use alloc::collections::vec_deque::VecDeque;
@@ -25,6 +28,7 @@ pub struct Constant<T, E: Copy + Debug> {
     value: T,
 }
 impl<T, E: Copy + Debug> Constant<T, E> {
+    ///Constructor for `streams::Constant`.
     pub fn new(time_getter: InputTimeGetter<E>, value: T) -> Self {
         Self {
             settable_data: SettableData::new(),

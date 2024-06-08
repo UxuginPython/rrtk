@@ -10,6 +10,10 @@ Copyright 2024 UxuginPython on GitHub
 
     You should have received a copy of the GNU Lesser General Public License along with Rust Robotics ToolKit. If not, see <https://www.gnu.org/licenses/>.
 */
+//!Rust Robotics ToolKit
+//!A set of algorithms and other tools for robotics in Rust.
+//!It is partially `no_std`. It does not currently integrate with any API directly, but this may be added in the future.
+#![warn(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
 #[cfg(feature = "std")]
 use std::cell::RefCell;
@@ -144,6 +148,7 @@ pub struct PositionDerivativeDependentPIDKValues {
     pub acceleration: PIDKValues,
 }
 impl PositionDerivativeDependentPIDKValues {
+    ///Constructor for `PositionDerivativeDependentPIDKValues`.
     pub fn new(position: PIDKValues, velocity: PIDKValues, acceleration: PIDKValues) -> Self {
         Self {
             position: position,
@@ -213,25 +218,36 @@ pub struct Command {
     pub value: f32,
 }
 impl Command {
+    ///Constructor for `Command`.
     pub fn new(position_derivative: PositionDerivative, value: f32) -> Self {
         Self {
             position_derivative: position_derivative,
             value: value,
         }
     }
+    ///Get the commanded constant position if there is one. If `position_derivative` is
+    ///`PositionDerivative::Velocity` or `PositionDerivative::Acceleration`, this will return
+    ///`None` as there is not a constant position.
     pub fn get_position(&self) -> f32 {
         match self.position_derivative {
             PositionDerivative::Position => self.value,
             _ => 0.0,
         }
     }
+    ///Get the commanded constant velocity if there is one. If `position_derivative` is
+    ///`PositionDerivative::Acceleration`, this will return `None` as there is not a constant
+    ///velocity. If `position_derivative` is `PositionDerivative::Position`, this will return 0 as
+    ///velocity should be zero with a constant position.
     pub fn get_velocity(&self) -> Option<f32> {
         match self.position_derivative {
-            PositionDerivative::Position => None,
+            PositionDerivative::Position => Some(0.0),
             PositionDerivative::Velocity => Some(self.value),
-            PositionDerivative::Acceleration => Some(0.0),
+            PositionDerivative::Acceleration => None,
         }
     }
+    ///Get the commanded constant acceleration if there is one. If `position_derivative` is not
+    ///`PositionDerivative::Acceleration`, this will return `None` as there is not a constant
+    ///acceleration.
     pub fn get_acceleration(&self) -> Option<f32> {
         match self.position_derivative {
             PositionDerivative::Acceleration => Some(self.value),
@@ -261,6 +277,7 @@ pub struct SettableData<S, E: Copy + Debug> {
     pub(crate) last_request: Option<S>,
 }
 impl<S, E: Copy + Debug> SettableData<S, E> {
+    ///Constructor for SettableData.
     pub fn new() -> Self {
         Self {
             following: SettableFollowing::Idle,
@@ -279,6 +296,7 @@ pub trait Settable<S: Clone, E: Copy + Debug>: Updatable<E> {
     ///language, you must implement this but call `set`. Do not call this directly as it will make
     ///`get_last_request` work incorrectly.
     fn direct_set(&mut self, value: S) -> Result<(), Error<E>>;
+    ///Set something to a value. For example, this could set a motor to a voltage.
     fn set(&mut self, value: S) -> Result<(), Error<E>> {
         self.direct_set(value.clone())?;
         let data = self.get_settable_data_mut();
@@ -326,6 +344,7 @@ pub trait Settable<S: Clone, E: Copy + Debug>: Updatable<E> {
         self.update()?;
         Ok(())
     }
+    ///Get the argument from the last time `set` was called.
     fn get_last_request(&self) -> Option<S> {
         let data = self.get_settable_data_ref();
         data.last_request.clone()
