@@ -10,6 +10,16 @@ Copyright 2024 UxuginPython on GitHub
 
     You should have received a copy of the GNU Lesser General Public License along with Rust Robotics ToolKit. If not, see <https://www.gnu.org/licenses/>.
 */
+#[cfg(feature = "std")]
+use std::cell::RefCell;
+#[cfg(feature = "std")]
+use std::rc::Rc;
+#[cfg(not(feature = "std"))]
+extern crate alloc;
+#[cfg(not(feature = "std"))]
+use alloc::rc::Rc;
+#[cfg(not(feature = "std"))]
+use core::cell::RefCell;
 use rrtk::*;
 #[test]
 fn pidshift_shift() {
@@ -181,4 +191,40 @@ fn command() {
     assert_eq!(command.get_position(), None);
     assert_eq!(command.get_velocity(), None);
     assert_eq!(command.get_acceleration(), 5.0);
+}
+#[test]
+fn time_getter_from_stream() {
+    struct Stream {
+        time: i64,
+    }
+    impl Stream {
+        fn new() -> Self {
+            Self {
+                time: 0,
+            }
+        }
+    }
+    impl Getter<(), ()> for Stream {
+        fn get(&self) -> Output<(), ()> {
+            match self.time {
+                0 => Ok(Some(Datum::new(self.time, ()))),
+                1 => Ok(None),
+                2 => Err(Error::Other(())),
+                _ => panic!("should always be 0, 1, or 2")
+            }
+        }
+    }
+    impl Updatable<()> for Stream {
+        fn update(&mut self) -> NothingOrError<()> {
+            self.time += 1;
+            Ok(())
+        }
+    }
+    let stream = make_input_getter!(Stream::new(), (), ());
+    let time_getter = TimeGetterFromStream::new(Rc::clone(&stream));
+    assert_eq!(time_getter.get(), Ok(0));
+    stream.borrow_mut().update().unwrap();
+    assert_eq!(time_getter.get(), Err(Error::FromNone));
+    stream.borrow_mut().update().unwrap();
+    assert_eq!(time_getter.get(), Err(Error::Other(())));
 }

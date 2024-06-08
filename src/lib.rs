@@ -37,7 +37,7 @@ pub mod streams;
 ///RRTK follows the enum style of error handling. This is the error type returned from nearly all
 ///RRTK types, but you can add your own custom error type using `Other(O)`. It is strongly
 ///recommended that you use a single `O` type across your crate.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 #[non_exhaustive]
 pub enum Error<O: Copy + Debug> {
     ///Returned when a `None` is elevated to an error by a `NoneToError`.
@@ -49,7 +49,7 @@ pub enum Error<O: Copy + Debug> {
     Other(O),
 }
 ///A one-dimensional motion state with position, velocity, and acceleration.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct State {
     ///Where you are.
     pub position: f32,
@@ -186,7 +186,7 @@ pub struct TimeGetterFromStream<T: Clone, E> {
 }
 impl<T: Clone, E> TimeGetterFromStream<T, E> {
     ///Constructor for `TimeGetterFromStream`.
-    pub fn new(stream: Rc<RefCell<Box<dyn Getter<T, E>>>>) -> Self {
+    pub fn new(stream: InputGetter<T, E>) -> Self {
         Self {
             elevator: streams::converters::NoneToError::new(Rc::clone(&stream)),
         }
