@@ -3,14 +3,14 @@ use std::rc::Rc;
 use std::cell::RefCell;
 struct ServoMotor {
     pub state: State,
-    pub time: i64,
+    pub time_getter: InputTimeGetter<()>,
     settable_data: SettableData<Command, ()>
 }
 impl ServoMotor {
-    pub fn new() -> Self {
+    pub fn new(time_getter: InputTimeGetter<()>) -> Self {
         Self {
             state: State::new(0.0, 0.0, 0.0),
-            time: 0,
+            time_getter: time_getter,
             settable_data: SettableData::new(),
         }
     }
@@ -41,12 +41,11 @@ impl Settable<Command, ()> for ServoMotor {
 }
 impl Getter<State, ()> for ServoMotor {
     fn get(&self) -> Output<State, ()> {
-        Ok(Some(Datum::new(self.time, self.state.clone())))
+        Ok(Some(Datum::new(self.time_getter.borrow().get()?, self.state.clone())))
     }
 }
 impl Updatable<()> for ServoMotor {
     fn update(&mut self) -> NothingOrError<()> {
-        self.time += 1;
         self.state.update(1);
         Ok(())
     }
@@ -83,7 +82,7 @@ fn main() {
     );
     let motion_profile = GetterFromHistory::new_for_motion_profile(motion_profile, Rc::clone(&time_getter)).unwrap();
     let motion_profile = make_input_getter!(motion_profile, Command, ());
-    let servo = Device::ReadWrite(Box::new(ServoMotor::new()));
+    let servo = Device::ReadWrite(Box::new(ServoMotor::new(Rc::clone(&time_getter))));
     let mut axle = Axle::new([servo]);
     axle.follow(motion_profile);
     axle.following_update().unwrap();
