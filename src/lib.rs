@@ -219,6 +219,25 @@ impl Command {
             value: value,
         }
     }
+    pub fn get_position(&self) -> f32 {
+        match self.position_derivative {
+            PositionDerivative::Position => self.value,
+            _ => 0.0,
+        }
+    }
+    pub fn get_velocity(&self) -> Option<f32> {
+        match self.position_derivative {
+            PositionDerivative::Position => None,
+            PositionDerivative::Velocity => Some(self.value),
+            PositionDerivative::Acceleration => Some(0.0),
+        }
+    }
+    pub fn get_acceleration(&self) -> Option<f32> {
+        match self.position_derivative {
+            PositionDerivative::Acceleration => Some(self.value),
+            _ => None,
+        }
+    }
 }
 ///Something with an `update` method. Mostly for subtraiting.
 pub trait Updatable<E: Copy + Debug> {
@@ -768,6 +787,7 @@ pub struct MotionProfile {
     t2: i64,
     t3: i64,
     max_acc: f32,
+    end_command: Command,
 }
 impl<E: Copy + Debug> History<Command, E> for MotionProfile {
     fn get(&self, time: i64) -> Option<Datum<Command>> {
@@ -837,6 +857,15 @@ impl MotionProfile {
         assert!(d_t2 >= 0.0);
         let t2 = t1 + d_t2;
         let t3 = t2 + d_t3;
+        let end_command = if end_state.acceleration == 0.0 {
+            if end_state.velocity == 0.0 {
+                Command::new(PositionDerivative::Position, end_state.position)
+            } else {
+                Command::new(PositionDerivative::Velocity, end_state.velocity)
+            }
+        } else {
+            Command::new(PositionDerivative::Acceleration, end_state.acceleration)
+        };
         MotionProfile {
             start_pos: start_state.position,
             start_vel: start_state.velocity,
@@ -844,6 +873,7 @@ impl MotionProfile {
             t2: t2 as i64,
             t3: t3 as i64,
             max_acc: max_acc,
+            end_command: end_command,
         }
     }
     ///Get the intended `PositionDerivative` at a given time.
@@ -857,7 +887,7 @@ impl MotionProfile {
         } else if t < self.t3 {
             return Some(PositionDerivative::Acceleration);
         } else {
-            return None;
+            return Some(self.end_command.position_derivative);
         }
     }
     ///Get the `MotionProfilePiece` at a given time.
@@ -885,7 +915,7 @@ impl MotionProfile {
         } else if t < self.t3 {
             return Some(-self.max_acc);
         } else {
-            return None;
+            return self.end_command.get_acceleration();
         }
     }
     ///Get the intended velocity at a given time.
@@ -899,7 +929,7 @@ impl MotionProfile {
         } else if t < self.t3 {
             return Some(self.max_acc * ((self.t1 + self.t2 - t) as f32) + self.start_vel);
         } else {
-            return None;
+            return self.end_command.get_velocity();
         }
     }
     ///Get the intended position at a given time.
@@ -919,7 +949,7 @@ impl MotionProfile {
                 + self.start_vel * (t as f32)
                 + self.start_pos);
         } else {
-            return None;
+            return Some(self.end_command.get_position());
         }
     }
 }
