@@ -92,7 +92,7 @@ impl State {
     }
 }
 ///A container for a time and something else, usually an `f32` or a `State`.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Datum<T> {
     ///Timestamp for the datum. This should probably be absolute.
     pub time: i64,
@@ -119,7 +119,7 @@ pub enum PositionDerivative {
     Acceleration,
 }
 ///Coefficients for a PID controller.
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct PIDKValues {
     ///Proportional coefficient.
     pub kp: f32,
@@ -210,7 +210,7 @@ pub trait History<T: Clone, E: Copy + Debug>: Updatable<E> {
     fn get(&self, time: i64) -> Option<Datum<T>>;
 }
 ///A command for a motor to perform: go to a position, run at a velocity, or accelerate at a rate.
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Command {
     ///Controls whether you go to a position, run at a velocity, or accelerate at a rate.
     pub position_derivative: PositionDerivative,
@@ -774,7 +774,6 @@ impl<const N: usize> PIDControllerShift<N> {
         self.shifts[self.shifts.len() - 1]
     }
 }
-///Compute absolute value without the standard library.
 //abs method of f32 does not exist in no_std
 #[cfg(not(feature = "std"))]
 #[inline]
@@ -799,6 +798,7 @@ pub enum MotionProfilePiece {
     Complete,
 }
 ///A motion profile for getting from one state to another.
+#[derive(Clone, Debug, PartialEq)]
 pub struct MotionProfile {
     start_pos: f32,
     start_vel: f32,
