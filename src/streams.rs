@@ -62,7 +62,6 @@ impl<T: Clone, E: Copy + Debug> Updatable<E> for Constant<T, E> {
         Ok(())
     }
 }
-//TODO before 0.3.0: write a test for this
 ///Returns the output of whichever input has the latest time.
 pub struct Latest<T, const C: usize, E: Copy + Debug> {
     inputs: [InputGetter<T, E>; C],
@@ -70,9 +69,6 @@ pub struct Latest<T, const C: usize, E: Copy + Debug> {
 impl<T, const C: usize, E: Copy + Debug> Latest<T, C, E> {
     ///Constructor for `Latest`.
     pub fn new(inputs: [InputGetter<T, E>; C]) -> Self {
-        if C < 1 {
-            panic!("rrtk::streams::Latest C must be at least 1.");
-        }
         Self {
             inputs: inputs,
         }

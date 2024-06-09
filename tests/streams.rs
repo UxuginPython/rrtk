@@ -1073,3 +1073,93 @@ fn moving_average_stream() {
     stream.update().unwrap();
     assert_eq!(stream.get().unwrap().unwrap().value, 106.6);
 }
+#[test]
+fn latest() {
+    struct Stream1 {
+        time: i64,
+    }
+    impl Stream1 {
+        pub fn new() -> Self {
+            Self {
+                time: 0,
+            }
+        }
+    }
+    impl Getter<u8, ()> for Stream1 {
+        fn get(&self) -> Output<u8, ()> {
+            match self.time {
+                0 => Ok(Some(Datum::new(1, 1))), //Some, Some
+                1 => Ok(Some(Datum::new(0, 0))), //Some, Some
+                2 => Ok(Some(Datum::new(0, 1))), //Some, None
+                3 => Ok(Some(Datum::new(0, 1))), //Some, Err
+                4 => Ok(None),                   //None, None
+                5 => Ok(None),                   //None, Err
+                6 => Err(Error::Other(())),      //Err,  Err
+                _ => panic!("should be unreachable"),
+            }
+        }
+    }
+    impl Updatable<()> for Stream1 {
+        fn update(&mut self) -> NothingOrError<()> {
+            self.time += 1;
+            Ok(())
+        }
+    }
+    struct Stream2 {
+        time: i64,
+    }
+    impl Stream2 {
+        pub fn new() -> Self {
+            Self {
+                time: 0,
+            }
+        }
+    }
+    impl Getter<u8, ()> for Stream2 {
+        fn get(&self) -> Output<u8, ()> {
+            match self.time {
+                0 => Ok(Some(Datum::new(0, 0))), //Some, Some
+                1 => Ok(Some(Datum::new(1, 2))), //Some, Some
+                2 => Ok(None),                   //Some, None
+                3 => Err(Error::Other(())),      //Some, Err
+                4 => Ok(None),                   //None, None
+                5 => Err(Error::Other(())),      //None, Err
+                6 => Err(Error::Other(())),      //Err,  Err
+                _ => panic!("should be unreachable"),
+            }
+        }
+    }
+    impl Updatable<()> for Stream2 {
+        fn update(&mut self) -> NothingOrError<()> {
+            self.time += 1;
+            Ok(())
+        }
+    }
+    let stream1 = make_input_getter!(Stream1::new(), u8, ());
+    let stream2 = make_input_getter!(Stream2::new(), u8, ());
+    let latest = Latest::new([Rc::clone(&stream1), Rc::clone(&stream2)]);
+    assert_eq!(latest.get(), Ok(Some(Datum::new(1, 1))));
+    stream1.borrow_mut().update().unwrap();
+    stream2.borrow_mut().update().unwrap();
+    assert_eq!(latest.get(), Ok(Some(Datum::new(1, 2))));
+    stream1.borrow_mut().update().unwrap();
+    stream2.borrow_mut().update().unwrap();
+    assert_eq!(latest.get(), Ok(Some(Datum::new(0, 1))));
+    stream1.borrow_mut().update().unwrap();
+    stream2.borrow_mut().update().unwrap();
+    assert_eq!(latest.get(), Ok(Some(Datum::new(0, 1))));
+    stream1.borrow_mut().update().unwrap();
+    stream2.borrow_mut().update().unwrap();
+    assert_eq!(latest.get(), Ok(None));
+    stream1.borrow_mut().update().unwrap();
+    stream2.borrow_mut().update().unwrap();
+    assert_eq!(latest.get(), Ok(None));
+    stream1.borrow_mut().update().unwrap();
+    stream2.borrow_mut().update().unwrap();
+    assert_eq!(latest.get(), Ok(None));
+}
+#[test]
+fn empty_latest() {
+    let latest: Latest<(), 0, ()> = Latest::new([]);
+    assert_eq!(latest.get(), Ok(None));
+}

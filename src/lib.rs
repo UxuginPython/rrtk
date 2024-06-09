@@ -92,7 +92,7 @@ impl State {
     }
 }
 ///A container for a time and something else, usually an `f32` or a `State`.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Datum<T> {
     ///Timestamp for the datum. This should probably be absolute.
     pub time: i64,
