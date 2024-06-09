@@ -81,7 +81,7 @@ fn make_input_getter_() {
     let tg_stream = make_input_getter!(DummyStream::new(), f32, Nothing);
     let time_getter =
         make_input_time_getter!(TimeGetterFromStream::new(Rc::clone(&tg_stream)), Nothing);
-    let stream = Constant::new(Rc::clone(&time_getter), 20u8);
+    let stream = ConstantGetter::new(Rc::clone(&time_getter), 20u8);
     assert_eq!(stream.get().unwrap().unwrap().value, 20);
     tg_stream.borrow_mut().update().unwrap();
     assert_eq!(stream.get().unwrap().unwrap().value, 20);
@@ -113,7 +113,7 @@ fn constant() {
     let time_getter = Rc::new(RefCell::new(Box::new(TimeGetterFromStream::new(Rc::clone(
         &tg_stream,
     ))) as Box<dyn TimeGetter<Nothing>>));
-    let mut stream = Constant::new(Rc::clone(&time_getter), 20u8);
+    let mut stream = ConstantGetter::new(Rc::clone(&time_getter), 20u8);
     assert_eq!(stream.get().unwrap().unwrap().value, 20);
     tg_stream.borrow_mut().update().unwrap();
     assert_eq!(stream.get().unwrap().unwrap().value, 20);

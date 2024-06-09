@@ -1,6 +1,5 @@
 use rrtk::streams::converters::*;
 use rrtk::streams::math::*;
-use rrtk::streams::*;
 use rrtk::*;
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -16,10 +15,10 @@ impl StreamPID {
     pub fn new(input: InputGetter<f32, ()>, setpoint: f32, kp: f32, ki: f32, kd: f32) -> Self {
         let time_getter = make_input_time_getter!(TimeGetterFromStream::new(Rc::clone(&input)), ());
         let setpoint =
-            make_input_getter!(Constant::new(Rc::clone(&time_getter), setpoint), f32, ());
-        let kp = make_input_getter!(Constant::new(Rc::clone(&time_getter), kp), f32, ());
-        let ki = make_input_getter!(Constant::new(Rc::clone(&time_getter), ki), f32, ());
-        let kd = make_input_getter!(Constant::new(Rc::clone(&time_getter), kd), f32, ());
+            make_input_getter!(ConstantGetter::new(Rc::clone(&time_getter), setpoint), f32, ());
+        let kp = make_input_getter!(ConstantGetter::new(Rc::clone(&time_getter), kp), f32, ());
+        let ki = make_input_getter!(ConstantGetter::new(Rc::clone(&time_getter), ki), f32, ());
+        let kd = make_input_getter!(ConstantGetter::new(Rc::clone(&time_getter), kd), f32, ());
         let error = make_input_getter!(
             DifferenceStream::new(Rc::clone(&setpoint), Rc::clone(&input)),
             f32,

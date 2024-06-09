@@ -445,6 +445,47 @@ impl<G: Clone, E: Copy + Debug> Getter<G, E> for GetterFromHistory<G, E> {
             .get(self.time_getter.borrow().get()? + self.time_delta))
     }
 }
+///Getter for returning a constant value.
+pub struct ConstantGetter<T, E: Copy + Debug> {
+    settable_data: SettableData<T, E>,
+    time_getter: InputTimeGetter<E>,
+    value: T,
+}
+impl<T, E: Copy + Debug> ConstantGetter<T, E> {
+    ///Constructor for `streams::Constant`.
+    pub fn new(time_getter: InputTimeGetter<E>, value: T) -> Self {
+        Self {
+            settable_data: SettableData::new(),
+            time_getter: time_getter,
+            value: value,
+        }
+    }
+}
+impl<T: Clone, E: Copy + Debug> GetterSettable<T, T, E> for ConstantGetter<T, E> {}
+impl<T: Clone, E: Copy + Debug> Getter<T, E> for ConstantGetter<T, E> {
+    fn get(&self) -> Output<T, E> {
+        let time = self.time_getter.borrow().get()?;
+        Ok(Some(Datum::new(time, self.value.clone())))
+    }
+}
+impl<T: Clone, E: Copy + Debug> Settable<T, E> for ConstantGetter<T, E> {
+    fn get_settable_data_ref(&self) -> &SettableData<T, E> {
+        &self.settable_data
+    }
+    fn get_settable_data_mut(&mut self) -> &mut SettableData<T, E> {
+        &mut self.settable_data
+    }
+    fn direct_set(&mut self, value: T) -> Result<(), Error<E>> {
+        self.value = value;
+        Ok(())
+    }
+}
+impl<T: Clone, E: Copy + Debug> Updatable<E> for ConstantGetter<T, E> {
+    ///This does not need to be called.
+    fn update(&mut self) -> NothingOrError<E> {
+        Ok(())
+    }
+}
 ///Solely for subtraiting. Allows you to require that a type implements both `Getter` and
 ///`Settable` with a single trait. No methods and does nothing on its own.
 pub trait GetterSettable<G, S: Clone, E: Copy + Debug>: Getter<G, E> + Settable<S, E> {}
