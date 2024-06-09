@@ -193,6 +193,15 @@ fn command() {
     assert_eq!(command.get_acceleration(), 5.0);
 }
 #[test]
+fn command_from_state() {
+    let command = Command::from(State::new(1.0, 2.0, 3.0));
+    assert_eq!(command, Command::new(PositionDerivative::Acceleration, 3.0));
+    let command = Command::from(State::new(1.0, 2.0, 0.0));
+    assert_eq!(command, Command::new(PositionDerivative::Velocity, 2.0));
+    let command = Command::from(State::new(1.0, 0.0, 0.0));
+    assert_eq!(command, Command::new(PositionDerivative::Position, 1.0));
+}
+#[test]
 fn time_getter_from_stream() {
     struct Stream {
         time: i64,

@@ -255,6 +255,19 @@ impl Command {
         }
     }
 }
+impl From<State> for Command {
+    fn from(state: State) -> Self {
+        if state.acceleration == 0.0 {
+            if state.velocity == 0.0 {
+                return Command::new(PositionDerivative::Position, state.position);
+            } else {
+                return Command::new(PositionDerivative::Velocity, state.velocity);
+            }
+        } else {
+            return Command::new(PositionDerivative::Acceleration, state.acceleration);
+        }
+    }
+}
 ///Something with an `update` method. Mostly for subtraiting.
 pub trait Updatable<E: Copy + Debug> {
     ///As this trait is very generic, exactly what this does will be very dependent on the
@@ -917,15 +930,7 @@ impl MotionProfile {
         assert!(d_t2 >= 0.0);
         let t2 = t1 + d_t2;
         let t3 = t2 + d_t3;
-        let end_command = if end_state.acceleration == 0.0 {
-            if end_state.velocity == 0.0 {
-                Command::new(PositionDerivative::Position, end_state.position)
-            } else {
-                Command::new(PositionDerivative::Velocity, end_state.velocity)
-            }
-        } else {
-            Command::new(PositionDerivative::Acceleration, end_state.acceleration)
-        };
+        let end_command = Command::from(end_state);
         MotionProfile {
             start_pos: start_state.position,
             start_vel: start_state.velocity,
