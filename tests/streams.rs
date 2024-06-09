@@ -331,6 +331,11 @@ fn sum_stream() {
     assert_eq!(stream.get().unwrap().unwrap().value, 2.0);
 }
 #[test]
+#[should_panic]
+fn empty_sum_stream() {
+    let _: SumStream<0, ()> = SumStream::new([]);
+}
+#[test]
 fn difference_stream() {
     #[derive(Clone, Copy, Debug)]
     struct DummyError;
@@ -544,6 +549,11 @@ fn product_stream() {
     erroring.borrow_mut().update().unwrap();
     assert_eq!(stream.get().unwrap().unwrap().time, 2);
     assert_eq!(stream.get().unwrap().unwrap().value, 15.0);
+}
+#[test]
+#[should_panic]
+fn empty_product_stream() {
+    let _: ProductStream<0, ()> = ProductStream::new([]);
 }
 #[test]
 fn quotient_stream() {
@@ -1159,7 +1169,7 @@ fn latest() {
     assert_eq!(latest.get(), Ok(None));
 }
 #[test]
+#[should_panic]
 fn empty_latest() {
-    let latest: Latest<(), 0, ()> = Latest::new([]);
-    assert_eq!(latest.get(), Ok(None));
+    let _: Latest<(), 0, ()> = Latest::new([]);
 }

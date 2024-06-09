@@ -69,6 +69,9 @@ pub struct Latest<T, const C: usize, E: Copy + Debug> {
 impl<T, const C: usize, E: Copy + Debug> Latest<T, C, E> {
     ///Constructor for `Latest`.
     pub fn new(inputs: [InputGetter<T, E>; C]) -> Self {
+        if C < 1 {
+            panic!("rrtk::streams::Latest C must be at least 1.");
+        }
         Self {
             inputs: inputs,
         }
