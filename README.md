@@ -64,3 +64,23 @@ Add moving average stream.
 - Don't require a feature to be enabled for motion profiles.
 - Make `Settable` able to follow `Getter`s of the same type.
 - Add `GetterFromHistory` struct allowing `History` objects to be used as `Getter`s.
+### 0.3.0
+- Add `set_delta` and `set_time` methods to `GetterFromHistory`.
+- Move `streams::Constant` to `ConstantGetter`.
+- Implement `Settable` for `ConstantGetter`.
+- Add `get_last_request` method to `Settable`.
+- Move `MotionProfile` `get_*` methods to `Option` instead of `Result`.
+- Rename `UpdateOutput` to `NothingOrError`.
+- Fix `Axle` bug where it would try to use nonexistent PID controllers for `Device::ImpreciseWrite` objects if it had not yet received a `Command`.
+- Instead of directly implementing `set` in `Settable`, you now implement `direct_set`. You should still *call* just `set` though. This is a workaround required to make `SettableData` and `get_last_request` work correctly.
+- Move `MotionProfile` to `History<Command, E>` instead of `History<State, E>`.
+- Move timestamps to `i64` instread of `i32`. The recommended unit is nanoseconds. This is not `u64` due to the use of deltas.
+- Fix `MovingAverageStream` panicing issue.
+- Rename `StreamPID` to `PIDControllerStream`.
+- Improve performance of `PIDControllerStream`.
+- Mark `Error` enum as non-exhaustive.
+- Write three example files.
+- Derive additional traits for a few structs.
+- Give `MotionProfile` a return value after it has completed. This is based on the end state provided to the constructor. It will choose the lowest possible position derivative to satisfy the end state. This means that if acceleration is 0, the position derivative in the command will be velocity, otherwise acceleration. If velocity is also 0, it will be position, otherwise just velocity.
+- Add `get_(position|velocity|acceleration)` methods to `Command`.
+- Add `Latest` stream allowing you to choose the output of whichever of a set of streams has the later timestamp.
