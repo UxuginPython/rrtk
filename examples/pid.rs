@@ -13,7 +13,7 @@ struct StreamPID {
 }
 impl StreamPID {
     pub fn new(input: InputGetter<f32, ()>, setpoint: f32, kp: f32, ki: f32, kd: f32) -> Self {
-        let time_getter = make_input_time_getter!(TimeGetterFromStream::new(Rc::clone(&input)), ());
+        let time_getter = make_input_time_getter!(TimeGetterFromGetter::new(Rc::clone(&input)), ());
         let setpoint =
             make_input_getter!(ConstantGetter::new(Rc::clone(&time_getter), setpoint), f32, ());
         let kp = make_input_getter!(ConstantGetter::new(Rc::clone(&time_getter), kp), f32, ());

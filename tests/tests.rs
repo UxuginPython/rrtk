@@ -230,7 +230,7 @@ fn time_getter_from_stream() {
         }
     }
     let stream = make_input_getter!(Stream::new(), (), ());
-    let time_getter = TimeGetterFromStream::new(Rc::clone(&stream));
+    let time_getter = TimeGetterFromGetter::new(Rc::clone(&stream));
     assert_eq!(time_getter.get(), Ok(0));
     stream.borrow_mut().update().unwrap();
     assert_eq!(time_getter.get(), Err(Error::FromNone));

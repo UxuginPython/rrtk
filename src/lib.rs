@@ -179,25 +179,25 @@ pub trait TimeGetter<E: Copy + Debug>: Updatable<E> {
 }
 ///Because `Stream`s always return a timestamp (as long as they don't return `Err(_)` or
 ///`Ok(None)`), we can use this to treat them like `TimeGetter`s.
-pub struct TimeGetterFromStream<T: Clone, E> {
+pub struct TimeGetterFromGetter<T: Clone, E> {
     elevator: streams::converters::NoneToError<T, E>,
 }
-impl<T: Clone, E> TimeGetterFromStream<T, E> {
-    ///Constructor for `TimeGetterFromStream`.
+impl<T: Clone, E> TimeGetterFromGetter<T, E> {
+    ///Constructor for `TimeGetterFromGetter`.
     pub fn new(stream: InputGetter<T, E>) -> Self {
         Self {
             elevator: streams::converters::NoneToError::new(Rc::clone(&stream)),
         }
     }
 }
-impl<T: Clone, E: Copy + Debug> TimeGetter<E> for TimeGetterFromStream<T, E> {
+impl<T: Clone, E: Copy + Debug> TimeGetter<E> for TimeGetterFromGetter<T, E> {
     fn get(&self) -> TimeOutput<E> {
         let output = self.elevator.get()?;
         let output = output.expect("`NoneToError` made all `Ok(None)`s into `Err(_)`s, and `?` returned all `Err(_)`s, so we're sure this is now an `Ok(Some(_))`.");
         return Ok(output.time);
     }
 }
-impl<T: Clone, E: Copy + Debug> Updatable<E> for TimeGetterFromStream<T, E> {
+impl<T: Clone, E: Copy + Debug> Updatable<E> for TimeGetterFromGetter<T, E> {
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
     }
