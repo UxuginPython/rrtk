@@ -309,7 +309,8 @@ pub trait Settable<S: Clone, E: Copy + Debug>: Updatable<E> {
     ///language, you must implement this but call `set`. Do not call this directly as it will make
     ///`get_last_request` work incorrectly.
     fn direct_set(&mut self, value: S) -> Result<(), Error<E>>;
-    ///Set something to a value. For example, this could set a motor to a voltage.
+    ///Set something to a value. For example, this could set a motor to a voltage. You should call
+    ///this and not `direct_set`.
     fn set(&mut self, value: S) -> Result<(), Error<E>> {
         self.direct_set(value.clone())?;
         let data = self.get_settable_data_mut();
@@ -723,7 +724,8 @@ macro_rules! make_input_time_getter {
         ))
     };
 }
-///A proportional-integral-derivative controller.
+///A proportional-integral-derivative controller. This will probably be removed in the future and
+///you should prefer `rrtk::streams::control::PIDControllerStream` instead.
 pub struct PIDController {
     setpoint: f32,
     kp: f32,
@@ -770,7 +772,9 @@ impl PIDController {
 }
 ///A PID controller that will integrate the control variable a given number of times to simplify
 ///control of some systems such as motors. `N` is one more than the number of times it integrates.
-///Do not set `N` to 0.
+///Do not set `N` to 0. This will probably be removed in the future and you should prefer
+///`rrtk::streams::control::PIDControllerStream` instead. Use it as an input for a chain of
+///`rrtk::streams::math::IntegralStream`s to recreate the shift behavior.
 pub struct PIDControllerShift<const N: usize> {
     setpoint: f32,
     kp: f32,

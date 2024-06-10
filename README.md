@@ -6,23 +6,14 @@ It is partially `no_std`. It does not currently integrate with any API directly,
 ## License
 #### GNU Lesser General Public License, version 3 only
 
-## Available
-- PID controller\*\*
-- Trapezoidal motion profile\*\*
-- Motor and encoder control system\*
-
-\*Partially available in `no_std`
-
-\*\*Fully available in `no_std`
-
-## Future
-- Stream system
-- Noise filtering
-- Drive base control
-    - Spline-based path planning
-- Feed forward control
-- Jerk control
-    - S-curve motion profile
+## Features
+- Node-like stream system for data processing
+    - Basic arithmetic + integral and derivative
+    - PID
+    - Moving average
+    - EWMA
+- Simple device control system
+- Trapezoidal motion profile following
 
 ## Changes
 ### 0.1.0
@@ -84,3 +75,4 @@ Add moving average stream.
 - Give `MotionProfile` a return value after it has completed. This is based on the end state provided to the constructor. It will choose the lowest possible position derivative to satisfy the end state. This means that if acceleration is 0, the position derivative in the command will be velocity, otherwise acceleration. If velocity is also 0, it will be position, otherwise just velocity.
 - Add `get_(position|velocity|acceleration)` methods to `Command`.
 - Add `Latest` stream allowing you to choose the output of whichever of a set of streams has the later timestamp.
+- Implement `From<State>` for `Command`.
