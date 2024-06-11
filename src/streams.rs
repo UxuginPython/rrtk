@@ -31,9 +31,7 @@ impl<T, const C: usize, E: Copy + Debug> Latest<T, C, E> {
         if C < 1 {
             panic!("rrtk::streams::Latest C must be at least 1.");
         }
-        Self {
-            inputs: inputs,
-        }
+        Self { inputs: inputs }
     }
 }
 impl<T, const C: usize, E: Copy + Debug> Getter<T, E> for Latest<T, C, E> {
@@ -42,16 +40,16 @@ impl<T, const C: usize, E: Copy + Debug> Getter<T, E> for Latest<T, C, E> {
         for i in &self.inputs {
             let gotten = i.borrow().get();
             match gotten {
-                Ok(Some(gotten)) => {
-                    match &output {
-                        Some(thing) => {
-                            if gotten.time > thing.time {
-                                output = Some(gotten);
-                            }
+                Ok(Some(gotten)) => match &output {
+                    Some(thing) => {
+                        if gotten.time > thing.time {
+                            output = Some(gotten);
                         }
-                        None => {output = Some(gotten);}
                     }
-                }
+                    None => {
+                        output = Some(gotten);
+                    }
+                },
                 _ => {}
             }
         }

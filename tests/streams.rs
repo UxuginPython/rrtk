@@ -950,7 +950,8 @@ fn stream_pid() {
         }
     }
     let input = make_input_getter!(DummyStream::new(), f32, DummyError);
-    let mut stream = PIDControllerStream::new(Rc::clone(&input), 5.0, PIDKValues::new(1.0, 0.01, 0.1));
+    let mut stream =
+        PIDControllerStream::new(Rc::clone(&input), 5.0, PIDKValues::new(1.0, 0.01, 0.1));
     stream.update().unwrap();
     assert_eq!(stream.get().unwrap().unwrap().time, 0);
     assert_eq!(stream.get().unwrap().unwrap().value, 5.0);
@@ -1090,9 +1091,7 @@ fn latest() {
     }
     impl Stream1 {
         pub fn new() -> Self {
-            Self {
-                time: 0,
-            }
+            Self { time: 0 }
         }
     }
     impl Getter<u8, ()> for Stream1 {
@@ -1120,9 +1119,7 @@ fn latest() {
     }
     impl Stream2 {
         pub fn new() -> Self {
-            Self {
-                time: 0,
-            }
+            Self { time: 0 }
         }
     }
     impl Getter<u8, ()> for Stream2 {

@@ -63,7 +63,7 @@ impl<E: Copy + Debug> Updatable<E> for PIDControllerStream<E> {
                 return Err(error);
             }
         };
-        let error = self.setpoint- process.value;
+        let error = self.setpoint - process.value;
         let [int_error_addend, drv_error] = match &self.prev_error {
             Some(prev_error) => {
                 let delta_time = (process.time - prev_error.time) as f32;
@@ -78,7 +78,10 @@ impl<E: Copy + Debug> Updatable<E> for PIDControllerStream<E> {
             }
         };
         self.int_error += int_error_addend;
-        self.output = Ok(Some(Datum::new(process.time, self.kvals.kp * error + self.kvals.ki * self.int_error + self.kvals.kd * drv_error)));
+        self.output = Ok(Some(Datum::new(
+            process.time,
+            self.kvals.kp * error + self.kvals.ki * self.int_error + self.kvals.kd * drv_error,
+        )));
         self.prev_error = Some(Datum::new(process.time, error));
         Ok(())
     }

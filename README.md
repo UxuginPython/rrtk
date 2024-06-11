@@ -76,3 +76,4 @@ Add moving average stream.
 - Add `get_(position|velocity|acceleration)` methods to `Command`.
 - Add `Latest` stream allowing you to choose the output of whichever of a set of streams has the later timestamp.
 - Implement `From<State>` for `Command`.
+- Rename `TimeGetterFromStream` to `TimeGetterFromGetter`.

@@ -580,7 +580,7 @@ impl<const N: usize, E: Copy + Debug> Updatable<E> for Axle<N, E> {
                     return Err(error);
                 }
             };
-            match self.get_last_request()  {
+            match self.get_last_request() {
                 None => {}
                 Some(_) => {
                     for i in 0..N {
@@ -590,16 +590,25 @@ impl<const N: usize, E: Copy + Debug> Updatable<E> for Axle<N, E> {
                                     .as_mut()
                                     .expect("Every ImpreciseWrite should have a Some(_) in pids")
                                 {
-                                    PositionDerivativeDependentPIDControllerShift::Position(pid) => {
-                                        let new_value = pid.update(state.time, state.value.position);
+                                    PositionDerivativeDependentPIDControllerShift::Position(
+                                        pid,
+                                    ) => {
+                                        let new_value =
+                                            pid.update(state.time, state.value.position);
                                         let _ = device.set(new_value)?;
                                     }
-                                    PositionDerivativeDependentPIDControllerShift::Velocity(pid) => {
-                                        let new_value = pid.update(state.time, state.value.velocity);
+                                    PositionDerivativeDependentPIDControllerShift::Velocity(
+                                        pid,
+                                    ) => {
+                                        let new_value =
+                                            pid.update(state.time, state.value.velocity);
                                         let _ = device.set(new_value)?;
                                     }
-                                    PositionDerivativeDependentPIDControllerShift::Acceleration(pid) => {
-                                        let new_value = pid.update(state.time, state.value.acceleration);
+                                    PositionDerivativeDependentPIDControllerShift::Acceleration(
+                                        pid,
+                                    ) => {
+                                        let new_value =
+                                            pid.update(state.time, state.value.acceleration);
                                         let _ = device.set(new_value)?;
                                     }
                                 }
@@ -824,7 +833,8 @@ impl<const N: usize> PIDControllerShift<N> {
         new_shifts[0] = control;
         for i in 1..N {
             let prev_int = self.shifts[i];
-            new_shifts[i] = prev_int + (delta_time as f32) * (self.shifts[i - 1] + new_shifts[i - 1]) / 2.0;
+            new_shifts[i] =
+                prev_int + (delta_time as f32) * (self.shifts[i - 1] + new_shifts[i - 1]) / 2.0;
         }
         self.shifts = new_shifts;
         self.shifts[self.shifts.len() - 1]
@@ -1007,14 +1017,18 @@ impl MotionProfile {
             let t = t as f32;
             return Some(0.5 * self.max_acc * t * t + self.start_vel * t + self.start_pos);
         } else if t < self.t2 {
-            return Some(self.max_acc * ((self.t1 * (-self.t1 / 2 + t)) as f32)
-                + self.start_vel * (t as f32)
-                + self.start_pos);
+            return Some(
+                self.max_acc * ((self.t1 * (-self.t1 / 2 + t)) as f32)
+                    + self.start_vel * (t as f32)
+                    + self.start_pos,
+            );
         } else if t < self.t3 {
-            return Some(self.max_acc * ((self.t1 * (-self.t1 / 2 + self.t2)) as f32)
-                - 0.5 * self.max_acc * (((t - self.t2) * (t - 2 * self.t1 - self.t2)) as f32)
-                + self.start_vel * (t as f32)
-                + self.start_pos);
+            return Some(
+                self.max_acc * ((self.t1 * (-self.t1 / 2 + self.t2)) as f32)
+                    - 0.5 * self.max_acc * (((t - self.t2) * (t - 2 * self.t1 - self.t2)) as f32)
+                    + self.start_vel * (t as f32)
+                    + self.start_pos,
+            );
         } else {
             return self.end_command.get_position();
         }

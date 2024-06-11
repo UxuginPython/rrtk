@@ -14,8 +14,11 @@ struct StreamPID {
 impl StreamPID {
     pub fn new(input: InputGetter<f32, ()>, setpoint: f32, kp: f32, ki: f32, kd: f32) -> Self {
         let time_getter = make_input_time_getter!(TimeGetterFromGetter::new(Rc::clone(&input)), ());
-        let setpoint =
-            make_input_getter!(ConstantGetter::new(Rc::clone(&time_getter), setpoint), f32, ());
+        let setpoint = make_input_getter!(
+            ConstantGetter::new(Rc::clone(&time_getter), setpoint),
+            f32,
+            ()
+        );
         let kp = make_input_getter!(ConstantGetter::new(Rc::clone(&time_getter), kp), f32, ());
         let ki = make_input_getter!(ConstantGetter::new(Rc::clone(&time_getter), ki), f32, ());
         let kd = make_input_getter!(ConstantGetter::new(Rc::clone(&time_getter), kd), f32, ());
@@ -111,10 +114,22 @@ fn main() {
     let input = make_input_getter!(MyStream::new(), f32, ());
     let mut stream = StreamPID::new(Rc::clone(&input), SETPOINT, KP, KI, KD);
     stream.update().unwrap();
-    println!("time: {:?}; setpoint: {:?}; process: {:?}; command: {:?}", stream.get().unwrap().unwrap().time, SETPOINT, input.borrow().get().unwrap().unwrap().value, stream.get().unwrap().unwrap().value);
+    println!(
+        "time: {:?}; setpoint: {:?}; process: {:?}; command: {:?}",
+        stream.get().unwrap().unwrap().time,
+        SETPOINT,
+        input.borrow().get().unwrap().unwrap().value,
+        stream.get().unwrap().unwrap().value
+    );
     for _ in 0..6 {
         input.borrow_mut().update().unwrap();
         stream.update().unwrap();
-        println!("time: {:?}; setpoint: {:?}; process: {:?}; command: {:?}", stream.get().unwrap().unwrap().time, SETPOINT, input.borrow().get().unwrap().unwrap().value, stream.get().unwrap().unwrap().value);
+        println!(
+            "time: {:?}; setpoint: {:?}; process: {:?}; command: {:?}",
+            stream.get().unwrap().unwrap().time,
+            SETPOINT,
+            input.borrow().get().unwrap().unwrap().value,
+            stream.get().unwrap().unwrap().value
+        );
     }
 }

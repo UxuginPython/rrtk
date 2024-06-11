@@ -208,9 +208,7 @@ fn time_getter_from_stream() {
     }
     impl Stream {
         fn new() -> Self {
-            Self {
-                time: 0,
-            }
+            Self { time: 0 }
         }
     }
     impl Getter<(), ()> for Stream {
@@ -219,7 +217,7 @@ fn time_getter_from_stream() {
                 0 => Ok(Some(Datum::new(self.time, ()))),
                 1 => Ok(None),
                 2 => Err(Error::Other(())),
-                _ => panic!("should always be 0, 1, or 2")
+                _ => panic!("should always be 0, 1, or 2"),
             }
         }
     }

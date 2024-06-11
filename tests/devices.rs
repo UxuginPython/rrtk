@@ -1,7 +1,7 @@
 #[cfg(feature = "std")]
-use std::rc::Rc;
-#[cfg(feature = "std")]
 use std::cell::RefCell;
+#[cfg(feature = "std")]
+use std::rc::Rc;
 #[cfg(not(feature = "std"))]
 extern crate alloc;
 #[cfg(not(feature = "std"))]
@@ -61,7 +61,10 @@ fn devices() {
     impl Getter<State, ()> for Encoder {
         fn get(&self) -> Output<State, ()> {
             //We don't care about position and acceleration here, so don't worry about them.
-            Ok(Some(Datum::new(self.time, State::new(0.0, self.velocity, 0.0))))
+            Ok(Some(Datum::new(
+                self.time,
+                State::new(0.0, self.velocity, 0.0),
+            )))
         }
     }
     impl Updatable<()> for Encoder {
@@ -72,9 +75,17 @@ fn devices() {
         }
     }
     let encoder = Device::Read(Box::new(Encoder::new()));
-    let motor = Device::ImpreciseWrite(Box::new(DCMotor::new()), PositionDerivativeDependentPIDKValues::new(PIDKValues::new(1.0, 0.01, 0.1), PIDKValues::new(1.0, 0.01, 0.1), PIDKValues::new(1.0, 0.01, 0.1)));
+    let motor = Device::ImpreciseWrite(
+        Box::new(DCMotor::new()),
+        PositionDerivativeDependentPIDKValues::new(
+            PIDKValues::new(1.0, 0.01, 0.1),
+            PIDKValues::new(1.0, 0.01, 0.1),
+            PIDKValues::new(1.0, 0.01, 0.1),
+        ),
+    );
     let mut axle = Axle::new([encoder, motor]);
-    axle.set(Command::new(PositionDerivative::Velocity, 5.0)).unwrap();
+    axle.set(Command::new(PositionDerivative::Velocity, 5.0))
+        .unwrap();
     axle.update().unwrap();
     axle.update().unwrap();
     axle.update().unwrap();
@@ -86,7 +97,7 @@ fn follow_motion_profile() {
     struct ServoMotor {
         pub time_getter: InputTimeGetter<()>,
         pub state: State,
-        settable_data: SettableData<Command, ()>
+        settable_data: SettableData<Command, ()>,
     }
     impl ServoMotor {
         pub fn new(time_getter: InputTimeGetter<()>) -> Self {
@@ -139,9 +150,7 @@ fn follow_motion_profile() {
     }
     impl MyTimeGetter {
         pub fn new() -> Self {
-            Self {
-                time: 0,
-            }
+            Self { time: 0 }
         }
     }
     impl TimeGetter<()> for MyTimeGetter {
@@ -162,7 +171,8 @@ fn follow_motion_profile() {
         0.1,
         0.01,
     );
-    let motion_profile = GetterFromHistory::new_for_motion_profile(motion_profile, Rc::clone(&time_getter)).unwrap();
+    let motion_profile =
+        GetterFromHistory::new_for_motion_profile(motion_profile, Rc::clone(&time_getter)).unwrap();
     let motion_profile = make_input_getter!(motion_profile, Command, ());
     let servo = Device::PreciseWrite(Box::new(ServoMotor::new(Rc::clone(&time_getter))));
     let mut axle = Axle::new([servo]);

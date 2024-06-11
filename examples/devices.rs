@@ -14,8 +14,14 @@ impl Encoder {
 impl Getter<State, ()> for Encoder {
     fn get(&self) -> Output<State, ()> {
         //We don't care about position and acceleration here, so don't worry about them.
-        println!("Encoder returning time: {:?}; velocity: {:?}", self.time, self.velocity);
-        Ok(Some(Datum::new(self.time, State::new(0.0, self.velocity, 0.0))))
+        println!(
+            "Encoder returning time: {:?}; velocity: {:?}",
+            self.time, self.velocity
+        );
+        Ok(Some(Datum::new(
+            self.time,
+            State::new(0.0, self.velocity, 0.0),
+        )))
     }
 }
 impl Updatable<()> for Encoder {
@@ -80,7 +86,10 @@ impl Settable<Command, ()> for ServoMotorWriteOnly {
         &mut self.settable_data
     }
     fn direct_set(&mut self, new_command: Command) -> NothingOrError<()> {
-        println!("Write-Only Servo Motor {:?} commanded to {:?}", new_command.position_derivative, new_command.value);
+        println!(
+            "Write-Only Servo Motor {:?} commanded to {:?}",
+            new_command.position_derivative, new_command.value
+        );
         self.command = Some(new_command);
         Ok(())
     }
@@ -114,7 +123,10 @@ impl Settable<Command, ()> for ServoMotorReadWrite {
         &mut self.settable_data
     }
     fn direct_set(&mut self, new_command: Command) -> NothingOrError<()> {
-        println!("Read-Write Servo Motor {:?} commanded to {:?}", new_command.position_derivative, new_command.value);
+        println!(
+            "Read-Write Servo Motor {:?} commanded to {:?}",
+            new_command.position_derivative, new_command.value
+        );
         self.command = Some(new_command);
         Ok(())
     }
@@ -133,11 +145,19 @@ impl Updatable<()> for ServoMotorReadWrite {
 fn main() {
     println!("RRTK Device System Demo");
     let encoder = Device::Read(Box::new(Encoder::new()));
-    let dc_motor = Device::ImpreciseWrite(Box::new(DCMotor::new()), PositionDerivativeDependentPIDKValues::new(PIDKValues::new(1.0, 0.01, 0.1), PIDKValues::new(1.0, 0.01, 0.1), PIDKValues::new(1.0, 0.01, 0.1)));
+    let dc_motor = Device::ImpreciseWrite(
+        Box::new(DCMotor::new()),
+        PositionDerivativeDependentPIDKValues::new(
+            PIDKValues::new(1.0, 0.01, 0.1),
+            PIDKValues::new(1.0, 0.01, 0.1),
+            PIDKValues::new(1.0, 0.01, 0.1),
+        ),
+    );
     let servo_motor_1 = Device::PreciseWrite(Box::new(ServoMotorWriteOnly::new()));
     let servo_motor_2 = Device::ReadWrite(Box::new(ServoMotorReadWrite::new()));
     let mut axle = Axle::new([encoder, dc_motor, servo_motor_1, servo_motor_2]);
-    axle.set(Command::new(PositionDerivative::Velocity, 5.0)).unwrap();
+    axle.set(Command::new(PositionDerivative::Velocity, 5.0))
+        .unwrap();
     for _ in 0..10 {
         axle.update().unwrap();
     }
