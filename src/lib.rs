@@ -20,6 +20,8 @@ use std::cell::RefCell;
 #[cfg(feature = "std")]
 use std::fmt::Debug;
 #[cfg(feature = "std")]
+use std::ops::Neg;
+#[cfg(feature = "std")]
 use std::rc::Rc;
 #[cfg(not(feature = "std"))]
 extern crate alloc;
@@ -33,6 +35,8 @@ use alloc::vec::Vec;
 use core::cell::RefCell;
 #[cfg(not(feature = "std"))]
 use core::fmt::Debug;
+#[cfg(not(feature = "std"))]
+use core::ops::Neg;
 pub mod streams;
 ///RRTK follows the enum style of error handling. This is the error type returned from nearly all
 ///RRTK types, but you can add your own custom error type using `Other(O)`. It is strongly
@@ -55,6 +59,12 @@ pub struct State {
     pub velocity: f32,
     ///How fast how fast you're going's changing.
     pub acceleration: f32,
+}
+impl Neg for State {
+    type Output = State;
+    fn neg(self) -> State {
+        State::new(-self.position, -self.velocity, -self.acceleration)
+    }
 }
 impl State {
     ///Constructor for `State`.
