@@ -22,6 +22,8 @@ use std::fmt::Debug;
 #[cfg(feature = "std")]
 use std::ops::Neg;
 #[cfg(feature = "std")]
+use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
+#[cfg(feature = "std")]
 use std::rc::Rc;
 #[cfg(feature = "std")]
 use std::rc::Weak;
@@ -41,6 +43,8 @@ use core::cell::RefCell;
 use core::fmt::Debug;
 #[cfg(not(feature = "std"))]
 use core::ops::Neg;
+#[cfg(not(feature = "std"))]
+use core::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 pub mod streams;
 ///RRTK follows the enum style of error handling. This is the error type returned from nearly all
 ///RRTK types, but you can add your own custom error type using `Other(O)`. It is strongly
@@ -55,7 +59,7 @@ pub enum Error<O: Copy + Debug> {
     Other(O),
 }
 ///A one-dimensional motion state with position, velocity, and acceleration.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct State {
     ///Where you are.
     pub position: f32,
@@ -65,9 +69,69 @@ pub struct State {
     pub acceleration: f32,
 }
 impl Neg for State {
-    type Output = State;
-    fn neg(self) -> State {
+    type Output = Self;
+    fn neg(self) -> Self {
         State::new(-self.position, -self.velocity, -self.acceleration)
+    }
+}
+impl Add for State {
+    type Output = Self;
+    fn add(self, other: State) -> Self {
+        State::new(
+            self.position + other.position,
+            self.velocity + other.velocity,
+            self.acceleration + other.acceleration,
+        )
+    }
+}
+impl Sub for State {
+    type Output = Self;
+    fn sub(self, other: State) -> Self {
+        State::new(
+            self.position - other.position,
+            self.velocity - other.velocity,
+            self.acceleration - other.acceleration,
+        )
+    }
+}
+impl Mul<f32> for State {
+    type Output = Self;
+    fn mul(self, coef: f32) -> Self {
+        State::new(
+            self.position * coef,
+            self.velocity * coef,
+            self.acceleration * coef,
+        )
+    }
+}
+impl Div<f32> for State {
+    type Output = Self;
+    fn div(self, dvsr: f32) -> Self {
+        State::new(
+            self.position / dvsr,
+            self.velocity / dvsr,
+            self.acceleration / dvsr,
+        )
+    }
+}
+impl AddAssign for State {
+    fn add_assign(&mut self, other: State) {
+        *self = *self + other;
+    }
+}
+impl SubAssign for State {
+    fn sub_assign(&mut self, other: State) {
+        *self = *self - other;
+    }
+}
+impl MulAssign<f32> for State {
+    fn mul_assign(&mut self, coef: f32) {
+        *self = *self * coef;
+    }
+}
+impl DivAssign<f32> for State {
+    fn div_assign(&mut self, dvsr: f32) {
+        *self = *self / dvsr;
     }
 }
 impl State {
