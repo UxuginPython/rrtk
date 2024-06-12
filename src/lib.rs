@@ -21,6 +21,8 @@ use std::cell::RefCell;
 use std::fmt::Debug;
 #[cfg(feature = "std")]
 use std::rc::Rc;
+#[cfg(feature = "std")]
+use std::ops::Neg;
 #[cfg(not(feature = "std"))]
 extern crate alloc;
 #[cfg(not(feature = "std"))]
@@ -33,6 +35,8 @@ use alloc::vec::Vec;
 use core::cell::RefCell;
 #[cfg(not(feature = "std"))]
 use core::fmt::Debug;
+#[cfg(not(feature = "std"))]
+use core::ops::Neg;
 pub mod streams;
 ///RRTK follows the enum style of error handling. This is the error type returned from nearly all
 ///RRTK types, but you can add your own custom error type using `Other(O)`. It is strongly
@@ -89,6 +93,12 @@ impl State {
         self.position = position;
     }
 }
+impl Neg for State {
+    type Output = State;
+    fn neg(self) -> State {
+        State::new(-self.position, -self.velocity, -self.acceleration)
+    }
+}
 ///A container for a time and something else, usually an `f32` or a `State`.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Datum<T> {
@@ -104,6 +114,20 @@ impl<T> Datum<T> {
             time: time,
             value: value,
         }
+    }
+}
+impl<T: Neg<Output = T>> Neg for Datum<T> {
+    type Output = Datum<T>;
+    fn neg(self) -> Datum<T> {
+        Datum::new(self.time, -self.value)
+    }
+}
+///Get the newer of two Data.
+pub fn newer<T>(datum1: Datum<T>, datum2: Datum<T>) -> Datum<T> {
+    if datum1.time >= datum2.time {
+        return datum1;
+    } else {
+        return datum2;
     }
 }
 ///A derivative of position: position, velocity, or acceleration.
@@ -501,6 +525,90 @@ impl<T: Clone, E: Copy + Debug> Updatable<E> for ConstantGetter<T, E> {
 ///Solely for subtraiting. Allows you to require that a type implements both `Getter` and
 ///`Settable` with a single trait. No methods and does nothing on its own.
 pub trait GetterSettable<G, S: Clone, E: Copy + Debug>: Getter<G, E> + Settable<S, E> {}
+pub struct Terminal<E: Copy + Debug> {
+    settable_data: SettableData<Datum<State>, E>,
+    state: Datum<State>,
+}
+impl<E: Copy + Debug> Terminal<E> {
+    ///Constructor for `Terminal`.
+    pub fn new(state: Datum<State>) -> Self {
+        Self {
+            settable_data: SettableData::new(),
+            state: state,
+        }
+    }
+}
+impl<E: Copy + Debug> Getter<State, E> for Terminal<E> {
+    fn get(&self) -> Output<State, E> {
+        Ok(Some(self.state.clone()))
+    }
+}
+impl<E: Copy + Debug> Settable<Datum<State>, E> for Terminal<E> {
+    fn get_settable_data_ref(&self) -> &SettableData<Datum<State>, E> {
+        &self.settable_data
+    }
+    fn get_settable_data_mut(&mut self) -> &mut SettableData<Datum<State>, E> {
+        &mut self.settable_data
+    }
+    fn direct_set(&mut self, state: Datum<State>) -> NothingOrError<E> {
+        self.state = state;
+        Ok(())
+    }
+}
+impl<E: Copy + Debug> Updatable<E> for Terminal<E> {
+    fn update(&mut self) -> NothingOrError<E> {
+        Ok(())
+    }
+}
+impl<E: Copy + Debug> GetterSettable<State, Datum<State>, E> for Terminal<E> {}
+pub struct Connection<const I: bool, E: Copy + Debug> {
+    state: Datum<State>,
+    terminal1: Rc<RefCell<Terminal<E>>>,
+    terminal2: Rc<RefCell<Terminal<E>>>,
+}
+impl<const I: bool, E: Copy + Debug> Connection<I, E> {
+    ///Constructor for `Connection`.
+    pub fn new(terminal1: Rc<RefCell<Terminal<E>>>, terminal2: Rc<RefCell<Terminal<E>>>) -> Self {
+        let out1 = terminal1.borrow().get().expect("Terminal output will always be Ok(Some(_))").expect("Terminal output will always be Ok(Some(_))");
+        let mut out2 = terminal2.borrow().get().expect("Terminal output will always be Ok(Some(_))").expect("Terminal output will always be Ok(Some(_))");
+        if I {
+            out2 = Datum::new(out2.time, -out2.value);
+        }
+        let state = newer(out1, out2);
+        Self {
+            state: state,
+            terminal1: terminal1,
+            terminal2: terminal2,
+        }
+    }
+}
+impl<const I: bool, E: Copy + Debug> Getter<State, E> for Connection<I, E> {
+    fn get(&self) -> Output<State, E> {
+        Ok(Some(self.state.clone()))
+    }
+}
+impl<const I: bool, E: Copy + Debug> Updatable<E> for Connection<I, E> {
+    fn update(&mut self) -> NothingOrError<E> {
+        let out1 = self.terminal1.borrow().get().expect("Terminal output will always be Ok(Some(_))").expect("Terminal output will always be Ok(Some(_))");
+        let out2 = self.terminal2.borrow().get().expect("Terminal output will always be Ok(Some(_))").expect("Terminal output will always be Ok(Some(_))");
+        let state = newer(out1.clone(), out2.clone());
+        if out1.time >= out2.time {
+            if I {
+                self.terminal2.borrow_mut().set(-out1)?;
+            } else {
+                self.terminal2.borrow_mut().set(out1)?;
+            }
+        } else {
+            if I {
+                self.terminal1.borrow_mut().set(-out2)?;
+            } else {
+                self.terminal1.borrow_mut().set(out2)?;
+            }
+        }
+        self.state = state;
+        Ok(())
+    }
+}
 ///A motor or encoder on an axle.
 pub enum Device<E> {
     ///An encoder.
