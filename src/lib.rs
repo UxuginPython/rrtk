@@ -23,12 +23,16 @@ use std::fmt::Debug;
 use std::ops::Neg;
 #[cfg(feature = "std")]
 use std::rc::Rc;
+#[cfg(feature = "std")]
+use std::rc::Weak;
 #[cfg(not(feature = "std"))]
 extern crate alloc;
 #[cfg(not(feature = "std"))]
 use alloc::boxed::Box;
 #[cfg(not(feature = "std"))]
 use alloc::rc::Rc;
+#[cfg(not(feature = "std"))]
+use alloc::rc::Weak;
 #[cfg(not(feature = "std"))]
 use alloc::vec::Vec;
 #[cfg(not(feature = "std"))]
@@ -511,6 +515,63 @@ impl<T: Clone, E: Copy + Debug> Updatable<E> for ConstantGetter<T, E> {
 ///Solely for subtraiting. Allows you to require that a type implements both `Getter` and
 ///`Settable` with a single trait. No methods and does nothing on its own.
 pub trait GetterSettable<G, S: Clone, E: Copy + Debug>: Getter<G, E> + Settable<S, E> {}
+pub struct Terminal<E: Copy + Debug> {
+    settable_data_state: SettableData<Datum<State>, E>,
+    settable_data_command: SettableData<Datum<Command>, E>,
+    state: Option<Datum<State>>,
+    command: Option<Datum<Command>>,
+    other: Option<Weak<RefCell<Terminal<E>>>>,
+}
+impl<E: Copy + Debug> Terminal<E> {
+    ///Constructor for `Terminal`.
+    pub fn new() -> Self {
+        Self {
+            settable_data_state: SettableData::new(),
+            settable_data_command: SettableData::new(),
+            state: None,
+            command: None,
+            other: None,
+        }
+    }
+    ///Connect the terminal to another terminal.
+    pub fn connect(&mut self, other: Weak<RefCell<Terminal<E>>>) {
+        self.other = Some(other);
+    }
+}
+impl<E: Copy + Debug> Settable<Datum<State>, E> for Terminal<E> {
+    fn get_settable_data_ref(&self) -> &SettableData<Datum<State>, E> {
+        &self.settable_data_state
+    }
+    fn get_settable_data_mut(&mut self) -> &mut SettableData<Datum<State>, E> {
+        &mut self.settable_data_state
+    }
+    fn direct_set(&mut self, state: Datum<State>) -> NothingOrError<E> {
+        self.state = Some(state);
+        Ok(())
+    }
+}
+impl<E: Copy + Debug> Settable<Datum<Command>, E> for Terminal<E> {
+    fn get_settable_data_ref(&self) -> &SettableData<Datum<Command>, E> {
+        &self.settable_data_command
+    }
+    fn get_settable_data_mut(&mut self) -> &mut SettableData<Datum<Command>, E> {
+        &mut self.settable_data_command
+    }
+    fn direct_set(&mut self, command: Datum<Command>) -> NothingOrError<E> {
+        self.command = Some(command);
+        Ok(())
+    }
+}
+impl<E: Copy + Debug> Getter<State, E> for Terminal<E> {
+    fn get(&self) -> Output<State, E> {
+        Ok(self.state.clone())
+    }
+}
+impl<E: Copy + Debug> Updatable<E> for Terminal<E> {
+    fn update(&mut self) -> NothingOrError<E> {
+        todo!();
+    }
+}
 ///A motor or encoder on an axle.
 pub enum Device<E> {
     ///An encoder.
