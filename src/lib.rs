@@ -546,7 +546,16 @@ impl<E: Copy + Debug> Settable<Datum<State>, E> for Terminal<E> {
         &mut self.settable_data_state
     }
     fn direct_set(&mut self, state: Datum<State>) -> NothingOrError<E> {
-        self.state = Some(state);
+        match &self.state {
+            None => {
+                self.state = Some(state);
+            }
+            Some(oldstate) => {
+                if state.time >= oldstate.time {
+                    self.state = Some(state);
+                }
+            }
+        }
         Ok(())
     }
 }
@@ -569,7 +578,18 @@ impl<E: Copy + Debug> Getter<State, E> for Terminal<E> {
 }
 impl<E: Copy + Debug> Updatable<E> for Terminal<E> {
     fn update(&mut self) -> NothingOrError<E> {
-        todo!();
+        match &self.other {
+            None => return Ok(()),
+            Some(weak) => match weak.upgrade() {
+                None => {
+                    self.other = None;
+                    return Ok(());
+                }
+                Some(other) => {
+                    todo!();
+                }
+            },
+        }
     }
 }
 ///A motor or encoder on an axle.
