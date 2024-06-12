@@ -65,7 +65,7 @@ Add moving average stream.
 - Fix `Axle` bug where it would try to use nonexistent PID controllers for `Device::ImpreciseWrite` objects if it had not yet received a `Command`.
 - Instead of directly implementing `set` in `Settable`, you now implement `direct_set`. You should still *call* just `set` though. This is a workaround required to make `SettableData` and `get_last_request` work correctly.
 - Move `MotionProfile` to `History<Command, E>` instead of `History<State, E>`.
-- Move timestamps to `i64` instread of `i32`. The recommended unit is nanoseconds. This is not `u64` due to the use of deltas.
+- Move timestamps to `i64` instread of `f32`. The recommended unit is nanoseconds. This is not `u64` due to the use of deltas.
 - Fix `MovingAverageStream` panicing issue.
 - Rename `StreamPID` to `PIDControllerStream`.
 - Improve performance of `PIDControllerStream`.
