@@ -643,17 +643,34 @@ impl<E: Copy + Debug> Getter<State, E> for Terminal<E> {
 impl<E: Copy + Debug> Updatable<E> for Terminal<E> {
     fn update(&mut self) -> NothingOrError<E> {
         match &self.other {
-            None => return Ok(()),
+            None => {},
             Some(weak) => match weak.upgrade() {
                 None => {
                     self.other = None;
-                    return Ok(());
                 }
                 Some(other) => {
-                    todo!();
+                    match other.borrow().get().expect("Terminal get will always return Ok") {
+                        None => {},
+                        Some(otherstate) => {
+                            match &self.state {
+                                None => {
+                                    self.state = Some(otherstate);
+                                }
+                                Some(thisstate) => {
+                                    //Just blindly picking the newer of these may not be the best
+                                    //strategy. It may be good to do something like a time-weighted
+                                    //average.
+                                    if otherstate.time > thisstate.time {
+                                        self.state = Some(otherstate);
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             },
         }
+        Ok(())
     }
 }
 ///A motor or encoder on an axle.
