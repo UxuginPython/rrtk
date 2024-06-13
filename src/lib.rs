@@ -582,7 +582,8 @@ pub trait GetterSettable<G, S: Clone, E: Copy + Debug>: Getter<G, E> + Settable<
 pub struct Terminal<E: Copy + Debug> {
     settable_data_state: SettableData<Datum<State>, E>,
     settable_data_command: SettableData<Datum<Command>, E>,
-    state: Option<Datum<State>>,
+    set_state: Option<Datum<State>>,
+    other_state: Option<Datum<State>>,
     command: Option<Datum<Command>>,
     other: Option<Weak<RefCell<Terminal<E>>>>,
 }
@@ -592,7 +593,8 @@ impl<E: Copy + Debug> Terminal<E> {
         Self {
             settable_data_state: SettableData::new(),
             settable_data_command: SettableData::new(),
-            state: None,
+            set_state: None,
+            other_state: None,
             command: None,
             other: None,
         }
@@ -616,16 +618,7 @@ impl<E: Copy + Debug> Settable<Datum<State>, E> for Terminal<E> {
         &mut self.settable_data_state
     }
     fn direct_set(&mut self, state: Datum<State>) -> NothingOrError<E> {
-        match &self.state {
-            None => {
-                self.state = Some(state);
-            }
-            Some(oldstate) => {
-                if state.time >= oldstate.time {
-                    self.state = Some(state);
-                }
-            }
-        }
+        self.set_state = Some(state);
         Ok(())
     }
 }
@@ -643,34 +636,47 @@ impl<E: Copy + Debug> Settable<Datum<Command>, E> for Terminal<E> {
 }
 impl<E: Copy + Debug> Getter<State, E> for Terminal<E> {
     fn get(&self) -> Output<State, E> {
-        Ok(self.state.clone())
+        match &self.other_state {
+            None => match &self.set_state {
+                Some(set_state) => {
+                    return Ok(Some(set_state.clone()));
+                }
+                None => {
+                    return Ok(None);
+                }
+            },
+            Some(other_state) => match &self.set_state {
+                Some(set_state) => {
+                    let time = if set_state.time >= other_state.time {
+                        set_state.time
+                    } else {
+                        other_state.time
+                    };
+                    let set_state = set_state.value;
+                    let other_state = other_state.value;
+                    let output_state = (set_state + other_state) / 2.0;
+                    return Ok(Some(Datum::new(time, output_state)));
+                }
+                None => {
+                    return Ok(Some(other_state.clone()));
+                }
+            },
+        }
     }
 }
 impl<E: Copy + Debug> Updatable<E> for Terminal<E> {
     fn update(&mut self) -> NothingOrError<E> {
         match self.get_other() {
             None => {
+                //If the Weak expires, there's no use keeping it around. If get_other returns None
+                //because the field is None, this is redundant.
                 self.other = None;
             }
             Some(other) => {
-                match other.borrow().get().expect("Terminal get will always return Ok") {
-                    None => {},
-                    Some(otherstate) => {
-                        match &self.state {
-                            None => {
-                                self.state = Some(otherstate);
-                            }
-                            Some(thisstate) => {
-                                //Just blindly picking the newer of these may not be the best
-                                //strategy. It may be good to do something like a time-weighted
-                                //average.
-                                if otherstate.time > thisstate.time {
-                                    self.state = Some(otherstate);
-                                }
-                            }
-                        }
-                    }
-                }
+                self.other_state = other
+                    .borrow()
+                    .get()
+                    .expect("Terminal g3et will always return Ok");
             }
         }
         Ok(())
