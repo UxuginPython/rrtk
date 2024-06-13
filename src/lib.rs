@@ -601,6 +601,12 @@ impl<E: Copy + Debug> Terminal<E> {
     pub fn connect(&mut self, other: Weak<RefCell<Terminal<E>>>) {
         self.other = Some(other);
     }
+    fn get_other(&self) -> Option<Rc<RefCell<Terminal<E>>>> {
+        match &self.other {
+            None => None,
+            Some(weak) => weak.upgrade(),
+        }
+    }
 }
 impl<E: Copy + Debug> Settable<Datum<State>, E> for Terminal<E> {
     fn get_settable_data_ref(&self) -> &SettableData<Datum<State>, E> {
@@ -642,33 +648,30 @@ impl<E: Copy + Debug> Getter<State, E> for Terminal<E> {
 }
 impl<E: Copy + Debug> Updatable<E> for Terminal<E> {
     fn update(&mut self) -> NothingOrError<E> {
-        match &self.other {
-            None => {},
-            Some(weak) => match weak.upgrade() {
-                None => {
-                    self.other = None;
-                }
-                Some(other) => {
-                    match other.borrow().get().expect("Terminal get will always return Ok") {
-                        None => {},
-                        Some(otherstate) => {
-                            match &self.state {
-                                None => {
+        match self.get_other() {
+            None => {
+                self.other = None;
+            }
+            Some(other) => {
+                match other.borrow().get().expect("Terminal get will always return Ok") {
+                    None => {},
+                    Some(otherstate) => {
+                        match &self.state {
+                            None => {
+                                self.state = Some(otherstate);
+                            }
+                            Some(thisstate) => {
+                                //Just blindly picking the newer of these may not be the best
+                                //strategy. It may be good to do something like a time-weighted
+                                //average.
+                                if otherstate.time > thisstate.time {
                                     self.state = Some(otherstate);
-                                }
-                                Some(thisstate) => {
-                                    //Just blindly picking the newer of these may not be the best
-                                    //strategy. It may be good to do something like a time-weighted
-                                    //average.
-                                    if otherstate.time > thisstate.time {
-                                        self.state = Some(otherstate);
-                                    }
                                 }
                             }
                         }
                     }
                 }
-            },
+            }
         }
         Ok(())
     }
