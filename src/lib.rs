@@ -20,7 +20,7 @@ use std::cell::RefCell;
 #[cfg(feature = "std")]
 use std::fmt::Debug;
 #[cfg(feature = "std")]
-use std::ops::{Neg, Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
+use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 #[cfg(feature = "std")]
 use std::rc::{Rc, Weak};
 #[cfg(not(feature = "std"))]
@@ -36,7 +36,7 @@ use core::cell::RefCell;
 #[cfg(not(feature = "std"))]
 use core::fmt::Debug;
 #[cfg(not(feature = "std"))]
-use core::ops::{Neg, Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
+use core::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 mod motion_profile;
 mod pid;
 pub mod streams;
@@ -621,7 +621,10 @@ impl<E: Copy + Debug> Updatable<E> for Terminal<E> {
         match self.get_other() {
             None => {}
             Some(other) => {
-                let option_other_state = other.borrow().get().expect("Terminal get will always return Ok");
+                let option_other_state = other
+                    .borrow()
+                    .get()
+                    .expect("Terminal get will always return Ok");
                 match option_other_state {
                     None => {
                         self.other_state = None;
