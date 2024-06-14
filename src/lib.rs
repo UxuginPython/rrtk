@@ -579,6 +579,7 @@ impl<T: Clone, E: Copy + Debug> Updatable<E> for ConstantGetter<T, E> {
 ///Solely for subtraiting. Allows you to require that a type implements both `Getter` and
 ///`Settable` with a single trait. No methods and does nothing on its own.
 pub trait GetterSettable<G, S: Clone, E: Copy + Debug>: Getter<G, E> + Settable<S, E> {}
+///A place where a device can connect to another.
 pub struct Terminal<E: Copy + Debug> {
     settable_data_state: SettableData<Datum<State>, E>,
     settable_data_command: SettableData<Datum<Command>, E>,
@@ -667,16 +668,20 @@ impl<E: Copy + Debug> Getter<State, E> for Terminal<E> {
 impl<E: Copy + Debug> Updatable<E> for Terminal<E> {
     fn update(&mut self) -> NothingOrError<E> {
         match self.get_other() {
-            None => {
-                //If the Weak expires, there's no use keeping it around. If get_other returns None
-                //because the field is None, this is redundant.
-                self.other = None;
-            }
+            None => {}
             Some(other) => {
-                self.other_state = other
-                    .borrow()
-                    .get()
-                    .expect("Terminal g3et will always return Ok");
+                let option_other_state = other.borrow().get().expect("Terminal get will always return Ok");
+                match option_other_state {
+                    None => {
+                        self.other_state = None;
+                    }
+                    Some(other_state) => {
+                        //When two devices are connected facing eachother and one relative
+                        //direction is positive for both, their values will be inverted relative to
+                        //eachother.
+                        self.other_state = Some(Datum::new(other_state.time, -other_state.value));
+                    }
+                }
             }
         }
         Ok(())
