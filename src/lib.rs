@@ -20,17 +20,15 @@ use std::cell::RefCell;
 #[cfg(feature = "std")]
 use std::fmt::Debug;
 #[cfg(feature = "std")]
-use std::ops::Neg;
+use std::ops::{Neg, Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 #[cfg(feature = "std")]
-use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
-#[cfg(feature = "std")]
-use std::rc::Rc;
+use std::rc::{Rc, Weak};
 #[cfg(not(feature = "std"))]
 extern crate alloc;
 #[cfg(not(feature = "std"))]
 use alloc::boxed::Box;
 #[cfg(not(feature = "std"))]
-use alloc::rc::Rc;
+use alloc::rc::{Rc, Weak};
 #[cfg(not(feature = "std"))]
 use alloc::vec::Vec;
 #[cfg(not(feature = "std"))]
@@ -38,9 +36,7 @@ use core::cell::RefCell;
 #[cfg(not(feature = "std"))]
 use core::fmt::Debug;
 #[cfg(not(feature = "std"))]
-use core::ops::Neg;
-#[cfg(not(feature = "std"))]
-use core::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
+use core::ops::{Neg, Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 mod motion_profile;
 mod pid;
 pub mod streams;

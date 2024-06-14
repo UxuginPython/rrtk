@@ -18,31 +18,6 @@ impl PIDKValues {
         }
     }
 }
-///A set of PID k-values for controlling each position derivative.
-pub struct PositionDerivativeDependentPIDKValues {
-    ///Use these k-values when controlling position.
-    pub position: PIDKValues,
-    ///Use these k-values when controlling velocity.
-    pub velocity: PIDKValues,
-    ///Use these k-values when controlling acceleration.
-    pub acceleration: PIDKValues,
-}
-impl PositionDerivativeDependentPIDKValues {
-    ///Constructor for `PositionDerivativeDependentPIDKValues`.
-    pub fn new(position: PIDKValues, velocity: PIDKValues, acceleration: PIDKValues) -> Self {
-        Self {
-            position: position,
-            velocity: velocity,
-            acceleration: acceleration,
-        }
-    }
-}
-///A container for `PIDControllerShift` objects with different k-values and "shifts."
-pub(crate) enum PositionDerivativeDependentPIDControllerShift {
-    Position(PIDControllerShift<1>),
-    Velocity(PIDControllerShift<2>),
-    Acceleration(PIDControllerShift<3>),
-}
 ///A proportional-integral-derivative controller. This will probably be removed in the future and
 ///you should prefer `rrtk::streams::control::PIDControllerStream` instead.
 pub struct PIDController {
