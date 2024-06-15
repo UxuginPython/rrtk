@@ -621,21 +621,10 @@ impl<E: Copy + Debug> Updatable<E> for Terminal<E> {
         match self.get_other() {
             None => {}
             Some(other) => {
-                let option_other_state = other
+                self.other_state = other
                     .borrow()
                     .get()
                     .expect("Terminal get will always return Ok");
-                match option_other_state {
-                    None => {
-                        self.other_state = None;
-                    }
-                    Some(other_state) => {
-                        //When two devices are connected facing eachother and one relative
-                        //direction is positive for both, their values will be inverted relative to
-                        //eachother.
-                        self.other_state = Some(Datum::new(other_state.time, -other_state.value));
-                    }
-                }
             }
         }
         Ok(())
