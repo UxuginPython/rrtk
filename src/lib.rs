@@ -671,8 +671,16 @@ impl<E: Copy + Debug> Invert<E> {
 impl<E: Copy + Debug> Updatable<E> for Invert<E> {
     fn update(&mut self) -> NothingOrError<E> {
         self.update_terminals()?;
-        let get1 = self.term1.borrow().get().expect("Terminal get will always return Ok");
-        let get2 = self.term2.borrow().get().expect("Terminal get will always return Ok");
+        let get1 = self
+            .term1
+            .borrow()
+            .get()
+            .expect("Terminal get will always return Ok");
+        let get2 = self
+            .term2
+            .borrow()
+            .get()
+            .expect("Terminal get will always return Ok");
         match get1 {
             None => match get2 {
                 None => {}
@@ -680,7 +688,7 @@ impl<E: Copy + Debug> Updatable<E> for Invert<E> {
                     let newdatum1 = Datum::new(datum2.time, -datum2.value);
                     self.term1.borrow_mut().set(newdatum1)?;
                 }
-            }
+            },
             Some(datum1) => match get2 {
                 None => {
                     let newdatum2 = Datum::new(datum1.time, -datum1.value);
@@ -689,13 +697,17 @@ impl<E: Copy + Debug> Updatable<E> for Invert<E> {
                 Some(datum2) => {
                     let state1 = datum1.value;
                     let state2 = datum2.value;
-                    let time = if datum1.time >= datum2.time {datum1.time} else {datum2.time};
+                    let time = if datum1.time >= datum2.time {
+                        datum1.time
+                    } else {
+                        datum2.time
+                    };
                     //average with negative state2 as it is inverted from state1
                     let new_state = (state1 - state2) / 2.0;
                     self.term1.borrow_mut().set(Datum::new(time, new_state))?;
                     self.term2.borrow_mut().set(Datum::new(time, -new_state))?;
                 }
-            }
+            },
         }
         Ok(())
     }
@@ -714,9 +726,7 @@ pub struct Axle<const N: usize, E: Copy + Debug> {
 impl<const N: usize, E: Copy + Debug> Axle<N, E> {
     ///Constructor for `Axle`.
     pub fn new(inputs: [Rc<RefCell<Terminal<E>>>; N]) -> Self {
-        Self {
-            inputs: inputs,
-        }
+        Self { inputs: inputs }
     }
 }
 impl<const N: usize, E: Copy + Debug> Updatable<E> for Axle<N, E> {
@@ -726,7 +736,11 @@ impl<const N: usize, E: Copy + Debug> Updatable<E> for Axle<N, E> {
         let mut new_time = i64::MIN;
         let mut new_state = State::new(0.0, 0.0, 0.0);
         for i in &self.inputs {
-            match i.borrow().get().expect("Terminal get will always return Ok") {
+            match i
+                .borrow()
+                .get()
+                .expect("Terminal get will always return Ok")
+            {
                 None => {}
                 Some(datum) => {
                     count += 1;
@@ -738,7 +752,7 @@ impl<const N: usize, E: Copy + Debug> Updatable<E> for Axle<N, E> {
             }
         }
         if count > 0 {
-            new_state = new_state / (count as f32);
+            new_state /= count as f32;
             let new_datum = Datum::new(new_time, new_state);
             for i in &self.inputs {
                 i.borrow_mut().set(new_datum.clone())?;
