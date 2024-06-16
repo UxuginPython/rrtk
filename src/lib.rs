@@ -64,6 +64,39 @@ pub struct State {
     ///How fast how fast you're going's changing.
     pub acceleration: f32,
 }
+impl State {
+    ///Constructor for `State`.
+    pub fn new(position: f32, velocity: f32, acceleration: f32) -> State {
+        State {
+            position: position,
+            velocity: velocity,
+            acceleration: acceleration,
+        }
+    }
+    ///Calculate the future state assuming a constant acceleration.
+    pub fn update(&mut self, delta_time: i64) {
+        let delta_time = delta_time as f32;
+        let new_velocity = self.velocity + delta_time * self.acceleration;
+        let new_position = self.position + delta_time * (self.velocity + new_velocity) / 2.0;
+        self.position = new_position;
+        self.velocity = new_velocity;
+    }
+    ///Set the acceleration.
+    pub fn set_constant_acceleration(&mut self, acceleration: f32) {
+        self.acceleration = acceleration;
+    }
+    ///Set the velocity to a given value and acceleration to zero.
+    pub fn set_constant_velocity(&mut self, velocity: f32) {
+        self.acceleration = 0.0;
+        self.velocity = velocity;
+    }
+    ///Set the position to a given value and the velocity and acceleration to zero.
+    pub fn set_constant_position(&mut self, position: f32) {
+        self.acceleration = 0.0;
+        self.velocity = 0.0;
+        self.position = position;
+    }
+}
 impl Neg for State {
     type Output = Self;
     fn neg(self) -> Self {
@@ -130,39 +163,6 @@ impl DivAssign<f32> for State {
         *self = *self / dvsr;
     }
 }
-impl State {
-    ///Constructor for `State`.
-    pub fn new(position: f32, velocity: f32, acceleration: f32) -> State {
-        State {
-            position: position,
-            velocity: velocity,
-            acceleration: acceleration,
-        }
-    }
-    ///Calculate the future state assuming a constant acceleration.
-    pub fn update(&mut self, delta_time: i64) {
-        let delta_time = delta_time as f32;
-        let new_velocity = self.velocity + delta_time * self.acceleration;
-        let new_position = self.position + delta_time * (self.velocity + new_velocity) / 2.0;
-        self.position = new_position;
-        self.velocity = new_velocity;
-    }
-    ///Set the acceleration.
-    pub fn set_constant_acceleration(&mut self, acceleration: f32) {
-        self.acceleration = acceleration;
-    }
-    ///Set the velocity to a given value and acceleration to zero.
-    pub fn set_constant_velocity(&mut self, velocity: f32) {
-        self.acceleration = 0.0;
-        self.velocity = velocity;
-    }
-    ///Set the position to a given value and the velocity and acceleration to zero.
-    pub fn set_constant_position(&mut self, position: f32) {
-        self.acceleration = 0.0;
-        self.velocity = 0.0;
-        self.position = position;
-    }
-}
 ///A container for a time and something else, usually an `f32` or a `State`.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Datum<T> {
@@ -205,31 +205,6 @@ pub type NothingOrError<E> = Result<(), Error<E>>;
 pub trait TimeGetter<E: Copy + Debug>: Updatable<E> {
     ///Get the time.
     fn get(&self) -> TimeOutput<E>;
-}
-///Because `Stream`s always return a timestamp (as long as they don't return `Err(_)` or
-///`Ok(None)`), we can use this to treat them like `TimeGetter`s.
-pub struct TimeGetterFromGetter<T: Clone, E> {
-    elevator: streams::converters::NoneToError<T, E>,
-}
-impl<T: Clone, E> TimeGetterFromGetter<T, E> {
-    ///Constructor for `TimeGetterFromGetter`.
-    pub fn new(stream: InputGetter<T, E>) -> Self {
-        Self {
-            elevator: streams::converters::NoneToError::new(Rc::clone(&stream)),
-        }
-    }
-}
-impl<T: Clone, E: Copy + Debug> TimeGetter<E> for TimeGetterFromGetter<T, E> {
-    fn get(&self) -> TimeOutput<E> {
-        let output = self.elevator.get()?;
-        let output = output.expect("`NoneToError` made all `Ok(None)`s into `Err(_)`s, and `?` returned all `Err(_)`s, so we're sure this is now an `Ok(Some(_))`.");
-        return Ok(output.time);
-    }
-}
-impl<T: Clone, E: Copy + Debug> Updatable<E> for TimeGetterFromGetter<T, E> {
-    fn update(&mut self) -> NothingOrError<E> {
-        Ok(())
-    }
 }
 ///An object that can return a value, like a `Getter`, for a given time.
 pub trait History<T: Clone, E: Copy + Debug>: Updatable<E> {
@@ -391,6 +366,52 @@ pub trait Settable<S: Clone, E: Copy + Debug>: Updatable<E> {
         data.last_request.clone()
     }
 }
+///Solely for subtraiting. Allows you to require that a type implements both `Getter` and
+///`Settable` with a single trait. No methods and does nothing on its own.
+pub trait GetterSettable<G, S: Clone, E: Copy + Debug>: Getter<G, E> + Settable<S, E> {}
+///A fast way to turn anything implementing `Getter` into an `InputGetter`.
+#[macro_export]
+macro_rules! make_input_getter {
+    ($stream:expr, $ttype:tt, $etype:tt) => {
+        Rc::new(RefCell::new(
+            Box::new($stream) as Box<dyn Getter<$ttype, $etype>>
+        ))
+    };
+}
+///A fast way to turn anything implementing `TimeGetter` into an `InputTimeGetter`.
+#[macro_export]
+macro_rules! make_input_time_getter {
+    ($time_getter:expr, $etype:tt) => {
+        Rc::new(RefCell::new(
+            Box::new($time_getter) as Box<dyn TimeGetter<$etype>>
+        ))
+    };
+}
+///Because `Stream`s always return a timestamp (as long as they don't return `Err(_)` or
+///`Ok(None)`), we can use this to treat them like `TimeGetter`s.
+pub struct TimeGetterFromGetter<T: Clone, E> {
+    elevator: streams::converters::NoneToError<T, E>,
+}
+impl<T: Clone, E> TimeGetterFromGetter<T, E> {
+    ///Constructor for `TimeGetterFromGetter`.
+    pub fn new(stream: InputGetter<T, E>) -> Self {
+        Self {
+            elevator: streams::converters::NoneToError::new(Rc::clone(&stream)),
+        }
+    }
+}
+impl<T: Clone, E: Copy + Debug> TimeGetter<E> for TimeGetterFromGetter<T, E> {
+    fn get(&self) -> TimeOutput<E> {
+        let output = self.elevator.get()?;
+        let output = output.expect("`NoneToError` made all `Ok(None)`s into `Err(_)`s, and `?` returned all `Err(_)`s, so we're sure this is now an `Ok(Some(_))`.");
+        return Ok(output.time);
+    }
+}
+impl<T: Clone, E: Copy + Debug> Updatable<E> for TimeGetterFromGetter<T, E> {
+    fn update(&mut self) -> NothingOrError<E> {
+        Ok(())
+    }
+}
 ///As histories return values at times, we can ask them to return values at the time of now or now
 ///with a delta. This makes that much easier and is the recommended way of following
 ///`MotionProfile`s.
@@ -527,9 +548,6 @@ impl<T: Clone, E: Copy + Debug> Updatable<E> for ConstantGetter<T, E> {
         Ok(())
     }
 }
-///Solely for subtraiting. Allows you to require that a type implements both `Getter` and
-///`Settable` with a single trait. No methods and does nothing on its own.
-pub trait GetterSettable<G, S: Clone, E: Copy + Debug>: Getter<G, E> + Settable<S, E> {}
 ///A place where a device can connect to another.
 pub struct Terminal<E: Copy + Debug> {
     settable_data_state: SettableData<Datum<State>, E>,
@@ -629,22 +647,4 @@ impl<E: Copy + Debug> Updatable<E> for Terminal<E> {
         }
         Ok(())
     }
-}
-///A fast way to turn anything implementing `Getter` into an `InputGetter`.
-#[macro_export]
-macro_rules! make_input_getter {
-    ($stream:expr, $ttype:tt, $etype:tt) => {
-        Rc::new(RefCell::new(
-            Box::new($stream) as Box<dyn Getter<$ttype, $etype>>
-        ))
-    };
-}
-///A fast way to turn anything implementing `TimeGetter` into an `InputTimeGetter`.
-#[macro_export]
-macro_rules! make_input_time_getter {
-    ($time_getter:expr, $etype:tt) => {
-        Rc::new(RefCell::new(
-            Box::new($time_getter) as Box<dyn TimeGetter<$etype>>
-        ))
-    };
 }
