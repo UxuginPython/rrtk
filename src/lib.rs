@@ -707,3 +707,51 @@ impl<E: Copy + Debug> Device<E> for Invert<E> {
         Ok(())
     }
 }
+///A direct mechanical connection between multiple devices.
+pub struct Axle<const N: usize, E: Copy + Debug> {
+    inputs: [Rc<RefCell<Terminal<E>>>; N],
+}
+impl<const N: usize, E: Copy + Debug> Axle<N, E> {
+    ///Constructor for `Axle`.
+    pub fn new(inputs: [Rc<RefCell<Terminal<E>>>; N]) -> Self {
+        Self {
+            inputs: inputs,
+        }
+    }
+}
+impl<const N: usize, E: Copy + Debug> Updatable<E> for Axle<N, E> {
+    fn update(&mut self) -> NothingOrError<E> {
+        self.update_terminals()?;
+        let mut count = 0u8;
+        let mut new_time = i64::MIN;
+        let mut new_state = State::new(0.0, 0.0, 0.0);
+        for i in &self.inputs {
+            match i.borrow().get().expect("Terminal get will always return Ok") {
+                None => {}
+                Some(datum) => {
+                    count += 1;
+                    if datum.time > new_time {
+                        new_time = datum.time;
+                    }
+                    new_state += datum.value;
+                }
+            }
+        }
+        if count > 0 {
+            new_state = new_state / (count as f32);
+            let new_datum = Datum::new(new_time, new_state);
+            for i in &self.inputs {
+                i.borrow_mut().set(new_datum.clone())?;
+            }
+        }
+        Ok(())
+    }
+}
+impl<const N: usize, E: Copy + Debug> Device<E> for Axle<N, E> {
+    fn update_terminals(&mut self) -> NothingOrError<E> {
+        for i in &self.inputs {
+            i.borrow_mut().update()?;
+        }
+        Ok(())
+    }
+}
