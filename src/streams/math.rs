@@ -124,7 +124,7 @@ impl<E: Copy + Debug> Updatable<E> for DifferenceStream<E> {
 ///A stream that multiplies its inputs. If an input returns `Ok(None)`, it is excluded from the
 ///calculation, effectively treating it as though it had returned 1. If this is not the desired
 ///behavior, use `rrtk::streams::converters::NoneToValue` or
-///`rrtk::streams::converters::NoneToErroValuer`.
+///`rrtk::streams::converters::NoneToError`.
 pub struct ProductStream<const N: usize, E> {
     factors: [InputGetter<f32, E>; N],
 }
