@@ -556,7 +556,7 @@ pub struct Terminal<E: Copy + Debug> {
     set_state: Option<Datum<State>>,
     other_state: Option<Datum<State>>,
     command: Option<Datum<Command>>,
-    other: Option<Weak<RefCell<Terminal<E>>>>,
+    pub(crate) other: Option<Weak<RefCell<Terminal<E>>>>,
 }
 impl<E: Copy + Debug> Terminal<E> {
     ///Constructor for `Terminal`.
@@ -569,10 +569,6 @@ impl<E: Copy + Debug> Terminal<E> {
             command: None,
             other: None,
         }
-    }
-    ///Connect the terminal to another terminal.
-    pub fn connect(&mut self, other: Weak<RefCell<Terminal<E>>>) {
-        self.other = Some(other);
     }
     fn get_other(&self) -> Option<Rc<RefCell<Terminal<E>>>> {
         match &self.other {
@@ -648,6 +644,11 @@ impl<E: Copy + Debug> Updatable<E> for Terminal<E> {
         }
         Ok(())
     }
+}
+///Connect two terminals.
+pub fn connect<E: Copy + Debug>(terminal1: Rc<RefCell<Terminal<E>>>, terminal2: Rc<RefCell<Terminal<E>>>) {
+    terminal1.borrow_mut().other = Some(Rc::downgrade(&terminal2));
+    terminal2.borrow_mut().other = Some(Rc::downgrade(&terminal1));
 }
 ///A mechanical device.
 pub trait Device<E: Copy + Debug>: Updatable<E> {
