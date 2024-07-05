@@ -15,6 +15,26 @@ Copyright 2024 UxuginPython on GitHub
 //!It is partially `no_std`. It does not currently integrate with any API directly, but this may be added in the future.
 #![warn(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
+///Coefficients for a PID controller.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct PIDKValues {
+    ///Proportional coefficient.
+    pub kp: f32,
+    ///Integral coefficient.
+    pub ki: f32,
+    ///Derivative coefficient.
+    pub kd: f32,
+}
+impl PIDKValues {
+    ///Constructor for `PIDKValues`.
+    pub fn new(kp: f32, ki: f32, kd: f32) -> Self {
+        Self {
+            kp: kp,
+            ki: ki,
+            kd: kd,
+        }
+    }
+}
 #[cfg(feature = "std")]
 use std::cell::RefCell;
 #[cfg(feature = "std")]
@@ -39,10 +59,8 @@ use core::fmt::Debug;
 use core::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 pub mod devices;
 mod motion_profile;
-mod pid;
 pub mod streams;
 pub use motion_profile::*;
-pub use pid::*;
 ///RRTK follows the enum style of error handling. This is the error type returned from nearly all
 ///RRTK types, but you can add your own custom error type using `Other(O)`. It is strongly
 ///recommended that you use a single `O` type across your crate.
