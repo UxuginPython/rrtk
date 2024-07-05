@@ -210,16 +210,16 @@ pub trait TimeGetter<E: Copy + Debug>: Updatable<E> {
     ///Get the time.
     fn get(&self) -> TimeOutput<E>;
 }
-///Because `Stream`s always return a timestamp (as long as they don't return `Err(_)` or
+///Because `Getter`s always return a timestamp (as long as they don't return `Err(_)` or
 ///`Ok(None)`), we can use this to treat them like `TimeGetter`s.
 pub struct TimeGetterFromGetter<T: Clone, E> {
     elevator: streams::converters::NoneToError<T, E>,
 }
 impl<T: Clone, E> TimeGetterFromGetter<T, E> {
     ///Constructor for `TimeGetterFromGetter`.
-    pub fn new(stream: InputGetter<T, E>) -> Self {
+    pub fn new(getter: InputGetter<T, E>) -> Self {
         Self {
-            elevator: streams::converters::NoneToError::new(Rc::clone(&stream)),
+            elevator: streams::converters::NoneToError::new(Rc::clone(&getter)),
         }
     }
 }
@@ -497,7 +497,7 @@ pub struct ConstantGetter<T, E: Copy + Debug> {
     value: T,
 }
 impl<T, E: Copy + Debug> ConstantGetter<T, E> {
-    ///Constructor for `streams::Constant`.
+    ///Constructor for `ConstantGetter`.
     pub fn new(time_getter: InputTimeGetter<E>, value: T) -> Self {
         Self {
             settable_data: SettableData::new(),
@@ -749,9 +749,9 @@ impl<const N: usize, E: Copy + Debug> Settable<Command, E> for Axle<N, E> {
 ///A fast way to turn anything implementing `Getter` into an `InputGetter`.
 #[macro_export]
 macro_rules! make_input_getter {
-    ($stream:expr, $ttype:tt, $etype:tt) => {
+    ($getter:expr, $ttype:tt, $etype:tt) => {
         Rc::new(RefCell::new(
-            Box::new($stream) as Box<dyn Getter<$ttype, $etype>>
+            Box::new($getter) as Box<dyn Getter<$ttype, $etype>>
         ))
     };
 }
