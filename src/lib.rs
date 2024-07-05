@@ -15,26 +15,6 @@ Copyright 2024 UxuginPython on GitHub
 //!It is partially `no_std`. It does not currently integrate with any API directly, but this may be added in the future.
 #![warn(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
-///Coefficients for a PID controller.
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub struct PIDKValues {
-    ///Proportional coefficient.
-    pub kp: f32,
-    ///Integral coefficient.
-    pub ki: f32,
-    ///Derivative coefficient.
-    pub kd: f32,
-}
-impl PIDKValues {
-    ///Constructor for `PIDKValues`.
-    pub fn new(kp: f32, ki: f32, kd: f32) -> Self {
-        Self {
-            kp: kp,
-            ki: ki,
-            kd: kd,
-        }
-    }
-}
 #[cfg(feature = "std")]
 use std::cell::RefCell;
 #[cfg(feature = "std")]
@@ -208,6 +188,26 @@ pub enum PositionDerivative {
     Velocity,
     ///How fast how fast you're going's changing.
     Acceleration,
+}
+///Coefficients for a PID controller.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct PIDKValues {
+    ///Proportional coefficient.
+    pub kp: f32,
+    ///Integral coefficient.
+    pub ki: f32,
+    ///Derivative coefficient.
+    pub kd: f32,
+}
+impl PIDKValues {
+    ///Constructor for `PIDKValues`.
+    pub fn new(kp: f32, ki: f32, kd: f32) -> Self {
+        Self {
+            kp: kp,
+            ki: ki,
+            kd: kd,
+        }
+    }
 }
 ///A generic output type when something may return an error, nothing, or something with a
 ///timestamp.
