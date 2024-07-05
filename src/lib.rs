@@ -664,7 +664,10 @@ impl<E: Copy + Debug> Updatable<E> for Terminal<E> {
     }
 }
 ///Connect two terminals.
-pub fn connect<E: Copy + Debug>(terminal1: Rc<RefCell<Terminal<E>>>, terminal2: Rc<RefCell<Terminal<E>>>) {
+pub fn connect<E: Copy + Debug>(
+    terminal1: Rc<RefCell<Terminal<E>>>,
+    terminal2: Rc<RefCell<Terminal<E>>>,
+) {
     terminal1.borrow_mut().other = Some(Rc::downgrade(&terminal2));
     terminal2.borrow_mut().other = Some(Rc::downgrade(&terminal1));
 }
