@@ -126,13 +126,7 @@ impl<E: Copy + Debug> Getter<State, E> for AccelerationToState<E> {
         let acc = acc.unwrap();
         let vel = vel.unwrap();
         let pos = pos.unwrap();
-        let mut time = acc.time;
-        if vel.time > time {
-            time = vel.time;
-        }
-        if pos.time > time {
-            time = pos.time;
-        }
+        let time = acc.time;
         Ok(Some(Datum::new(
             time,
             State::new(pos.value, vel.value, acc.value),
@@ -191,13 +185,7 @@ impl<E: Copy + Debug> Getter<State, E> for VelocityToState<E> {
         let acc = acc.unwrap();
         let vel = vel.unwrap();
         let pos = pos.unwrap();
-        let mut time = acc.time;
-        if vel.time > time {
-            time = vel.time;
-        }
-        if pos.time > time {
-            time = pos.time;
-        }
+        let time = acc.time;
         Ok(Some(Datum::new(
             time,
             State::new(pos.value, vel.value, acc.value),
@@ -255,13 +243,7 @@ impl<E: Copy + Debug> Getter<State, E> for PositionToState<E> {
         let acc = acc.unwrap();
         let vel = vel.unwrap();
         let pos = pos.unwrap();
-        let mut time = acc.time;
-        if vel.time > time {
-            time = vel.time;
-        }
-        if pos.time > time {
-            time = pos.time;
-        }
+        let time = acc.time;
         Ok(Some(Datum::new(
             time,
             State::new(pos.value, vel.value, acc.value),

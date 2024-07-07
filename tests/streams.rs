@@ -149,7 +149,8 @@ fn none_to_error() {
         }
     }
     let input = make_input_getter!(DummyStream::new(), f32, Nothing);
-    let stream = NoneToError::new(Rc::clone(&input));
+    let mut stream = NoneToError::new(Rc::clone(&input));
+    stream.update().unwrap(); //This should do nothing.
     match stream.get() {
         Ok(option) => match option {
             Some(_) => {}
@@ -230,11 +231,12 @@ fn none_to_value() {
         }
     }
     let input = make_input_getter!(DummyStream::new(), f32, Nothing);
-    let stream = NoneToValue::new(
+    let mut stream = NoneToValue::new(
         Rc::clone(&input),
         make_input_time_getter!(DummyTimeGetter::new(), Nothing),
         2.0,
     );
+    stream.update().unwrap(); //This should do nothing.
     match stream.get() {
         Ok(option) => match option {
             Some(datum) => {
@@ -267,6 +269,122 @@ fn none_to_value() {
         }
         Err(_) => {}
     }
+}
+#[test]
+fn acceleration_to_state() {
+    struct AccGetter {
+        time: i64,
+    }
+    impl AccGetter {
+        fn new() -> Self {
+            Self {
+                time: 0,
+            }
+        }
+    }
+    impl Getter<f32, ()> for AccGetter {
+        fn get(&self) -> Output<f32, ()> {
+            Ok(Some(Datum::new(self.time, 1.0)))
+        }
+    }
+    impl Updatable<()> for AccGetter {
+        fn update(&mut self) -> NothingOrError<()> {
+            self.time += 1;
+            Ok(())
+        }
+    }
+    let acc_getter = make_input_getter!(AccGetter::new(), f32, ());
+    let mut state_getter = AccelerationToState::new(Rc::clone(&acc_getter));
+    let output = state_getter.get();
+    assert!(output.unwrap().is_none());
+    acc_getter.borrow_mut().update().unwrap();
+    state_getter.update().unwrap();
+    let output = state_getter.get();
+    assert!(output.unwrap().is_none());
+    acc_getter.borrow_mut().update().unwrap();
+    state_getter.update().unwrap();
+    let output = state_getter.get();
+    assert!(output.unwrap().is_none());
+    acc_getter.borrow_mut().update().unwrap();
+    state_getter.update().unwrap();
+    let output = state_getter.get();
+    assert_eq!(output.unwrap().unwrap(), Datum::new(3, State::new(1.5, 2.0, 1.0)));
+}
+#[test]
+fn velocity_to_state() {
+    struct VelGetter {
+        time: i64,
+    }
+    impl VelGetter {
+        fn new() -> Self {
+            Self {
+                time: 0,
+            }
+        }
+    }
+    impl Getter<f32, ()> for VelGetter {
+        fn get(&self) -> Output<f32, ()> {
+            Ok(Some(Datum::new(self.time, self.time as f32)))
+        }
+    }
+    impl Updatable<()> for VelGetter {
+        fn update(&mut self) -> NothingOrError<()> {
+            self.time += 1;
+            Ok(())
+        }
+    }
+    let vel_getter = make_input_getter!(VelGetter::new(), f32, ());
+    let mut state_getter = VelocityToState::new(Rc::clone(&vel_getter));
+    let output = state_getter.get();
+    assert!(output.unwrap().is_none());
+    vel_getter.borrow_mut().update().unwrap();
+    state_getter.update().unwrap();
+    let output = state_getter.get();
+    assert!(output.unwrap().is_none());
+    vel_getter.borrow_mut().update().unwrap();
+    state_getter.update().unwrap();
+    let output = state_getter.get();
+    assert_eq!(output.unwrap().unwrap(), Datum::new(2, State::new(1.5, 2.0, 1.0)));
+}
+#[test]
+fn position_to_state() {
+    struct PosGetter {
+        time: i64,
+    }
+    impl PosGetter {
+        fn new() -> Self {
+            Self {
+                time: 0,
+            }
+        }
+    }
+    impl Getter<f32, ()> for PosGetter {
+        fn get(&self) -> Output<f32, ()> {
+            Ok(Some(Datum::new(self.time, self.time as f32)))
+        }
+    }
+    impl Updatable<()> for PosGetter {
+        fn update(&mut self) -> NothingOrError<()> {
+            self.time += 1;
+            Ok(())
+        }
+    }
+    let pos_getter = make_input_getter!(PosGetter::new(), f32, ());
+    let mut state_getter = PositionToState::new(Rc::clone(&pos_getter));
+    let output = state_getter.get();
+    assert!(output.unwrap().is_none());
+    pos_getter.borrow_mut().update().unwrap();
+    state_getter.update().unwrap();
+    let output = state_getter.get();
+    assert!(output.unwrap().is_none());
+    pos_getter.borrow_mut().update().unwrap();
+    state_getter.update().unwrap();
+    let output = state_getter.get();
+    assert!(output.unwrap().is_none());
+    pos_getter.borrow_mut().update().unwrap();
+    state_getter.update().unwrap();
+    let output = state_getter.get();
+    assert_eq!(output.unwrap().unwrap(), Datum::new(3, State::new(3.0, 1.0, 0.0)));
 }
 #[test]
 fn sum_stream() {
@@ -1144,7 +1262,8 @@ fn latest() {
     }
     let stream1 = make_input_getter!(Stream1::new(), u8, ());
     let stream2 = make_input_getter!(Stream2::new(), u8, ());
-    let latest = Latest::new([Rc::clone(&stream1), Rc::clone(&stream2)]);
+    let mut latest = Latest::new([Rc::clone(&stream1), Rc::clone(&stream2)]);
+    latest.update().unwrap(); //This should do nothing.
     assert_eq!(latest.get(), Ok(Some(Datum::new(1, 1))));
     stream1.borrow_mut().update().unwrap();
     stream2.borrow_mut().update().unwrap();
