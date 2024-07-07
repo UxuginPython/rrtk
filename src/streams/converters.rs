@@ -126,13 +126,7 @@ impl<E: Copy + Debug> Getter<State, E> for AccelerationToState<E> {
         let acc = acc.unwrap();
         let vel = vel.unwrap();
         let pos = pos.unwrap();
-        let mut time = acc.time;
-        if vel.time > time {
-            time = vel.time;
-        }
-        if pos.time > time {
-            time = pos.time;
-        }
+        let time = acc.time;
         Ok(Some(Datum::new(
             time,
             State::new(pos.value, vel.value, acc.value),
@@ -191,13 +185,7 @@ impl<E: Copy + Debug> Getter<State, E> for VelocityToState<E> {
         let acc = acc.unwrap();
         let vel = vel.unwrap();
         let pos = pos.unwrap();
-        let mut time = acc.time;
-        if vel.time > time {
-            time = vel.time;
-        }
-        if pos.time > time {
-            time = pos.time;
-        }
+        let time = acc.time;
         Ok(Some(Datum::new(
             time,
             State::new(pos.value, vel.value, acc.value),
@@ -212,13 +200,13 @@ impl<E: Copy + Debug> Updatable<E> for VelocityToState<E> {
     }
 }
 ///A stream that derivates a position getter to construct a full state. Mostly useful for encoders.
-pub struct PositionToStream<E: Copy + Debug> {
+pub struct PositionToState<E: Copy + Debug> {
     acc: InputGetter<f32, E>,
     vel: InputGetter<f32, E>,
     pos: InputGetter<f32, E>,
 }
-impl<E: Copy + Debug + 'static> PositionToStream<E> {
-    ///Constructor for `PositionToStream`.
+impl<E: Copy + Debug + 'static> PositionToState<E> {
+    ///Constructor for `PositionToState`.
     pub fn new(pos: InputGetter<f32, E>) -> Self {
         let vel = make_input_getter!(DerivativeStream::new(Rc::clone(&pos)), f32, E);
         let acc = make_input_getter!(DerivativeStream::new(Rc::clone(&vel)), f32, E);
@@ -229,7 +217,7 @@ impl<E: Copy + Debug + 'static> PositionToStream<E> {
         }
     }
 }
-impl<E: Copy + Debug> Getter<State, E> for PositionToStream<E> {
+impl<E: Copy + Debug> Getter<State, E> for PositionToState<E> {
     fn get(&self) -> Output<State, E> {
         let acc = self.acc.borrow().get()?;
         let vel = self.vel.borrow().get()?;
@@ -255,20 +243,14 @@ impl<E: Copy + Debug> Getter<State, E> for PositionToStream<E> {
         let acc = acc.unwrap();
         let vel = vel.unwrap();
         let pos = pos.unwrap();
-        let mut time = acc.time;
-        if vel.time > time {
-            time = vel.time;
-        }
-        if pos.time > time {
-            time = pos.time;
-        }
+        let time = acc.time;
         Ok(Some(Datum::new(
             time,
             State::new(pos.value, vel.value, acc.value),
         )))
     }
 }
-impl<E: Copy + Debug> Updatable<E> for PositionToStream<E> {
+impl<E: Copy + Debug> Updatable<E> for PositionToState<E> {
     fn update(&mut self) -> NothingOrError<E> {
         self.vel.borrow_mut().update()?;
         self.acc.borrow_mut().update()?;

@@ -22,6 +22,7 @@ fn my_abs_f32(num: f32) -> f32 {
     }
 }
 ///Where you are in following a motion profile.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum MotionProfilePiece {
     ///You have not yet started the motion profile.
     BeforeStart,
@@ -47,24 +48,6 @@ pub struct MotionProfile {
 }
 impl<E: Copy + Debug> History<Command, E> for MotionProfile {
     fn get(&self, time: i64) -> Option<Datum<Command>> {
-        let pos = match self.get_position(time) {
-            Some(value) => value,
-            None => {
-                return None;
-            }
-        };
-        let vel = match self.get_velocity(time) {
-            Some(value) => value,
-            None => {
-                return None;
-            }
-        };
-        let acc = match self.get_acceleration(time) {
-            Some(value) => value,
-            None => {
-                return None;
-            }
-        };
         let mode = match self.get_mode(time) {
             Some(value) => value,
             None => {
@@ -72,9 +55,9 @@ impl<E: Copy + Debug> History<Command, E> for MotionProfile {
             }
         };
         let value = match mode {
-            PositionDerivative::Position => pos,
-            PositionDerivative::Velocity => vel,
-            PositionDerivative::Acceleration => acc,
+            PositionDerivative::Position => self.get_position(time).expect("If mode is Position, this should be Some."),
+            PositionDerivative::Velocity => self.get_velocity(time).expect("If mode is Velocity, this should be Some."),
+            PositionDerivative::Acceleration => self.get_acceleration(time).expect("If mode is Acceleration, this should be Some."),
         };
         Some(Datum::new(time, Command::new(mode, value)))
     }
@@ -208,6 +191,13 @@ impl MotionProfile {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    #[cfg(not(feature = "std"))]
+    fn my_abs_f32_() {
+        assert_eq!(my_abs_f32(5.0), 5.0);
+        assert_eq!(my_abs_f32(-5.0), 5.0);
+        assert_eq!(my_abs_f32(0.0), 0.0);
+    }
     #[test]
     fn motion_profile_new_1() {
         let motion_profile = MotionProfile::new(

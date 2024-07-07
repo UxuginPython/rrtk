@@ -534,7 +534,7 @@ pub struct ConstantGetter<T, E: Copy + Debug> {
     value: T,
 }
 impl<T, E: Copy + Debug> ConstantGetter<T, E> {
-    ///Constructor for `streams::Constant`.
+    ///Constructor for `ConstantGetter`.
     pub fn new(time_getter: InputTimeGetter<E>, value: T) -> Self {
         Self {
             settable_data: SettableData::new(),

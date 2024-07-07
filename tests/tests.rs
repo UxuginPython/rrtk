@@ -58,6 +58,26 @@ fn state_position() {
     assert_eq!(state.acceleration, 0.0);
 }
 #[test]
+fn state_ops() {
+    assert_eq!(-State::new(1.0, 2.0, 3.0), State::new(-1.0, -2.0, -3.0));
+    assert_eq!(State::new(1.0, 2.0, 3.0) + State::new(4.0, 5.0, 6.0), State::new(5.0, 7.0, 9.0));
+    assert_eq!(State::new(1.0, 2.0, 3.0) - State::new(4.0, 5.0, 6.0), State::new(-3.0, -3.0, -3.0));
+    assert_eq!(State::new(1.0, 2.0, 3.0) * 2.0, State::new(2.0, 4.0, 6.0));
+    assert_eq!(State::new(1.0, 2.0, 3.0) / 2.0, State::new(0.5, 1.0, 1.5));
+    let mut state = State::new(1.0, 2.0, 3.0);
+    state += State::new(4.0, 5.0, 6.0);
+    assert_eq!(state, State::new(5.0, 7.0, 9.0));
+    let mut state = State::new(1.0, 2.0, 3.0);
+    state -= State::new(4.0, 5.0, 6.0);
+    assert_eq!(state, State::new(-3.0, -3.0, -3.0));
+    let mut state = State::new(1.0, 2.0, 3.0);
+    state *= 2.0;
+    assert_eq!(state, State::new(2.0, 4.0, 6.0));
+    let mut state = State::new(1.0, 2.0, 3.0);
+    state /= 2.0;
+    assert_eq!(state, State::new(0.5, 1.0, 1.5));
+}
+#[test]
 fn motion_profile_get_mode() {
     let motion_profile = MotionProfile::new(
         State::new(0.0, 0.0, 0.0),
@@ -86,9 +106,11 @@ fn motion_profile_get_acceleration() {
         0.1,
         0.01,
     );
+    assert_eq!(motion_profile.get_acceleration(-1), None);
     assert_eq!(motion_profile.get_acceleration(5), Some(0.01));
     assert_eq!(motion_profile.get_acceleration(25), Some(0.0));
     assert_eq!(motion_profile.get_acceleration(35), Some(-0.01));
+    assert_eq!(motion_profile.get_acceleration(500), Some(0.0));
 }
 #[test]
 fn motion_profile_get_velocity() {
@@ -98,12 +120,14 @@ fn motion_profile_get_velocity() {
         0.1,
         0.01,
     );
+    assert_eq!(motion_profile.get_velocity(-1), None);
     let gv5 = motion_profile.get_velocity(5).unwrap();
     assert!(0.049 < gv5 && gv5 < 0.051);
     let gv25 = motion_profile.get_velocity(25).unwrap();
     assert!(0.099 < gv25 && gv25 < 0.101);
     let gv35 = motion_profile.get_velocity(35).unwrap();
     assert!(0.049 < gv35 && gv35 < 0.051);
+    assert_eq!(motion_profile.get_velocity(500), Some(0.0));
 }
 #[test]
 fn motion_profile_get_velocity_2() {
@@ -141,10 +165,12 @@ fn motion_profile_get_position() {
         0.1,
         0.01,
     );
+    assert_eq!(motion_profile.get_position(-1), None);
     let gp5 = motion_profile.get_position(5).unwrap();
     assert!(0.124 < gp5 && gp5 < 0.126);
     assert_eq!(motion_profile.get_position(25), Some(2.0));
     assert_eq!(motion_profile.get_position(35), Some(2.875));
+    assert_eq!(motion_profile.get_position(500), Some(3.0));
 }
 #[test]
 fn motion_profile_get_position_2() {
@@ -169,6 +195,38 @@ fn motion_profile_get_position_3() {
     assert_eq!(motion_profile.get_position(5), Some(1.625));
     assert_eq!(motion_profile.get_position(15), Some(3.5));
     assert_eq!(motion_profile.get_position(25), Some(5.375));
+}
+#[test]
+fn motion_profile_history() {
+    let motion_profile = MotionProfile::new(
+        State::new(0.0, 0.0, 0.0),
+        State::new(3.0, 0.0, 0.0),
+        0.1,
+        0.01,
+    );
+    let mut motion_profile = Box::new(motion_profile) as Box<dyn History<Command, ()>>;
+    let _ = motion_profile.update().unwrap(); //This should do nothing.
+    assert_eq!(motion_profile.get(-20), None);
+    assert_eq!(motion_profile.get(5).unwrap().value, Command::new(PositionDerivative::Acceleration, 0.01));
+    let g25 = motion_profile.get(25).unwrap().value;
+    assert_eq!(g25.position_derivative, PositionDerivative::Velocity);
+    assert!(0.099 < g25.value && g25.value < 0.101);
+    assert_eq!(motion_profile.get(35).unwrap().value, Command::new(PositionDerivative::Acceleration, -0.01));
+    assert_eq!(motion_profile.get(99999).unwrap().value, Command::new(PositionDerivative::Position, 3.0));
+}
+#[test]
+fn motion_profile_piece() {
+    let motion_profile = MotionProfile::new(
+        State::new(0.0, 0.0, 0.0),
+        State::new(3.0, 0.0, 0.0),
+        0.1,
+        0.01,
+    );
+    assert_eq!(motion_profile.get_piece(-20), MotionProfilePiece::BeforeStart);
+    assert_eq!(motion_profile.get_piece(5), MotionProfilePiece::InitialAcceleration);
+    assert_eq!(motion_profile.get_piece(25), MotionProfilePiece::ConstantVelocity);
+    assert_eq!(motion_profile.get_piece(35), MotionProfilePiece::EndAcceleration);
+    assert_eq!(motion_profile.get_piece(500), MotionProfilePiece::Complete);
 }
 #[test]
 fn command() {
@@ -221,7 +279,8 @@ fn time_getter_from_stream() {
         }
     }
     let stream = make_input_getter!(Stream::new(), (), ());
-    let time_getter = TimeGetterFromGetter::new(Rc::clone(&stream));
+    let mut time_getter = TimeGetterFromGetter::new(Rc::clone(&stream));
+    time_getter.update().unwrap(); //This should do nothing.
     assert_eq!(time_getter.get(), Ok(0));
     stream.borrow_mut().update().unwrap();
     assert_eq!(time_getter.get(), Err(Error::FromNone));
