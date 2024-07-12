@@ -55,9 +55,15 @@ impl<E: Copy + Debug> History<Command, E> for MotionProfile {
             }
         };
         let value = match mode {
-            PositionDerivative::Position => self.get_position(time).expect("If mode is Position, this should be Some."),
-            PositionDerivative::Velocity => self.get_velocity(time).expect("If mode is Velocity, this should be Some."),
-            PositionDerivative::Acceleration => self.get_acceleration(time).expect("If mode is Acceleration, this should be Some."),
+            PositionDerivative::Position => self
+                .get_position(time)
+                .expect("If mode is Position, this should be Some."),
+            PositionDerivative::Velocity => self
+                .get_velocity(time)
+                .expect("If mode is Velocity, this should be Some."),
+            PositionDerivative::Acceleration => self
+                .get_acceleration(time)
+                .expect("If mode is Acceleration, this should be Some."),
         };
         Some(Datum::new(time, Command::new(mode, value)))
     }

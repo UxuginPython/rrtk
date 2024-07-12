@@ -72,8 +72,14 @@ fn state_position() {
 #[test]
 fn state_ops() {
     assert_eq!(-State::new(1.0, 2.0, 3.0), State::new(-1.0, -2.0, -3.0));
-    assert_eq!(State::new(1.0, 2.0, 3.0) + State::new(4.0, 5.0, 6.0), State::new(5.0, 7.0, 9.0));
-    assert_eq!(State::new(1.0, 2.0, 3.0) - State::new(4.0, 5.0, 6.0), State::new(-3.0, -3.0, -3.0));
+    assert_eq!(
+        State::new(1.0, 2.0, 3.0) + State::new(4.0, 5.0, 6.0),
+        State::new(5.0, 7.0, 9.0)
+    );
+    assert_eq!(
+        State::new(1.0, 2.0, 3.0) - State::new(4.0, 5.0, 6.0),
+        State::new(-3.0, -3.0, -3.0)
+    );
     assert_eq!(State::new(1.0, 2.0, 3.0) * 2.0, State::new(2.0, 4.0, 6.0));
     assert_eq!(State::new(1.0, 2.0, 3.0) / 2.0, State::new(0.5, 1.0, 1.5));
     let mut state = State::new(1.0, 2.0, 3.0);
@@ -219,12 +225,21 @@ fn motion_profile_history() {
     let mut motion_profile = Box::new(motion_profile) as Box<dyn History<Command, ()>>;
     let _ = motion_profile.update().unwrap(); //This should do nothing.
     assert_eq!(motion_profile.get(-20), None);
-    assert_eq!(motion_profile.get(5).unwrap().value, Command::new(PositionDerivative::Acceleration, 0.01));
+    assert_eq!(
+        motion_profile.get(5).unwrap().value,
+        Command::new(PositionDerivative::Acceleration, 0.01)
+    );
     let g25 = motion_profile.get(25).unwrap().value;
     assert_eq!(g25.position_derivative, PositionDerivative::Velocity);
     assert!(0.099 < g25.value && g25.value < 0.101);
-    assert_eq!(motion_profile.get(35).unwrap().value, Command::new(PositionDerivative::Acceleration, -0.01));
-    assert_eq!(motion_profile.get(99999).unwrap().value, Command::new(PositionDerivative::Position, 3.0));
+    assert_eq!(
+        motion_profile.get(35).unwrap().value,
+        Command::new(PositionDerivative::Acceleration, -0.01)
+    );
+    assert_eq!(
+        motion_profile.get(99999).unwrap().value,
+        Command::new(PositionDerivative::Position, 3.0)
+    );
 }
 #[test]
 fn motion_profile_piece() {
@@ -234,10 +249,22 @@ fn motion_profile_piece() {
         0.1,
         0.01,
     );
-    assert_eq!(motion_profile.get_piece(-20), MotionProfilePiece::BeforeStart);
-    assert_eq!(motion_profile.get_piece(5), MotionProfilePiece::InitialAcceleration);
-    assert_eq!(motion_profile.get_piece(25), MotionProfilePiece::ConstantVelocity);
-    assert_eq!(motion_profile.get_piece(35), MotionProfilePiece::EndAcceleration);
+    assert_eq!(
+        motion_profile.get_piece(-20),
+        MotionProfilePiece::BeforeStart
+    );
+    assert_eq!(
+        motion_profile.get_piece(5),
+        MotionProfilePiece::InitialAcceleration
+    );
+    assert_eq!(
+        motion_profile.get_piece(25),
+        MotionProfilePiece::ConstantVelocity
+    );
+    assert_eq!(
+        motion_profile.get_piece(35),
+        MotionProfilePiece::EndAcceleration
+    );
     assert_eq!(motion_profile.get_piece(500), MotionProfilePiece::Complete);
 }
 #[test]

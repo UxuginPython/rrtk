@@ -10,7 +10,7 @@
 #    You should have received a copy of the GNU Lesser General Public License along with Rust Robotics ToolKit. If not, see <https://www.gnu.org/licenses/>.
 [package]
 name = "rrtk"
-version = "0.3.0"
+version = "0.3.1"
 license = "LGPL-3.0-only"
 edition = "2021"
 authors = ["UxuginPython <uxugin at uxugin dot com>"]
