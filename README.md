@@ -15,6 +15,8 @@ It is partially `no_std`. It does not currently integrate with any API directly,
 - Simple device control system
 - Trapezoidal motion profile following
 
+[RRTK Stream Builder](https://crates.io/crates/rrtk_stream_builder) now available: Code generation from visual nodes for the stream system.
+
 ## Changes
 ### 0.1.0
 Initial release.
@@ -77,3 +79,10 @@ Add moving average stream.
 - Add `Latest` stream allowing you to choose the output of whichever of a set of streams has the later timestamp.
 - Implement `From<State>` for `Command`.
 - Rename `TimeGetterFromStream` to `TimeGetterFromGetter`.
+### 0.3.1
+- Implement several `core::ops` traits and `Copy` for `State`
+- Fix name of `PositionToState`
+- Slightly improve performance of `MotionProfile` and `(Position|Velocity|Acceleration)ToState` by removing unnecessary code
+- Improve tests
+- Minor documentation fixes
+- Add missing LGPL license notice to a few files

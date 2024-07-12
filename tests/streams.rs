@@ -277,9 +277,7 @@ fn acceleration_to_state() {
     }
     impl AccGetter {
         fn new() -> Self {
-            Self {
-                time: 0,
-            }
+            Self { time: 0 }
         }
     }
     impl Getter<f32, ()> for AccGetter {
@@ -308,7 +306,10 @@ fn acceleration_to_state() {
     acc_getter.borrow_mut().update().unwrap();
     state_getter.update().unwrap();
     let output = state_getter.get();
-    assert_eq!(output.unwrap().unwrap(), Datum::new(3, State::new(1.5, 2.0, 1.0)));
+    assert_eq!(
+        output.unwrap().unwrap(),
+        Datum::new(3, State::new(1.5, 2.0, 1.0))
+    );
 }
 #[test]
 fn velocity_to_state() {
@@ -317,9 +318,7 @@ fn velocity_to_state() {
     }
     impl VelGetter {
         fn new() -> Self {
-            Self {
-                time: 0,
-            }
+            Self { time: 0 }
         }
     }
     impl Getter<f32, ()> for VelGetter {
@@ -344,7 +343,10 @@ fn velocity_to_state() {
     vel_getter.borrow_mut().update().unwrap();
     state_getter.update().unwrap();
     let output = state_getter.get();
-    assert_eq!(output.unwrap().unwrap(), Datum::new(2, State::new(1.5, 2.0, 1.0)));
+    assert_eq!(
+        output.unwrap().unwrap(),
+        Datum::new(2, State::new(1.5, 2.0, 1.0))
+    );
 }
 #[test]
 fn position_to_state() {
@@ -353,9 +355,7 @@ fn position_to_state() {
     }
     impl PosGetter {
         fn new() -> Self {
-            Self {
-                time: 0,
-            }
+            Self { time: 0 }
         }
     }
     impl Getter<f32, ()> for PosGetter {
@@ -384,7 +384,10 @@ fn position_to_state() {
     pos_getter.borrow_mut().update().unwrap();
     state_getter.update().unwrap();
     let output = state_getter.get();
-    assert_eq!(output.unwrap().unwrap(), Datum::new(3, State::new(3.0, 1.0, 0.0)));
+    assert_eq!(
+        output.unwrap().unwrap(),
+        Datum::new(3, State::new(3.0, 1.0, 0.0))
+    );
 }
 #[test]
 fn sum_stream() {
