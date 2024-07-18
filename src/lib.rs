@@ -38,6 +38,7 @@ use core::fmt::Debug;
 #[cfg(not(feature = "std"))]
 use core::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 pub mod devices;
+pub mod device_traits;
 mod motion_profile;
 pub mod streams;
 pub use motion_profile::*;
