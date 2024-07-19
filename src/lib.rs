@@ -628,21 +628,21 @@ impl<const N: usize, E: Copy + Debug> Updatable<E> for Axle<N, E> {
                                     ) => {
                                         let new_value =
                                             pid.update(state.time, state.value.position);
-                                        let _ = device.set(new_value)?;
+                                        device.set(new_value)?;
                                     }
                                     PositionDerivativeDependentPIDControllerShift::Velocity(
                                         pid,
                                     ) => {
                                         let new_value =
                                             pid.update(state.time, state.value.velocity);
-                                        let _ = device.set(new_value)?;
+                                        device.set(new_value)?;
                                     }
                                     PositionDerivativeDependentPIDControllerShift::Acceleration(
                                         pid,
                                     ) => {
                                         let new_value =
                                             pid.update(state.time, state.value.acceleration);
-                                        let _ = device.set(new_value)?;
+                                        device.set(new_value)?;
                                     }
                                 }
                             }
