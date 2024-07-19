@@ -16,6 +16,14 @@ use crate::*;
 pub struct ImpreciseMotorData<E: Copy + Debug> {
     terminal: Rc<RefCell<Terminal<E>>>,
 }
+impl<E: Copy + Debug> ImpreciseMotorData<E> {
+    ///Constructor for `ImpreciseMotorData`.
+    pub fn new(terminal: Rc<RefCell<Terminal<E>>>) -> Self {
+        Self {
+            terminal: terminal,
+        }
+    }
+}
 ///A motor without a builtin encoder.
 pub trait ImpreciseMotor<E: Copy + Debug> {
     ///Get an immutable reference to the object's `ImpreciseMotorData`.

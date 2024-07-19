@@ -22,13 +22,13 @@ use std::fmt::Debug;
 #[cfg(feature = "std")]
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 #[cfg(feature = "std")]
-use std::rc::{Rc, Weak};
+use std::rc::Rc;
 #[cfg(not(feature = "std"))]
 extern crate alloc;
 #[cfg(not(feature = "std"))]
 use alloc::boxed::Box;
 #[cfg(not(feature = "std"))]
-use alloc::rc::{Rc, Weak};
+use alloc::rc::Rc;
 #[cfg(not(feature = "std"))]
 use alloc::vec::Vec;
 #[cfg(not(feature = "std"))]
@@ -167,7 +167,7 @@ impl DivAssign<f32> for State {
     }
 }
 ///A container for a time and something else, usually an `f32` or a `State`.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Datum<T> {
     ///Timestamp for the datum. This should probably be absolute.
     pub time: i64,
@@ -571,78 +571,12 @@ impl<T: Clone, E: Copy + Debug> Updatable<E> for ConstantGetter<T, E> {
         Ok(())
     }
 }
-///Builder for `Terminal`.
-pub struct TerminalBuilder<E: Copy + Debug> {
-    command: Option<Datum<Command>>,
-    other: Option<Rc<RefCell<Terminal<E>>>>,
-}
-impl<E: Copy + Debug> TerminalBuilder<E> {
-    ///Construct a new clean builder,
-    pub fn new() -> Self {
-        Self {
-            command: None,
-            other: None,
-        }
-    }
-    ///Construct a `Terminal<E>` from the builder assuming that no `other` has been set. This does
-    ///not work with `other` because connecting terminals requires `Rc<RefCell<Terminal<E>>>`s for
-    ///both, and a raw `Terminal<E>` (what is constructed) will not work. Use `build_rc_refcell` if
-    ///you need to use `other`.
-    pub fn build(self) -> Result<Terminal<E>, Error<E>> {
-        match self.other {
-            Some(_) => return Err(Error::CannotConnectTerminals),
-            None => Ok(Terminal {
-                settable_data_state: SettableData::new(),
-                settable_data_command: SettableData::new(),
-                set_state: None,
-                other_state: None,
-                command: self.command,
-                other: None,
-            })
-        }
-    }
-    ///Construct an `Rc<RefCell<Terminal<E>>>` from the builder.
-    pub fn build_rc_refcell(self) -> Rc<RefCell<Terminal<E>>> {
-        let output = Rc::new(RefCell::new(Terminal {
-            settable_data_state: SettableData::new(),
-            settable_data_command: SettableData::new(),
-            set_state: None,
-            other_state: None,
-            command: self.command,
-            other: None,
-        }));
-        match self.other {
-            Some(other) => {
-                connect(other, Rc::clone(&output));
-            }
-            None => {},
-        }
-        output
-    }
-    ///Add an initial command for the terminal's connected devices to make it follow.
-    pub fn command(self, new_command: Datum<Command>) -> Self {
-        Self {
-            command: Some(new_command),
-            other: self.other,
-        }
-    }
-    //This won't work because the other one needs a reference to this one.
-    ///Connect another terminal.
-    pub fn other(self, new_other: Rc<RefCell<Terminal<E>>>) -> Self {
-        Self {
-            command: self.command,
-            other: Some(new_other),
-        }
-    }
-}
 ///A place where a device can connect to another.
 pub struct Terminal<E: Copy + Debug> {
     settable_data_state: SettableData<Datum<State>, E>,
     settable_data_command: SettableData<Datum<Command>, E>,
-    set_state: Option<Datum<State>>,
-    other_state: Option<Datum<State>>,
+    state: Option<Datum<State>>,
     command: Option<Datum<Command>>,
-    pub(crate) other: Option<Weak<RefCell<Terminal<E>>>>,
 }
 impl<E: Copy + Debug> Terminal<E> {
     ///Constructor for `Terminal`.
@@ -650,16 +584,8 @@ impl<E: Copy + Debug> Terminal<E> {
         Self {
             settable_data_state: SettableData::new(),
             settable_data_command: SettableData::new(),
-            set_state: None,
-            other_state: None,
+            state: None,
             command: None,
-            other: None,
-        }
-    }
-    fn get_other(&self) -> Option<Rc<RefCell<Terminal<E>>>> {
-        match &self.other {
-            None => None,
-            Some(weak) => weak.upgrade(),
         }
     }
 }
@@ -671,7 +597,7 @@ impl<E: Copy + Debug> Settable<Datum<State>, E> for Terminal<E> {
         &mut self.settable_data_state
     }
     fn direct_set(&mut self, state: Datum<State>) -> NothingOrError<E> {
-        self.set_state = Some(state);
+        self.state = Some(state);
         Ok(())
     }
 }
@@ -689,55 +615,13 @@ impl<E: Copy + Debug> Settable<Datum<Command>, E> for Terminal<E> {
 }
 impl<E: Copy + Debug> Getter<State, E> for Terminal<E> {
     fn get(&self) -> Output<State, E> {
-        match &self.other_state {
-            None => match &self.set_state {
-                Some(set_state) => {
-                    return Ok(Some(set_state.clone()));
-                }
-                None => {
-                    return Ok(None);
-                }
-            },
-            Some(other_state) => match &self.set_state {
-                Some(set_state) => {
-                    let time = if set_state.time >= other_state.time {
-                        set_state.time
-                    } else {
-                        other_state.time
-                    };
-                    let set_state = set_state.value;
-                    let other_state = other_state.value;
-                    let output_state = (set_state + other_state) / 2.0;
-                    return Ok(Some(Datum::new(time, output_state)));
-                }
-                None => {
-                    return Ok(Some(other_state.clone()));
-                }
-            },
-        }
+        Ok(self.state)
     }
 }
 impl<E: Copy + Debug> Updatable<E> for Terminal<E> {
     fn update(&mut self) -> NothingOrError<E> {
-        match self.get_other() {
-            None => {}
-            Some(other) => {
-                self.other_state = other
-                    .borrow()
-                    .get()
-                    .expect("Terminal get will always return Ok");
-            }
-        }
         Ok(())
     }
-}
-///Connect two terminals.
-pub fn connect<E: Copy + Debug>(
-    terminal1: Rc<RefCell<Terminal<E>>>,
-    terminal2: Rc<RefCell<Terminal<E>>>,
-) {
-    terminal1.borrow_mut().other = Some(Rc::downgrade(&terminal2));
-    terminal2.borrow_mut().other = Some(Rc::downgrade(&terminal1));
 }
 ///A mechanical device.
 pub trait Device<E: Copy + Debug>: Updatable<E> {
