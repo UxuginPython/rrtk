@@ -85,10 +85,11 @@ impl<E: Copy + Debug> Device<E> for Invert<E> {
 ///system.
 pub struct SettableCommandDeviceWrapper<T: Settable<Command, E>, E: Copy + Debug> {
     inner: T,
-    terminal: Terminal<E>,
+    terminal: Rc<RefCell<Terminal<E>>>,
 }
 impl<T: Settable<Command, E>, E: Copy + Debug> SettableCommandDeviceWrapper<T, E> {
-    pub fn new(inner: T, terminal: Terminal<E>) -> Self {
+    ///Constructor for `SettableCommandDeviceWrapper`.
+    pub fn new(inner: T, terminal: Rc<RefCell<Terminal<E>>>) -> Self {
         Self {
             inner: inner,
             terminal: terminal,
@@ -97,13 +98,13 @@ impl<T: Settable<Command, E>, E: Copy + Debug> SettableCommandDeviceWrapper<T, E
 }
 impl<T: Settable<Command, E>, E: Copy + Debug> Device<E> for SettableCommandDeviceWrapper<T, E> {
     fn update_terminals(&mut self) -> NothingOrError<E> {
-        self.terminal.update()?;
+        self.terminal.borrow_mut().update()?;
         Ok(())
     }
 }
 impl<T: Settable<Command, E>, E: Copy + Debug> Updatable<E> for SettableCommandDeviceWrapper<T, E> {
     fn update(&mut self) -> NothingOrError<E> {
-        match <Terminal<E> as Settable<Datum<Command>, E>>::get_last_request(&self.terminal) {
+        match <Terminal<E> as Settable<Datum<Command>, E>>::get_last_request(&self.terminal.borrow()) {
             Some(command) => {
                 self.inner.set(command.value)?;
             }

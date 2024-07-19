@@ -303,8 +303,8 @@ pub trait Updatable<E: Copy + Debug> {
 ///processing, with a struct having other implementors in fields which will have some operation
 ///performed on their output before it being passed on. Data processing Getters with other Getters
 ///as fields can be referred to as streams, though this is only in naming and trait-wise there is
-///no distinction. The other common use for this trait is encoders, which will later be put in a
-///`Device::Read`. These should not be called streams.
+///no distinction. The other common use for this trait is encoders. These should not be called
+///streams.
 pub trait Getter<G, E: Copy + Debug>: Updatable<E> {
     ///Get something.
     fn get(&self) -> Output<G, E>;
