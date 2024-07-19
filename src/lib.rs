@@ -50,6 +50,9 @@ pub use motion_profile::*;
 pub enum Error<O: Copy + Debug> {
     ///Returned when a `None` is elevated to an error by a `NoneToError`.
     FromNone,
+    ///Raised when two terminals must be connected, but we cannot get `Rc<RefCell<Terminal<O>>>`s
+    ///for both.
+    CannotConnectTerminals,
     ///A custom error of a user-defined type. Not created by any RRTK type but can be propagated by
     ///them.
     Other(O),
@@ -566,6 +569,70 @@ impl<T: Clone, E: Copy + Debug> Updatable<E> for ConstantGetter<T, E> {
     ///This does not need to be called.
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
+    }
+}
+///Builder for `Terminal`.
+pub struct TerminalBuilder<E: Copy + Debug> {
+    command: Option<Datum<Command>>,
+    other: Option<Rc<RefCell<Terminal<E>>>>,
+}
+impl<E: Copy + Debug> TerminalBuilder<E> {
+    ///Construct a new clean builder,
+    pub fn new() -> Self {
+        Self {
+            command: None,
+            other: None,
+        }
+    }
+    ///Construct a `Terminal<E>` from the builder assuming that no `other` has been set. This does
+    ///not work with `other` because connecting terminals requires `Rc<RefCell<Terminal<E>>>`s for
+    ///both, and a raw `Terminal<E>` (what is constructed) will not work. Use `build_rc_refcell` if
+    ///you need to use `other`.
+    pub fn build(self) -> Result<Terminal<E>, Error<E>> {
+        match self.other {
+            Some(_) => return Err(Error::CannotConnectTerminals),
+            None => Ok(Terminal {
+                settable_data_state: SettableData::new(),
+                settable_data_command: SettableData::new(),
+                set_state: None,
+                other_state: None,
+                command: self.command,
+                other: None,
+            })
+        }
+    }
+    ///Construct an `Rc<RefCell<Terminal<E>>>` from the builder.
+    pub fn build_rc_refcell(self) -> Rc<RefCell<Terminal<E>>> {
+        let output = Rc::new(RefCell::new(Terminal {
+            settable_data_state: SettableData::new(),
+            settable_data_command: SettableData::new(),
+            set_state: None,
+            other_state: None,
+            command: self.command,
+            other: None,
+        }));
+        match self.other {
+            Some(other) => {
+                connect(other, Rc::clone(&output));
+            }
+            None => {},
+        }
+        output
+    }
+    ///Add an initial command for the terminal's connected devices to make it follow.
+    pub fn command(self, new_command: Datum<Command>) -> Self {
+        Self {
+            command: Some(new_command),
+            other: self.other,
+        }
+    }
+    //This won't work because the other one needs a reference to this one.
+    ///Connect another terminal.
+    pub fn other(self, new_other: Rc<RefCell<Terminal<E>>>) -> Self {
+        Self {
+            command: self.command,
+            other: Some(new_other),
+        }
     }
 }
 ///A place where a device can connect to another.

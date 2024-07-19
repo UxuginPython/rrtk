@@ -34,6 +34,7 @@ impl<E: Copy + Debug> Device<E> for dyn ImpreciseMotor<E> {
 }
 impl<E: Copy + Debug> Updatable<E> for dyn ImpreciseMotor<E> {
     fn update(&mut self) -> NothingOrError<E> {
+        self.update_terminals()?;
         todo!();
     }
 }
