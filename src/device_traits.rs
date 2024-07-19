@@ -20,9 +20,7 @@ pub struct ImpreciseMotorData<E: Copy + Debug> {
 impl<E: Copy + Debug> ImpreciseMotorData<E> {
     ///Constructor for `ImpreciseMotorData`.
     pub fn new(terminal: Rc<RefCell<Terminal<E>>>) -> Self {
-        Self {
-            terminal: terminal,
-        }
+        Self { terminal: terminal }
     }
 }
 ///A motor without a builtin encoder.

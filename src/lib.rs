@@ -37,8 +37,8 @@ use core::cell::RefCell;
 use core::fmt::Debug;
 #[cfg(not(feature = "std"))]
 use core::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
-pub mod devices;
 pub mod device_traits;
+pub mod devices;
 mod motion_profile;
 pub mod streams;
 pub use motion_profile::*;
@@ -211,6 +211,56 @@ impl PIDKValues {
             ki: ki,
             kd: kd,
         }
+    }
+    //TODO: test this lol
+    ///Calculate the control variable using the coefficients given error, its integral, and its
+    ///derivative.
+    #[inline]
+    pub fn evaluate(&self, error: f32, error_integral: f32, error_derivative: f32) -> f32 {
+        self.kp * error + self.ki * error_integral + self.kd * error_derivative
+    }
+}
+///A set of PID k-values for controlling each position derivative.
+pub struct PositionDerivativeDependentPIDKValues {
+    ///Use these k-values when controlling position.
+    pub position: PIDKValues,
+    ///Use these k-values when controlling velocity.
+    pub velocity: PIDKValues,
+    ///Use these k-values when controlling acceleration.
+    pub acceleration: PIDKValues,
+}
+impl PositionDerivativeDependentPIDKValues {
+    ///Constructor for `PositionDerivativeDependentPIDKValues`.
+    pub fn new(position: PIDKValues, velocity: PIDKValues, acceleration: PIDKValues) -> Self {
+        Self {
+            position: position,
+            velocity: velocity,
+            acceleration: acceleration,
+        }
+    }
+    //TODO: test this lol
+    ///Get the k-values for a specific position derivative.
+    #[inline]
+    pub fn get_k_values(&self, position_derivative: PositionDerivative) -> PIDKValues {
+        match position_derivative {
+            PositionDerivative::Position => self.position,
+            PositionDerivative::Velocity => self.velocity,
+            PositionDerivative::Acceleration => self.acceleration,
+        }
+    }
+    //TODO: test this lol
+    ///Calculate the control variable using the coefficients for a given position derivative given
+    ///error, its integral, and its derivative.
+    #[inline]
+    pub fn evaluate(
+        &self,
+        position_derivative: PositionDerivative,
+        error: f32,
+        error_integral: f32,
+        error_derivative: f32,
+    ) -> f32 {
+        self.get_k_values(position_derivative)
+            .evaluate(error, error_integral, error_derivative)
     }
 }
 ///A generic output type when something may return an error, nothing, or something with a

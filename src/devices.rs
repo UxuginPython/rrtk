@@ -104,7 +104,9 @@ impl<T: Settable<Command, E>, E: Copy + Debug> Device<E> for SettableCommandDevi
 }
 impl<T: Settable<Command, E>, E: Copy + Debug> Updatable<E> for SettableCommandDeviceWrapper<T, E> {
     fn update(&mut self) -> NothingOrError<E> {
-        match <Terminal<E> as Settable<Datum<Command>, E>>::get_last_request(&self.terminal.borrow()) {
+        match <Terminal<E> as Settable<Datum<Command>, E>>::get_last_request(
+            &self.terminal.borrow(),
+        ) {
             Some(command) => {
                 self.inner.set(command.value)?;
             }
