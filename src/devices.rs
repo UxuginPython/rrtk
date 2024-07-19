@@ -113,3 +113,35 @@ impl<T: Settable<Command, E>, E: Copy + Debug> Updatable<E> for SettableCommandD
         Ok(())
     }
 }
+//TODO: test this
+///Connect a `Getter<State, E>` to a `Terminal<E>` for use as an encoder in the device system.
+pub struct GetterStateDeviceWrapper<T: Getter<State, E>, E: Copy + Debug> {
+    inner: T,
+    terminal: Rc<RefCell<Terminal<E>>>,
+}
+impl<T: Getter<State, E>, E: Copy + Debug> GetterStateDeviceWrapper<T, E> {
+    ///Constructor for `GetterStateDeviceWrapper`.
+    pub fn new(inner: T, terminal: Rc<RefCell<Terminal<E>>>) -> Self {
+        Self {
+            inner: inner,
+            terminal: terminal,
+        }
+    }
+}
+impl<T: Getter<State, E>, E: Copy + Debug> Device<E> for GetterStateDeviceWrapper<T, E> {
+    fn update_terminals(&mut self) -> NothingOrError<E> {
+        self.terminal.borrow_mut().update()?;
+        Ok(())
+    }
+}
+impl<T: Getter<State, E>, E: Copy + Debug> Updatable<E> for GetterStateDeviceWrapper<T, E> {
+    fn update(&mut self) -> NothingOrError<E> {
+        self.update_terminals()?;
+        let new_state_datum = match self.inner.get()? {
+            None => return Ok(()),
+            Some(state_datum) => state_datum,
+        };
+        self.terminal.borrow_mut().set(new_state_datum)?;
+        Ok(())
+    }
+}
