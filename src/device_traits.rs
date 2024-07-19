@@ -10,6 +10,7 @@ Copyright 2024 UxuginPython on GitHub
 
     You should have received a copy of the GNU Lesser General Public License along with Rust Robotics ToolKit. If not, see <https://www.gnu.org/licenses/>.
 */
+//TODO: test everynothing in this file
 //!Traits making it easier to set up common devices that cannot be builtin structs.
 use crate::*;
 ///Internal data needed by `ImpreciseMotor` implementors.

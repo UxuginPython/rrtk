@@ -571,6 +571,7 @@ impl<T: Clone, E: Copy + Debug> Updatable<E> for ConstantGetter<T, E> {
         Ok(())
     }
 }
+//TODO: test this
 ///A place where a device can connect to another.
 pub struct Terminal<E: Copy + Debug> {
     settable_data_state: SettableData<Datum<State>, E>,
@@ -623,6 +624,7 @@ impl<E: Copy + Debug> Updatable<E> for Terminal<E> {
         Ok(())
     }
 }
+//TODO; test this
 ///A mechanical device.
 pub trait Device<E: Copy + Debug>: Updatable<E> {
     ///Call only the `update` methods of owned terminals and do not update anything else with the

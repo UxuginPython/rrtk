@@ -14,6 +14,7 @@ Copyright 2024 UxuginPython on GitHub
 //!objects called terminals. Terminals represent anywhere a device can connect to another.
 //!Connected terminals hold `Weak` references to eachother. This module holds builtin devices.
 use crate::*;
+//TODO: test this
 ///A device such that positive for one terminal is negative for the other.
 pub struct Invert<E: Copy + Debug> {
     term1: Rc<RefCell<Terminal<E>>>,
@@ -76,6 +77,38 @@ impl<E: Copy + Debug> Device<E> for Invert<E> {
     fn update_terminals(&mut self) -> NothingOrError<E> {
         self.term1.borrow_mut().update()?;
         self.term2.borrow_mut().update()?;
+        Ok(())
+    }
+}
+//TODO: test this
+///Connect a `Settable<Command, E>` to a `Terminal<E>` for use as a servo motor in the device
+///system.
+pub struct SettableCommandDeviceWrapper<T: Settable<Command, E>, E: Copy + Debug> {
+    inner: T,
+    terminal: Terminal<E>,
+}
+impl<T: Settable<Command, E>, E: Copy + Debug> SettableCommandDeviceWrapper<T, E> {
+    pub fn new(inner: T, terminal: Terminal<E>) -> Self {
+        Self {
+            inner: inner,
+            terminal: terminal,
+        }
+    }
+}
+impl<T: Settable<Command, E>, E: Copy + Debug> Device<E> for SettableCommandDeviceWrapper<T, E> {
+    fn update_terminals(&mut self) -> NothingOrError<E> {
+        self.terminal.update()?;
+        Ok(())
+    }
+}
+impl<T: Settable<Command, E>, E: Copy + Debug> Updatable<E> for SettableCommandDeviceWrapper<T, E> {
+    fn update(&mut self) -> NothingOrError<E> {
+        match <Terminal<E> as Settable<Datum<Command>, E>>::get_last_request(&self.terminal) {
+            Some(command) => {
+                self.inner.set(command.value)?;
+            }
+            None => {}
+        }
         Ok(())
     }
 }
