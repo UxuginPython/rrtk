@@ -13,10 +13,10 @@ Copyright 2024 UxuginPython on GitHub
 //!Streams that perform mathematical operations.
 use crate::streams::*;
 ///A stream that adds all its inputs. If an input returns `Ok(None)`, it is excluded.
-pub struct SumStream<T: Add<Output = T> + Clone + Default, const N: usize, E> {
+pub struct SumStream<T: AddAssign + Clone + Default, const N: usize, E> {
     addends: [InputGetter<T, E>; N],
 }
-impl<T: Add<Output = T> + Clone + Default, const N: usize, E> SumStream<T, N, E> {
+impl<T: AddAssign + Clone + Default, const N: usize, E> SumStream<T, N, E> {
     ///Constructor for `SumStream`.
     pub fn new(addends: [InputGetter<T, E>; N]) -> Self {
         if N < 1 {
@@ -25,7 +25,7 @@ impl<T: Add<Output = T> + Clone + Default, const N: usize, E> SumStream<T, N, E>
         Self { addends: addends }
     }
 }
-impl<T: Add<Output = T> + Clone + Default, const N: usize, E: Copy + Debug> Getter<T, E>
+impl<T: AddAssign + Clone + Default, const N: usize, E: Copy + Debug> Getter<T, E>
     for SumStream<T, N, E>
 {
     fn get(&self) -> Output<T, E> {
@@ -40,7 +40,7 @@ impl<T: Add<Output = T> + Clone + Default, const N: usize, E: Copy + Debug> Gett
         for i in &outputs {
             match i {
                 Some(output) => {
-                    value = value + output.value.clone();
+                    value += output.value.clone();
                 }
                 None => {}
             }
@@ -71,7 +71,7 @@ impl<T: Add<Output = T> + Clone + Default, const N: usize, E: Copy + Debug> Gett
         }
     }
 }
-impl<T: Add<Output = T> + Clone + Default, const N: usize, E: Copy + Debug> Updatable<E> for SumStream<T, N, E> {
+impl<T: AddAssign + Clone + Default, const N: usize, E: Copy + Debug> Updatable<E> for SumStream<T, N, E> {
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
     }
