@@ -454,7 +454,7 @@ fn sum_stream() {
 #[test]
 #[should_panic]
 fn empty_sum_stream() {
-    let _: SumStream<0, ()> = SumStream::new([]);
+    let _: SumStream<f32, 0, ()> = SumStream::new([]);
 }
 #[test]
 fn difference_stream() {

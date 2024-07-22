@@ -13,20 +13,22 @@ Copyright 2024 UxuginPython on GitHub
 //!Streams that perform mathematical operations.
 use crate::streams::*;
 ///A stream that adds all its inputs. If an input returns `Ok(None)`, it is excluded.
-pub struct SumStream<const N: usize, E> {
-    addends: [InputGetter<f32, E>; N],
+pub struct SumStream<T: AddAssign + Clone + Default, const N: usize, E> {
+    addends: [InputGetter<T, E>; N],
 }
-impl<const N: usize, E> SumStream<N, E> {
+impl<T: AddAssign + Clone + Default, const N: usize, E> SumStream<T, N, E> {
     ///Constructor for `SumStream`.
-    pub fn new(addends: [InputGetter<f32, E>; N]) -> Self {
+    pub fn new(addends: [InputGetter<T, E>; N]) -> Self {
         if N < 1 {
             panic!("rrtk::streams::SumStream must have at least one input stream");
         }
         Self { addends: addends }
     }
 }
-impl<const N: usize, E: Copy + Debug> Getter<f32, E> for SumStream<N, E> {
-    fn get(&self) -> Output<f32, E> {
+impl<T: AddAssign + Clone + Default, const N: usize, E: Copy + Debug> Getter<T, E>
+    for SumStream<T, N, E>
+{
+    fn get(&self) -> Output<T, E> {
         //Err(...) -> return Err immediately
         //Ok(None) -> skip
         //Ok(Some(...)) -> add to value
@@ -34,11 +36,11 @@ impl<const N: usize, E: Copy + Debug> Getter<f32, E> for SumStream<N, E> {
         for i in &self.addends {
             outputs.push(i.borrow().get()?);
         }
-        let mut value = 0.0;
+        let mut value = T::default();
         for i in &outputs {
             match i {
                 Some(output) => {
-                    value += output.value;
+                    value += output.value.clone();
                 }
                 None => {}
             }
@@ -69,7 +71,7 @@ impl<const N: usize, E: Copy + Debug> Getter<f32, E> for SumStream<N, E> {
         }
     }
 }
-impl<const N: usize, E: Copy + Debug> Updatable<E> for SumStream<N, E> {
+impl<T: AddAssign + Clone + Default, const N: usize, E: Copy + Debug> Updatable<E> for SumStream<T, N, E> {
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
     }

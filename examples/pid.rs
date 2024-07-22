@@ -21,7 +21,7 @@ use std::rc::Rc;
 struct StreamPID {
     int: InputGetter<f32, ()>,
     drv: InputGetter<f32, ()>,
-    output: SumStream<3, ()>,
+    output: SumStream<f32, 3, ()>,
 }
 impl StreamPID {
     pub fn new(input: InputGetter<f32, ()>, setpoint: f32, kp: f32, ki: f32, kd: f32) -> Self {
@@ -103,7 +103,7 @@ impl MyStream {
     }
 }
 //In a real system, obviously, the process variable must be dependent on the command. This is a
-//very rudimentary placeholder stream and a poor model of an actual system. All this example is
+//very rudimentary placeholder and a poor model of an actual system. All this example is
 //intended to do is to show the PID controller's command values and not model a real system.
 impl Getter<f32, ()> for MyStream {
     fn get(&self) -> Output<f32, ()> {
