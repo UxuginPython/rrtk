@@ -86,6 +86,105 @@ impl<E: Copy + Debug> Updatable<E> for PIDControllerStream<E> {
         Ok(())
     }
 }
+///Almost literally three PID controllers in a trenchcoat.
+pub struct CommandPID<E: Copy + Debug> {
+    input: InputGetter<State, E>,
+    command: Command,
+    kvals: PositionDerivativeDependentPIDKValues,
+    output: Output<f32, E>,
+    prev_error: Option<Datum<f32>>,
+    int_error: f32,
+    out_int: Option<f32>,
+    out_int_int: Option<f32>,
+}
+impl<E: Copy + Debug> CommandPID<E> {
+    pub fn new(
+        input: InputGetter<State, E>,
+        command: Command,
+        kvalues: PositionDerivativeDependentPIDKValues,
+    ) -> Self {
+        Self {
+            input: input,
+            command: command,
+            kvals: kvalues,
+            output: Ok(None),
+            prev_error: None,
+            int_error: 0.0,
+            out_int: None,
+            out_int_int: None,
+        }
+    }
+    pub fn reset(&mut self) {
+        self.output = Ok(None);
+        self.prev_error = None;
+        self.int_error = 0.0;
+        self.out_int = None;
+        self.out_int_int = None;
+    }
+    pub fn set_command(&mut self, command: Command) {
+        self.reset();
+        self.command = command;
+    }
+}
+impl<E: Copy + Debug> Getter<f32, E> for CommandPID<E> {
+    fn get(&self) -> Output<f32, E> {
+        self.output
+    }
+}
+impl<E: Copy + Debug> Updatable<E> for CommandPID<E> {
+    fn update(&mut self) -> NothingOrError<E> {
+        let raw_get = self.input.borrow().get();
+        let new_state = match raw_get {
+            Ok(Some(value)) => value,
+            Ok(None) => {
+                self.reset();
+                return Ok(());
+            }
+            Err(error) => {
+                self.reset();
+                self.output = Err(error);
+                return Ok(());
+            }
+        };
+        //The fact that this could be any of position, velocity, and jerk is not great.
+        let error = self.command.value - new_state.value.get_value(self.command.position_derivative);
+        match self.prev_error {
+            Some(prev_error) => {
+                let delta_time = (new_state.time - prev_error.time) as f32;
+                self.int_error += (prev_error.value + error) / 2.0 * delta_time;
+                let drv_error = (error - prev_error.value) / delta_time;
+                let output = self.kvals.evaluate(
+                    self.command.position_derivative,
+                    error,
+                    self.int_error,
+                    drv_error,
+                );
+                let prev_out = self.output.expect("If self.prev_error is Some, then self.output should be Ok(Some).").unwrap();
+                todo!();
+            }
+            None => {
+                let output = error * self.kvals.get_k_values(self.command.position_derivative).kp;
+            }
+        }
+        self.prev_error = Some(Datum::new(new_state.time, error));
+        todo!();
+    }
+}
+fn make_none_zero(it: &mut Option<f32>) {
+    match it {
+        Some(_) => (),
+        None => *it = Some(0.0),
+    }
+}
+#[test]
+fn make_none_zero_test() {
+    let mut x = None;
+    make_none_zero(&mut x);
+    assert_eq!(x, Some(0.0));
+    let mut y = Some(4.0);
+    make_none_zero(&mut y);
+    assert_eq!(y, Some(4.0));
+}
 ///An Exponentially Weighted Moving Average stream for use with the stream system. See <https://www.itl.nist.gov/div898/handbook/pmc/section3/pmc324.htm> for more information.
 pub struct EWMAStream<E: Copy + Debug> {
     input: InputGetter<f32, E>,

@@ -71,7 +71,9 @@ impl<T: AddAssign + Clone + Default, const N: usize, E: Copy + Debug> Getter<T, 
         }
     }
 }
-impl<T: AddAssign + Clone + Default, const N: usize, E: Copy + Debug> Updatable<E> for SumStream<T, N, E> {
+impl<T: AddAssign + Clone + Default, const N: usize, E: Copy + Debug> Updatable<E>
+    for SumStream<T, N, E>
+{
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
     }

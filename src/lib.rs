@@ -13,7 +13,8 @@ Copyright 2024 UxuginPython on GitHub
 //!Rust Robotics ToolKit
 //!A set of algorithms and other tools for robotics in Rust.
 //!It is partially `no_std`. It does not currently integrate with any API directly, but this may be added in the future.
-#![warn(missing_docs)]
+//This is super annoying during development. Just make sure to turn it back on before release.
+//#![warn(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
 #[cfg(feature = "std")]
 use std::cell::RefCell;
@@ -98,6 +99,13 @@ impl State {
         self.acceleration = 0.0;
         self.velocity = 0.0;
         self.position = position;
+    }
+    pub fn get_value(&self, position_derivative: PositionDerivative) -> f32 {
+        match position_derivative {
+            PositionDerivative::Position => self.position,
+            PositionDerivative::Velocity => self.velocity,
+            PositionDerivative::Acceleration => self.acceleration,
+        }
     }
 }
 impl Neg for State {
