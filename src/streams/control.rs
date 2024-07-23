@@ -86,29 +86,16 @@ impl<E: Copy + Debug> Updatable<E> for PIDControllerStream<E> {
         Ok(())
     }
 }
-enum CommandPIDUpdateState<E: Copy + Debug> {
-    Error(Error<E>),
-    Ready,
-    Update0 {
-        timestamp: i64,
-        output: f32,
-        error: f32,
-    },
-    Update1 {
-        timestamp: i64,
-        output: f32,
-        output_int: f32,
-        error: f32,
-        error_int: f32,
-    },
-    Operational {
-        timestamp: i64,
-        output: f32,
-        output_int: f32,
-        output_int_int: f32,
-        error: f32,
-        error_int: f32,
-    },
+struct Update0 {
+    pub time: i64,
+    pub output: f32,
+    pub error: f32,
+    pub maybe_update_1: Option<Update1>,
+}
+struct Update1 {
+    pub output_int: f32,
+    pub error_int: f32,
+    pub output_int_int: Option<f32>,
 }
 //TODO: test this
 ///Almost literally three PID controllers in a trenchcoat.
@@ -116,7 +103,7 @@ pub struct CommandPID<E: Copy + Debug> {
     input: InputGetter<State, E>,
     command: Command,
     kvals: PositionDerivativeDependentPIDKValues,
-    update_state: CommandPIDUpdateState<E>,
+    update_state: Result<Option<Update0>, Error<E>>,
 }
 impl<E: Copy + Debug> CommandPID<E> {
     pub fn new(
@@ -128,12 +115,12 @@ impl<E: Copy + Debug> CommandPID<E> {
             input: input,
             command: command,
             kvals: kvalues,
-            update_state: CommandPIDUpdateState::Ready,
+            update_state: Ok(None),
         }
     }
     #[inline]
     pub fn reset(&mut self) {
-        self.update_state = CommandPIDUpdateState::Ready;
+        self.update_state = Ok(None);
     }
     #[inline]
     pub fn set_command(&mut self, command: Command) {
@@ -143,35 +130,22 @@ impl<E: Copy + Debug> CommandPID<E> {
 }
 impl<E: Copy + Debug> Getter<f32, E> for CommandPID<E> {
     fn get(&self) -> Output<f32, E> {
-        match self.update_state {
-            CommandPIDUpdateState::Error(error) => Err(error),
-            CommandPIDUpdateState::Ready => Ok(None),
-            CommandPIDUpdateState::Update0 {
-                timestamp, output, ..
-            } => match self.command.position_derivative {
-                PositionDerivative::Position => Ok(Some(Datum::new(timestamp, output))),
-                _ => Ok(None),
-            },
-            CommandPIDUpdateState::Update1 {
-                timestamp,
-                output,
-                output_int,
-                ..
-            } => match self.command.position_derivative {
-                PositionDerivative::Position => Ok(Some(Datum::new(timestamp, output))),
-                PositionDerivative::Velocity => Ok(Some(Datum::new(timestamp, output_int))),
-                _ => Ok(None),
-            },
-            CommandPIDUpdateState::Operational {
-                timestamp,
-                output,
-                output_int,
-                output_int_int,
-                ..
-            } => match self.command.position_derivative {
-                PositionDerivative::Position => Ok(Some(Datum::new(timestamp, output))),
-                PositionDerivative::Velocity => Ok(Some(Datum::new(timestamp, output_int))),
-                PositionDerivative::Acceleration => Ok(Some(Datum::new(timestamp, output_int_int))),
+        match &self.update_state {
+            Err(error) => Err(*error),
+            Ok(None) => Ok(None),
+            Ok(Some(update_0)) => match self.command.position_derivative {
+                PositionDerivative::Position => Ok(Some(Datum::new(update_0.time, update_0.output))),
+                _ => match &update_0.maybe_update_1 {
+                    None => Ok(None),
+                    Some(update_1) => match self.command.position_derivative {
+                        PositionDerivative::Position => unimplemented!(),
+                        PositionDerivative::Velocity => Ok(Some(Datum::new(update_0.time, update_1.output_int))),
+                        PositionDerivative::Acceleration => match update_1.output_int_int {
+                            None => Ok(None),
+                            Some(output_int_int) => Ok(Some(Datum::new(update_0.time, output_int_int))),
+                        },
+                    },
+                },
             },
         }
     }
@@ -179,111 +153,97 @@ impl<E: Copy + Debug> Getter<f32, E> for CommandPID<E> {
 impl<E: Copy + Debug> Updatable<E> for CommandPID<E> {
     fn update(&mut self) -> NothingOrError<E> {
         let raw_get = self.input.borrow().get();
-        let new_datum_state = match raw_get {
+        let datum_state = match raw_get {
             Ok(Some(value)) => value,
             Ok(None) => {
                 self.reset();
                 return Ok(());
             }
             Err(error) => {
-                self.update_state = CommandPIDUpdateState::Error(error);
+                self.update_state = Err(error);
                 return Err(error);
             }
         };
-        let new_error = self.command.value
-            - new_datum_state
+        let error = self.command.value
+            - datum_state
                 .value
                 .get_value(self.command.position_derivative);
-        //TODO: Figure out how to do this with less repeated code
         match &self.update_state {
-            CommandPIDUpdateState::Error(_) | CommandPIDUpdateState::Ready => {
-                self.update_state = CommandPIDUpdateState::Update0 {
-                    timestamp: new_datum_state.time,
-                    output: self.kvals.evaluate(
-                        self.command.position_derivative,
-                        new_error,
-                        0.0,
-                        0.0,
-                    ),
-                    error: new_error,
-                }
-            }
-            CommandPIDUpdateState::Update0 {
-                timestamp,
-                output,
-                error,
-            } => {
-                let delta_time = (new_datum_state.time - timestamp) as f32;
-                let error_drv = (new_error - error) / delta_time;
-                let error_int = (error + new_error) / 2.0 * delta_time;
-                let new_output = self.kvals.evaluate(
+            Ok(None) | Err(_) => {
+                let output = self.kvals.evaluate(
                     self.command.position_derivative,
-                    new_error,
-                    error_int,
-                    error_drv,
+                    error,
+                    0.0,
+                    0.0,
                 );
-                let output_int = (output + new_output) / 2.0 * delta_time;
-                self.update_state = CommandPIDUpdateState::Update1 {
-                    timestamp: new_datum_state.time,
-                    output: new_output,
-                    output_int: output_int,
-                    error: new_error,
-                    error_int: error_int,
-                }
+                self.update_state = Ok(Some(Update0 {
+                    time: datum_state.time,
+                    output: output,
+                    error: error,
+                    maybe_update_1: None,
+                }));
             }
-            CommandPIDUpdateState::Update1 {
-                timestamp,
-                output,
-                output_int,
-                error,
-                error_int,
-            } => {
-                let delta_time = (new_datum_state.time - timestamp) as f32;
-                let error_drv = (new_error - error) / delta_time;
-                let new_error_int = error_int + (error + new_error) / 2.0 * delta_time;
-                let new_output = self.kvals.evaluate(
-                    self.command.position_derivative,
-                    new_error,
-                    new_error_int,
-                    error_drv,
-                );
-                let new_output_int = output_int + (output + new_output) / 2.0 * delta_time;
-                let output_int_int = (output_int + new_output_int) / 2.0 * delta_time;
-                self.update_state = CommandPIDUpdateState::Operational {
-                    timestamp: new_datum_state.time,
-                    output: new_output,
-                    output_int: new_output_int,
-                    output_int_int: output_int_int,
-                    error: new_error,
-                    error_int: new_error_int,
-                }
-            }
-            CommandPIDUpdateState::Operational {
-                timestamp,
-                output,
-                output_int,
-                output_int_int,
-                error,
-                error_int,
-            } => {
-                let delta_time = (new_datum_state.time - timestamp) as f32;
-                let error_drv = (new_error - error) / delta_time;
-                let new_error_int = error_int + (error + new_error) / 2.0 * delta_time;
-                let new_output = self.kvals.evaluate(
-                    self.command.position_derivative,
-                    new_error,
-                    new_error_int,
-                    error_drv,
-                );
-                let new_output_int = output_int + (output + new_output) / 2.0 * delta_time;
-                let new_output_int_int = output_int_int + (output_int + new_output_int) / 2.0 * delta_time;
-                self.update_state = CommandPIDUpdateState::Operational {
-                    timestamp: new_datum_state.time,
-                    output: new_output,
-                    output_int: new_output_int,
-                    output_int_int: new_output_int_int,
-                    error: new_error,
-                    error_int: new_error_int,
+            Ok(Some(update_0)) => {
+                let delta_time = (datum_state.time - update_0.time) as f32;
+                let error_drv = (error - update_0.error) / delta_time;
+                let error_int_addend = (update_0.error + error) * delta_time;
+                match &update_0.maybe_update_1 {
+                    None => {
+                        let output = self.kvals.evaluate(
+                            self.command.position_derivative,
+                            error,
+                            error_int_addend,
+                            error_drv,
+                        );
+                        let output_int = (update_0.output + output) / 2.0 * delta_time;
+                        self.update_state = Ok(Some(Update0 {
+                            time: datum_state.time,
+                            output: output,
+                            error: error,
+                            maybe_update_1: Some(Update1 {
+                                output_int: output_int,
+                                error_int: error_int_addend,
+                                output_int_int: None,
+                            }),
+                        }));
+                    },
+                    Some(update_1) => {
+                        let error_int = update_1.error_int + error_int_addend;
+                        let output = self.kvals.evaluate(
+                            self.command.position_derivative,
+                            error,
+                            error_int,
+                            error_drv,
+                        );
+                        let output_int = update_1.output_int + (update_0.output + output) / 2.0 * delta_time;
+                        let output_int_int_addend = (update_1.output_int + output_int) / 2.0 * delta_time;
+                        match &update_1.output_int_int {
+                            None => {
+                                self.update_state = Ok(Some(Update0 {
+                                    time: datum_state.time,
+                                    output: output,
+                                    error: error,
+                                    maybe_update_1: Some(Update1 {
+                                        output_int: output_int,
+                                        error_int: error_int,
+                                        output_int_int: Some(output_int_int_addend),
+                                    }),
+                                }));
+                            }
+                            Some(output_int_int) => {
+                                self.update_state = Ok(Some(Update0 {
+                                    time: datum_state.time,
+                                    output: output,
+                                    error: error,
+                                    maybe_update_1: Some(Update1 {
+                                        output_int: output_int,
+                                        error_int: error_int,
+                                        output_int_int: Some(output_int_int + output_int_int_addend),
+                                    }),
+                                }));
+                            }
+                        }
+                    },
                 }
             }
         }
