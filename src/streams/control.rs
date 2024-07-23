@@ -86,16 +86,37 @@ impl<E: Copy + Debug> Updatable<E> for PIDControllerStream<E> {
         Ok(())
     }
 }
+enum CommandPIDUpdateState<E: Copy + Debug> {
+    Error(Error<E>),
+    Ready,
+    Update0 {
+        timestamp: i64,
+        output: f32,
+        error: f32,
+    },
+    Update1 {
+        timestamp: i64,
+        output: f32,
+        output_int: f32,
+        error: f32,
+        error_int: f32,
+    },
+    Operational {
+        timestamp: i64,
+        output: f32,
+        output_int: f32,
+        output_int_int: f32,
+        error: f32,
+        error_int: f32,
+    },
+}
+//TODO: test this
 ///Almost literally three PID controllers in a trenchcoat.
 pub struct CommandPID<E: Copy + Debug> {
     input: InputGetter<State, E>,
     command: Command,
     kvals: PositionDerivativeDependentPIDKValues,
-    output: Output<f32, E>,
-    prev_error: Option<Datum<f32>>,
-    int_error: f32,
-    out_int: Option<f32>,
-    out_int_int: Option<f32>,
+    update_state: CommandPIDUpdateState<E>,
 }
 impl<E: Copy + Debug> CommandPID<E> {
     pub fn new(
@@ -107,20 +128,14 @@ impl<E: Copy + Debug> CommandPID<E> {
             input: input,
             command: command,
             kvals: kvalues,
-            output: Ok(None),
-            prev_error: None,
-            int_error: 0.0,
-            out_int: None,
-            out_int_int: None,
+            update_state: CommandPIDUpdateState::Ready,
         }
     }
+    #[inline]
     pub fn reset(&mut self) {
-        self.output = Ok(None);
-        self.prev_error = None;
-        self.int_error = 0.0;
-        self.out_int = None;
-        self.out_int_int = None;
+        self.update_state = CommandPIDUpdateState::Ready;
     }
+    #[inline]
     pub fn set_command(&mut self, command: Command) {
         self.reset();
         self.command = command;
@@ -128,11 +143,153 @@ impl<E: Copy + Debug> CommandPID<E> {
 }
 impl<E: Copy + Debug> Getter<f32, E> for CommandPID<E> {
     fn get(&self) -> Output<f32, E> {
-        self.output
+        match self.update_state {
+            CommandPIDUpdateState::Error(error) => Err(error),
+            CommandPIDUpdateState::Ready => Ok(None),
+            CommandPIDUpdateState::Update0 {
+                timestamp, output, ..
+            } => match self.command.position_derivative {
+                PositionDerivative::Position => Ok(Some(Datum::new(timestamp, output))),
+                _ => Ok(None),
+            },
+            CommandPIDUpdateState::Update1 {
+                timestamp,
+                output,
+                output_int,
+                ..
+            } => match self.command.position_derivative {
+                PositionDerivative::Position => Ok(Some(Datum::new(timestamp, output))),
+                PositionDerivative::Velocity => Ok(Some(Datum::new(timestamp, output_int))),
+                _ => Ok(None),
+            },
+            CommandPIDUpdateState::Operational {
+                timestamp,
+                output,
+                output_int,
+                output_int_int,
+                ..
+            } => match self.command.position_derivative {
+                PositionDerivative::Position => Ok(Some(Datum::new(timestamp, output))),
+                PositionDerivative::Velocity => Ok(Some(Datum::new(timestamp, output_int))),
+                PositionDerivative::Acceleration => Ok(Some(Datum::new(timestamp, output_int_int))),
+            },
+        }
     }
 }
 impl<E: Copy + Debug> Updatable<E> for CommandPID<E> {
     fn update(&mut self) -> NothingOrError<E> {
+        let raw_get = self.input.borrow().get();
+        let new_datum_state = match raw_get {
+            Ok(Some(value)) => value,
+            Ok(None) => {
+                self.reset();
+                return Ok(());
+            }
+            Err(error) => {
+                self.update_state = CommandPIDUpdateState::Error(error);
+                return Err(error);
+            }
+        };
+        let new_error = self.command.value
+            - new_datum_state
+                .value
+                .get_value(self.command.position_derivative);
+        //TODO: Figure out how to do this with less repeated code
+        match &self.update_state {
+            CommandPIDUpdateState::Error(_) | CommandPIDUpdateState::Ready => {
+                self.update_state = CommandPIDUpdateState::Update0 {
+                    timestamp: new_datum_state.time,
+                    output: self.kvals.evaluate(
+                        self.command.position_derivative,
+                        new_error,
+                        0.0,
+                        0.0,
+                    ),
+                    error: new_error,
+                }
+            }
+            CommandPIDUpdateState::Update0 {
+                timestamp,
+                output,
+                error,
+            } => {
+                let delta_time = (new_datum_state.time - timestamp) as f32;
+                let error_drv = (new_error - error) / delta_time;
+                let error_int = (error + new_error) / 2.0 * delta_time;
+                let new_output = self.kvals.evaluate(
+                    self.command.position_derivative,
+                    new_error,
+                    error_int,
+                    error_drv,
+                );
+                let output_int = (output + new_output) / 2.0 * delta_time;
+                self.update_state = CommandPIDUpdateState::Update1 {
+                    timestamp: new_datum_state.time,
+                    output: new_output,
+                    output_int: output_int,
+                    error: new_error,
+                    error_int: error_int,
+                }
+            }
+            CommandPIDUpdateState::Update1 {
+                timestamp,
+                output,
+                output_int,
+                error,
+                error_int,
+            } => {
+                let delta_time = (new_datum_state.time - timestamp) as f32;
+                let error_drv = (new_error - error) / delta_time;
+                let new_error_int = error_int + (error + new_error) / 2.0 * delta_time;
+                let new_output = self.kvals.evaluate(
+                    self.command.position_derivative,
+                    new_error,
+                    new_error_int,
+                    error_drv,
+                );
+                let new_output_int = output_int + (output + new_output) / 2.0 * delta_time;
+                let output_int_int = (output_int + new_output_int) / 2.0 * delta_time;
+                self.update_state = CommandPIDUpdateState::Operational {
+                    timestamp: new_datum_state.time,
+                    output: new_output,
+                    output_int: new_output_int,
+                    output_int_int: output_int_int,
+                    error: new_error,
+                    error_int: new_error_int,
+                }
+            }
+            CommandPIDUpdateState::Operational {
+                timestamp,
+                output,
+                output_int,
+                output_int_int,
+                error,
+                error_int,
+            } => {
+                let delta_time = (new_datum_state.time - timestamp) as f32;
+                let error_drv = (new_error - error) / delta_time;
+                let new_error_int = error_int + (error + new_error) / 2.0 * delta_time;
+                let new_output = self.kvals.evaluate(
+                    self.command.position_derivative,
+                    new_error,
+                    new_error_int,
+                    error_drv,
+                );
+                let new_output_int = output_int + (output + new_output) / 2.0 * delta_time;
+                let new_output_int_int = output_int_int + (output_int + new_output_int) / 2.0 * delta_time;
+                self.update_state = CommandPIDUpdateState::Operational {
+                    timestamp: new_datum_state.time,
+                    output: new_output,
+                    output_int: new_output_int,
+                    output_int_int: new_output_int_int,
+                    error: new_error,
+                    error_int: new_error_int,
+                }
+            }
+        }
+        Ok(())
+    }
+    /*fn update(&mut self) -> NothingOrError<E> {
         let raw_get = self.input.borrow().get();
         let new_state = match raw_get {
             Ok(Some(value)) => value,
@@ -168,23 +325,23 @@ impl<E: Copy + Debug> Updatable<E> for CommandPID<E> {
         }
         self.prev_error = Some(Datum::new(new_state.time, error));
         todo!();
-    }
-}
-fn make_none_zero(it: &mut Option<f32>) {
-    match it {
-        Some(_) => (),
-        None => *it = Some(0.0),
-    }
-}
-#[test]
-fn make_none_zero_test() {
-    let mut x = None;
-    make_none_zero(&mut x);
-    assert_eq!(x, Some(0.0));
-    let mut y = Some(4.0);
-    make_none_zero(&mut y);
-    assert_eq!(y, Some(4.0));
-}
+    }*/
+} //lol
+  /*fn make_none_zero(it: &mut Option<f32>) {
+      match it {
+          Some(_) => (),
+          None => *it = Some(0.0),
+      }
+  }
+  #[test]
+  fn make_none_zero_test() {
+      let mut x = None;
+      make_none_zero(&mut x);
+      assert_eq!(x, Some(0.0));
+      let mut y = Some(4.0);
+      make_none_zero(&mut y);
+      assert_eq!(y, Some(4.0));
+  }*/
 ///An Exponentially Weighted Moving Average stream for use with the stream system. See <https://www.itl.nist.gov/div898/handbook/pmc/section3/pmc324.htm> for more information.
 pub struct EWMAStream<E: Copy + Debug> {
     input: InputGetter<f32, E>,
