@@ -144,15 +144,21 @@ impl<E: Copy + Debug> Getter<f32, E> for CommandPID<E> {
             Err(error) => Err(*error),
             Ok(None) => Ok(None),
             Ok(Some(update_0)) => match self.command.position_derivative {
-                PositionDerivative::Position => Ok(Some(Datum::new(update_0.time, update_0.output))),
+                PositionDerivative::Position => {
+                    Ok(Some(Datum::new(update_0.time, update_0.output)))
+                }
                 _ => match &update_0.maybe_update_1 {
                     None => Ok(None),
                     Some(update_1) => match self.command.position_derivative {
                         PositionDerivative::Position => unimplemented!(),
-                        PositionDerivative::Velocity => Ok(Some(Datum::new(update_0.time, update_1.output_int))),
+                        PositionDerivative::Velocity => {
+                            Ok(Some(Datum::new(update_0.time, update_1.output_int)))
+                        }
                         PositionDerivative::Acceleration => match update_1.output_int_int {
                             None => Ok(None),
-                            Some(output_int_int) => Ok(Some(Datum::new(update_0.time, output_int_int))),
+                            Some(output_int_int) => {
+                                Ok(Some(Datum::new(update_0.time, output_int_int)))
+                            }
                         },
                     },
                 },
@@ -180,12 +186,9 @@ impl<E: Copy + Debug> Updatable<E> for CommandPID<E> {
                 .get_value(self.command.position_derivative);
         match &self.update_state {
             Ok(None) | Err(_) => {
-                let output = self.kvals.evaluate(
-                    self.command.position_derivative,
-                    error,
-                    0.0,
-                    0.0,
-                );
+                let output = self
+                    .kvals
+                    .evaluate(self.command.position_derivative, error, 0.0, 0.0);
                 self.update_state = Ok(Some(Update0 {
                     time: datum_state.time,
                     output: output,
@@ -216,7 +219,7 @@ impl<E: Copy + Debug> Updatable<E> for CommandPID<E> {
                                 output_int_int: None,
                             }),
                         }));
-                    },
+                    }
                     Some(update_1) => {
                         let error_int = update_1.error_int + error_int_addend;
                         let output = self.kvals.evaluate(
@@ -225,8 +228,10 @@ impl<E: Copy + Debug> Updatable<E> for CommandPID<E> {
                             error_int,
                             error_drv,
                         );
-                        let output_int = update_1.output_int + (update_0.output + output) / 2.0 * delta_time;
-                        let output_int_int_addend = (update_1.output_int + output_int) / 2.0 * delta_time;
+                        let output_int =
+                            update_1.output_int + (update_0.output + output) / 2.0 * delta_time;
+                        let output_int_int_addend =
+                            (update_1.output_int + output_int) / 2.0 * delta_time;
                         match &update_1.output_int_int {
                             None => {
                                 self.update_state = Ok(Some(Update0 {
@@ -248,12 +253,14 @@ impl<E: Copy + Debug> Updatable<E> for CommandPID<E> {
                                     maybe_update_1: Some(Update1 {
                                         output_int: output_int,
                                         error_int: error_int,
-                                        output_int_int: Some(output_int_int + output_int_int_addend),
+                                        output_int_int: Some(
+                                            output_int_int + output_int_int_addend,
+                                        ),
                                     }),
                                 }));
                             }
                         }
-                    },
+                    }
                 }
             }
         }

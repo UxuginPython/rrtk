@@ -631,56 +631,83 @@ impl<T: Clone, E: Copy + Debug> Updatable<E> for ConstantGetter<T, E> {
 }
 //TODO: test this
 ///A place where a device can connect to another.
-pub struct Terminal<E: Copy + Debug> {
+pub struct Terminal<'a, E: Copy + Debug> {
     settable_data_state: SettableData<Datum<State>, E>,
     settable_data_command: SettableData<Datum<Command>, E>,
-    state: Option<Datum<State>>,
-    command: Option<Datum<Command>>,
+    other: Option<&'a RefCell<Terminal<'a, E>>>,
 }
-impl<E: Copy + Debug> Terminal<E> {
-    ///Constructor for `Terminal`.
-    pub fn new() -> Self {
+impl<E: Copy + Debug> Terminal<'_, E> {
+    ///Direct constructor for a `Terminal`. You almost always actually want `RefCell<Terminal>`
+    ///however, in which case you should call `new`, which returns `RefCell<Terminal>`.
+    pub fn new_raw() -> Self {
         Self {
             settable_data_state: SettableData::new(),
             settable_data_command: SettableData::new(),
-            state: None,
-            command: None,
+            other: None,
         }
     }
+    ///This constructs a `RefCell<Terminal>`. This is almost always what you want, and what is
+    ///needed for connecting terminals. If you do just want a `Terminal`, use `raw_get` instead.
+    pub fn new() -> RefCell<Self> {
+        RefCell::new(Self::new_raw())
+    }
 }
-impl<E: Copy + Debug> Settable<Datum<State>, E> for Terminal<E> {
+impl<E: Copy + Debug> Settable<Datum<State>, E> for Terminal<'_, E> {
     fn get_settable_data_ref(&self) -> &SettableData<Datum<State>, E> {
         &self.settable_data_state
     }
     fn get_settable_data_mut(&mut self) -> &mut SettableData<Datum<State>, E> {
         &mut self.settable_data_state
     }
-    fn direct_set(&mut self, state: Datum<State>) -> NothingOrError<E> {
-        self.state = Some(state);
+    //SettableData takes care of this for us.
+    fn direct_set(&mut self, _state: Datum<State>) -> NothingOrError<E> {
         Ok(())
     }
 }
-impl<E: Copy + Debug> Settable<Datum<Command>, E> for Terminal<E> {
+impl<E: Copy + Debug> Settable<Datum<Command>, E> for Terminal<'_, E> {
     fn get_settable_data_ref(&self) -> &SettableData<Datum<Command>, E> {
         &self.settable_data_command
     }
     fn get_settable_data_mut(&mut self) -> &mut SettableData<Datum<Command>, E> {
         &mut self.settable_data_command
     }
-    fn direct_set(&mut self, command: Datum<Command>) -> NothingOrError<E> {
-        self.command = Some(command);
+    //SettableData takes care of this for us.
+    fn direct_set(&mut self, _command: Datum<Command>) -> NothingOrError<E> {
         Ok(())
     }
 }
-impl<E: Copy + Debug> Getter<State, E> for Terminal<E> {
+impl<E: Copy + Debug> Getter<State, E> for Terminal<'_, E> {
     fn get(&self) -> Output<State, E> {
-        Ok(self.state)
+        let addends = Vec::with_capacity(2);
+        match self.get_last_request() {
+            Some(state) => addends.push(state),
+            None => (),
+        }
+        match self.other {
+            Some(other) => match other.get_last_request() {
+                Some(state) => addends.push(state),
+                None => (),
+            },
+            None => (),
+        }
+        match addends.len() {
+            0 => return Ok(None),
+            1 => return Ok(Some(addends[0])),
+            2 => todo!(),
+        }
     }
 }
-impl<E: Copy + Debug> Updatable<E> for Terminal<E> {
+impl<E: Copy + Debug> Updatable<E> for Terminal<'_, E> {
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
     }
+}
+pub fn connect<'a, E: Copy + Debug>(
+    term1: &'a RefCell<Terminal<'a, E>>,
+    term2: &'a RefCell<Terminal<'a, E>>,
+) {
+    term1.borrow_mut().other = Some(term2);
+    term2.borrow_mut().other = Some(term1);
 }
 //TODO; test this
 ///A mechanical device.
