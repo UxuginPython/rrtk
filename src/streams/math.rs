@@ -71,7 +71,9 @@ impl<T: AddAssign + Clone + Default, const N: usize, E: Copy + Debug> Getter<T, 
         }
     }
 }
-impl<T: AddAssign + Clone + Default, const N: usize, E: Copy + Debug> Updatable<E> for SumStream<T, N, E> {
+impl<T: AddAssign + Clone + Default, const N: usize, E: Copy + Debug> Updatable<E>
+    for SumStream<T, N, E>
+{
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
     }
@@ -127,47 +129,44 @@ impl<T: Sub<Output = T>, E: Copy + Debug> Updatable<E> for DifferenceStream<T, E
 ///calculation, effectively treating it as though it had returned 1. If this is not the desired
 ///behavior, use `rrtk::streams::converters::NoneToValue` or
 ///`rrtk::streams::converters::NoneToError`.
-pub struct ProductStream<const N: usize, E> {
-    factors: [InputGetter<f32, E>; N],
+pub struct ProductStream<T: MulAssign, const N: usize, E> {
+    factors: [InputGetter<T, E>; N],
 }
-impl<const N: usize, E> ProductStream<N, E> {
+impl<T: Clone + MulAssign, const N: usize, E> ProductStream<T, N, E> {
     ///Constructor for `ProductStream`.
-    pub fn new(factors: [InputGetter<f32, E>; N]) -> Self {
+    pub fn new(factors: [InputGetter<T, E>; N]) -> Self {
         if N < 1 {
             panic!("rrtk::streams::ProductStream must have at least one input stream");
         }
         Self { factors: factors }
     }
 }
-impl<const N: usize, E: Copy + Debug> Getter<f32, E> for ProductStream<N, E> {
-    fn get(&self) -> Output<f32, E> {
-        let mut outputs = Vec::new();
+impl<T: Clone + MulAssign, const N: usize, E: Copy + Debug> Getter<T, E>
+    for ProductStream<T, N, E>
+{
+    fn get(&self) -> Output<T, E> {
+        let mut outputs = Vec::with_capacity(self.factors.len());
         for i in &self.factors {
-            outputs.push(i.borrow().get()?);
-        }
-        let mut value = 1.0;
-        for i in &outputs {
-            match i {
-                Some(output) => {
-                    value *= output.value;
-                }
-                None => {}
+            match i.borrow().get()? {
+                Some(x) => outputs.push(x),
+                None => (),
             }
         }
+        let mut value = outputs[0].value.clone();
+        for i in &outputs[1..] {
+            value *= i.value.clone();
+        }
         let mut time = None;
-        for i in &outputs {
-            match i {
-                Some(output) => match time {
-                    Some(old_time) => {
-                        if output.time > old_time {
-                            time = Some(output.time);
-                        }
-                    }
-                    None => {
+        for output in &outputs {
+            match time {
+                Some(old_time) => {
+                    if output.time > old_time {
                         time = Some(output.time);
                     }
-                },
-                None => {}
+                }
+                None => {
+                    time = Some(output.time);
+                }
             }
         }
         match time {
@@ -180,7 +179,9 @@ impl<const N: usize, E: Copy + Debug> Getter<f32, E> for ProductStream<N, E> {
         }
     }
 }
-impl<const N: usize, E: Copy + Debug> Updatable<E> for ProductStream<N, E> {
+impl<T: Clone + MulAssign, const N: usize, E: Copy + Debug> Updatable<E>
+    for ProductStream<T, N, E>
+{
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
     }
