@@ -188,21 +188,21 @@ impl<T: Clone + MulAssign, const N: usize, E: Copy + Debug> Updatable<E>
 }
 ///A stream that divides one if its inputs by the other. If the divisor returns `Ok(None)`, the
 ///dividend's value is returned directly.
-pub struct QuotientStream<E> {
-    dividend: InputGetter<f32, E>,
-    divisor: InputGetter<f32, E>,
+pub struct QuotientStream<T: Div<Output = T>, E> {
+    dividend: InputGetter<T, E>,
+    divisor: InputGetter<T, E>,
 }
-impl<E> QuotientStream<E> {
+impl<T: Div<Output = T>, E> QuotientStream<T, E> {
     ///Constructor for `QuotientStream`.
-    pub fn new(dividend: InputGetter<f32, E>, divisor: InputGetter<f32, E>) -> Self {
+    pub fn new(dividend: InputGetter<T, E>, divisor: InputGetter<T, E>) -> Self {
         Self {
             dividend: dividend,
             divisor: divisor,
         }
     }
 }
-impl<E: Copy + Debug> Getter<f32, E> for QuotientStream<E> {
-    fn get(&self) -> Output<f32, E> {
+impl<T: Div<Output = T>, E: Copy + Debug> Getter<T, E> for QuotientStream<T, E> {
+    fn get(&self) -> Output<T, E> {
         let dividend_output = self.dividend.borrow().get()?;
         let divisor_output = self.divisor.borrow().get()?;
         match dividend_output {
@@ -228,7 +228,7 @@ impl<E: Copy + Debug> Getter<f32, E> for QuotientStream<E> {
         Ok(Some(Datum::new(time, value)))
     }
 }
-impl<E: Copy + Debug> Updatable<E> for QuotientStream<E> {
+impl<T: Div<Output = T>, E: Copy + Debug> Updatable<E> for QuotientStream<T, E> {
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
     }
