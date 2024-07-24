@@ -674,7 +674,7 @@ fn product_stream() {
 #[test]
 #[should_panic]
 fn empty_product_stream() {
-    let _: ProductStream<0, ()> = ProductStream::new([]);
+    let _: ProductStream<f32, 0, ()> = ProductStream::new([]);
 }
 #[test]
 fn quotient_stream() {

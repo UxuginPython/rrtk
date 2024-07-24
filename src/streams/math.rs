@@ -80,21 +80,21 @@ impl<T: AddAssign + Clone + Default, const N: usize, E: Copy + Debug> Updatable<
 }
 ///A stream that subtracts one of its inputs from the other. If the subtrahend stream returns
 ///`Ok(None)`, the minuend's value will be returned directly.
-pub struct DifferenceStream<E> {
-    minuend: InputGetter<f32, E>,
-    subtrahend: InputGetter<f32, E>,
+pub struct DifferenceStream<T: Sub<Output = T>, E: Copy + Debug> {
+    minuend: InputGetter<T, E>,
+    subtrahend: InputGetter<T, E>,
 }
-impl<E> DifferenceStream<E> {
+impl<T: Sub<Output = T>, E: Copy + Debug> DifferenceStream<T, E> {
     ///Constructor for `DifferenceStream`.
-    pub fn new(minuend: InputGetter<f32, E>, subtrahend: InputGetter<f32, E>) -> Self {
+    pub fn new(minuend: InputGetter<T, E>, subtrahend: InputGetter<T, E>) -> Self {
         Self {
             minuend: minuend,
             subtrahend: subtrahend,
         }
     }
 }
-impl<E: Copy + Debug> Getter<f32, E> for DifferenceStream<E> {
-    fn get(&self) -> Output<f32, E> {
+impl<T: Sub<Output = T>, E: Copy + Debug> Getter<T, E> for DifferenceStream<T, E> {
+    fn get(&self) -> Output<T, E> {
         let minuend_output = self.minuend.borrow().get()?;
         let subtrahend_output = self.subtrahend.borrow().get()?;
         match minuend_output {
@@ -120,7 +120,7 @@ impl<E: Copy + Debug> Getter<f32, E> for DifferenceStream<E> {
         Ok(Some(Datum::new(time, value)))
     }
 }
-impl<E: Copy + Debug> Updatable<E> for DifferenceStream<E> {
+impl<T: Sub<Output = T>, E: Copy + Debug> Updatable<E> for DifferenceStream<T, E> {
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
     }
@@ -129,47 +129,44 @@ impl<E: Copy + Debug> Updatable<E> for DifferenceStream<E> {
 ///calculation, effectively treating it as though it had returned 1. If this is not the desired
 ///behavior, use `rrtk::streams::converters::NoneToValue` or
 ///`rrtk::streams::converters::NoneToError`.
-pub struct ProductStream<const N: usize, E> {
-    factors: [InputGetter<f32, E>; N],
+pub struct ProductStream<T: MulAssign, const N: usize, E> {
+    factors: [InputGetter<T, E>; N],
 }
-impl<const N: usize, E> ProductStream<N, E> {
+impl<T: Clone + MulAssign, const N: usize, E> ProductStream<T, N, E> {
     ///Constructor for `ProductStream`.
-    pub fn new(factors: [InputGetter<f32, E>; N]) -> Self {
+    pub fn new(factors: [InputGetter<T, E>; N]) -> Self {
         if N < 1 {
             panic!("rrtk::streams::ProductStream must have at least one input stream");
         }
         Self { factors: factors }
     }
 }
-impl<const N: usize, E: Copy + Debug> Getter<f32, E> for ProductStream<N, E> {
-    fn get(&self) -> Output<f32, E> {
-        let mut outputs = Vec::new();
+impl<T: Clone + MulAssign, const N: usize, E: Copy + Debug> Getter<T, E>
+    for ProductStream<T, N, E>
+{
+    fn get(&self) -> Output<T, E> {
+        let mut outputs = Vec::with_capacity(self.factors.len());
         for i in &self.factors {
-            outputs.push(i.borrow().get()?);
-        }
-        let mut value = 1.0;
-        for i in &outputs {
-            match i {
-                Some(output) => {
-                    value *= output.value;
-                }
-                None => {}
+            match i.borrow().get()? {
+                Some(x) => outputs.push(x),
+                None => (),
             }
         }
+        let mut value = outputs[0].value.clone();
+        for i in &outputs[1..] {
+            value *= i.value.clone();
+        }
         let mut time = None;
-        for i in &outputs {
-            match i {
-                Some(output) => match time {
-                    Some(old_time) => {
-                        if output.time > old_time {
-                            time = Some(output.time);
-                        }
-                    }
-                    None => {
+        for output in &outputs {
+            match time {
+                Some(old_time) => {
+                    if output.time > old_time {
                         time = Some(output.time);
                     }
-                },
-                None => {}
+                }
+                None => {
+                    time = Some(output.time);
+                }
             }
         }
         match time {
@@ -182,28 +179,30 @@ impl<const N: usize, E: Copy + Debug> Getter<f32, E> for ProductStream<N, E> {
         }
     }
 }
-impl<const N: usize, E: Copy + Debug> Updatable<E> for ProductStream<N, E> {
+impl<T: Clone + MulAssign, const N: usize, E: Copy + Debug> Updatable<E>
+    for ProductStream<T, N, E>
+{
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
     }
 }
 ///A stream that divides one if its inputs by the other. If the divisor returns `Ok(None)`, the
 ///dividend's value is returned directly.
-pub struct QuotientStream<E> {
-    dividend: InputGetter<f32, E>,
-    divisor: InputGetter<f32, E>,
+pub struct QuotientStream<T: Div<Output = T>, E> {
+    dividend: InputGetter<T, E>,
+    divisor: InputGetter<T, E>,
 }
-impl<E> QuotientStream<E> {
+impl<T: Div<Output = T>, E> QuotientStream<T, E> {
     ///Constructor for `QuotientStream`.
-    pub fn new(dividend: InputGetter<f32, E>, divisor: InputGetter<f32, E>) -> Self {
+    pub fn new(dividend: InputGetter<T, E>, divisor: InputGetter<T, E>) -> Self {
         Self {
             dividend: dividend,
             divisor: divisor,
         }
     }
 }
-impl<E: Copy + Debug> Getter<f32, E> for QuotientStream<E> {
-    fn get(&self) -> Output<f32, E> {
+impl<T: Div<Output = T>, E: Copy + Debug> Getter<T, E> for QuotientStream<T, E> {
+    fn get(&self) -> Output<T, E> {
         let dividend_output = self.dividend.borrow().get()?;
         let divisor_output = self.divisor.borrow().get()?;
         match dividend_output {
@@ -229,7 +228,7 @@ impl<E: Copy + Debug> Getter<f32, E> for QuotientStream<E> {
         Ok(Some(Datum::new(time, value)))
     }
 }
-impl<E: Copy + Debug> Updatable<E> for QuotientStream<E> {
+impl<T: Div<Output = T>, E: Copy + Debug> Updatable<E> for QuotientStream<T, E> {
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
     }
