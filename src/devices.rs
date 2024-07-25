@@ -96,13 +96,17 @@ impl<'a, T: Settable<Command, E>, E: Copy + Debug> SettableCommandDeviceWrapper<
         }
     }
 }
-impl<T: Settable<Command, E>, E: Copy + Debug> Device<E> for SettableCommandDeviceWrapper<'_, T, E> {
+impl<T: Settable<Command, E>, E: Copy + Debug> Device<E>
+    for SettableCommandDeviceWrapper<'_, T, E>
+{
     fn update_terminals(&mut self) -> NothingOrError<E> {
         self.terminal.borrow_mut().update()?;
         Ok(())
     }
 }
-impl<T: Settable<Command, E>, E: Copy + Debug> Updatable<E> for SettableCommandDeviceWrapper<'_, T, E> {
+impl<T: Settable<Command, E>, E: Copy + Debug> Updatable<E>
+    for SettableCommandDeviceWrapper<'_, T, E>
+{
     fn update(&mut self) -> NothingOrError<E> {
         match <Terminal<E> as Settable<Datum<Command>, E>>::get_last_request(
             &self.terminal.borrow(),
