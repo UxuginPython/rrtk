@@ -14,12 +14,12 @@ Copyright 2024 UxuginPython on GitHub
 //!Traits making it easier to set up common devices that cannot be builtin structs.
 use crate::*;
 ///Internal data needed by `ImpreciseMotor` implementors.
-pub struct ImpreciseMotorData<E: Copy + Debug> {
-    terminal: Rc<RefCell<Terminal<E>>>,
+pub struct ImpreciseMotorData<'a, E: Copy + Debug> {
+    terminal: &'a RefCell<Terminal<'a, E>>,
 }
-impl<E: Copy + Debug> ImpreciseMotorData<E> {
+impl<'a, E: Copy + Debug> ImpreciseMotorData<'a, E> {
     ///Constructor for `ImpreciseMotorData`.
-    pub fn new(terminal: Rc<RefCell<Terminal<E>>>) -> Self {
+    pub fn new(terminal: &'a RefCell<Terminal<'a, E>>) -> Self {
         Self { terminal: terminal }
     }
 }

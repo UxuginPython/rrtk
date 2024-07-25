@@ -16,20 +16,20 @@ Copyright 2024 UxuginPython on GitHub
 use crate::*;
 //TODO: test this
 ///A device such that positive for one terminal is negative for the other.
-pub struct Invert<E: Copy + Debug> {
-    term1: Rc<RefCell<Terminal<E>>>,
-    term2: Rc<RefCell<Terminal<E>>>,
+pub struct Invert<'a, E: Copy + Debug> {
+    term1: &'a RefCell<Terminal<'a, E>>,
+    term2: &'a RefCell<Terminal<'a, E>>,
 }
-impl<E: Copy + Debug> Invert<E> {
+impl<'a, E: Copy + Debug> Invert<'a, E> {
     ///Constructor for `Invert`.
-    pub fn new(term1: Rc<RefCell<Terminal<E>>>, term2: Rc<RefCell<Terminal<E>>>) -> Self {
+    pub fn new(term1: &'a RefCell<Terminal<'a, E>>, term2: &'a RefCell<Terminal<'a, E>>) -> Self {
         Self {
             term1: term1,
             term2: term2,
         }
     }
 }
-impl<E: Copy + Debug> Updatable<E> for Invert<E> {
+impl<E: Copy + Debug> Updatable<E> for Invert<'_, E> {
     fn update(&mut self) -> NothingOrError<E> {
         self.update_terminals()?;
         let get1 = self
@@ -73,7 +73,7 @@ impl<E: Copy + Debug> Updatable<E> for Invert<E> {
         Ok(())
     }
 }
-impl<E: Copy + Debug> Device<E> for Invert<E> {
+impl<E: Copy + Debug> Device<E> for Invert<'_, E> {
     fn update_terminals(&mut self) -> NothingOrError<E> {
         self.term1.borrow_mut().update()?;
         self.term2.borrow_mut().update()?;
@@ -83,26 +83,26 @@ impl<E: Copy + Debug> Device<E> for Invert<E> {
 //TODO: test this
 ///Connect a `Settable<Command, E>` to a `Terminal<E>` for use as a servo motor in the device
 ///system.
-pub struct SettableCommandDeviceWrapper<T: Settable<Command, E>, E: Copy + Debug> {
+pub struct SettableCommandDeviceWrapper<'a, T: Settable<Command, E>, E: Copy + Debug> {
     inner: T,
-    terminal: Rc<RefCell<Terminal<E>>>,
+    terminal: &'a RefCell<Terminal<'a, E>>,
 }
-impl<T: Settable<Command, E>, E: Copy + Debug> SettableCommandDeviceWrapper<T, E> {
+impl<'a, T: Settable<Command, E>, E: Copy + Debug> SettableCommandDeviceWrapper<'a, T, E> {
     ///Constructor for `SettableCommandDeviceWrapper`.
-    pub fn new(inner: T, terminal: Rc<RefCell<Terminal<E>>>) -> Self {
+    pub fn new(inner: T, terminal: &'a RefCell<Terminal<'a, E>>) -> Self {
         Self {
             inner: inner,
             terminal: terminal,
         }
     }
 }
-impl<T: Settable<Command, E>, E: Copy + Debug> Device<E> for SettableCommandDeviceWrapper<T, E> {
+impl<T: Settable<Command, E>, E: Copy + Debug> Device<E> for SettableCommandDeviceWrapper<'_, T, E> {
     fn update_terminals(&mut self) -> NothingOrError<E> {
         self.terminal.borrow_mut().update()?;
         Ok(())
     }
 }
-impl<T: Settable<Command, E>, E: Copy + Debug> Updatable<E> for SettableCommandDeviceWrapper<T, E> {
+impl<T: Settable<Command, E>, E: Copy + Debug> Updatable<E> for SettableCommandDeviceWrapper<'_, T, E> {
     fn update(&mut self) -> NothingOrError<E> {
         match <Terminal<E> as Settable<Datum<Command>, E>>::get_last_request(
             &self.terminal.borrow(),
@@ -117,26 +117,26 @@ impl<T: Settable<Command, E>, E: Copy + Debug> Updatable<E> for SettableCommandD
 }
 //TODO: test this
 ///Connect a `Getter<State, E>` to a `Terminal<E>` for use as an encoder in the device system.
-pub struct GetterStateDeviceWrapper<T: Getter<State, E>, E: Copy + Debug> {
+pub struct GetterStateDeviceWrapper<'a, T: Getter<State, E>, E: Copy + Debug> {
     inner: T,
-    terminal: Rc<RefCell<Terminal<E>>>,
+    terminal: &'a RefCell<Terminal<'a, E>>,
 }
-impl<T: Getter<State, E>, E: Copy + Debug> GetterStateDeviceWrapper<T, E> {
+impl<'a, T: Getter<State, E>, E: Copy + Debug> GetterStateDeviceWrapper<'a, T, E> {
     ///Constructor for `GetterStateDeviceWrapper`.
-    pub fn new(inner: T, terminal: Rc<RefCell<Terminal<E>>>) -> Self {
+    pub fn new(inner: T, terminal: &'a RefCell<Terminal<'a, E>>) -> Self {
         Self {
             inner: inner,
             terminal: terminal,
         }
     }
 }
-impl<T: Getter<State, E>, E: Copy + Debug> Device<E> for GetterStateDeviceWrapper<T, E> {
+impl<T: Getter<State, E>, E: Copy + Debug> Device<E> for GetterStateDeviceWrapper<'_, T, E> {
     fn update_terminals(&mut self) -> NothingOrError<E> {
         self.terminal.borrow_mut().update()?;
         Ok(())
     }
 }
-impl<T: Getter<State, E>, E: Copy + Debug> Updatable<E> for GetterStateDeviceWrapper<T, E> {
+impl<T: Getter<State, E>, E: Copy + Debug> Updatable<E> for GetterStateDeviceWrapper<'_, T, E> {
     fn update(&mut self) -> NothingOrError<E> {
         self.update_terminals()?;
         let new_state_datum = match self.inner.get()? {
