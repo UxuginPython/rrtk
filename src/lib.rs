@@ -13,8 +13,7 @@ Copyright 2024 UxuginPython on GitHub
 //!Rust Robotics ToolKit
 //!A set of algorithms and other tools for robotics in Rust.
 //!It is partially `no_std`. It does not currently integrate with any API directly, but this may be added in the future.
-//This is super annoying during development. Just make sure to turn it back on before release.
-//#![warn(missing_docs)]
+#![warn(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
 #[cfg(feature = "std")]
 use std::cell::RefCell;
@@ -99,6 +98,8 @@ impl State {
         self.velocity = 0.0;
         self.position = position;
     }
+    ///State contains a position, velocity, and acceleration. This gets the respective field of a
+    ///given position derivative.
     pub fn get_value(&self, position_derivative: PositionDerivative) -> f32 {
         match position_derivative {
             PositionDerivative::Position => self.position,
@@ -173,6 +174,7 @@ impl DivAssign<f32> for State {
         *self = *self / dvsr;
     }
 }
+///Get the newer of two `Datum` objects.
 pub fn latest<T>(dat1: Datum<T>, dat2: Datum<T>) -> Datum<T> {
     if dat1.time >= dat2.time {
         dat1
@@ -926,6 +928,8 @@ impl<E: Copy + Debug> Updatable<E> for Terminal<'_, E> {
         Ok(())
     }
 }
+///Connect two terminals. Connected terminals should represent a physical connection between
+///mechanical devices.
 pub fn connect<'a, E: Copy + Debug>(
     term1: &'a RefCell<Terminal<'a, E>>,
     term2: &'a RefCell<Terminal<'a, E>>,

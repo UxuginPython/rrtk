@@ -107,6 +107,7 @@ pub struct CommandPID<E: Copy + Debug> {
     update_state: Result<Option<Update0>, Error<E>>,
 }
 impl<E: Copy + Debug> CommandPID<E> {
+    ///Constructor for `CommandPID`.
     pub fn new(
         input: InputGetter<State, E>,
         command: Command,
@@ -120,6 +121,10 @@ impl<E: Copy + Debug> CommandPID<E> {
             update_state: Ok(None),
         }
     }
+    ///Clear cached data for calculating integral and derivative. After this is called, the PID
+    ///controller will use the next few updates to rebuild its cache in the same way as it does
+    ///during the first few updates after initialization. This is called when the command changes
+    ///so as not to cause issues with the integral and derivative.
     #[inline]
     pub fn reset(&mut self) {
         self.update_state = Ok(None);
