@@ -173,6 +173,13 @@ impl DivAssign<f32> for State {
         *self = *self / dvsr;
     }
 }
+pub fn latest<T>(dat1: Datum<T>, dat2: Datum<T>) -> Datum<T> {
+    if dat1.time >= dat2.time {
+        dat1
+    } else {
+        dat2
+    }
+}
 ///A container for a time and something else, usually an `f32` or a `State`.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Datum<T> {
