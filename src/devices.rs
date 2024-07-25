@@ -17,15 +17,15 @@ use crate::*;
 //TODO: test this
 ///A device such that positive for one terminal is negative for the other.
 pub struct Invert<'a, E: Copy + Debug> {
-    term1: &'a RefCell<Terminal<'a, E>>,
-    term2: &'a RefCell<Terminal<'a, E>>,
+    term1: RefCell<Terminal<'a, E>>,
+    term2: RefCell<Terminal<'a, E>>,
 }
 impl<'a, E: Copy + Debug> Invert<'a, E> {
     ///Constructor for `Invert`.
-    pub fn new(term1: &'a RefCell<Terminal<'a, E>>, term2: &'a RefCell<Terminal<'a, E>>) -> Self {
+    pub fn new() -> Self {
         Self {
-            term1: term1,
-            term2: term2,
+            term1: Terminal::new(),
+            term2: Terminal::new(),
         }
     }
 }
@@ -85,14 +85,14 @@ impl<E: Copy + Debug> Device<E> for Invert<'_, E> {
 ///system.
 pub struct SettableCommandDeviceWrapper<'a, T: Settable<Command, E>, E: Copy + Debug> {
     inner: T,
-    terminal: &'a RefCell<Terminal<'a, E>>,
+    terminal: RefCell<Terminal<'a, E>>,
 }
 impl<'a, T: Settable<Command, E>, E: Copy + Debug> SettableCommandDeviceWrapper<'a, T, E> {
     ///Constructor for `SettableCommandDeviceWrapper`.
-    pub fn new(inner: T, terminal: &'a RefCell<Terminal<'a, E>>) -> Self {
+    pub fn new(inner: T) -> Self {
         Self {
             inner: inner,
-            terminal: terminal,
+            terminal: Terminal::new(),
         }
     }
 }
@@ -119,14 +119,14 @@ impl<T: Settable<Command, E>, E: Copy + Debug> Updatable<E> for SettableCommandD
 ///Connect a `Getter<State, E>` to a `Terminal<E>` for use as an encoder in the device system.
 pub struct GetterStateDeviceWrapper<'a, T: Getter<State, E>, E: Copy + Debug> {
     inner: T,
-    terminal: &'a RefCell<Terminal<'a, E>>,
+    terminal: RefCell<Terminal<'a, E>>,
 }
 impl<'a, T: Getter<State, E>, E: Copy + Debug> GetterStateDeviceWrapper<'a, T, E> {
     ///Constructor for `GetterStateDeviceWrapper`.
-    pub fn new(inner: T, terminal: &'a RefCell<Terminal<'a, E>>) -> Self {
+    pub fn new(inner: T) -> Self {
         Self {
             inner: inner,
-            terminal: terminal,
+            terminal: Terminal::new(),
         }
     }
 }
