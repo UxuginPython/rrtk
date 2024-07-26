@@ -58,6 +58,13 @@ fn state_position() {
     assert_eq!(state.acceleration, 0.0);
 }
 #[test]
+fn state_get_value() {
+    let state = State::new(1.0, 2.0, 3.0);
+    assert_eq!(state.get_value(PositionDerivative::Position), 1.0);
+    assert_eq!(state.get_value(PositionDerivative::Velocity), 2.0);
+    assert_eq!(state.get_value(PositionDerivative::Acceleration), 3.0);
+}
+#[test]
 fn state_ops() {
     assert_eq!(-State::new(1.0, 2.0, 3.0), State::new(-1.0, -2.0, -3.0));
     assert_eq!(
@@ -82,6 +89,142 @@ fn state_ops() {
     let mut state = State::new(1.0, 2.0, 3.0);
     state /= 2.0;
     assert_eq!(state, State::new(0.5, 1.0, 1.5));
+}
+#[test]
+fn latest_datum() {
+    assert_eq!(latest(Datum::new(0, 0), Datum::new(1, 1)), Datum::new(1, 1));
+    assert_eq!(latest(Datum::new(1, 0), Datum::new(0, 1)), Datum::new(1, 0));
+    assert_eq!(latest(Datum::new(0, 0), Datum::new(0, 1)), Datum::new(0, 0));
+}
+#[test]
+fn datum_neg() {
+    assert_eq!(-Datum::new(0, 1), Datum::new(0, -1));
+}
+#[test]
+fn datum_add() {
+    assert_eq!(Datum::new(0, 1) + Datum::new(1, 1), Datum::new(1, 2));
+    assert_eq!(Datum::new(1, 1) + Datum::new(0, 1), Datum::new(1, 2));
+
+    let mut x = Datum::new(0, 1);
+    x += Datum::new(1, 1);
+    assert_eq!(x, Datum::new(1, 2));
+
+    let mut x = Datum::new(1, 1);
+    x += Datum::new(0, 1);
+    assert_eq!(x, Datum::new(1, 2));
+
+    assert_eq!(Datum::new(0, 1) + 1, Datum::new(0, 2));
+
+    let mut x = Datum::new(0, 1);
+    x += 1;
+    assert_eq!(x, Datum::new(0, 2));
+}
+#[test]
+fn datum_sub() {
+    assert_eq!(Datum::new(0, 1) - Datum::new(1, 1), Datum::new(1, 0));
+    assert_eq!(Datum::new(1, 1) - Datum::new(0, 1), Datum::new(1, 0));
+
+    let mut x = Datum::new(0, 1);
+    x -= Datum::new(1, 1);
+    assert_eq!(x, Datum::new(1, 0));
+
+    let mut x = Datum::new(1, 1);
+    x -= Datum::new(0, 1);
+    assert_eq!(x, Datum::new(1, 0));
+
+    assert_eq!(Datum::new(0, 1) - 1, Datum::new(0, 0));
+
+    let mut x = Datum::new(0, 1);
+    x -= 1;
+    assert_eq!(x, Datum::new(0, 0));
+}
+#[test]
+fn datum_mul() {
+    assert_eq!(Datum::new(0, 2) * Datum::new(1, 3), Datum::new(1, 6));
+    assert_eq!(Datum::new(1, 2) * Datum::new(0, 3), Datum::new(1, 6));
+
+    let mut x = Datum::new(0, 2);
+    x *= Datum::new(1, 3);
+    assert_eq!(x, Datum::new(1, 6));
+
+    let mut x = Datum::new(1, 2);
+    x *= Datum::new(0, 3);
+    assert_eq!(x, Datum::new(1, 6));
+
+    assert_eq!(Datum::new(0, 2) * 3, Datum::new(0, 6));
+
+    let mut x = Datum::new(0, 2);
+    x *= 3;
+    assert_eq!(x, Datum::new(0, 6));
+}
+#[test]
+fn datum_div() {
+    assert_eq!(Datum::new(0, 6) / Datum::new(1, 2), Datum::new(1, 3));
+    assert_eq!(Datum::new(1, 6) / Datum::new(0, 2), Datum::new(1, 3));
+
+    let mut x = Datum::new(0, 6);
+    x /= Datum::new(1, 2);
+    assert_eq!(x, Datum::new(1, 3));
+
+    let mut x = Datum::new(1, 6);
+    x /= Datum::new(0, 2);
+    assert_eq!(x, Datum::new(1, 3));
+
+    assert_eq!(Datum::new(0, 6) / 2, Datum::new(0, 3));
+
+    let mut x = Datum::new(0, 6);
+    x /= 2;
+    assert_eq!(x, Datum::new(0, 3));
+}
+#[test]
+fn datum_state_mul() {
+    assert_eq!(Datum::new(0, State::new(1.0, 2.0, 3.0)) * Datum::new(1, 3.0), Datum::new(1, State::new(3.0, 6.0, 9.0)));
+    assert_eq!(Datum::new(1, State::new(1.0, 2.0, 3.0)) * Datum::new(0, 3.0), Datum::new(1, State::new(3.0, 6.0, 9.0)));
+
+    let mut x = Datum::new(0, State::new(1.0, 2.0, 3.0));
+    x *= Datum::new(1, 3.0);
+    assert_eq!(x, Datum::new(1, State::new(3.0, 6.0, 9.0)));
+
+    let mut x = Datum::new(1, State::new(1.0, 2.0, 3.0));
+    x *= Datum::new(0, 3.0);
+    assert_eq!(x, Datum::new(1, State::new(3.0, 6.0, 9.0)));
+
+    assert_eq!(Datum::new(0, State::new(1.0, 2.0, 3.0)) * 3.0, Datum::new(0, State::new(3.0, 6.0, 9.0)));
+
+    let mut x = Datum::new(0, State::new(1.0, 2.0, 3.0));
+    x *= 3.0;
+    assert_eq!(x, Datum::new(0, State::new(3.0, 6.0, 9.0)));
+}
+#[test]
+fn datum_state_div() {
+    assert_eq!(Datum::new(0, State::new(2.0, 4.0, 6.0)) / Datum::new(1, 2.0), Datum::new(1, State::new(1.0, 2.0, 3.0)));
+    assert_eq!(Datum::new(1, State::new(2.0, 4.0, 6.0)) / Datum::new(0, 2.0), Datum::new(1, State::new(1.0, 2.0, 3.0)));
+
+    let mut x = Datum::new(0, State::new(2.0, 4.0, 6.0));
+    x /= Datum::new(1, 2.0);
+    assert_eq!(x, Datum::new(1, State::new(1.0, 2.0, 3.0)));
+
+    let mut x = Datum::new(1, State::new(2.0, 4.0, 6.0));
+    x /= Datum::new(0, 2.0);
+    assert_eq!(x, Datum::new(1, State::new(1.0, 2.0, 3.0)));
+
+    assert_eq!(Datum::new(0, State::new(2.0, 4.0, 6.0)) / 2.0, Datum::new(0, State::new(1.0, 2.0, 3.0)));
+
+    let mut x = Datum::new(0, State::new(2.0, 4.0, 6.0));
+    x /= 2.0;
+    assert_eq!(x, Datum::new(0, State::new(1.0, 2.0, 3.0)));
+}
+#[test]
+fn pid_k_values_evaluate() {
+    let kvals = PIDKValues::new(1.0, 2.0, 3.0);
+    assert_eq!(kvals.evaluate(4.0, 5.0, 6.0), 32.0);
+    let posderkvals = PositionDerivativeDependentPIDKValues::new(PIDKValues::new(1.0, 2.0, 3.0), PIDKValues::new(4.0, 5.0, 6.0), PIDKValues::new(7.0, 8.0, 9.0));
+    assert_eq!(posderkvals.get_k_values(PositionDerivative::Position), PIDKValues::new(1.0, 2.0, 3.0));
+    assert_eq!(posderkvals.get_k_values(PositionDerivative::Velocity), PIDKValues::new(4.0, 5.0, 6.0));
+    assert_eq!(posderkvals.get_k_values(PositionDerivative::Acceleration), PIDKValues::new(7.0, 8.0, 9.0));
+    assert_eq!(posderkvals.evaluate(PositionDerivative::Position, 1.0, 2.0, 3.0), 14.0);
+    assert_eq!(posderkvals.evaluate(PositionDerivative::Velocity, 1.0, 2.0, 3.0), 32.0);
+    assert_eq!(posderkvals.evaluate(PositionDerivative::Acceleration, 1.0, 2.0, 3.0), 50.0);
 }
 #[test]
 fn motion_profile_get_mode() {

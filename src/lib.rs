@@ -454,6 +454,7 @@ impl PIDKValues {
     }
 }
 ///A set of PID k-values for controlling each position derivative.
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct PositionDerivativeDependentPIDKValues {
     ///Use these k-values when controlling position.
     pub position: PIDKValues,
