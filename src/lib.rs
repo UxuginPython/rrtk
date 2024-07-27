@@ -581,7 +581,7 @@ impl From<State> for Command {
 pub trait Updatable<E: Copy + Debug> {
     ///As this trait is very generic, exactly what this does will be very dependent on the
     ///implementor.
-    fn update(&mut self) -> Result<(), Error<E>>;
+    fn update(&mut self) -> NothingOrError<E>;
 }
 ///Something with a `get` method. Structs implementing this will often be chained for easier data
 ///processing, with a struct having other implementors in fields which will have some operation
@@ -617,10 +617,10 @@ pub trait Settable<S: Clone, E: Copy + Debug>: Updatable<E> {
     ///Set something, not updating the internal `SettableData`. Due to current limitations of the
     ///language, you must implement this but call `set`. Do not call this directly as it will make
     ///`get_last_request` work incorrectly.
-    fn direct_set(&mut self, value: S) -> Result<(), Error<E>>;
+    fn direct_set(&mut self, value: S) -> NothingOrError<E>;
     ///Set something to a value. For example, this could set a motor to a voltage. You should call
     ///this and not `direct_set`.
-    fn set(&mut self, value: S) -> Result<(), Error<E>> {
+    fn set(&mut self, value: S) -> NothingOrError<E> {
         self.direct_set(value.clone())?;
         let data = self.get_settable_data_mut();
         data.last_request = Some(value);
@@ -844,7 +844,7 @@ impl<T: Clone, E: Copy + Debug> Settable<T, E> for ConstantGetter<T, E> {
     fn get_settable_data_mut(&mut self) -> &mut SettableData<T, E> {
         &mut self.settable_data
     }
-    fn direct_set(&mut self, value: T) -> Result<(), Error<E>> {
+    fn direct_set(&mut self, value: T) -> NothingOrError<E> {
         self.value = value;
         Ok(())
     }
