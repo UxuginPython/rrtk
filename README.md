@@ -86,3 +86,13 @@ Add moving average stream.
 - Improve tests
 - Minor documentation fixes
 - Add missing LGPL license notice to a few files
+### 0.4.0-alpha.1
+- Begin new device system.
+### 0.4.0-alpha.2
+- Make everything use `&RefCell<Terminal>` rather than `Rc<RefCell<Terminal>>`
+- Make math streams use generics.
+- Add `SettableCommandDeviceWrapper` and `GetterStateDeviceWrapper` allowing types only implementing `Settable<Command, _>` to be used as motors and types only implementing `Getter<State, _>` to be used as encoders.
+- Revive `PositionDerivativeDependentPIDKValues`, now with a `get_k_values` method for getting the k-values for a specific position derivative.
+- Add `evaluate` methods for `PIDKValues` and `PositionDerivativeDependentPIDKValues`.
+- Add `CommandPID`, an easier and faster way to use PID control to turn a standard DC motor and an encoder into a de facto servo.
+- Add `latest` function which gets the newer of two `Datum` objects.
