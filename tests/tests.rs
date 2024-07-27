@@ -178,8 +178,14 @@ fn datum_div() {
 }
 #[test]
 fn datum_state_mul() {
-    assert_eq!(Datum::new(0, State::new(1.0, 2.0, 3.0)) * Datum::new(1, 3.0), Datum::new(1, State::new(3.0, 6.0, 9.0)));
-    assert_eq!(Datum::new(1, State::new(1.0, 2.0, 3.0)) * Datum::new(0, 3.0), Datum::new(1, State::new(3.0, 6.0, 9.0)));
+    assert_eq!(
+        Datum::new(0, State::new(1.0, 2.0, 3.0)) * Datum::new(1, 3.0),
+        Datum::new(1, State::new(3.0, 6.0, 9.0))
+    );
+    assert_eq!(
+        Datum::new(1, State::new(1.0, 2.0, 3.0)) * Datum::new(0, 3.0),
+        Datum::new(1, State::new(3.0, 6.0, 9.0))
+    );
 
     let mut x = Datum::new(0, State::new(1.0, 2.0, 3.0));
     x *= Datum::new(1, 3.0);
@@ -189,7 +195,10 @@ fn datum_state_mul() {
     x *= Datum::new(0, 3.0);
     assert_eq!(x, Datum::new(1, State::new(3.0, 6.0, 9.0)));
 
-    assert_eq!(Datum::new(0, State::new(1.0, 2.0, 3.0)) * 3.0, Datum::new(0, State::new(3.0, 6.0, 9.0)));
+    assert_eq!(
+        Datum::new(0, State::new(1.0, 2.0, 3.0)) * 3.0,
+        Datum::new(0, State::new(3.0, 6.0, 9.0))
+    );
 
     let mut x = Datum::new(0, State::new(1.0, 2.0, 3.0));
     x *= 3.0;
@@ -197,8 +206,14 @@ fn datum_state_mul() {
 }
 #[test]
 fn datum_state_div() {
-    assert_eq!(Datum::new(0, State::new(2.0, 4.0, 6.0)) / Datum::new(1, 2.0), Datum::new(1, State::new(1.0, 2.0, 3.0)));
-    assert_eq!(Datum::new(1, State::new(2.0, 4.0, 6.0)) / Datum::new(0, 2.0), Datum::new(1, State::new(1.0, 2.0, 3.0)));
+    assert_eq!(
+        Datum::new(0, State::new(2.0, 4.0, 6.0)) / Datum::new(1, 2.0),
+        Datum::new(1, State::new(1.0, 2.0, 3.0))
+    );
+    assert_eq!(
+        Datum::new(1, State::new(2.0, 4.0, 6.0)) / Datum::new(0, 2.0),
+        Datum::new(1, State::new(1.0, 2.0, 3.0))
+    );
 
     let mut x = Datum::new(0, State::new(2.0, 4.0, 6.0));
     x /= Datum::new(1, 2.0);
@@ -208,7 +223,10 @@ fn datum_state_div() {
     x /= Datum::new(0, 2.0);
     assert_eq!(x, Datum::new(1, State::new(1.0, 2.0, 3.0)));
 
-    assert_eq!(Datum::new(0, State::new(2.0, 4.0, 6.0)) / 2.0, Datum::new(0, State::new(1.0, 2.0, 3.0)));
+    assert_eq!(
+        Datum::new(0, State::new(2.0, 4.0, 6.0)) / 2.0,
+        Datum::new(0, State::new(1.0, 2.0, 3.0))
+    );
 
     let mut x = Datum::new(0, State::new(2.0, 4.0, 6.0));
     x /= 2.0;
@@ -218,13 +236,35 @@ fn datum_state_div() {
 fn pid_k_values_evaluate() {
     let kvals = PIDKValues::new(1.0, 2.0, 3.0);
     assert_eq!(kvals.evaluate(4.0, 5.0, 6.0), 32.0);
-    let posderkvals = PositionDerivativeDependentPIDKValues::new(PIDKValues::new(1.0, 2.0, 3.0), PIDKValues::new(4.0, 5.0, 6.0), PIDKValues::new(7.0, 8.0, 9.0));
-    assert_eq!(posderkvals.get_k_values(PositionDerivative::Position), PIDKValues::new(1.0, 2.0, 3.0));
-    assert_eq!(posderkvals.get_k_values(PositionDerivative::Velocity), PIDKValues::new(4.0, 5.0, 6.0));
-    assert_eq!(posderkvals.get_k_values(PositionDerivative::Acceleration), PIDKValues::new(7.0, 8.0, 9.0));
-    assert_eq!(posderkvals.evaluate(PositionDerivative::Position, 1.0, 2.0, 3.0), 14.0);
-    assert_eq!(posderkvals.evaluate(PositionDerivative::Velocity, 1.0, 2.0, 3.0), 32.0);
-    assert_eq!(posderkvals.evaluate(PositionDerivative::Acceleration, 1.0, 2.0, 3.0), 50.0);
+    let posderkvals = PositionDerivativeDependentPIDKValues::new(
+        PIDKValues::new(1.0, 2.0, 3.0),
+        PIDKValues::new(4.0, 5.0, 6.0),
+        PIDKValues::new(7.0, 8.0, 9.0),
+    );
+    assert_eq!(
+        posderkvals.get_k_values(PositionDerivative::Position),
+        PIDKValues::new(1.0, 2.0, 3.0)
+    );
+    assert_eq!(
+        posderkvals.get_k_values(PositionDerivative::Velocity),
+        PIDKValues::new(4.0, 5.0, 6.0)
+    );
+    assert_eq!(
+        posderkvals.get_k_values(PositionDerivative::Acceleration),
+        PIDKValues::new(7.0, 8.0, 9.0)
+    );
+    assert_eq!(
+        posderkvals.evaluate(PositionDerivative::Position, 1.0, 2.0, 3.0),
+        14.0
+    );
+    assert_eq!(
+        posderkvals.evaluate(PositionDerivative::Velocity, 1.0, 2.0, 3.0),
+        32.0
+    );
+    assert_eq!(
+        posderkvals.evaluate(PositionDerivative::Acceleration, 1.0, 2.0, 3.0),
+        50.0
+    );
 }
 #[test]
 fn motion_profile_get_mode() {
