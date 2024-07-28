@@ -21,6 +21,7 @@ enum AndState {
     ReturnableTrue, //No input has returned None or false.
 }
 impl AndState {
+    #[inline]
     fn none(&mut self) {
         match self {
             AndState::ReturnableTrue => *self = AndState::MaybeTrue,
@@ -93,6 +94,84 @@ impl<E: Copy + Debug> Getter<bool, E> for AndStream<E> {
     }
 }
 impl<E: Copy + Debug> Updatable<E> for AndStream<E> {
+    fn update(&mut self) -> NothingOrError<E> {
+        Ok(())
+    }
+}
+enum OrState {
+    DefinitelyTrue, //An input returned true.
+    MaybeFalse, //An input returned None and no input has returned true, so we can't assume an
+                //output.
+    ReturnableFalse, //No input has returned None or true.
+}
+impl OrState {
+    #[inline]
+    fn none(&mut self) {
+        match self {
+            OrState::ReturnableFalse => *self = OrState::MaybeFalse,
+            _ => (),
+        }
+    }
+}
+///Performs an or operation on two boolean getters.
+pub struct OrStream<E: Copy + Debug> {
+    input1: InputGetter<bool, E>,
+    input2: InputGetter<bool, E>,
+}
+impl<E: Copy + Debug> OrStream<E> {
+    ///Constructor for `OrStream`.
+    pub fn new(input1: InputGetter<bool, E>, input2: InputGetter<bool, E>) -> Self {
+        Self {
+            input1: input1,
+            input2: input2,
+        }
+    }
+}
+impl<E: Copy + Debug> Getter<bool, E> for OrStream<E> {
+    fn get(&self) -> Output<bool, E> {
+        let gotten1 = self.input1.borrow().get()?;
+        let gotten2 = self.input2.borrow().get()?;
+        let mut time = None;
+        let mut or_state = OrState::ReturnableFalse;
+        match gotten1 {
+            Some(datum) => {
+                time = Some(datum.time);
+                if datum.value {
+                    or_state = OrState::DefinitelyTrue;
+                }
+            }
+            None => {
+                or_state.none();
+            }
+        }
+        match gotten2 {
+            Some(datum) => {
+                match time {
+                    Some(existing) => if datum.time > existing {
+                        time = Some(datum.time);
+                    }
+                    None => time = Some(datum.time),
+                }
+                if datum.value {
+                    or_state = OrState::DefinitelyTrue;
+                }
+            }
+            None => {
+                or_state.none();
+            }
+        }
+        let time = match time {
+            Some(time) => time,
+            None => return Ok(None),
+        };
+        match or_state {
+            OrState::DefinitelyTrue => Ok(Some(Datum::new(time, true))),
+            OrState::MaybeFalse => Ok(None),
+            OrState::ReturnableFalse => Ok(Some(Datum::new(time, false))),
+        }
+    }
+}
+impl<E: Copy + Debug> Updatable<E> for OrStream<E> {
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
     }
