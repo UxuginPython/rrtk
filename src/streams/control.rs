@@ -98,7 +98,9 @@ struct Update1 {
     pub output_int_int: Option<f32>,
 }
 //TODO: test this
-///Almost literally three PID controllers in a trenchcoat.
+///Automatically integrates the command variable of a PID controller based on the position
+///derivative of a `Command`. Designed to make it easier to use a standard DC motor and an encoder
+///as a de facto servo.
 pub struct CommandPID<E: Copy + Debug> {
     settable_data: SettableData<Command, E>,
     input: InputGetter<State, E>,

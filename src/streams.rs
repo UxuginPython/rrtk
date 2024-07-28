@@ -61,3 +61,37 @@ impl<T, const C: usize, E: Copy + Debug> Updatable<E> for Latest<T, C, E> {
         Ok(())
     }
 }
+///Expires data that are too old to be useful.
+pub struct Expirer<T, E: Copy + Debug> {
+    input: InputGetter<T, E>,
+    time_getter: InputTimeGetter<E>,
+    max_time_delta: i64,
+}
+impl<T, E: Copy + Debug> Expirer<T, E> {
+    ///Constructor for `Expirer`.
+    pub fn new(input: InputGetter<T, E>, time_getter: InputTimeGetter<E>, max_time_delta: i64) -> Self {
+        Self {
+            input: input,
+            time_getter: time_getter,
+            max_time_delta: max_time_delta,
+        }
+    }
+}
+impl<T, E: Copy + Debug> Getter<T, E> for Expirer<T, E> {
+    fn get(&self) -> Output<T, E> {
+        let output = match self.input.borrow().get()? {
+            Some(datum) => datum,
+            None => return Ok(None),
+        };
+        let time = self.time_getter.borrow().get()?;
+        if time - output.time > self.max_time_delta {
+            return Ok(None);
+        }
+        Ok(Some(output))
+    }
+}
+impl<T, E: Copy + Debug> Updatable<E> for Expirer<T, E> {
+    fn update(&mut self) -> NothingOrError<E> {
+        Ok(())
+    }
+}
