@@ -855,6 +855,18 @@ impl<T: Clone, E: Copy + Debug> Updatable<E> for ConstantGetter<T, E> {
         Ok(())
     }
 }
+///Getter always returning `Ok(None)`.
+pub struct NoneGetter;
+impl<T, E: Copy + Debug> Getter<T, E> for NoneGetter {
+    fn get(&self) -> Output<T, E> {
+        Ok(None)
+    }
+}
+impl<E: Copy + Debug> Updatable<E> for NoneGetter {
+    fn update(&mut self) -> NothingOrError<E> {
+        Ok(())
+    }
+}
 //TODO: test this
 ///A place where a device can connect to another.
 pub struct Terminal<'a, E: Copy + Debug> {
