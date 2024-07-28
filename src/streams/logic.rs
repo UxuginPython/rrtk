@@ -14,6 +14,20 @@ Copyright 2024 UxuginPython on GitHub
 use crate::streams::*;
 //TODO: make these take arrays of inputs with generic lengths.
 //TODO: document these better using that combination table thing
+enum AndState {
+    DefinitelyFalse, //An input returned false.
+    MaybeTrue, //An input returned None and no input has returned false, so we can't assume an
+               //output.
+    ReturnableTrue, //No input has returned None or false.
+}
+impl AndState {
+    fn none(&mut self) {
+        match self {
+            AndState::ReturnableTrue => *self = AndState::MaybeTrue,
+            _ => (),
+        }
+    }
+}
 ///Performs an and operation on two boolean getters.
 pub struct AndStream<E: Copy + Debug> {
     input1: InputGetter<bool, E>,
@@ -32,19 +46,21 @@ impl<E: Copy + Debug> Getter<bool, E> for AndStream<E> {
     fn get(&self) -> Output<bool, E> {
         let gotten1 = self.input1.borrow().get()?;
         let gotten2 = self.input2.borrow().get()?;
+        //Never assume the boolean value of a None from an input:
+        //To return true, we require that both inputs return true (not None).
+        //To return false, we require that at least one input returns false (not None).
+        //If neither of these is met, return None.
         let mut time = None;
-        let mut can_be_true = true;
-        let mut can_return_true = true;
+        let mut and_state = AndState::ReturnableTrue;
         match gotten1 {
             Some(datum) => {
                 time = Some(datum.time);
                 if !datum.value {
-                    can_be_true = false;
-                    can_return_true = false;
+                    and_state = AndState::DefinitelyFalse;
                 }
             }
             None => {
-                can_return_true = false;
+                and_state.none();
             }
         }
         match gotten2 {
@@ -58,27 +74,21 @@ impl<E: Copy + Debug> Getter<bool, E> for AndStream<E> {
                     None => time = Some(datum.time),
                 }
                 if !datum.value {
-                    can_be_true = false;
-                    can_return_true = false;
+                    and_state = AndState::DefinitelyFalse;
                 }
             }
             None => {
-                can_return_true = false;
+                and_state.none();
             }
         }
-        //Never assume the boolean value of a None from an input:
-        //To return true, we require that both inputs return true (not None).
-        //To return false, we require that at least one input returns false (not None).
-        //If neither of these is met, return None.
         let time = match time {
             Some(time) => time,
             None => return Ok(None),
         };
-        match (can_be_true, can_return_true) {
-            (false, false) => Ok(Some(Datum::new(time, false))),
-            (true, false) => Ok(None),
-            (true, true) => Ok(Some(Datum::new(time, true))),
-            (false, true) => unimplemented!(),
+        match and_state {
+            AndState::DefinitelyFalse => Ok(Some(Datum::new(time, false))),
+            AndState::MaybeTrue => Ok(None),
+            AndState::ReturnableTrue => Ok(Some(Datum::new(time, true))),
         }
     }
 }
