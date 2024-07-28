@@ -20,7 +20,7 @@ use std::cell::RefCell;
 #[cfg(feature = "std")]
 use std::fmt::Debug;
 #[cfg(feature = "std")]
-use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
+use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Not, Sub, SubAssign};
 #[cfg(feature = "std")]
 use std::rc::Rc;
 #[cfg(not(feature = "std"))]
@@ -206,6 +206,12 @@ impl<T> Datum<T> {
 //Regardless, for now, these are only implemented where other is T or Datum<T> and not a more
 //generic type. A special case for State is provided due to its Mul<f32> and Div<f32>
 //implementations.
+impl<T: Not<Output = O>, O> Not for Datum<T> {
+    type Output = Datum<O>;
+    fn not(self) -> Datum<O> {
+        Datum::new(self.time, !self.value)
+    }
+}
 impl<T: Neg<Output = O>, O> Neg for Datum<T> {
     type Output = Datum<O>;
     fn neg(self) -> Datum<O> {

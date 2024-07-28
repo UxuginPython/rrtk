@@ -176,3 +176,29 @@ impl<E: Copy + Debug> Updatable<E> for OrStream<E> {
         Ok(())
     }
 }
+///Performs a not operation on a boolean getter.
+pub struct NotStream<E: Copy + Debug> {
+    input: InputGetter<bool, E>,
+}
+impl<E: Copy + Debug> NotStream<E> {
+    ///Constructor for `NotStream`.
+    pub fn new(input: InputGetter<bool, E>) -> Self {
+        Self {
+            input: input,
+        }
+    }
+}
+impl<E: Copy + Debug> Getter<bool, E> for NotStream<E> {
+    fn get(&self) -> Output<bool, E> {
+        match self.input.borrow().get() {
+            Ok(Some(datum)) => Ok(Some(!datum)),
+            Ok(None) => Ok(None),
+            Err(error) => Err(error),
+        }
+    }
+}
+impl<E: Copy + Debug> Updatable<E> for NotStream<E> {
+    fn update(&mut self) -> NothingOrError<E> {
+        Ok(())
+    }
+}
