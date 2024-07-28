@@ -54,7 +54,11 @@ pub struct IfElseStream<T, E: Copy + Debug> {
 }
 impl<T, E: Copy + Debug> IfElseStream<T, E> {
     ///Constructor for `IfElseStream`.
-    pub fn new(condition: InputGetter<bool, E>, true_output: InputGetter<T, E>, false_output: InputGetter<T, E>) -> Self {
+    pub fn new(
+        condition: InputGetter<bool, E>,
+        true_output: InputGetter<T, E>,
+        false_output: InputGetter<T, E>,
+    ) -> Self {
         Self {
             condition: condition,
             true_output: true_output,
@@ -119,7 +123,7 @@ impl<T: Clone, E: Copy + Debug> Updatable<E> for FreezeStream<T, E> {
             let gotten = self.input.borrow().get();
             self.freeze_value = gotten.clone();
             match gotten {
-                Ok(_) => {},
+                Ok(_) => {}
                 Err(error) => return Err(error),
             }
         }

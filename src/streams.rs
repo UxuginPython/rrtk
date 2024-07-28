@@ -71,7 +71,11 @@ pub struct Expirer<T, E: Copy + Debug> {
 }
 impl<T, E: Copy + Debug> Expirer<T, E> {
     ///Constructor for `Expirer`.
-    pub fn new(input: InputGetter<T, E>, time_getter: InputTimeGetter<E>, max_time_delta: i64) -> Self {
+    pub fn new(
+        input: InputGetter<T, E>,
+        time_getter: InputTimeGetter<E>,
+        max_time_delta: i64,
+    ) -> Self {
         Self {
             input: input,
             time_getter: time_getter,

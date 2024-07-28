@@ -12,6 +12,8 @@ Copyright 2024 UxuginPython on GitHub
 */
 //!Logic operations for boolean getters.
 use crate::streams::*;
+//TODO: make these take arrays of inputs with generic lengths.
+//TODO: document these better using that combination table thing
 ///Performs an and operation on two boolean getters.
 pub struct AndStream<E: Copy + Debug> {
     input1: InputGetter<bool, E>,
@@ -32,28 +34,37 @@ impl<E: Copy + Debug> Getter<bool, E> for AndStream<E> {
         let gotten2 = self.input2.borrow().get()?;
         let mut time = None;
         let mut can_be_true = true;
+        let mut can_return_true = true;
         match gotten1 {
             Some(datum) => {
                 time = Some(datum.time);
                 if !datum.value {
                     can_be_true = false;
+                    can_return_true = false;
                 }
-            },
-            None => (),
+            }
+            None => {
+                can_return_true = false;
+            }
         }
         match gotten2 {
             Some(datum) => {
                 match time {
-                    Some(existing) => if datum.time > existing {
-                        time = Some(datum.time);
+                    Some(existing) => {
+                        if datum.time > existing {
+                            time = Some(datum.time);
+                        }
                     }
-                    None => time = Some(datum.time)
+                    None => time = Some(datum.time),
                 }
                 if !datum.value {
                     can_be_true = false;
+                    can_return_true = false;
                 }
-            },
-            None => (),
+            }
+            None => {
+                can_return_true = false;
+            }
         }
         //Never assume the boolean value of a None from an input:
         //To return true, we require that both inputs return true (not None).
@@ -61,21 +72,14 @@ impl<E: Copy + Debug> Getter<bool, E> for AndStream<E> {
         //If neither of these is met, return None.
         let time = match time {
             Some(time) => time,
-            None => return Ok(None), //time being None means that both out inputs returned
-                                     //None, meaning that we will too. We can't prove either way
-                                     //what the and should return (even ignoring the nonexistent
-                                     //timestamp problem).
+            None => return Ok(None),
         };
-        if !can_be_true {
-            return Ok(Some(Datum::new(time, false))); //If either input is explicitly false, it set
-                                                      //can_be_true to false above.
+        match (can_be_true, can_return_true) {
+            (false, false) => Ok(Some(Datum::new(time, false))),
+            (true, false) => Ok(None),
+            (true, true) => Ok(Some(Datum::new(time, true))),
+            (false, true) => unimplemented!(),
         }
-        if gotten1.is_some() && gotten2.is_some() { //If either of these returned false, it would
-                                                    //have set can_be_true false. We know that if
-                                                    //these are both Some, our output must be true.
-            return Ok(Some(Datum::new(time, true)));
-        }
-        Ok(None) //One is Ok(None) and the other is true.
     }
 }
 impl<E: Copy + Debug> Updatable<E> for AndStream<E> {
