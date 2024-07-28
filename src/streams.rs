@@ -20,6 +20,7 @@ use alloc::collections::vec_deque::VecDeque;
 use std::collections::vec_deque::VecDeque;
 pub mod control;
 pub mod converters;
+pub mod flow;
 pub mod math;
 ///Returns the output of whichever input has the latest time.
 pub struct Latest<T, const C: usize, E: Copy + Debug> {
