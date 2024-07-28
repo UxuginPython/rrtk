@@ -80,3 +80,49 @@ impl<T, E: Copy + Debug> Updatable<E> for IfElseStream<T, E> {
         Ok(())
     }
 }
+///Returns the last value that a getter returned while another getter, a boolean, returned false.
+///Passes the getter's value through if the boolean getter is false.
+pub struct FreezeStream<T: Clone, E: Copy + Debug> {
+    condition: InputGetter<bool, E>,
+    input: InputGetter<T, E>,
+    freeze_value: Output<T, E>,
+}
+impl<T: Clone, E: Copy + Debug> FreezeStream<T, E> {
+    ///Constructor for `FreezeStream`.
+    pub fn new(condition: InputGetter<bool, E>, input: InputGetter<T, E>) -> Self {
+        Self {
+            condition: condition,
+            input: input,
+            freeze_value: Ok(None),
+        }
+    }
+}
+impl<T: Clone, E: Copy + Debug> Getter<T, E> for FreezeStream<T, E> {
+    fn get(&self) -> Output<T, E> {
+        self.freeze_value.clone()
+    }
+}
+impl<T: Clone, E: Copy + Debug> Updatable<E> for FreezeStream<T, E> {
+    fn update(&mut self) -> NothingOrError<E> {
+        let condition = match self.condition.borrow().get() {
+            Err(error) => {
+                self.freeze_value = Err(error);
+                return Err(error);
+            }
+            Ok(None) => {
+                self.freeze_value = Ok(None);
+                return Ok(());
+            }
+            Ok(Some(condition)) => condition.value,
+        };
+        if !condition {
+            let gotten = self.input.borrow().get();
+            self.freeze_value = gotten.clone();
+            match gotten {
+                Ok(_) => {},
+                Err(error) => return Err(error),
+            }
+        }
+        Ok(())
+    }
+}
