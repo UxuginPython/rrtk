@@ -36,7 +36,7 @@ use core::cell::RefCell;
 #[cfg(not(feature = "std"))]
 use core::fmt::Debug;
 #[cfg(not(feature = "std"))]
-use core::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
+use core::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Not, Sub, SubAssign};
 pub mod devices;
 mod motion_profile;
 pub mod streams;

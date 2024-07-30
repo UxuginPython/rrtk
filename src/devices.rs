@@ -80,6 +80,58 @@ impl<E: Copy + Debug> Device<E> for Invert<'_, E> {
         Ok(())
     }
 }
+//TODO: Test this.
+//TODO: Add a constructor for this.
+///A connection between terminals that are not directly connected, such as when three or more
+///terminals are connected. Code-wise, this is almost exactly the same as directly connecting two
+///terminals, but this type can connect more than two terminals. There is some freedom in exactly
+///what you do with each of these ways of connecting terminals and what they represent physically,
+///but the intention is that `connect` is for only two and `Axle` is for more. Using an `Axle` for
+///only two terminals is possible but may have a slight performance cost. (The type even
+///technically allows for only one or even zero connected terminals, but there is almost certainly
+///no legitimate use for this.)
+pub struct Axle<'a, const N: usize, E: Copy + Debug> {
+    inputs: [&'a RefCell<Terminal<'a, E>>; N],
+}
+impl<'a, const N: usize, E: Copy + Debug> Axle<'a, N, E> {
+    ///Constructor for `Axle`.
+    pub fn new(inputs: [&'a RefCell<Terminal<'a, E>>; N]) -> Self {
+        Self {
+            inputs: inputs,
+        }
+    }
+}
+impl<const N: usize, E: Copy + Debug> Updatable<E> for Axle<'_, N, E> {
+    fn update(&mut self) -> NothingOrError<E> {
+        self.update_terminals()?;
+        let mut count = 0u16;
+        let mut datum = Datum::new(i64::MIN, State::default());
+        for i in &self.inputs {
+            match i.borrow().get()? {
+                Some(gotten_datum) => {
+                    datum += gotten_datum;
+                    count += 1;
+                },
+                None => (),
+            }
+        }
+        if count >= 1 {
+            datum /= count as f32;
+            for i in &self.inputs {
+                i.borrow_mut().set(datum.clone())?;
+            }
+        }
+        Ok(())
+    }
+}
+impl<const N: usize, E: Copy + Debug> Device<E> for Axle<'_, N, E> {
+    fn update_terminals(&mut self) -> NothingOrError<E> {
+        for i in &self.inputs {
+            i.borrow_mut().update()?;
+        }
+        Ok(())
+    }
+}
 //TODO: test this
 ///Connect a `Settable<Command, E>` to a `Terminal<E>` for use as a servo motor in the device
 ///system.
