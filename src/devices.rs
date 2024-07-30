@@ -14,6 +14,7 @@ Copyright 2024 UxuginPython on GitHub
 //!objects called terminals. Terminals represent anywhere a device can connect to another.
 //!Connected terminals hold `Weak` references to eachother. This module holds builtin devices.
 use crate::*;
+pub mod wrappers;
 //TODO: test this
 ///A device such that positive for one terminal is negative for the other.
 pub struct Invert<'a, E: Copy + Debug> {
@@ -129,77 +130,6 @@ impl<const N: usize, E: Copy + Debug> Device<E> for Axle<'_, N, E> {
         for i in &self.inputs {
             i.borrow_mut().update()?;
         }
-        Ok(())
-    }
-}
-//TODO: test this
-///Connect a `Settable<Command, E>` to a `Terminal<E>` for use as a servo motor in the device
-///system.
-pub struct SettableCommandDeviceWrapper<'a, T: Settable<Command, E>, E: Copy + Debug> {
-    inner: T,
-    terminal: RefCell<Terminal<'a, E>>,
-}
-impl<'a, T: Settable<Command, E>, E: Copy + Debug> SettableCommandDeviceWrapper<'a, T, E> {
-    ///Constructor for `SettableCommandDeviceWrapper`.
-    pub fn new(inner: T) -> Self {
-        Self {
-            inner: inner,
-            terminal: Terminal::new(),
-        }
-    }
-}
-impl<T: Settable<Command, E>, E: Copy + Debug> Device<E>
-    for SettableCommandDeviceWrapper<'_, T, E>
-{
-    fn update_terminals(&mut self) -> NothingOrError<E> {
-        self.terminal.borrow_mut().update()?;
-        Ok(())
-    }
-}
-impl<T: Settable<Command, E>, E: Copy + Debug> Updatable<E>
-    for SettableCommandDeviceWrapper<'_, T, E>
-{
-    fn update(&mut self) -> NothingOrError<E> {
-        match <Terminal<E> as Settable<Datum<Command>, E>>::get_last_request(
-            &self.terminal.borrow(),
-        ) {
-            Some(command) => {
-                self.inner.set(command.value)?;
-            }
-            None => {}
-        }
-        Ok(())
-    }
-}
-//TODO: test this
-///Connect a `Getter<State, E>` to a `Terminal<E>` for use as an encoder in the device system.
-pub struct GetterStateDeviceWrapper<'a, T: Getter<State, E>, E: Copy + Debug> {
-    inner: T,
-    terminal: RefCell<Terminal<'a, E>>,
-}
-impl<'a, T: Getter<State, E>, E: Copy + Debug> GetterStateDeviceWrapper<'a, T, E> {
-    ///Constructor for `GetterStateDeviceWrapper`.
-    pub fn new(inner: T) -> Self {
-        Self {
-            inner: inner,
-            terminal: Terminal::new(),
-        }
-    }
-}
-impl<T: Getter<State, E>, E: Copy + Debug> Device<E> for GetterStateDeviceWrapper<'_, T, E> {
-    fn update_terminals(&mut self) -> NothingOrError<E> {
-        self.terminal.borrow_mut().update()?;
-        Ok(())
-    }
-}
-impl<T: Getter<State, E>, E: Copy + Debug> Updatable<E> for GetterStateDeviceWrapper<'_, T, E> {
-    fn update(&mut self) -> NothingOrError<E> {
-        self.update_terminals()?;
-        let new_state_datum = match self.inner.get()? {
-            None => return Ok(()),
-            Some(state_datum) => state_datum,
-        };
-        self.terminal.borrow_mut().set(new_state_datum)?;
         Ok(())
     }
 }
