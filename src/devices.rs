@@ -10,9 +10,10 @@ Copyright 2024 UxuginPython on GitHub
 
     You should have received a copy of the GNU Lesser General Public License along with Rust Robotics ToolKit. If not, see <https://www.gnu.org/licenses/>.
 */
-//!RRTK's device system works through a graph-like structure where each device holds `Rc`s to
-//!objects called terminals. Terminals represent anywhere a device can connect to another.
-//!Connected terminals hold `Weak` references to eachother. This module holds builtin devices.
+//!RRTK's device system works through a graph-like structure where each device holds objects called
+//!terminals in `RefCell`s. Terminals represent anywhere that a device can connect to another.
+//!Connected terminals hold references to eachother's `RefCell`s. This module holds builtin
+//!devices.
 use crate::*;
 pub mod wrappers;
 //TODO: test this
