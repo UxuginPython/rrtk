@@ -274,7 +274,6 @@ impl<E: Copy + Debug> Updatable<E> for CommandPID<E> {
         Ok(())
     }
 }
-impl<E: Copy + Debug> GetterSettable<f32, Command, E> for CommandPID<E> {}
 ///An Exponentially Weighted Moving Average stream for use with the stream system. See <https://www.itl.nist.gov/div898/handbook/pmc/section3/pmc324.htm> for more information.
 pub struct EWMAStream<E: Copy + Debug> {
     input: InputGetter<f32, E>,

@@ -679,9 +679,6 @@ pub trait Settable<S: Clone, E: Copy + Debug>: Updatable<E> {
         data.last_request.clone()
     }
 }
-///Solely for subtraiting. Allows you to require that a type implements both `Getter` and
-///`Settable` with a single trait. No methods and does nothing on its own.
-pub trait GetterSettable<G, S: Clone, E: Copy + Debug>: Getter<G, E> + Settable<S, E> {}
 ///A fast way to turn anything implementing `Getter` into an `InputGetter`.
 #[macro_export]
 macro_rules! make_input_getter {
@@ -836,7 +833,6 @@ impl<T, E: Copy + Debug> ConstantGetter<T, E> {
         }
     }
 }
-impl<T: Clone, E: Copy + Debug> GetterSettable<T, T, E> for ConstantGetter<T, E> {}
 impl<T: Clone, E: Copy + Debug> Getter<T, E> for ConstantGetter<T, E> {
     fn get(&self) -> Output<T, E> {
         let time = self.time_getter.borrow().get()?;
