@@ -16,8 +16,8 @@ use crate::streams::*;
 //TODO: document these better using that combination table thing
 enum AndState {
     DefinitelyFalse, //An input returned false.
-    MaybeTrue, //An input returned None and no input has returned false, so we can't assume an
-               //output.
+    MaybeTrue,       //An input returned None and no input has returned false, so we can't assume an
+    //output.
     ReturnableTrue, //No input has returned None or false.
 }
 impl AndState {
@@ -100,8 +100,8 @@ impl<E: Copy + Debug> Updatable<E> for AndStream<E> {
 }
 enum OrState {
     DefinitelyTrue, //An input returned true.
-    MaybeFalse, //An input returned None and no input has returned true, so we can't assume an
-                //output.
+    MaybeFalse,     //An input returned None and no input has returned true, so we can't assume an
+    //output.
     ReturnableFalse, //No input has returned None or true.
 }
 impl OrState {
@@ -147,8 +147,10 @@ impl<E: Copy + Debug> Getter<bool, E> for OrStream<E> {
         match gotten2 {
             Some(datum) => {
                 match time {
-                    Some(existing) => if datum.time > existing {
-                        time = Some(datum.time);
+                    Some(existing) => {
+                        if datum.time > existing {
+                            time = Some(datum.time);
+                        }
                     }
                     None => time = Some(datum.time),
                 }
@@ -183,9 +185,7 @@ pub struct NotStream<E: Copy + Debug> {
 impl<E: Copy + Debug> NotStream<E> {
     ///Constructor for `NotStream`.
     pub fn new(input: InputGetter<bool, E>) -> Self {
-        Self {
-            input: input,
-        }
+        Self { input: input }
     }
 }
 impl<E: Copy + Debug> Getter<bool, E> for NotStream<E> {

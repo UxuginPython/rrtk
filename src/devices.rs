@@ -81,6 +81,8 @@ impl<E: Copy + Debug> Device<E> for Invert<'_, E> {
         Ok(())
     }
 }
+//FIXME: This needs to hold RefCell<Terminal>, not &RefCell<Terminal>, or it'll get an awful
+//oscillating thing from two different things calling set.
 //TODO: Test this.
 //TODO: Add a constructor for this.
 ///A connection between terminals that are not directly connected, such as when three or more
@@ -97,9 +99,7 @@ pub struct Axle<'a, const N: usize, E: Copy + Debug> {
 impl<'a, const N: usize, E: Copy + Debug> Axle<'a, N, E> {
     ///Constructor for `Axle`.
     pub fn new(inputs: [&'a RefCell<Terminal<'a, E>>; N]) -> Self {
-        Self {
-            inputs: inputs,
-        }
+        Self { inputs: inputs }
     }
 }
 impl<const N: usize, E: Copy + Debug> Updatable<E> for Axle<'_, N, E> {
@@ -112,7 +112,7 @@ impl<const N: usize, E: Copy + Debug> Updatable<E> for Axle<'_, N, E> {
                 Some(gotten_datum) => {
                     datum += gotten_datum;
                     count += 1;
-                },
+                }
                 None => (),
             }
         }
@@ -130,6 +130,104 @@ impl<const N: usize, E: Copy + Debug> Device<E> for Axle<'_, N, E> {
         for i in &self.inputs {
             i.borrow_mut().update()?;
         }
+        Ok(())
+    }
+}
+///Since each branch of a differential is dependent on the other two, we can calculate each with
+///only the others. This allows you to select a branch to completely calculate and not call `get`
+///on. For example, if you have encoders on two branches, you would probably want to calculate the
+///third from their readings. Using all three branches in the calculation is currently not
+///supported although this should be in the final 0.4.0.
+pub enum DifferentialDistrust {
+    ///Calculate the state of side 1 from sum and side 2 and do not call `get` on it.
+    Side1,
+    ///Calculate the state of side 2 from sum and side 1 and do not call `get` on it.
+    Side2,
+    ///Calculate the state of sum from side 1 and side 2 and do not call `get` on it.
+    Sum,
+}
+///A mechanical differential mechanism.
+pub struct Differential<'a, E: Copy + Debug> {
+    side1: RefCell<Terminal<'a, E>>,
+    side2: RefCell<Terminal<'a, E>>,
+    sum: RefCell<Terminal<'a, E>>,
+    distrust: DifferentialDistrust,
+}
+impl<'a, E: Copy + Debug> Differential<'a, E> {
+    ///Constructor for `Differential`. Distrusts the sum.
+    pub fn new(
+        side1: RefCell<Terminal<'a, E>>,
+        side2: RefCell<Terminal<'a, E>>,
+        sum: RefCell<Terminal<'a, E>>,
+    ) -> Self {
+        Self {
+            side1: side1,
+            side2: side2,
+            sum: sum,
+            distrust: DifferentialDistrust::Sum,
+        }
+    }
+    ///Constructor for `Differential` where you choose what to distrust.
+    pub fn with_distrust(
+        side1: RefCell<Terminal<'a, E>>,
+        side2: RefCell<Terminal<'a, E>>,
+        sum: RefCell<Terminal<'a, E>>,
+        distrust: DifferentialDistrust,
+    ) -> Self {
+        Self {
+            side1: side1,
+            side2: side2,
+            sum: sum,
+            distrust: distrust,
+        }
+    }
+}
+impl<E: Copy + Debug> Updatable<E> for Differential<'_, E> {
+    fn update(&mut self) -> NothingOrError<E> {
+        self.update_terminals()?;
+        match self.distrust {
+            DifferentialDistrust::Side1 => {
+                let sum = match self.sum.borrow().get()? {
+                    Some(sum) => sum,
+                    None => return Ok(()),
+                };
+                let side2 = match self.side2.borrow().get()? {
+                    Some(side2) => side2,
+                    None => return Ok(()),
+                };
+                self.side1.borrow_mut().set(sum - side2)?;
+            }
+            DifferentialDistrust::Side2 => {
+                let sum = match self.sum.borrow().get()? {
+                    Some(sum) => sum,
+                    None => return Ok(()),
+                };
+                let side1 = match self.side1.borrow().get()? {
+                    Some(side1) => side1,
+                    None => return Ok(()),
+                };
+                self.side2.borrow_mut().set(sum - side1)?;
+            }
+            DifferentialDistrust::Sum => {
+                let side1 = match self.side1.borrow().get()? {
+                    Some(side1) => side1,
+                    None => return Ok(()),
+                };
+                let side2 = match self.side2.borrow().get()? {
+                    Some(side2) => side2,
+                    None => return Ok(()),
+                };
+                self.sum.borrow_mut().set(side1 + side2)?;
+            }
+        }
+        Ok(())
+    }
+}
+impl<E: Copy + Debug> Device<E> for Differential<'_, E> {
+    fn update_terminals(&mut self) -> NothingOrError<E> {
+        self.side1.borrow_mut().update()?;
+        self.side2.borrow_mut().update()?;
+        self.sum.borrow_mut().update()?;
         Ok(())
     }
 }
