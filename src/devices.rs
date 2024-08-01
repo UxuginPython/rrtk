@@ -82,10 +82,7 @@ impl<E: Copy + Debug> Device<E> for Invert<'_, E> {
         Ok(())
     }
 }
-//FIXME: This needs to hold RefCell<Terminal>, not &RefCell<Terminal>, or it'll get an awful
-//oscillating thing from two different things calling set.
 //TODO: Test this.
-//TODO: Add a constructor for this.
 ///A connection between terminals that are not directly connected, such as when three or more
 ///terminals are connected. Code-wise, this is almost exactly the same as directly connecting two
 ///terminals, but this type can connect more than two terminals. There is some freedom in exactly
@@ -95,11 +92,11 @@ impl<E: Copy + Debug> Device<E> for Invert<'_, E> {
 ///technically allows for only one or even zero connected terminals, but there is almost certainly
 ///no legitimate use for this.)
 pub struct Axle<'a, const N: usize, E: Copy + Debug> {
-    inputs: [&'a RefCell<Terminal<'a, E>>; N],
+    inputs: [RefCell<Terminal<'a, E>>; N],
 }
 impl<'a, const N: usize, E: Copy + Debug> Axle<'a, N, E> {
     ///Constructor for `Axle`.
-    pub fn new(inputs: [&'a RefCell<Terminal<'a, E>>; N]) -> Self {
+    pub fn new(inputs: [RefCell<Terminal<'a, E>>; N]) -> Self {
         Self { inputs: inputs }
     }
 }
