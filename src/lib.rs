@@ -37,6 +37,7 @@ use core::cell::RefCell;
 use core::fmt::Debug;
 #[cfg(not(feature = "std"))]
 use core::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Not, Sub, SubAssign};
+#[cfg(feature = "devices")]
 pub mod devices;
 mod motion_profile;
 pub mod streams;
@@ -871,11 +872,13 @@ impl<E: Copy + Debug> Updatable<E> for NoneGetter {
 }
 //TODO: test this
 ///A place where a device can connect to another.
+#[cfg(feature = "devices")]
 pub struct Terminal<'a, E: Copy + Debug> {
     settable_data_state: SettableData<Datum<State>, E>,
     settable_data_command: SettableData<Datum<Command>, E>,
     other: Option<&'a RefCell<Terminal<'a, E>>>,
 }
+#[cfg(feature = "devices")]
 impl<E: Copy + Debug> Terminal<'_, E> {
     ///Direct constructor for a `Terminal`. You almost always actually want `RefCell<Terminal>`
     ///however, in which case you should call `new`, which returns `RefCell<Terminal>`.
@@ -892,6 +895,7 @@ impl<E: Copy + Debug> Terminal<'_, E> {
         RefCell::new(Self::new_raw())
     }
 }
+#[cfg(feature = "devices")]
 impl<E: Copy + Debug> Settable<Datum<State>, E> for Terminal<'_, E> {
     fn get_settable_data_ref(&self) -> &SettableData<Datum<State>, E> {
         &self.settable_data_state
@@ -904,6 +908,7 @@ impl<E: Copy + Debug> Settable<Datum<State>, E> for Terminal<'_, E> {
         Ok(())
     }
 }
+#[cfg(feature = "devices")]
 impl<E: Copy + Debug> Settable<Datum<Command>, E> for Terminal<'_, E> {
     fn get_settable_data_ref(&self) -> &SettableData<Datum<Command>, E> {
         &self.settable_data_command
@@ -916,6 +921,7 @@ impl<E: Copy + Debug> Settable<Datum<Command>, E> for Terminal<'_, E> {
         Ok(())
     }
 }
+#[cfg(feature = "devices")]
 impl<E: Copy + Debug> Getter<State, E> for Terminal<'_, E> {
     fn get(&self) -> Output<State, E> {
         let mut addends = Vec::with_capacity(2);
@@ -938,6 +944,7 @@ impl<E: Copy + Debug> Getter<State, E> for Terminal<'_, E> {
         }
     }
 }
+#[cfg(feature = "devices")]
 impl<E: Copy + Debug> Updatable<E> for Terminal<'_, E> {
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
@@ -945,6 +952,7 @@ impl<E: Copy + Debug> Updatable<E> for Terminal<'_, E> {
 }
 ///Connect two terminals. Connected terminals should represent a physical connection between
 ///mechanical devices.
+#[cfg(feature = "devices")]
 pub fn connect<'a, E: Copy + Debug>(
     term1: &'a RefCell<Terminal<'a, E>>,
     term2: &'a RefCell<Terminal<'a, E>>,
@@ -954,6 +962,7 @@ pub fn connect<'a, E: Copy + Debug>(
 }
 //TODO; test this
 ///A mechanical device.
+#[cfg(feature = "devices")]
 pub trait Device<E: Copy + Debug>: Updatable<E> {
     ///Call only the `update` methods of owned terminals and do not update anything else with the
     ///device.

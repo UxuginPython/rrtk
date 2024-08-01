@@ -25,6 +25,7 @@ exclude = ["generatetestall.py", "testall.sh"]
 [dependencies]
 [features]
 std = []
+devices = []
 default = ["std"]
 [package.metadata.docs.rs]
 all-features = true

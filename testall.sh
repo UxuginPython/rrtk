@@ -5,3 +5,7 @@ echo
 cargo test --no-default-features
 echo std
 cargo test --no-default-features --features std
+echo devices
+cargo test --no-default-features --features devices
+echo std devices
+cargo test --no-default-features --features std,devices
