@@ -96,3 +96,21 @@ Add moving average stream.
 - Add `evaluate` methods for `PIDKValues` and `PositionDerivativeDependentPIDKValues`.
 - Add `CommandPID`, an easier and faster way to use PID control to turn a standard DC motor and an encoder into a de facto servo.
 - Add `latest` function which gets the newer of two `Datum` objects.
+### 0.4.0-alpha.3
+- Add new `streams` submodules `flow` and `logic`.
+- Add new streams
+    - `Expirer`
+    - `flow::IfStream`
+    - `flow::IfElseStream`
+    - `flow::FreezeStream`
+    - `logic::AndStream`
+    - `logic::OrStream`
+    - `logic::NotStream`
+- Pass through `Not` for `Datum<T>` where `T` implements `Not`.
+- Add `NoneGetter`.
+- Add `Axle` very similar to 0.4.0-alpha.1 one.
+- Move `(SettableCommand|GetterState)DeviceWrapper` to `devices::wrappers` module.
+- Add experimental `Device` implementor for a differential mechanism.
+- Remove now-unused `GetterSettable` marker trait.
+- Move new device system to a new `devices` feature.
+- Minor documentation fix for `devices` module.
