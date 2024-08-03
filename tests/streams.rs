@@ -121,6 +121,75 @@ fn constant() {
     assert_eq!(stream.get().unwrap().unwrap().value, 20);
 }
 #[test]
+fn expirer() {
+    struct DummyStream;
+    impl Getter<f32, ()> for DummyStream {
+        fn get(&self) -> Output<f32, ()> {
+            Ok(Some(Datum::new(0, 0.0)))
+        }
+    }
+    impl Updatable<()> for DummyStream {
+        fn update(&mut self) -> NothingOrError<()> {
+            Ok(())
+        }
+    }
+    struct DummyTimeGetter {
+        time: i64,
+    }
+    impl TimeGetter<()> for DummyTimeGetter {
+        fn get(&self) -> TimeOutput<()> {
+            Ok(self.time)
+        }
+    }
+    impl Updatable<()> for DummyTimeGetter {
+        fn update(&mut self) -> NothingOrError<()> {
+            self.time += 10;
+            Ok(())
+        }
+    }
+    let stream = make_input_getter!(DummyStream, f32, ());
+    let time_getter = make_input_time_getter!(DummyTimeGetter {time: 0}, ());
+    let mut expirer = Expirer::new(stream, Rc::clone(&time_getter), 10);
+    expirer.update().unwrap(); //This should do nothing.
+    assert_eq!(expirer.get(), Ok(Some(Datum::new(0, 0.0))));
+    time_getter.borrow_mut().update().unwrap();
+    assert_eq!(expirer.get(), Ok(Some(Datum::new(0, 0.0))));
+    time_getter.borrow_mut().update().unwrap();
+    assert_eq!(expirer.get(), Ok(None));
+}
+#[test]
+fn expirer_none() {
+    struct DummyStream;
+    impl Getter<f32, ()> for DummyStream {
+        fn get(&self) -> Output<f32, ()> {
+            Ok(None)
+        }
+    }
+    impl Updatable<()> for DummyStream {
+        fn update(&mut self) -> NothingOrError<()> {
+            Ok(())
+        }
+    }
+    struct DummyTimeGetter {
+        time: i64,
+    }
+    impl TimeGetter<()> for DummyTimeGetter {
+        fn get(&self) -> TimeOutput<()> {
+            Ok(self.time)
+        }
+    }
+    impl Updatable<()> for DummyTimeGetter {
+        fn update(&mut self) -> NothingOrError<()> {
+            self.time += 10;
+            Ok(())
+        }
+    }
+    let stream = make_input_getter!(DummyStream, f32, ());
+    let time_getter = make_input_time_getter!(DummyTimeGetter {time: 0}, ());
+    let mut expirer = Expirer::new(stream, Rc::clone(&time_getter), 10);
+    assert_eq!(expirer.get(), Ok(None));
+}
+#[test]
 fn none_to_error() {
     #[derive(Clone, Copy, Debug)]
     struct Nothing;
