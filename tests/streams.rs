@@ -110,7 +110,8 @@ fn constant() {
         }
     }
     let tg_stream = make_input_getter!(DummyStream::new(), f32, Nothing);
-    let time_getter = make_input_time_getter!(TimeGetterFromGetter::new(Rc::clone(&tg_stream)), Nothing);
+    let time_getter =
+        make_input_time_getter!(TimeGetterFromGetter::new(Rc::clone(&tg_stream)), Nothing);
     let mut stream = ConstantGetter::new(Rc::clone(&time_getter), 20u8);
     assert_eq!(stream.get().unwrap().unwrap().value, 20);
     tg_stream.borrow_mut().update().unwrap();
@@ -146,7 +147,7 @@ fn expirer() {
         }
     }
     let stream = make_input_getter!(DummyStream, f32, ());
-    let time_getter = make_input_time_getter!(DummyTimeGetter {time: 0}, ());
+    let time_getter = make_input_time_getter!(DummyTimeGetter { time: 0 }, ());
     let mut expirer = Expirer::new(stream, Rc::clone(&time_getter), 10);
     expirer.update().unwrap(); //This should do nothing.
     assert_eq!(expirer.get(), Ok(Some(Datum::new(0, 0.0))));
@@ -183,7 +184,7 @@ fn expirer_none() {
         }
     }
     let stream = make_input_getter!(DummyStream, f32, ());
-    let time_getter = make_input_time_getter!(DummyTimeGetter {time: 0}, ());
+    let time_getter = make_input_time_getter!(DummyTimeGetter { time: 0 }, ());
     let expirer = Expirer::new(stream, Rc::clone(&time_getter), 10);
     assert_eq!(expirer.get(), Ok(None));
 }
