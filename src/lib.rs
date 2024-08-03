@@ -510,9 +510,9 @@ pub type Output<T, E> = Result<Option<Datum<T>>, Error<E>>;
 ///Returned from `TimeGetter` objects, which may return either a time or an error.
 pub type TimeOutput<E> = Result<i64, Error<E>>;
 ///Makes `Getter`s easier to work with by containing them in an `Rc<RefCell<Box<_>>>`.
-pub type InputGetter<T, E> = Rc<RefCell<Box<dyn Getter<T, E>>>>;
+pub type InputGetter<T, E> = Rc<RefCell<dyn Getter<T, E>>>;
 ///Makes `TimeGetter`s easier to work with by containing them in an `Rc<RefCell<Box<_>>>`.
-pub type InputTimeGetter<E> = Rc<RefCell<Box<dyn TimeGetter<E>>>>;
+pub type InputTimeGetter<E> = Rc<RefCell<dyn TimeGetter<E>>>;
 ///Returned when something may return either nothing or an error.
 pub type NothingOrError<E> = Result<(), Error<E>>;
 ///An object for getting the absolute time.
@@ -684,18 +684,14 @@ pub trait Settable<S: Clone, E: Copy + Debug>: Updatable<E> {
 #[macro_export]
 macro_rules! make_input_getter {
     ($stream:expr, $ttype:tt, $etype:tt) => {
-        Rc::new(RefCell::new(
-            Box::new($stream) as Box<dyn Getter<$ttype, $etype>>
-        ))
+        Rc::new(RefCell::new($stream)) as Rc<RefCell<dyn Getter<$ttype, $etype>>>
     };
 }
 ///A fast way to turn anything implementing `TimeGetter` into an `InputTimeGetter`.
 #[macro_export]
 macro_rules! make_input_time_getter {
     ($time_getter:expr, $etype:tt) => {
-        Rc::new(RefCell::new(
-            Box::new($time_getter) as Box<dyn TimeGetter<$etype>>
-        ))
+        Rc::new(RefCell::new($time_getter)) as Rc<RefCell<dyn TimeGetter<$etype>>>
     };
 }
 ///Because `Stream`s always return a timestamp (as long as they don't return `Err(_)` or
