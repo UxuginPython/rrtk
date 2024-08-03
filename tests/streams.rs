@@ -186,7 +186,7 @@ fn expirer_none() {
     }
     let stream = make_input_getter!(DummyStream, f32, ());
     let time_getter = make_input_time_getter!(DummyTimeGetter {time: 0}, ());
-    let mut expirer = Expirer::new(stream, Rc::clone(&time_getter), 10);
+    let expirer = Expirer::new(stream, Rc::clone(&time_getter), 10);
     assert_eq!(expirer.get(), Ok(None));
 }
 #[test]

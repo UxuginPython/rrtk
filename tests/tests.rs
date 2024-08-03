@@ -97,6 +97,10 @@ fn latest_datum() {
     assert_eq!(latest(Datum::new(0, 0), Datum::new(0, 1)), Datum::new(0, 0));
 }
 #[test]
+fn datum_not() {
+    assert_eq!(!Datum::new(0, false), Datum::new(0, true));
+}
+#[test]
 fn datum_neg() {
     assert_eq!(-Datum::new(0, 1), Datum::new(0, -1));
 }
