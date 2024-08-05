@@ -134,8 +134,8 @@ impl<const N: usize, E: Copy + Debug> Device<E> for Axle<'_, N, E> {
 ///Since each branch of a differential is dependent on the other two, we can calculate each with
 ///only the others. This allows you to select a branch to completely calculate and not call `get`
 ///on. For example, if you have encoders on two branches, you would probably want to calculate the
-///third from their readings. Using all three branches in the calculation is currently not
-///supported although this should be in the final 0.4.0.
+///third from their readings. If you have encoders on all three branches, you can also choose to
+///use all three values from them with the `Equal` variant.
 pub enum DifferentialDistrust {
     ///Calculate the state of side 1 from sum and side 2 and do not call `get` on it.
     Side1,
@@ -143,6 +143,8 @@ pub enum DifferentialDistrust {
     Side2,
     ///Calculate the state of sum from side 1 and side 2 and do not call `get` on it.
     Sum,
+    ///Trust all branches equally in the calculation. Note that this is a bit slower.
+    Equal,
 }
 ///A mechanical differential mechanism.
 pub struct Differential<'a, E: Copy + Debug> {
@@ -152,7 +154,7 @@ pub struct Differential<'a, E: Copy + Debug> {
     distrust: DifferentialDistrust,
 }
 impl<'a, E: Copy + Debug> Differential<'a, E> {
-    ///Constructor for `Differential`. Distrusts the sum.
+    ///Constructor for `Differential`. Trusts all branches equally.
     pub fn new(
         side1: RefCell<Terminal<'a, E>>,
         side2: RefCell<Terminal<'a, E>>,
@@ -162,7 +164,7 @@ impl<'a, E: Copy + Debug> Differential<'a, E> {
             side1: side1,
             side2: side2,
             sum: sum,
-            distrust: DifferentialDistrust::Sum,
+            distrust: DifferentialDistrust::Equal,
         }
     }
     ///Constructor for `Differential` where you choose what to distrust.
@@ -216,6 +218,23 @@ impl<E: Copy + Debug> Updatable<E> for Differential<'_, E> {
                     None => return Ok(()),
                 };
                 self.sum.borrow_mut().set(side1 + side2)?;
+            }
+            DifferentialDistrust::Equal => {
+                let sum = match self.sum.borrow().get()? {
+                    Some(sum) => sum,
+                    None => return Ok(()),
+                };
+                let side1 = match self.side1.borrow().get()? {
+                    Some(side1) => side1,
+                    None => return Ok(()),
+                };
+                let side2 = match self.side2.borrow().get()? {
+                    Some(side2) => side2,
+                    None => return Ok(()),
+                };
+                self.sum.borrow_mut().set((side1 + side2 + sum * 2.0) / 3.0)?;
+                self.side1.borrow_mut().set((side1 * 2.0 - side2 + sum) / 3.0)?;
+                self.side2.borrow_mut().set((-side1 + side2 * 2.0 + sum) / 3.0)?;
             }
         }
         Ok(())
