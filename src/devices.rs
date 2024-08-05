@@ -232,9 +232,20 @@ impl<E: Copy + Debug> Updatable<E> for Differential<'_, E> {
                     Some(side2) => side2,
                     None => return Ok(()),
                 };
-                self.sum.borrow_mut().set((side1 + side2 + sum * 2.0) / 3.0)?;
-                self.side1.borrow_mut().set((side1 * 2.0 - side2 + sum) / 3.0)?;
-                self.side2.borrow_mut().set((-side1 + side2 * 2.0 + sum) / 3.0)?;
+                //This minimizes (x-a)^2+(y-b)^2+(z-c)^2 given a+b=c where x, y, and z are the
+                //measured values of side1, side2, and sum respectively and a, b, and c are their
+                //calculated estimated values based on all three constrained to add. This
+                //essentially means that the estimated values will be as close to the measured
+                //values as possible while forcing the two sides to add to the sum branch.
+                self.sum
+                    .borrow_mut()
+                    .set((side1 + side2 + sum * 2.0) / 3.0)?;
+                self.side1
+                    .borrow_mut()
+                    .set((side1 * 2.0 - side2 + sum) / 3.0)?;
+                self.side2
+                    .borrow_mut()
+                    .set((-side1 + side2 * 2.0 + sum) / 3.0)?;
             }
         }
         Ok(())

@@ -114,3 +114,6 @@ Add moving average stream.
 - Remove now-unused `GetterSettable` marker trait.
 - Move new device system to a new `devices` feature.
 - Minor documentation fix for `devices` module.
+### 0.4.0-beta.1
+- Make differential calculations able to trust all branches equally instead of ignoring one.
+- Remove unnecessary `Box`ing from `InputGetter` and `InputTimeGetter`.
