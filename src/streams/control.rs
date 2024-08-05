@@ -139,7 +139,7 @@ impl<E: Copy + Debug> Settable<Command, E> for CommandPID<E> {
     fn get_settable_data_mut(&mut self) -> &mut SettableData<Command, E> {
         &mut self.settable_data
     }
-    fn direct_set(&mut self, command: Command) -> NothingOrError<E> {
+    fn impl_set(&mut self, command: Command) -> NothingOrError<E> {
         self.reset();
         self.command = command;
         Ok(())
@@ -175,6 +175,7 @@ impl<E: Copy + Debug> Getter<f32, E> for CommandPID<E> {
 }
 impl<E: Copy + Debug> Updatable<E> for CommandPID<E> {
     fn update(&mut self) -> NothingOrError<E> {
+        self.update_following_data()?;
         let raw_get = self.input.borrow().get();
         let datum_state = match raw_get {
             Ok(Some(value)) => value,

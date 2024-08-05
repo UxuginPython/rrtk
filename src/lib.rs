@@ -624,11 +624,11 @@ pub trait Settable<S: Clone, E: Copy + Debug>: Updatable<E> {
     ///Set something, not updating the internal `SettableData`. Due to current limitations of the
     ///language, you must implement this but call `set`. Do not call this directly as it will make
     ///`get_last_request` work incorrectly.
-    fn direct_set(&mut self, value: S) -> NothingOrError<E>;
+    fn impl_set(&mut self, value: S) -> NothingOrError<E>;
     ///Set something to a value. For example, this could set a motor to a voltage. You should call
     ///this and not `direct_set`.
     fn set(&mut self, value: S) -> NothingOrError<E> {
-        self.direct_set(value.clone())?;
+        self.impl_set(value.clone())?;
         let data = self.get_settable_data_mut();
         data.last_request = Some(value);
         Ok(())
@@ -641,7 +641,8 @@ pub trait Settable<S: Clone, E: Copy + Debug>: Updatable<E> {
     ///do is make a field for a corresponding `SettableData` and make this return a mutable
     ///reference to it.
     fn get_settable_data_mut(&mut self) -> &mut SettableData<S, E>;
-    ///Begin following a `Getter` of the same type.
+    ///Begin following a `Getter` of the same type. For this to work, you must have
+    ///`update_following_data` in your `Updatable` implementation.
     fn follow(&mut self, getter: InputGetter<S, E>) {
         let data = self.get_settable_data_mut();
         data.following = SettableFollowing::Following(getter);
@@ -651,10 +652,11 @@ pub trait Settable<S: Clone, E: Copy + Debug>: Updatable<E> {
         let data = self.get_settable_data_mut();
         data.following = SettableFollowing::Idle;
     }
-    ///Get a new value from the `Getter` we're following and update ourselves accordingly. Note
-    ///that will call `self.update` regardless if we're following a `Getter`, so you can call with
-    ///in lieu of the standard `update` if you're following stuff.
-    fn following_update(&mut self) -> NothingOrError<E> {
+    ///Get a new value from the `Getter` we're following, if there is one, and call `set`
+    ///accordingly. You must add this to your `Updatable` implementation if you are following
+    ///`Getter`s. This is a current limitation of the Rust language. If specialization is ever
+    ///stabilized, this will hopefully be done in a better way.
+    fn update_following_data(&mut self) -> NothingOrError<E> {
         let data = self.get_settable_data_ref();
         match &data.following {
             SettableFollowing::Idle => {}
@@ -671,7 +673,6 @@ pub trait Settable<S: Clone, E: Copy + Debug>: Updatable<E> {
                 }
             }
         }
-        self.update()?;
         Ok(())
     }
     ///Get the argument from the last time `set` was called.
@@ -843,7 +844,7 @@ impl<T: Clone, E: Copy + Debug> Settable<T, E> for ConstantGetter<T, E> {
     fn get_settable_data_mut(&mut self) -> &mut SettableData<T, E> {
         &mut self.settable_data
     }
-    fn direct_set(&mut self, value: T) -> NothingOrError<E> {
+    fn impl_set(&mut self, value: T) -> NothingOrError<E> {
         self.value = value;
         Ok(())
     }
@@ -851,6 +852,7 @@ impl<T: Clone, E: Copy + Debug> Settable<T, E> for ConstantGetter<T, E> {
 impl<T: Clone, E: Copy + Debug> Updatable<E> for ConstantGetter<T, E> {
     ///This does not need to be called.
     fn update(&mut self) -> NothingOrError<E> {
+        self.update_following_data()?;
         Ok(())
     }
 }
@@ -900,7 +902,7 @@ impl<E: Copy + Debug> Settable<Datum<State>, E> for Terminal<'_, E> {
         &mut self.settable_data_state
     }
     //SettableData takes care of this for us.
-    fn direct_set(&mut self, _state: Datum<State>) -> NothingOrError<E> {
+    fn impl_set(&mut self, _state: Datum<State>) -> NothingOrError<E> {
         Ok(())
     }
 }
@@ -913,7 +915,7 @@ impl<E: Copy + Debug> Settable<Datum<Command>, E> for Terminal<'_, E> {
         &mut self.settable_data_command
     }
     //SettableData takes care of this for us.
-    fn direct_set(&mut self, _command: Datum<Command>) -> NothingOrError<E> {
+    fn impl_set(&mut self, _command: Datum<Command>) -> NothingOrError<E> {
         Ok(())
     }
 }
@@ -943,6 +945,9 @@ impl<E: Copy + Debug> Getter<State, E> for Terminal<'_, E> {
 #[cfg(feature = "devices")]
 impl<E: Copy + Debug> Updatable<E> for Terminal<'_, E> {
     fn update(&mut self) -> NothingOrError<E> {
+        //self.update_following_data()?;
+        <Terminal<'_, E> as Settable<Datum<Command>, E>>::update_following_data(self)?;
+        <Terminal<'_, E> as Settable<Datum<State>, E>>::update_following_data(self)?;
         Ok(())
     }
 }
