@@ -944,7 +944,6 @@ impl<E: Copy + Debug> Getter<State, E> for Terminal<'_, E> {
 #[cfg(feature = "devices")]
 impl<E: Copy + Debug> Updatable<E> for Terminal<'_, E> {
     fn update(&mut self) -> NothingOrError<E> {
-        //self.update_following_data()?;
         <Terminal<'_, E> as Settable<Datum<Command>, E>>::update_following_data(self)?;
         <Terminal<'_, E> as Settable<Datum<State>, E>>::update_following_data(self)?;
         Ok(())
