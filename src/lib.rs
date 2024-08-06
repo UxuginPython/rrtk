@@ -26,8 +26,6 @@ use std::rc::Rc;
 #[cfg(not(feature = "std"))]
 extern crate alloc;
 #[cfg(not(feature = "std"))]
-use alloc::boxed::Box;
-#[cfg(not(feature = "std"))]
 use alloc::rc::Rc;
 #[cfg(not(feature = "std"))]
 use alloc::vec::Vec;
@@ -509,9 +507,9 @@ impl PositionDerivativeDependentPIDKValues {
 pub type Output<T, E> = Result<Option<Datum<T>>, Error<E>>;
 ///Returned from `TimeGetter` objects, which may return either a time or an error.
 pub type TimeOutput<E> = Result<i64, Error<E>>;
-///Makes `Getter`s easier to work with by containing them in an `Rc<RefCell<Box<_>>>`.
+///Makes `Getter`s easier to work with by containing them in an `Rc<RefCell<_>>`.
 pub type InputGetter<T, E> = Rc<RefCell<dyn Getter<T, E>>>;
-///Makes `TimeGetter`s easier to work with by containing them in an `Rc<RefCell<Box<_>>>`.
+///Makes `TimeGetter`s easier to work with by containing them in an `Rc<RefCell<_>>`.
 pub type InputTimeGetter<E> = Rc<RefCell<dyn TimeGetter<E>>>;
 ///Returned when something may return either nothing or an error.
 pub type NothingOrError<E> = Result<(), Error<E>>;
@@ -722,15 +720,15 @@ impl<T: Clone, E: Copy + Debug> Updatable<E> for TimeGetterFromGetter<T, E> {
 ///As histories return values at times, we can ask them to return values at the time of now or now
 ///with a delta. This makes that much easier and is the recommended way of following
 ///`MotionProfile`s.
-pub struct GetterFromHistory<G, E: Copy + Debug> {
-    history: Box<dyn History<G, E>>,
+pub struct GetterFromHistory<'a, G, E: Copy + Debug> {
+    history: &'a mut dyn History<G, E>,
     time_getter: InputTimeGetter<E>,
     time_delta: i64,
 }
-impl<G, E: Copy + Debug> GetterFromHistory<G, E> {
+impl<'a, G, E: Copy + Debug> GetterFromHistory<'a, G, E> {
     ///Constructor such that the time in the request to the history will be directly that returned
     ///from the `TimeGetter` with no delta.
-    pub fn new_no_delta(history: Box<dyn History<G, E>>, time_getter: InputTimeGetter<E>) -> Self {
+    pub fn new_no_delta(history: &'a mut dyn History<G, E>, time_getter: InputTimeGetter<E>) -> Self {
         Self {
             history: history,
             time_getter: time_getter,
@@ -740,7 +738,7 @@ impl<G, E: Copy + Debug> GetterFromHistory<G, E> {
     ///Constructor such that the times requested from the `History` will begin at zero where zero
     ///is the moment this constructor is called.
     pub fn new_start_at_zero(
-        history: Box<dyn History<G, E>>,
+        history: &'a mut dyn History<G, E>,
         time_getter: InputTimeGetter<E>,
     ) -> Result<Self, Error<E>> {
         let time_delta = -time_getter.borrow().get()?;
@@ -753,7 +751,7 @@ impl<G, E: Copy + Debug> GetterFromHistory<G, E> {
     ///Constructor such that the times requested from the `History` will start at a given time with
     ///that time defined as the moment of construction.
     pub fn new_custom_start(
-        history: Box<dyn History<G, E>>,
+        history: &'a mut dyn History<G, E>,
         time_getter: InputTimeGetter<E>,
         start: i64,
     ) -> Result<Self, Error<E>> {
@@ -766,7 +764,7 @@ impl<G, E: Copy + Debug> GetterFromHistory<G, E> {
     }
     ///Constructor with a custom time delta.
     pub fn new_custom_delta(
-        history: Box<dyn History<G, E>>,
+        history: &'a mut dyn History<G, E>,
         time_getter: InputTimeGetter<E>,
         time_delta: i64,
     ) -> Self {
@@ -788,26 +786,26 @@ impl<G, E: Copy + Debug> GetterFromHistory<G, E> {
         Ok(())
     }
 }
-impl<E: Copy + Debug> GetterFromHistory<Command, E> {
+impl<'a, E: Copy + Debug> GetterFromHistory<'a, Command, E> {
     ///Shortcut to make following motion profiles easier. Calls `new_start_at_zero` internally.
     pub fn new_for_motion_profile(
-        motion_profile: MotionProfile,
+        motion_profile: &'a mut MotionProfile,
         time_getter: InputTimeGetter<E>,
     ) -> Result<Self, Error<E>> {
         Self::new_start_at_zero(
-            Box::new(motion_profile) as Box<dyn History<Command, E>>,
+            motion_profile as &mut dyn History<Command, E>,
             time_getter,
         )
     }
 }
-impl<G, E: Copy + Debug> Updatable<E> for GetterFromHistory<G, E> {
+impl<G, E: Copy + Debug> Updatable<E> for GetterFromHistory<'_, G, E> {
     fn update(&mut self) -> NothingOrError<E> {
         self.history.update()?;
         self.time_getter.borrow_mut().update()?;
         Ok(())
     }
 }
-impl<G: Clone, E: Copy + Debug> Getter<G, E> for GetterFromHistory<G, E> {
+impl<G: Clone, E: Copy + Debug> Getter<G, E> for GetterFromHistory<'_, G, E> {
     fn get(&self) -> Output<G, E> {
         Ok(self
             .history
