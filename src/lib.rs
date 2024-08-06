@@ -664,7 +664,6 @@ pub trait Settable<S: Clone, E: Copy + Debug>: Updatable<E> {
                 let new_value = getter.borrow().get()?;
                 match new_value {
                     None => {
-                        self.update()?;
                         return Ok(());
                     }
                     Some(datum) => {

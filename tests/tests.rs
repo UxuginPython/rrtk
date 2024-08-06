@@ -501,3 +501,78 @@ fn time_getter_from_stream() {
     stream.borrow_mut().update().unwrap();
     assert_eq!(time_getter.get(), Err(Error::Other(())));
 }
+#[test]
+fn settable() {
+    struct MyGetter {
+        none: bool,
+        value: u8,
+    }
+    impl MyGetter {
+        fn new() -> Self {
+            Self {
+                none: true,
+                value: 5,
+            }
+        }
+    }
+    impl Getter<u8, ()> for MyGetter {
+        fn get(&self) -> Output<u8, ()> {
+            if self.none {
+                return Ok(None);
+            }
+            Ok(Some(Datum::new(0, self.value)))
+        }
+    }
+    impl Updatable<()> for MyGetter {
+        fn update(&mut self) -> NothingOrError<()> {
+            self.none = false;
+            self.value += 1;
+            Ok(())
+        }
+    }
+    struct MySettable {
+        settable_data: SettableData<u8, ()>,
+    }
+    impl MySettable {
+        fn new() -> Self {
+            Self {
+                settable_data: SettableData::new(),
+            }
+        }
+    }
+    impl Settable<u8, ()> for MySettable {
+        fn get_settable_data_ref(&self) -> &SettableData<u8, ()> {
+            &self.settable_data
+        }
+        fn get_settable_data_mut(&mut self) -> &mut SettableData<u8, ()> {
+            &mut self.settable_data
+        }
+        fn impl_set(&mut self, _: u8) -> NothingOrError<()> {
+            Ok(())
+        }
+    }
+    impl Updatable<()> for MySettable {
+        fn update(&mut self) -> NothingOrError<()> {
+            self.update_following_data()?;
+            Ok(())
+        }
+    }
+    let mut my_settable = MySettable::new();
+    assert_eq!(my_settable.get_last_request(), None);
+    my_settable.set(3).unwrap();
+    assert_eq!(my_settable.get_last_request(), Some(3));
+    let my_getter = make_input_getter!(MyGetter::new(), u8, ());
+    my_settable.follow(Rc::clone(&my_getter));
+    my_settable.update().unwrap();
+    assert_eq!(my_settable.get_last_request(), Some(3));
+    my_getter.borrow_mut().update().unwrap();
+    my_settable.update().unwrap();
+    assert_eq!(my_settable.get_last_request(), Some(6));
+    my_getter.borrow_mut().update().unwrap();
+    my_settable.update().unwrap();
+    assert_eq!(my_settable.get_last_request(), Some(7));
+    my_settable.stop_following();
+    my_getter.borrow_mut().update().unwrap();
+    my_settable.update().unwrap();
+    assert_eq!(my_settable.get_last_request(), Some(7));
+}
