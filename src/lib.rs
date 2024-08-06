@@ -519,7 +519,7 @@ pub trait TimeGetter<E: Copy + Debug>: Updatable<E> {
     fn get(&self) -> TimeOutput<E>;
 }
 ///An object that can return a value, like a `Getter`, for a given time.
-pub trait History<T: Clone, E: Copy + Debug>: Updatable<E> {
+pub trait History<T, E: Copy + Debug>: Updatable<E> {
     ///Get a value at a time.
     fn get(&self, time: i64) -> Option<Datum<T>>;
 }
@@ -728,7 +728,7 @@ pub struct GetterFromHistory<'a, G, E: Copy + Debug> {
 impl<'a, G, E: Copy + Debug> GetterFromHistory<'a, G, E> {
     ///Constructor such that the time in the request to the history will be directly that returned
     ///from the `TimeGetter` with no delta.
-    pub fn new_no_delta(history: &'a mut dyn History<G, E>, time_getter: InputTimeGetter<E>) -> Self {
+    pub fn new_no_delta(history: &'a mut impl History<G, E>, time_getter: InputTimeGetter<E>) -> Self {
         Self {
             history: history,
             time_getter: time_getter,
@@ -738,7 +738,7 @@ impl<'a, G, E: Copy + Debug> GetterFromHistory<'a, G, E> {
     ///Constructor such that the times requested from the `History` will begin at zero where zero
     ///is the moment this constructor is called.
     pub fn new_start_at_zero(
-        history: &'a mut dyn History<G, E>,
+        history: &'a mut impl History<G, E>,
         time_getter: InputTimeGetter<E>,
     ) -> Result<Self, Error<E>> {
         let time_delta = -time_getter.borrow().get()?;
@@ -751,7 +751,7 @@ impl<'a, G, E: Copy + Debug> GetterFromHistory<'a, G, E> {
     ///Constructor such that the times requested from the `History` will start at a given time with
     ///that time defined as the moment of construction.
     pub fn new_custom_start(
-        history: &'a mut dyn History<G, E>,
+        history: &'a mut impl History<G, E>,
         time_getter: InputTimeGetter<E>,
         start: i64,
     ) -> Result<Self, Error<E>> {
@@ -764,7 +764,7 @@ impl<'a, G, E: Copy + Debug> GetterFromHistory<'a, G, E> {
     }
     ///Constructor with a custom time delta.
     pub fn new_custom_delta(
-        history: &'a mut dyn History<G, E>,
+        history: &'a mut impl History<G, E>,
         time_getter: InputTimeGetter<E>,
         time_delta: i64,
     ) -> Self {
@@ -784,18 +784,6 @@ impl<'a, G, E: Copy + Debug> GetterFromHistory<'a, G, E> {
         let time_delta = time - self.time_getter.borrow().get()?;
         self.time_delta = time_delta;
         Ok(())
-    }
-}
-impl<'a, E: Copy + Debug> GetterFromHistory<'a, Command, E> {
-    ///Shortcut to make following motion profiles easier. Calls `new_start_at_zero` internally.
-    pub fn new_for_motion_profile(
-        motion_profile: &'a mut MotionProfile,
-        time_getter: InputTimeGetter<E>,
-    ) -> Result<Self, Error<E>> {
-        Self::new_start_at_zero(
-            motion_profile as &mut dyn History<Command, E>,
-            time_getter,
-        )
     }
 }
 impl<G, E: Copy + Debug> Updatable<E> for GetterFromHistory<'_, G, E> {
