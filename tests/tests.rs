@@ -574,14 +574,43 @@ fn settable() {
 }
 #[test]
 fn getter_from_history() {
-    struct MyHistory;
+    enum UpdateTestState {
+        Unneeded,
+        Waiting,
+        Updated,
+        ReturnNone,
+    }
+    struct MyHistory {
+        update_test_state: UpdateTestState,
+    }
+    impl MyHistory {
+        fn new() -> Self {
+            Self {
+                update_test_state: UpdateTestState::Unneeded,
+            }
+        }
+        fn set_update_test(&mut self) {
+            self.update_test_state = UpdateTestState::Waiting;
+        }
+        fn set_none_test(&mut self) {
+            self.update_test_state = UpdateTestState::ReturnNone;
+        }
+    }
     impl History<i64, ()> for MyHistory {
         fn get(&self, time: i64) -> Option<Datum<i64>> {
-            Some(Datum::new(time, time))
+            match self.update_test_state {
+                UpdateTestState::Unneeded | UpdateTestState::Waiting => Some(Datum::new(time, time)),
+                UpdateTestState::Updated => Some(Datum::new(time, 30)),
+                UpdateTestState::ReturnNone => None,
+            }
         }
     }
     impl Updatable<()> for MyHistory {
         fn update(&mut self) -> NothingOrError<()> {
+            match self.update_test_state {
+                UpdateTestState::Waiting => self.update_test_state = UpdateTestState::Updated,
+                _ => ()
+            }
             Ok(())
         }
     }
@@ -605,7 +634,7 @@ fn getter_from_history() {
         }
     }
 
-    let mut my_history = MyHistory;
+    let mut my_history = MyHistory::new();
     let my_time_getter = make_input_time_getter(MyTimeGetter::new());
 
     {
@@ -649,5 +678,19 @@ fn getter_from_history() {
         assert_eq!(getter.get().unwrap().unwrap(), Datum::new(9, 14));
         getter.set_time(20).unwrap();
         assert_eq!(getter.get().unwrap().unwrap(), Datum::new(9, 20));
+    }
+
+    {
+        my_history.set_update_test();
+        let mut getter = GetterFromHistory::new_no_delta(&mut my_history, Rc::clone(&my_time_getter));
+        assert_eq!(getter.get().unwrap().unwrap(), Datum::new(9, 9));
+        getter.update().unwrap();
+        assert_eq!(getter.get().unwrap().unwrap(), Datum::new(10, 30));
+    }
+
+    {
+        my_history.set_none_test();
+        let getter = GetterFromHistory::new_no_delta(&mut my_history, Rc::clone(&my_time_getter));
+        assert_eq!(getter.get().unwrap(), None);
     }
 }
