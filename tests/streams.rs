@@ -80,36 +80,6 @@ fn make_input_getter_() {
     assert_eq!(stream.get().unwrap().unwrap().value, 20);
 }
 #[test]
-fn constant() {
-    struct DummyStream {
-        time: i64,
-    }
-    impl DummyStream {
-        pub fn new() -> Self {
-            Self { time: 0 }
-        }
-    }
-    impl<E: Copy + Debug> Getter<f32, E> for DummyStream {
-        fn get(&self) -> Output<f32, E> {
-            Ok(Some(Datum::new(self.time, 0.0)))
-        }
-    }
-    impl<E: Copy + Debug> Updatable<E> for DummyStream {
-        fn update(&mut self) -> NothingOrError<E> {
-            self.time += 1;
-            Ok(())
-        }
-    }
-    let tg_stream: InputGetter<_, ()> = make_input_getter(DummyStream::new());
-    let time_getter = make_input_time_getter(TimeGetterFromGetter::new(Rc::clone(&tg_stream)));
-    let mut stream = ConstantGetter::new(Rc::clone(&time_getter), 20u8);
-    assert_eq!(stream.get().unwrap().unwrap().value, 20);
-    tg_stream.borrow_mut().update().unwrap();
-    assert_eq!(stream.get().unwrap().unwrap().value, 20);
-    stream.update().unwrap();
-    assert_eq!(stream.get().unwrap().unwrap().value, 20);
-}
-#[test]
 fn expirer() {
     struct DummyStream;
     impl Getter<f32, ()> for DummyStream {

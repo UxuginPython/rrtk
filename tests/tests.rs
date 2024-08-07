@@ -694,3 +694,23 @@ fn getter_from_history() {
         assert_eq!(getter.get().unwrap(), None);
     }
 }
+#[test]
+fn constant_getter() {
+    struct MyTimeGetter;
+    impl TimeGetter<()> for MyTimeGetter {
+        fn get(&self) -> TimeOutput<()> {
+            Ok(0)
+        }
+    }
+    impl Updatable<()> for MyTimeGetter {
+        fn update(&mut self) -> NothingOrError<()> {
+            Ok(())
+        }
+    }
+    let mut constant_getter = ConstantGetter::new(make_input_time_getter(MyTimeGetter), 10);
+    assert_eq!(constant_getter.get().unwrap().unwrap().value, 10);
+    constant_getter.update().unwrap(); //This should do nothing.
+    assert_eq!(constant_getter.get().unwrap().unwrap().value, 10);
+    constant_getter.set(20).unwrap();
+    assert_eq!(constant_getter.get().unwrap().unwrap().value, 20);
+}
