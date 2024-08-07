@@ -16,8 +16,6 @@ use rrtk::streams::math::*;
 use rrtk::streams::*;
 use rrtk::*;
 #[cfg(feature = "std")]
-use std::cell::RefCell;
-#[cfg(feature = "std")]
 use std::fmt::Debug;
 #[cfg(feature = "std")]
 use std::rc::Rc;
@@ -25,8 +23,6 @@ use std::rc::Rc;
 extern crate alloc;
 #[cfg(not(feature = "std"))]
 use alloc::rc::Rc;
-#[cfg(not(feature = "std"))]
-use core::cell::RefCell;
 #[cfg(not(feature = "std"))]
 use core::fmt::Debug;
 #[test]
@@ -50,15 +46,13 @@ fn time_getter_from_stream() {
             Ok(())
         }
     }
-    let stream = make_input_getter!(DummyStream::new(), f32, u8);
+    let stream: InputGetter<_, ()> = make_input_getter(DummyStream::new());
     let time_getter = TimeGetterFromGetter::new(Rc::clone(&stream));
     stream.borrow_mut().update().unwrap();
     assert_eq!(time_getter.get().unwrap(), 1);
 }
 #[test]
 fn make_input_getter_() {
-    #[derive(Clone, Copy, Debug)]
-    struct Nothing;
     struct DummyStream {
         time: i64,
     }
@@ -78,9 +72,8 @@ fn make_input_getter_() {
             Ok(())
         }
     }
-    let tg_stream = make_input_getter!(DummyStream::new(), f32, Nothing);
-    let time_getter =
-        make_input_time_getter!(TimeGetterFromGetter::new(Rc::clone(&tg_stream)), Nothing);
+    let tg_stream: InputGetter<_, ()> = make_input_getter(DummyStream::new());
+    let time_getter = make_input_time_getter(TimeGetterFromGetter::new(Rc::clone(&tg_stream)));
     let stream = ConstantGetter::new(Rc::clone(&time_getter), 20u8);
     assert_eq!(stream.get().unwrap().unwrap().value, 20);
     tg_stream.borrow_mut().update().unwrap();
@@ -88,8 +81,6 @@ fn make_input_getter_() {
 }
 #[test]
 fn constant() {
-    #[derive(Clone, Copy, Debug)]
-    struct Nothing;
     struct DummyStream {
         time: i64,
     }
@@ -109,9 +100,8 @@ fn constant() {
             Ok(())
         }
     }
-    let tg_stream = make_input_getter!(DummyStream::new(), f32, Nothing);
-    let time_getter =
-        make_input_time_getter!(TimeGetterFromGetter::new(Rc::clone(&tg_stream)), Nothing);
+    let tg_stream: InputGetter<_, ()> = make_input_getter(DummyStream::new());
+    let time_getter = make_input_time_getter(TimeGetterFromGetter::new(Rc::clone(&tg_stream)));
     let mut stream = ConstantGetter::new(Rc::clone(&time_getter), 20u8);
     assert_eq!(stream.get().unwrap().unwrap().value, 20);
     tg_stream.borrow_mut().update().unwrap();
@@ -146,8 +136,8 @@ fn expirer() {
             Ok(())
         }
     }
-    let stream = make_input_getter!(DummyStream, f32, ());
-    let time_getter = make_input_time_getter!(DummyTimeGetter { time: 0 }, ());
+    let stream = make_input_getter(DummyStream);
+    let time_getter = make_input_time_getter(DummyTimeGetter { time: 0 });
     let mut expirer = Expirer::new(stream, Rc::clone(&time_getter), 10);
     expirer.update().unwrap(); //This should do nothing.
     assert_eq!(expirer.get(), Ok(Some(Datum::new(0, 0.0))));
@@ -183,8 +173,8 @@ fn expirer_none() {
             Ok(())
         }
     }
-    let stream = make_input_getter!(DummyStream, f32, ());
-    let time_getter = make_input_time_getter!(DummyTimeGetter { time: 0 }, ());
+    let stream = make_input_getter(DummyStream);
+    let time_getter = make_input_time_getter(DummyTimeGetter { time: 0 });
     let expirer = Expirer::new(stream, Rc::clone(&time_getter), 10);
     assert_eq!(expirer.get(), Ok(None));
 }
@@ -216,7 +206,7 @@ fn none_to_error() {
             Ok(())
         }
     }
-    let input = make_input_getter!(DummyStream::new(), f32, Nothing);
+    let input = make_input_getter(DummyStream::new());
     let mut stream = NoneToError::new(Rc::clone(&input));
     stream.update().unwrap(); //This should do nothing.
     match stream.get() {
@@ -298,10 +288,10 @@ fn none_to_value() {
             Ok(())
         }
     }
-    let input = make_input_getter!(DummyStream::new(), f32, Nothing);
+    let input = make_input_getter(DummyStream::new());
     let mut stream = NoneToValue::new(
         Rc::clone(&input),
-        make_input_time_getter!(DummyTimeGetter::new(), Nothing),
+        make_input_time_getter(DummyTimeGetter::new()),
         2.0,
     );
     stream.update().unwrap(); //This should do nothing.
@@ -359,7 +349,7 @@ fn acceleration_to_state() {
             Ok(())
         }
     }
-    let acc_getter = make_input_getter!(AccGetter::new(), f32, ());
+    let acc_getter = make_input_getter(AccGetter::new());
     let mut state_getter = AccelerationToState::new(Rc::clone(&acc_getter));
     let output = state_getter.get();
     assert!(output.unwrap().is_none());
@@ -400,7 +390,7 @@ fn velocity_to_state() {
             Ok(())
         }
     }
-    let vel_getter = make_input_getter!(VelGetter::new(), f32, ());
+    let vel_getter = make_input_getter(VelGetter::new());
     let mut state_getter = VelocityToState::new(Rc::clone(&vel_getter));
     let output = state_getter.get();
     assert!(output.unwrap().is_none());
@@ -437,7 +427,7 @@ fn position_to_state() {
             Ok(())
         }
     }
-    let pos_getter = make_input_getter!(PosGetter::new(), f32, ());
+    let pos_getter = make_input_getter(PosGetter::new());
     let mut state_getter = PositionToState::new(Rc::clone(&pos_getter));
     let output = state_getter.get();
     assert!(output.unwrap().is_none());
@@ -502,8 +492,8 @@ fn sum_stream() {
             Ok(())
         }
     }
-    let erroring = make_input_getter!(ErroringStream::new(), f32, Nothing);
-    let normal = make_input_getter!(NormalStream::new(), f32, Nothing);
+    let erroring = make_input_getter(ErroringStream::new());
+    let normal = make_input_getter(NormalStream::new());
     let stream = SumStream::new([Rc::clone(&erroring), Rc::clone(&normal)]);
     match stream.get() {
         Ok(_) => {
@@ -576,8 +566,8 @@ fn difference_stream() {
             Ok(())
         }
     }
-    let stream1 = make_input_getter!(Stream1::new(), f32, DummyError);
-    let stream2 = make_input_getter!(Stream2::new(), f32, DummyError);
+    let stream1 = make_input_getter(Stream1::new());
+    let stream2 = make_input_getter(Stream2::new());
     let stream = DifferenceStream::new(Rc::clone(&stream1), Rc::clone(&stream2));
     //Err, Err
     match stream.get() {
@@ -722,8 +712,8 @@ fn product_stream() {
             Ok(())
         }
     }
-    let erroring = make_input_getter!(ErroringStream::new(), f32, Nothing);
-    let normal = make_input_getter!(NormalStream::new(), f32, Nothing);
+    let erroring = make_input_getter(ErroringStream::new());
+    let normal = make_input_getter(NormalStream::new());
     let stream = ProductStream::new([Rc::clone(&erroring), Rc::clone(&normal)]);
     match stream.get() {
         Ok(_) => {
@@ -796,8 +786,8 @@ fn quotient_stream() {
             Ok(())
         }
     }
-    let stream1 = make_input_getter!(Stream1::new(), f32, DummyError);
-    let stream2 = make_input_getter!(Stream2::new(), f32, DummyError);
+    let stream1 = make_input_getter(Stream1::new());
+    let stream2 = make_input_getter(Stream2::new());
     let stream = QuotientStream::new(Rc::clone(&stream1), Rc::clone(&stream2));
     //Err, Err
     match stream.get() {
@@ -950,8 +940,8 @@ fn exponent_stream() {
             Ok(())
         }
     }
-    let stream1 = make_input_getter!(Stream1::new(), f32, DummyError);
-    let stream2 = make_input_getter!(Stream2::new(), f32, DummyError);
+    let stream1 = make_input_getter(Stream1::new());
+    let stream2 = make_input_getter(Stream2::new());
     let stream = ExponentStream::new(Rc::clone(&stream1), Rc::clone(&stream2));
     //Err, Err
     match stream.get() {
@@ -1074,7 +1064,7 @@ fn derivative_stream() {
             Ok(())
         }
     }
-    let input = make_input_getter!(DummyStream::new(), f32, DummyError);
+    let input = make_input_getter(DummyStream::new());
     let mut stream = DerivativeStream::new(Rc::clone(&input));
     input.borrow_mut().update().unwrap();
     stream.update().unwrap();
@@ -1106,7 +1096,7 @@ fn integral_stream() {
             Ok(())
         }
     }
-    let input = make_input_getter!(DummyStream::new(), f32, DummyError);
+    let input = make_input_getter(DummyStream::new());
     let mut stream = IntegralStream::new(Rc::clone(&input));
     input.borrow_mut().update().unwrap();
     stream.update().unwrap();
@@ -1138,7 +1128,7 @@ fn stream_pid() {
             Ok(())
         }
     }
-    let input = make_input_getter!(DummyStream::new(), f32, DummyError);
+    let input = make_input_getter(DummyStream::new());
     let mut stream =
         PIDControllerStream::new(Rc::clone(&input), 5.0, PIDKValues::new(1.0, 0.01, 0.1));
     stream.update().unwrap();
@@ -1183,7 +1173,7 @@ fn ewma_stream() {
             Ok(())
         }
     }
-    let input = make_input_getter!(DummyStream::new(), f32, DummyError);
+    let input = make_input_getter(DummyStream::new());
     let mut stream = EWMAStream::new(Rc::clone(&input), 0.25);
     input.borrow_mut().update().unwrap();
     stream.update().unwrap();
@@ -1246,7 +1236,7 @@ fn moving_average_stream() {
             Ok(())
         }
     }
-    let input = make_input_getter!(DummyStream::new(), f32, DummyError);
+    let input = make_input_getter(DummyStream::new());
     let mut stream = MovingAverageStream::new(Rc::clone(&input), 5);
     input.borrow_mut().update().unwrap();
     stream.update().unwrap();
@@ -1331,8 +1321,8 @@ fn latest() {
             Ok(())
         }
     }
-    let stream1 = make_input_getter!(Stream1::new(), u8, ());
-    let stream2 = make_input_getter!(Stream2::new(), u8, ());
+    let stream1 = make_input_getter(Stream1::new());
+    let stream2 = make_input_getter(Stream2::new());
     let mut latest = Latest::new([Rc::clone(&stream1), Rc::clone(&stream2)]);
     latest.update().unwrap(); //This should do nothing.
     assert_eq!(latest.get(), Ok(Some(Datum::new(1, 1))));

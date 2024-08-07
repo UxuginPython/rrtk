@@ -11,15 +11,11 @@ Copyright 2024 UxuginPython on GitHub
     You should have received a copy of the GNU Lesser General Public License along with Rust Robotics ToolKit. If not, see <https://www.gnu.org/licenses/>.
 */
 #[cfg(feature = "std")]
-use std::cell::RefCell;
-#[cfg(feature = "std")]
 use std::rc::Rc;
 #[cfg(not(feature = "std"))]
 extern crate alloc;
 #[cfg(not(feature = "std"))]
 use alloc::rc::Rc;
-#[cfg(not(feature = "std"))]
-use core::cell::RefCell;
 use rrtk::*;
 #[test]
 fn state_new() {
@@ -492,7 +488,7 @@ fn time_getter_from_stream() {
             Ok(())
         }
     }
-    let stream = make_input_getter!(Stream::new(), (), ());
+    let stream = make_input_getter(Stream::new());
     let mut time_getter = TimeGetterFromGetter::new(Rc::clone(&stream));
     time_getter.update().unwrap(); //This should do nothing.
     assert_eq!(time_getter.get(), Ok(0));
@@ -561,7 +557,7 @@ fn settable() {
     assert_eq!(my_settable.get_last_request(), None);
     my_settable.set(3).unwrap();
     assert_eq!(my_settable.get_last_request(), Some(3));
-    let my_getter = make_input_getter!(MyGetter::new(), u8, ());
+    let my_getter = make_input_getter(MyGetter::new());
     my_settable.follow(Rc::clone(&my_getter));
     my_settable.update().unwrap();
     assert_eq!(my_settable.get_last_request(), Some(3));
@@ -594,9 +590,7 @@ fn getter_from_history() {
     }
     impl MyTimeGetter {
         fn new() -> Self {
-            Self {
-                time: 5,
-            }
+            Self { time: 5 }
         }
     }
     impl TimeGetter<()> for MyTimeGetter {
@@ -612,7 +606,7 @@ fn getter_from_history() {
     }
 
     let mut my_history = MyHistory;
-    let my_time_getter = make_input_time_getter!(MyTimeGetter::new(), ());
+    let my_time_getter = make_input_time_getter(MyTimeGetter::new());
 
     {
         let no_delta = GetterFromHistory::new_no_delta(&mut my_history, Rc::clone(&my_time_getter));
@@ -622,28 +616,34 @@ fn getter_from_history() {
     }
 
     {
-        let start_at_zero = GetterFromHistory::new_start_at_zero(&mut my_history, Rc::clone(&my_time_getter)).unwrap();
+        let start_at_zero =
+            GetterFromHistory::new_start_at_zero(&mut my_history, Rc::clone(&my_time_getter))
+                .unwrap();
         assert_eq!(start_at_zero.get().unwrap().unwrap(), Datum::new(6, 0));
         my_time_getter.borrow_mut().update().unwrap();
         assert_eq!(start_at_zero.get().unwrap().unwrap(), Datum::new(7, 1));
     }
 
     {
-        let custom_start = GetterFromHistory::new_custom_start(&mut my_history, Rc::clone(&my_time_getter), 10).unwrap();
+        let custom_start =
+            GetterFromHistory::new_custom_start(&mut my_history, Rc::clone(&my_time_getter), 10)
+                .unwrap();
         assert_eq!(custom_start.get().unwrap().unwrap(), Datum::new(7, 10));
         my_time_getter.borrow_mut().update().unwrap();
         assert_eq!(custom_start.get().unwrap().unwrap(), Datum::new(8, 11));
     }
 
     {
-        let custom_delta = GetterFromHistory::new_custom_delta(&mut my_history, Rc::clone(&my_time_getter), 5);
+        let custom_delta =
+            GetterFromHistory::new_custom_delta(&mut my_history, Rc::clone(&my_time_getter), 5);
         assert_eq!(custom_delta.get().unwrap().unwrap(), Datum::new(8, 13));
         my_time_getter.borrow_mut().update().unwrap();
         assert_eq!(custom_delta.get().unwrap().unwrap(), Datum::new(9, 14));
     }
 
     {
-        let mut getter = GetterFromHistory::new_no_delta(&mut my_history, Rc::clone(&my_time_getter));
+        let mut getter =
+            GetterFromHistory::new_no_delta(&mut my_history, Rc::clone(&my_time_getter));
         assert_eq!(getter.get().unwrap().unwrap(), Datum::new(9, 9));
         getter.set_delta(5);
         assert_eq!(getter.get().unwrap().unwrap(), Datum::new(9, 14));

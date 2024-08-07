@@ -679,18 +679,16 @@ pub trait Settable<S: Clone, E: Copy + Debug>: Updatable<E> {
     }
 }
 ///A fast way to turn anything implementing `Getter` into an `InputGetter`.
-#[macro_export]
-macro_rules! make_input_getter {
-    ($stream:expr, $ttype:tt, $etype:tt) => {
-        Rc::new(RefCell::new($stream)) as Rc<RefCell<dyn Getter<$ttype, $etype>>>
-    };
+pub fn make_input_getter<T: Getter<G, E> + 'static, G, E: Copy + Debug>(
+    getter: T,
+) -> InputGetter<G, E> {
+    Rc::new(RefCell::new(getter)) as Rc<RefCell<dyn Getter<G, E>>>
 }
 ///A fast way to turn anything implementing `TimeGetter` into an `InputTimeGetter`.
-#[macro_export]
-macro_rules! make_input_time_getter {
-    ($time_getter:expr, $etype:tt) => {
-        Rc::new(RefCell::new($time_getter)) as Rc<RefCell<dyn TimeGetter<$etype>>>
-    };
+pub fn make_input_time_getter<T: TimeGetter<E> + 'static, E: Copy + Debug>(
+    time_getter: T,
+) -> InputTimeGetter<E> {
+    Rc::new(RefCell::new(time_getter)) as Rc<RefCell<dyn TimeGetter<E>>>
 }
 ///Because `Stream`s always return a timestamp (as long as they don't return `Err(_)` or
 ///`Ok(None)`), we can use this to treat them like `TimeGetter`s.
@@ -728,7 +726,10 @@ pub struct GetterFromHistory<'a, G, E: Copy + Debug> {
 impl<'a, G, E: Copy + Debug> GetterFromHistory<'a, G, E> {
     ///Constructor such that the time in the request to the history will be directly that returned
     ///from the `TimeGetter` with no delta.
-    pub fn new_no_delta(history: &'a mut impl History<G, E>, time_getter: InputTimeGetter<E>) -> Self {
+    pub fn new_no_delta(
+        history: &'a mut impl History<G, E>,
+        time_getter: InputTimeGetter<E>,
+    ) -> Self {
         Self {
             history: history,
             time_getter: time_getter,

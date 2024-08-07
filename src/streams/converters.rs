@@ -91,8 +91,8 @@ pub struct AccelerationToState<E: Copy + Debug> {
 impl<E: Copy + Debug + 'static> AccelerationToState<E> {
     ///Constructor for `AccelerationToState`.
     pub fn new(acc: InputGetter<f32, E>) -> Self {
-        let vel = make_input_getter!(IntegralStream::new(Rc::clone(&acc)), f32, E);
-        let pos = make_input_getter!(IntegralStream::new(Rc::clone(&vel)), f32, E);
+        let vel = make_input_getter(IntegralStream::new(Rc::clone(&acc)));
+        let pos = make_input_getter(IntegralStream::new(Rc::clone(&vel)));
         Self {
             acc: acc,
             vel: vel,
@@ -150,8 +150,8 @@ pub struct VelocityToState<E: Copy + Debug> {
 impl<E: Copy + Debug + 'static> VelocityToState<E> {
     ///Constructor for `VelocityToState`.
     pub fn new(vel: InputGetter<f32, E>) -> Self {
-        let acc = make_input_getter!(DerivativeStream::new(Rc::clone(&vel)), f32, E);
-        let pos = make_input_getter!(IntegralStream::new(Rc::clone(&vel)), f32, E);
+        let acc = make_input_getter(DerivativeStream::new(Rc::clone(&vel)));
+        let pos = make_input_getter(IntegralStream::new(Rc::clone(&vel)));
         Self {
             acc: acc,
             vel: vel,
@@ -208,8 +208,8 @@ pub struct PositionToState<E: Copy + Debug> {
 impl<E: Copy + Debug + 'static> PositionToState<E> {
     ///Constructor for `PositionToState`.
     pub fn new(pos: InputGetter<f32, E>) -> Self {
-        let vel = make_input_getter!(DerivativeStream::new(Rc::clone(&pos)), f32, E);
-        let acc = make_input_getter!(DerivativeStream::new(Rc::clone(&vel)), f32, E);
+        let vel = make_input_getter(DerivativeStream::new(Rc::clone(&pos)));
+        let acc = make_input_getter(DerivativeStream::new(Rc::clone(&vel)));
         Self {
             acc: acc,
             vel: vel,
