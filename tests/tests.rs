@@ -576,3 +576,78 @@ fn settable() {
     my_settable.update().unwrap();
     assert_eq!(my_settable.get_last_request(), Some(7));
 }
+#[test]
+fn getter_from_history() {
+    struct MyHistory;
+    impl History<i64, ()> for MyHistory {
+        fn get(&self, time: i64) -> Option<Datum<i64>> {
+            Some(Datum::new(time, time))
+        }
+    }
+    impl Updatable<()> for MyHistory {
+        fn update(&mut self) -> NothingOrError<()> {
+            Ok(())
+        }
+    }
+    struct MyTimeGetter {
+        time: i64,
+    }
+    impl MyTimeGetter {
+        fn new() -> Self {
+            Self {
+                time: 5,
+            }
+        }
+    }
+    impl TimeGetter<()> for MyTimeGetter {
+        fn get(&self) -> TimeOutput<()> {
+            Ok(self.time)
+        }
+    }
+    impl Updatable<()> for MyTimeGetter {
+        fn update(&mut self) -> NothingOrError<()> {
+            self.time += 1;
+            Ok(())
+        }
+    }
+
+    let mut my_history = MyHistory;
+    let my_time_getter = make_input_time_getter!(MyTimeGetter::new(), ());
+
+    {
+        let no_delta = GetterFromHistory::new_no_delta(&mut my_history, Rc::clone(&my_time_getter));
+        assert_eq!(no_delta.get().unwrap().unwrap(), Datum::new(5, 5));
+        my_time_getter.borrow_mut().update().unwrap();
+        assert_eq!(no_delta.get().unwrap().unwrap(), Datum::new(6, 6));
+    }
+
+    {
+        let start_at_zero = GetterFromHistory::new_start_at_zero(&mut my_history, Rc::clone(&my_time_getter)).unwrap();
+        assert_eq!(start_at_zero.get().unwrap().unwrap(), Datum::new(6, 0));
+        my_time_getter.borrow_mut().update().unwrap();
+        assert_eq!(start_at_zero.get().unwrap().unwrap(), Datum::new(7, 1));
+    }
+
+    {
+        let custom_start = GetterFromHistory::new_custom_start(&mut my_history, Rc::clone(&my_time_getter), 10).unwrap();
+        assert_eq!(custom_start.get().unwrap().unwrap(), Datum::new(7, 10));
+        my_time_getter.borrow_mut().update().unwrap();
+        assert_eq!(custom_start.get().unwrap().unwrap(), Datum::new(8, 11));
+    }
+
+    {
+        let custom_delta = GetterFromHistory::new_custom_delta(&mut my_history, Rc::clone(&my_time_getter), 5);
+        assert_eq!(custom_delta.get().unwrap().unwrap(), Datum::new(8, 13));
+        my_time_getter.borrow_mut().update().unwrap();
+        assert_eq!(custom_delta.get().unwrap().unwrap(), Datum::new(9, 14));
+    }
+
+    {
+        let mut getter = GetterFromHistory::new_no_delta(&mut my_history, Rc::clone(&my_time_getter));
+        assert_eq!(getter.get().unwrap().unwrap(), Datum::new(9, 9));
+        getter.set_delta(5);
+        assert_eq!(getter.get().unwrap().unwrap(), Datum::new(9, 14));
+        getter.set_time(20).unwrap();
+        assert_eq!(getter.get().unwrap().unwrap(), Datum::new(9, 20));
+    }
+}

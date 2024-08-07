@@ -795,9 +795,11 @@ impl<G, E: Copy + Debug> Updatable<E> for GetterFromHistory<'_, G, E> {
 }
 impl<G: Clone, E: Copy + Debug> Getter<G, E> for GetterFromHistory<'_, G, E> {
     fn get(&self) -> Output<G, E> {
-        Ok(self
-            .history
-            .get(self.time_getter.borrow().get()? + self.time_delta))
+        let time = self.time_getter.borrow().get()?;
+        Ok(match self.history.get(time + self.time_delta) {
+            Some(datum) => Some(Datum::new(time, datum.value)),
+            None => None,
+        })
     }
 }
 ///Getter for returning a constant value.
