@@ -846,6 +846,13 @@ impl<T: Clone, E: Copy + Debug> Updatable<E> for ConstantGetter<T, E> {
 }
 ///Getter always returning `Ok(None)`.
 pub struct NoneGetter;
+impl NoneGetter {
+    ///Constructor for `NoneGetter`. Since `NoneGetter` is a unit struct, you can use this or just
+    ///the struct's name.
+    pub fn new() -> Self {
+        Self
+    }
+}
 impl<T, E: Copy + Debug> Getter<T, E> for NoneGetter {
     fn get(&self) -> Output<T, E> {
         Ok(None)
