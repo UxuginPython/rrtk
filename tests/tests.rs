@@ -714,3 +714,10 @@ fn constant_getter() {
     constant_getter.set(20).unwrap();
     assert_eq!(constant_getter.get().unwrap().unwrap().value, 20);
 }
+#[test]
+fn none_getter() {
+    let mut getter = NoneGetter::new();
+    assert_eq!(<NoneGetter as Getter<(), ()>>::get(&getter), Ok(None));
+    <NoneGetter as Updatable<()>>::update(&mut getter).unwrap();
+    assert_eq!(<NoneGetter as Getter<(), ()>>::get(&getter), Ok(None));
+}
