@@ -887,6 +887,18 @@ impl<E: Copy + Debug> Terminal<'_, E> {
     pub fn new() -> RefCell<Self> {
         RefCell::new(Self::new_raw())
     }
+    ///Disconnect this terminal and the one that it is connected to. You can connect terminals by
+    ///calling the `rrtk::connect` function.
+    pub fn disconnect(&mut self) {
+        match self.other {
+            Some(other) => {
+                let mut other = other.borrow_mut();
+                other.other = None;
+                self.other = None;
+            },
+            None => ()
+        }
+    }
 }
 #[cfg(feature = "devices")]
 impl<E: Copy + Debug> Settable<Datum<State>, E> for Terminal<'_, E> {
@@ -946,7 +958,8 @@ impl<E: Copy + Debug> Updatable<E> for Terminal<'_, E> {
     }
 }
 ///Connect two terminals. Connected terminals should represent a physical connection between
-///mechanical devices.
+///mechanical devices. You can disconnect terminals by calling the `disconnect` method on either of
+///them.
 #[cfg(feature = "devices")]
 pub fn connect<'a, E: Copy + Debug>(
     term1: &'a RefCell<Terminal<'a, E>>,
