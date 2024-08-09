@@ -110,8 +110,19 @@ pub struct Axle<'a, const N: usize, E: Copy + Debug> {
 }
 impl<'a, const N: usize, E: Copy + Debug> Axle<'a, N, E> {
     ///Constructor for `Axle`.
-    pub fn new(inputs: [RefCell<Terminal<'a, E>>; N]) -> Self {
-        Self { inputs: inputs }
+    pub fn new() -> Self {
+        unsafe {
+            let mut inputs: [RefCell<Terminal<'a, E>>; N] = core::mem::MaybeUninit::uninit().assume_init();
+            for i in &mut inputs {
+                *i = Terminal::new();
+            }
+            Self { inputs: inputs }
+        }
+    }
+    ///Connect a terminal to one of the axle's.
+    pub fn connect(&self, terminal: usize, other: &'a RefCell<Terminal<'a, E>>) {
+        let mine = unsafe { &*(&self.inputs[terminal] as *const RefCell<Terminal<'a, E>>) };
+        connect(mine, other);
     }
 }
 impl<const N: usize, E: Copy + Debug> Updatable<E> for Axle<'_, N, E> {
