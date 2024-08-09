@@ -28,6 +28,11 @@ impl<'a, T: Settable<Command, E>, E: Copy + Debug> SettableCommandDeviceWrapper<
             terminal: Terminal::new(),
         }
     }
+    ///Connect a terminal to this wrapper's terminal.
+    pub fn connect(&self, other: &'a RefCell<Terminal<'a, E>>) {
+        let my_terminal = unsafe { &*(&self.terminal as *const RefCell<Terminal<'a, E>>) };
+        connect(my_terminal, other);
+    }
 }
 impl<T: Settable<Command, E>, E: Copy + Debug> Device<E>
     for SettableCommandDeviceWrapper<'_, T, E>
@@ -65,6 +70,11 @@ impl<'a, T: Getter<State, E>, E: Copy + Debug> GetterStateDeviceWrapper<'a, T, E
             inner: inner,
             terminal: Terminal::new(),
         }
+    }
+    ///Connect a terminal to this wrapper's terminal.
+    pub fn connect(&self, other: &'a RefCell<Terminal<'a, E>>) {
+        let my_terminal = unsafe { &*(&self.terminal as *const RefCell<Terminal<'a, E>>) };
+        connect(my_terminal, other);
     }
 }
 impl<T: Getter<State, E>, E: Copy + Debug> Device<E> for GetterStateDeviceWrapper<'_, T, E> {
