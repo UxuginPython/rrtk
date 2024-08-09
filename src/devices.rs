@@ -30,6 +30,20 @@ impl<'a, E: Copy + Debug> Invert<'a, E> {
             term2: Terminal::new(),
         }
     }
+    ///Connect another terminal to side 1 of the invert device.
+    pub fn connect_terminal_1(&mut self, other: &'a RefCell<Terminal<'a, E>>) {
+        //We don't want to extend the `&mut self` reference beyond the scope of the function, but
+        //we need the `term` reference to last for 'a, so we do this to get a reference with a
+        //longer lifetime. This should be OK since both terminals are restricted to the 'a
+        //lifetime.
+        let term1 = unsafe { &*(&self.term1 as *const RefCell<Terminal<'a, E>>) };
+        connect(term1, other);
+    }
+    ///Connect another terminal to side 2 of the invert device.
+    pub fn connect_terminal_2(&mut self, other: &'a RefCell<Terminal<'a, E>>) {
+        let term2 = unsafe { &*(&self.term1 as *const RefCell<Terminal<'a, E>>) };
+        connect(term2, other);
+    }
 }
 impl<E: Copy + Debug> Updatable<E> for Invert<'_, E> {
     fn update(&mut self) -> NothingOrError<E> {
