@@ -958,15 +958,20 @@ impl<E: Copy + Debug> Updatable<E> for Terminal<'_, E> {
     }
 }
 ///Connect two terminals. Connected terminals should represent a physical connection between
-///mechanical devices. You can disconnect terminals by calling the `disconnect` method on either of
-///them.
+///mechanical devices. This function will automatically disconnect the specified terminals if they
+///are connected. You can manually disconnect terminals by calling the `disconnect` method on
+///either of them.
 #[cfg(feature = "devices")]
 pub fn connect<'a, E: Copy + Debug>(
     term1: &'a RefCell<Terminal<'a, E>>,
     term2: &'a RefCell<Terminal<'a, E>>,
 ) {
-    term1.borrow_mut().other = Some(term2);
-    term2.borrow_mut().other = Some(term1);
+    let mut term1_borrow = term1.borrow_mut();
+    let mut term2_borrow = term2.borrow_mut();
+    term1_borrow.disconnect();
+    term2_borrow.disconnect();
+    term1_borrow.other = Some(term2);
+    term2_borrow.other = Some(term1);
 }
 //TODO; test this
 ///A mechanical device.
