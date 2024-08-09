@@ -180,31 +180,37 @@ pub struct Differential<'a, E: Copy + Debug> {
 }
 impl<'a, E: Copy + Debug> Differential<'a, E> {
     ///Constructor for `Differential`. Trusts all branches equally.
-    pub fn new(
-        side1: RefCell<Terminal<'a, E>>,
-        side2: RefCell<Terminal<'a, E>>,
-        sum: RefCell<Terminal<'a, E>>,
-    ) -> Self {
+    pub fn new() -> Self {
         Self {
-            side1: side1,
-            side2: side2,
-            sum: sum,
+            side1: Terminal::new(),
+            side2: Terminal::new(),
+            sum: Terminal::new(),
             distrust: DifferentialDistrust::Equal,
         }
     }
     ///Constructor for `Differential` where you choose what to distrust.
-    pub fn with_distrust(
-        side1: RefCell<Terminal<'a, E>>,
-        side2: RefCell<Terminal<'a, E>>,
-        sum: RefCell<Terminal<'a, E>>,
-        distrust: DifferentialDistrust,
-    ) -> Self {
+    pub fn with_distrust(distrust: DifferentialDistrust) -> Self {
         Self {
-            side1: side1,
-            side2: side2,
-            sum: sum,
+            side1: Terminal::new(),
+            side2: Terminal::new(),
+            sum: Terminal::new(),
             distrust: distrust,
         }
+    }
+    ///Connect a terminal to side 1 of the differential.
+    pub fn connect_side_1(&self, other: &'a RefCell<Terminal<'a, E>>) {
+        let side1 = unsafe { &*(&self.side1 as *const RefCell<Terminal<'a, E>>) };
+        connect(side1, other);
+    }
+    ///Connect a terminal to side 2 of the differential.
+    pub fn connect_side_2(&self, other: &'a RefCell<Terminal<'a, E>>) {
+        let side2 = unsafe { &*(&self.side2 as *const RefCell<Terminal<'a, E>>) };
+        connect(side2, other);
+    }
+    ///Connect a terminal to the sum axle terminal of the differential.
+    pub fn connect_sum(&self, other: &'a RefCell<Terminal<'a, E>>) {
+        let sum = unsafe { &*(&self.sum as *const RefCell<Terminal<'a, E>>) };
+        connect(sum, other);
     }
 }
 impl<E: Copy + Debug> Updatable<E> for Differential<'_, E> {
