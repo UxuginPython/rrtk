@@ -30,19 +30,17 @@ impl<'a, E: Copy + Debug> Invert<'a, E> {
             term2: Terminal::new(),
         }
     }
-    ///Connect another terminal to side 1 of the invert device.
-    pub fn connect_terminal_1(&self, other: &'a RefCell<Terminal<'a, E>>) {
+    ///Get a reference to the side 1 terminal of the invert device.
+    pub fn get_terminal_1(&self) -> &'a RefCell<Terminal<'a, E>> {
         //We don't want to extend the `&self` reference beyond the scope of the function, but we
         //need need the `term` reference to last for 'a, so we do this to get a reference with a
         //longer lifetime. This should be OK since both terminals are restricted to the 'a
         //lifetime.
-        let term1 = unsafe { &*(&self.term1 as *const RefCell<Terminal<'a, E>>) };
-        connect(term1, other);
+        unsafe { &*(&self.term1 as *const RefCell<Terminal<'a, E>>) }
     }
-    ///Connect another terminal to side 2 of the invert device.
-    pub fn connect_terminal_2(&self, other: &'a RefCell<Terminal<'a, E>>) {
-        let term2 = unsafe { &*(&self.term1 as *const RefCell<Terminal<'a, E>>) };
-        connect(term2, other);
+    ///Get a reference to the side 2 terminal of the invert device.
+    pub fn get_terminal_2(&self) -> &'a RefCell<Terminal<'a, E>> {
+        unsafe { &*(&self.term1 as *const RefCell<Terminal<'a, E>>) }
     }
 }
 impl<E: Copy + Debug> Updatable<E> for Invert<'_, E> {
@@ -119,10 +117,9 @@ impl<'a, const N: usize, E: Copy + Debug> Axle<'a, N, E> {
             Self { inputs: inputs }
         }
     }
-    ///Connect a terminal to one of the axle's.
-    pub fn connect(&self, terminal: usize, other: &'a RefCell<Terminal<'a, E>>) {
-        let mine = unsafe { &*(&self.inputs[terminal] as *const RefCell<Terminal<'a, E>>) };
-        connect(mine, other);
+    ///Get a reference to one of the axle's terminals.
+    pub fn get_terminal(&self, terminal: usize) -> &'a RefCell<Terminal<'a, E>> {
+        unsafe { &*(&self.inputs[terminal] as *const RefCell<Terminal<'a, E>>) }
     }
 }
 impl<const N: usize, E: Copy + Debug> Updatable<E> for Axle<'_, N, E> {
@@ -197,20 +194,17 @@ impl<'a, E: Copy + Debug> Differential<'a, E> {
             distrust: distrust,
         }
     }
-    ///Connect a terminal to side 1 of the differential.
-    pub fn connect_side_1(&self, other: &'a RefCell<Terminal<'a, E>>) {
-        let side1 = unsafe { &*(&self.side1 as *const RefCell<Terminal<'a, E>>) };
-        connect(side1, other);
+    ///Get a reference to the side 1 terminal of the differential.
+    pub fn get_side_1(&self) -> &'a RefCell<Terminal<'a, E>> {
+        unsafe { &*(&self.side1 as *const RefCell<Terminal<'a, E>>) }
     }
-    ///Connect a terminal to side 2 of the differential.
-    pub fn connect_side_2(&self, other: &'a RefCell<Terminal<'a, E>>) {
-        let side2 = unsafe { &*(&self.side2 as *const RefCell<Terminal<'a, E>>) };
-        connect(side2, other);
+    ///Get a reference to the side 2 terminal of the differential.
+    pub fn get_side_2(&self) -> &'a RefCell<Terminal<'a, E>> {
+        unsafe { &*(&self.side2 as *const RefCell<Terminal<'a, E>>) }
     }
-    ///Connect a terminal to the sum axle terminal of the differential.
-    pub fn connect_sum(&self, other: &'a RefCell<Terminal<'a, E>>) {
-        let sum = unsafe { &*(&self.sum as *const RefCell<Terminal<'a, E>>) };
-        connect(sum, other);
+    ///Get a reference to the sum terminal of the differential.
+    pub fn get_sum(&self) -> &'a RefCell<Terminal<'a, E>> {
+        unsafe { &*(&self.sum as *const RefCell<Terminal<'a, E>>) }
     }
 }
 impl<E: Copy + Debug> Updatable<E> for Differential<'_, E> {

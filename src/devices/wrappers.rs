@@ -28,10 +28,9 @@ impl<'a, T: Settable<Command, E>, E: Copy + Debug> SettableCommandDeviceWrapper<
             terminal: Terminal::new(),
         }
     }
-    ///Connect a terminal to this wrapper's terminal.
-    pub fn connect(&self, other: &'a RefCell<Terminal<'a, E>>) {
-        let my_terminal = unsafe { &*(&self.terminal as *const RefCell<Terminal<'a, E>>) };
-        connect(my_terminal, other);
+    ///Get a reference to this wrapper's terminal.
+    pub fn get_terminal(&self) -> &'a RefCell<Terminal<'a, E>> {
+        unsafe { &*(&self.terminal as *const RefCell<Terminal<'a, E>>) }
     }
 }
 impl<T: Settable<Command, E>, E: Copy + Debug> Device<E>
@@ -71,10 +70,9 @@ impl<'a, T: Getter<State, E>, E: Copy + Debug> GetterStateDeviceWrapper<'a, T, E
             terminal: Terminal::new(),
         }
     }
-    ///Connect a terminal to this wrapper's terminal.
-    pub fn connect(&self, other: &'a RefCell<Terminal<'a, E>>) {
-        let my_terminal = unsafe { &*(&self.terminal as *const RefCell<Terminal<'a, E>>) };
-        connect(my_terminal, other);
+    ///Get a reference to this wrapper's terminal.
+    pub fn get_terminal(&self) -> &'a RefCell<Terminal<'a, E>> {
+        unsafe { &*(&self.terminal as *const RefCell<Terminal<'a, E>>) }
     }
 }
 impl<T: Getter<State, E>, E: Copy + Debug> Device<E> for GetterStateDeviceWrapper<'_, T, E> {
