@@ -13,6 +13,7 @@ Copyright 2024 UxuginPython on GitHub
 #![cfg(feature = "devices")]
 use rrtk::*;
 use rrtk::devices::*;
+use rrtk::devices::wrappers::*;
 #[test]
 fn terminal() {
     let term1 = Terminal::<()>::new();
@@ -192,4 +193,47 @@ fn differential_distrust_sum() {
     assert_eq!(terminal1.borrow().get().unwrap().unwrap().value, State::new(TERM_1, TERM_1, TERM_1));
     assert_eq!(terminal2.borrow().get().unwrap().unwrap().value, State::new(TERM_2, TERM_2, TERM_2));
     assert_eq!(terminal_sum.borrow().get().unwrap().unwrap().value, State::new(TERM_SUM, TERM_SUM, TERM_SUM));
+}
+#[test]
+fn settable_command_device_wrapper() {
+    struct SettableCommand {
+        settable_data: SettableData<Command, ()>,
+    }
+    impl SettableCommand {
+        fn new() -> Self {
+            Self {
+                settable_data: SettableData::new(),
+            }
+        }
+    }
+    impl Settable<Command, ()> for SettableCommand {
+        fn  get_settable_data_ref(&self) -> &SettableData<Command, ()> {
+            &self.settable_data
+        }
+        fn  get_settable_data_mut(&mut self) -> &mut SettableData<Command, ()> {
+            &mut self.settable_data
+        }
+        fn impl_set(&mut self, _: Command) -> NothingOrError<()> {
+            Ok(())
+        }
+    }
+    impl Updatable<()> for SettableCommand {
+        fn update(&mut self) -> NothingOrError<()> {
+            dbg!(self.get_last_request());
+            assert_eq!(self.get_last_request().unwrap(), Command::new(PositionDerivative::Position, 5.0));
+            unsafe {
+                ASSERTED = true;
+            }
+            Ok(())
+        }
+    }
+    static mut ASSERTED: bool = false;
+    let mut wrapper = SettableCommandDeviceWrapper::new(SettableCommand::new());
+    let terminal = Terminal::new();
+    connect(wrapper.get_terminal(), &terminal);
+    terminal.borrow_mut().set(Datum::new(0, Command::new(PositionDerivative::Position, 5.0))).unwrap();
+    wrapper.update().unwrap();
+    unsafe {
+        assert!(ASSERTED);
+    }
 }

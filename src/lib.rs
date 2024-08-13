@@ -870,6 +870,7 @@ pub struct Terminal<'a, E: Copy + Debug> {
     settable_data_state: SettableData<Datum<State>, E>,
     settable_data_command: SettableData<Datum<Command>, E>,
     other: Option<&'a RefCell<Terminal<'a, E>>>,
+    no_recurse_set_command: bool,
 }
 #[cfg(feature = "devices")]
 impl<E: Copy + Debug> Terminal<'_, E> {
@@ -880,6 +881,7 @@ impl<E: Copy + Debug> Terminal<'_, E> {
             settable_data_state: SettableData::new(),
             settable_data_command: SettableData::new(),
             other: None,
+            no_recurse_set_command: false,
         }
     }
     ///This constructs a `RefCell<Terminal>`. This is almost always what you want, and what is
@@ -890,6 +892,7 @@ impl<E: Copy + Debug> Terminal<'_, E> {
     ///Disconnect this terminal and the one that it is connected to. You can connect terminals by
     ///calling the `rrtk::connect` function.
     pub fn disconnect(&mut self) {
+        debug_assert!(!self.no_recurse_set_command);
         match self.other {
             Some(other) => {
                 let mut other = other.borrow_mut();
@@ -921,8 +924,16 @@ impl<E: Copy + Debug> Settable<Datum<Command>, E> for Terminal<'_, E> {
     fn get_settable_data_mut(&mut self) -> &mut SettableData<Datum<Command>, E> {
         &mut self.settable_data_command
     }
-    //SettableData takes care of this for us.
-    fn impl_set(&mut self, _command: Datum<Command>) -> NothingOrError<E> {
+    fn impl_set(&mut self, command: Datum<Command>) -> NothingOrError<E> {
+        match self.other {
+            Some(other) => if !self.no_recurse_set_command {
+                let mut other_borrow = other.borrow_mut();
+                other_borrow.no_recurse_set_command = true;
+                other_borrow.set(command)?;
+                other_borrow.no_recurse_set_command = false;
+            },
+            None => {},
+        }
         Ok(())
     }
 }

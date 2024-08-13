@@ -53,6 +53,7 @@ impl<T: Settable<Command, E>, E: Copy + Debug> Updatable<E>
             }
             None => {}
         }
+        self.inner.update()?;
         Ok(())
     }
 }
