@@ -81,3 +81,19 @@ fn invert() {
     assert_eq!(terminal1.borrow().get().unwrap().unwrap().value, State::new((((1.0 + 4.0) / 2.0) + 1.0) / 2.0, ((2.0 + 5.0) / 2.0 + 2.0) / 2.0, ((3.0 + 6.0) / 2.0 + 3.0) / 2.0));
     assert_eq!(terminal2.borrow().get().unwrap().unwrap().value, State::new(-(((1.0 + 4.0) / 2.0) + 4.0) / 2.0, -((2.0 + 5.0) / 2.0 + 5.0) / 2.0, -((3.0 + 6.0) / 2.0 + 6.0) / 2.0));
 }
+#[test]
+fn axle() {
+    let mut axle = Axle::<3, ()>::new();
+    let terminal1 = Terminal::new();
+    let terminal2 = Terminal::new();
+    let terminal3 = Terminal::new();
+    terminal1.borrow_mut().set(Datum::new(0, State::new(1.0, 2.0, 3.0))).unwrap();
+    terminal2.borrow_mut().set(Datum::new(0, State::new(4.0, 5.0, 6.0))).unwrap();
+    connect(axle.get_terminal(0), &terminal1);
+    connect(axle.get_terminal(1), &terminal2);
+    connect(axle.get_terminal(2), &terminal3);
+    axle.update().unwrap();
+    assert_eq!(terminal1.borrow().get().unwrap().unwrap().value, State::new(((1.0 + 4.0) / 2.0 + 1.0) / 2.0, ((2.0 + 5.0) / 2.0 + 2.0) / 2.0, ((3.0 + 6.0) / 2.0 + 3.0) / 2.0));
+    assert_eq!(terminal2.borrow().get().unwrap().unwrap().value, State::new(((1.0 + 4.0) / 2.0 + 4.0) / 2.0, ((2.0 + 5.0) / 2.0 + 5.0) / 2.0, ((3.0 + 6.0) / 2.0 + 6.0) / 2.0));
+    assert_eq!(terminal3.borrow().get().unwrap().unwrap().value, State::new(2.5, 3.5, 4.5));
+}
