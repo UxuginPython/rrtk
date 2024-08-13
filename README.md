@@ -117,3 +117,15 @@ Add moving average stream.
 ### 0.4.0-beta.1
 - Make differential calculations able to trust all branches equally instead of ignoring one.
 - Remove unnecessary `Box`ing from `InputGetter` and `InputTimeGetter`.
+### 0.4.0-beta.2
+- Rename `following_update` to `update_following_data` and remove `update` calls from it.
+- Make `GetterFromHistory` use `&mut dyn History` instead of `Box<dyn History>` and make its constructors take `impl History` instead of `dyn History`.
+- Remove now-unnecessary `new_for_motion_profile` constructor for `GetterFromHistory`.
+- Remove `Clone` bound on `History<T, _>`'s `T`.
+- Make `GetterFromHistory` return the requested timestamp as its `Datum` timestamp rather than that that the internal `History` returns.
+- Make `make_input_getter` and `make_input_time_getter` functions instead of macros.
+- Add `NoneGetter` constructor. (It is a unit struct, so this is redundant.);
+- Add a `disconnect` method to `Terminal`.
+- Add methods to builtin devices for getting references to their terminals.
+- Slightly improve performance of `Terminal`'s `get` implementation by using an array of `MaybeUninit` rather than `Vec`.
+- Minor documentation fixes.

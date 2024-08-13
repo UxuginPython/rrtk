@@ -929,13 +929,14 @@ impl<E: Copy + Debug> Settable<Datum<Command>, E> for Terminal<'_, E> {
 #[cfg(feature = "devices")]
 impl<E: Copy + Debug> Getter<State, E> for Terminal<'_, E> {
     fn get(&self) -> Output<State, E> {
-        let mut addends: [core::mem::MaybeUninit<Datum<State>>; 2] = [core::mem::MaybeUninit::uninit(); 2];
+        let mut addends: [core::mem::MaybeUninit<Datum<State>>; 2] =
+            [core::mem::MaybeUninit::uninit(); 2];
         let mut addend_count = 0usize;
         match self.get_last_request() {
             Some(state) => {
                 addends[0].write(state);
                 addend_count += 1;
-            },
+            }
             None => (),
         }
         match self.other {
@@ -943,7 +944,7 @@ impl<E: Copy + Debug> Getter<State, E> for Terminal<'_, E> {
                 Some(state) => {
                     addends[addend_count].write(state);
                     addend_count += 1;
-                },
+                }
                 None => (),
             },
             None => (),
@@ -952,7 +953,11 @@ impl<E: Copy + Debug> Getter<State, E> for Terminal<'_, E> {
             match addend_count {
                 0 => return Ok(None),
                 1 => return Ok(Some(addends[0].assume_init())),
-                2 => return Ok(Some((addends[0].assume_init() + addends[1].assume_init()) / 2.0)),
+                2 => {
+                    return Ok(Some(
+                        (addends[0].assume_init() + addends[1].assume_init()) / 2.0,
+                    ))
+                }
                 _ => unimplemented!(),
             }
         }
