@@ -11,9 +11,9 @@ Copyright 2024 UxuginPython on GitHub
     You should have received a copy of the GNU Lesser General Public License along with Rust Robotics ToolKit. If not, see <https://www.gnu.org/licenses/>.
 */
 #![cfg(feature = "devices")]
-use rrtk::*;
-use rrtk::devices::*;
 use rrtk::devices::wrappers::*;
+use rrtk::devices::*;
+use rrtk::*;
 #[test]
 fn terminal() {
     let term1 = Terminal::<()>::new();
@@ -54,33 +54,71 @@ fn invert() {
     let mut invert = Invert::new();
     let terminal1 = Terminal::<()>::new();
     let terminal2 = Terminal::<()>::new();
-    terminal1.borrow_mut().set(Datum::new(0, State::new(1.0, 2.0, 3.0))).unwrap();
+    terminal1
+        .borrow_mut()
+        .set(Datum::new(0, State::new(1.0, 2.0, 3.0)))
+        .unwrap();
     connect(invert.get_terminal_1(), &terminal1);
     connect(invert.get_terminal_2(), &terminal2);
     invert.update().unwrap();
-    assert_eq!(terminal1.borrow().get().unwrap().unwrap().value, State::new(1.0, 2.0, 3.0));
-    assert_eq!(terminal2.borrow().get().unwrap().unwrap().value, State::new(-1.0, -2.0, -3.0));
+    assert_eq!(
+        terminal1.borrow().get().unwrap().unwrap().value,
+        State::new(1.0, 2.0, 3.0)
+    );
+    assert_eq!(
+        terminal2.borrow().get().unwrap().unwrap().value,
+        State::new(-1.0, -2.0, -3.0)
+    );
 
     let mut invert = Invert::new();
     let terminal1 = Terminal::<()>::new();
     let terminal2 = Terminal::<()>::new();
-    terminal2.borrow_mut().set(Datum::new(0, State::new(-1.0, -2.0, -3.0))).unwrap();
+    terminal2
+        .borrow_mut()
+        .set(Datum::new(0, State::new(-1.0, -2.0, -3.0)))
+        .unwrap();
     connect(invert.get_terminal_1(), &terminal1);
     connect(invert.get_terminal_2(), &terminal2);
     invert.update().unwrap();
-    assert_eq!(terminal1.borrow().get().unwrap().unwrap().value, State::new(1.0, 2.0, 3.0));
-    assert_eq!(terminal2.borrow().get().unwrap().unwrap().value, State::new(-1.0, -2.0, -3.0));
+    assert_eq!(
+        terminal1.borrow().get().unwrap().unwrap().value,
+        State::new(1.0, 2.0, 3.0)
+    );
+    assert_eq!(
+        terminal2.borrow().get().unwrap().unwrap().value,
+        State::new(-1.0, -2.0, -3.0)
+    );
 
     let mut invert = Invert::new();
     let terminal1 = Terminal::<()>::new();
     let terminal2 = Terminal::<()>::new();
-    terminal1.borrow_mut().set(Datum::new(0, State::new(1.0, 2.0, 3.0))).unwrap();
-    terminal2.borrow_mut().set(Datum::new(0, State::new(-4.0, -5.0, -6.0))).unwrap();
+    terminal1
+        .borrow_mut()
+        .set(Datum::new(0, State::new(1.0, 2.0, 3.0)))
+        .unwrap();
+    terminal2
+        .borrow_mut()
+        .set(Datum::new(0, State::new(-4.0, -5.0, -6.0)))
+        .unwrap();
     connect(invert.get_terminal_1(), &terminal1);
     connect(invert.get_terminal_2(), &terminal2);
     invert.update().unwrap();
-    assert_eq!(terminal1.borrow().get().unwrap().unwrap().value, State::new((((1.0 + 4.0) / 2.0) + 1.0) / 2.0, ((2.0 + 5.0) / 2.0 + 2.0) / 2.0, ((3.0 + 6.0) / 2.0 + 3.0) / 2.0));
-    assert_eq!(terminal2.borrow().get().unwrap().unwrap().value, State::new(-(((1.0 + 4.0) / 2.0) + 4.0) / 2.0, -((2.0 + 5.0) / 2.0 + 5.0) / 2.0, -((3.0 + 6.0) / 2.0 + 6.0) / 2.0));
+    assert_eq!(
+        terminal1.borrow().get().unwrap().unwrap().value,
+        State::new(
+            (((1.0 + 4.0) / 2.0) + 1.0) / 2.0,
+            ((2.0 + 5.0) / 2.0 + 2.0) / 2.0,
+            ((3.0 + 6.0) / 2.0 + 3.0) / 2.0
+        )
+    );
+    assert_eq!(
+        terminal2.borrow().get().unwrap().unwrap().value,
+        State::new(
+            -(((1.0 + 4.0) / 2.0) + 4.0) / 2.0,
+            -((2.0 + 5.0) / 2.0 + 5.0) / 2.0,
+            -((3.0 + 6.0) / 2.0 + 6.0) / 2.0
+        )
+    );
 }
 #[test]
 fn axle() {
@@ -88,15 +126,38 @@ fn axle() {
     let terminal1 = Terminal::new();
     let terminal2 = Terminal::new();
     let terminal3 = Terminal::new();
-    terminal1.borrow_mut().set(Datum::new(0, State::new(1.0, 2.0, 3.0))).unwrap();
-    terminal2.borrow_mut().set(Datum::new(0, State::new(4.0, 5.0, 6.0))).unwrap();
+    terminal1
+        .borrow_mut()
+        .set(Datum::new(0, State::new(1.0, 2.0, 3.0)))
+        .unwrap();
+    terminal2
+        .borrow_mut()
+        .set(Datum::new(0, State::new(4.0, 5.0, 6.0)))
+        .unwrap();
     connect(axle.get_terminal(0), &terminal1);
     connect(axle.get_terminal(1), &terminal2);
     connect(axle.get_terminal(2), &terminal3);
     axle.update().unwrap();
-    assert_eq!(terminal1.borrow().get().unwrap().unwrap().value, State::new(((1.0 + 4.0) / 2.0 + 1.0) / 2.0, ((2.0 + 5.0) / 2.0 + 2.0) / 2.0, ((3.0 + 6.0) / 2.0 + 3.0) / 2.0));
-    assert_eq!(terminal2.borrow().get().unwrap().unwrap().value, State::new(((1.0 + 4.0) / 2.0 + 4.0) / 2.0, ((2.0 + 5.0) / 2.0 + 5.0) / 2.0, ((3.0 + 6.0) / 2.0 + 6.0) / 2.0));
-    assert_eq!(terminal3.borrow().get().unwrap().unwrap().value, State::new(2.5, 3.5, 4.5));
+    assert_eq!(
+        terminal1.borrow().get().unwrap().unwrap().value,
+        State::new(
+            ((1.0 + 4.0) / 2.0 + 1.0) / 2.0,
+            ((2.0 + 5.0) / 2.0 + 2.0) / 2.0,
+            ((3.0 + 6.0) / 2.0 + 3.0) / 2.0
+        )
+    );
+    assert_eq!(
+        terminal2.borrow().get().unwrap().unwrap().value,
+        State::new(
+            ((1.0 + 4.0) / 2.0 + 4.0) / 2.0,
+            ((2.0 + 5.0) / 2.0 + 5.0) / 2.0,
+            ((3.0 + 6.0) / 2.0 + 6.0) / 2.0
+        )
+    );
+    assert_eq!(
+        terminal3.borrow().get().unwrap().unwrap().value,
+        State::new(2.5, 3.5, 4.5)
+    );
 }
 #[test]
 fn differential() {
@@ -104,9 +165,18 @@ fn differential() {
     let terminal1 = Terminal::new();
     let terminal2 = Terminal::new();
     let terminal_sum = Terminal::new();
-    terminal1.borrow_mut().set(Datum::new(0, State::new(2.0, 2.0, 2.0))).unwrap();
-    terminal2.borrow_mut().set(Datum::new(0, State::new(3.0, 3.0, 3.0))).unwrap();
-    terminal_sum.borrow_mut().set(Datum::new(0, State::new(4.0, 4.0, 4.0))).unwrap();
+    terminal1
+        .borrow_mut()
+        .set(Datum::new(0, State::new(2.0, 2.0, 2.0)))
+        .unwrap();
+    terminal2
+        .borrow_mut()
+        .set(Datum::new(0, State::new(3.0, 3.0, 3.0)))
+        .unwrap();
+    terminal_sum
+        .borrow_mut()
+        .set(Datum::new(0, State::new(4.0, 4.0, 4.0)))
+        .unwrap();
     connect(differential.get_side_1(), &terminal1);
     connect(differential.get_side_2(), &terminal2);
     connect(differential.get_sum(), &terminal_sum);
@@ -118,9 +188,18 @@ fn differential() {
     const TERM_1: f32 = (EST_1 + 2.0) / 2.0;
     const TERM_2: f32 = (EST_2 + 3.0) / 2.0;
     const TERM_SUM: f32 = (EST_SUM + 4.0) / 2.0;
-    assert_eq!(terminal1.borrow().get().unwrap().unwrap().value, State::new(TERM_1, TERM_1, TERM_1));
-    assert_eq!(terminal2.borrow().get().unwrap().unwrap().value, State::new(TERM_2, TERM_2, TERM_2));
-    assert_eq!(terminal_sum.borrow().get().unwrap().unwrap().value, State::new(TERM_SUM, TERM_SUM, TERM_SUM));
+    assert_eq!(
+        terminal1.borrow().get().unwrap().unwrap().value,
+        State::new(TERM_1, TERM_1, TERM_1)
+    );
+    assert_eq!(
+        terminal2.borrow().get().unwrap().unwrap().value,
+        State::new(TERM_2, TERM_2, TERM_2)
+    );
+    assert_eq!(
+        terminal_sum.borrow().get().unwrap().unwrap().value,
+        State::new(TERM_SUM, TERM_SUM, TERM_SUM)
+    );
 }
 #[test]
 fn differential_distrust_side_1() {
@@ -128,9 +207,18 @@ fn differential_distrust_side_1() {
     let terminal1 = Terminal::new();
     let terminal2 = Terminal::new();
     let terminal_sum = Terminal::new();
-    terminal1.borrow_mut().set(Datum::new(0, State::new(2.0, 2.0, 2.0))).unwrap();
-    terminal2.borrow_mut().set(Datum::new(0, State::new(3.0, 3.0, 3.0))).unwrap();
-    terminal_sum.borrow_mut().set(Datum::new(0, State::new(4.0, 4.0, 4.0))).unwrap();
+    terminal1
+        .borrow_mut()
+        .set(Datum::new(0, State::new(2.0, 2.0, 2.0)))
+        .unwrap();
+    terminal2
+        .borrow_mut()
+        .set(Datum::new(0, State::new(3.0, 3.0, 3.0)))
+        .unwrap();
+    terminal_sum
+        .borrow_mut()
+        .set(Datum::new(0, State::new(4.0, 4.0, 4.0)))
+        .unwrap();
     connect(differential.get_side_1(), &terminal1);
     connect(differential.get_side_2(), &terminal2);
     connect(differential.get_sum(), &terminal_sum);
@@ -142,9 +230,18 @@ fn differential_distrust_side_1() {
     const TERM_1: f32 = (EST_1 + 2.0) / 2.0;
     const TERM_2: f32 = (EST_2 + 3.0) / 2.0;
     const TERM_SUM: f32 = (EST_SUM + 4.0) / 2.0;
-    assert_eq!(terminal1.borrow().get().unwrap().unwrap().value, State::new(TERM_1, TERM_1, TERM_1));
-    assert_eq!(terminal2.borrow().get().unwrap().unwrap().value, State::new(TERM_2, TERM_2, TERM_2));
-    assert_eq!(terminal_sum.borrow().get().unwrap().unwrap().value, State::new(TERM_SUM, TERM_SUM, TERM_SUM));
+    assert_eq!(
+        terminal1.borrow().get().unwrap().unwrap().value,
+        State::new(TERM_1, TERM_1, TERM_1)
+    );
+    assert_eq!(
+        terminal2.borrow().get().unwrap().unwrap().value,
+        State::new(TERM_2, TERM_2, TERM_2)
+    );
+    assert_eq!(
+        terminal_sum.borrow().get().unwrap().unwrap().value,
+        State::new(TERM_SUM, TERM_SUM, TERM_SUM)
+    );
 }
 #[test]
 fn differential_distrust_side_2() {
@@ -152,9 +249,18 @@ fn differential_distrust_side_2() {
     let terminal1 = Terminal::new();
     let terminal2 = Terminal::new();
     let terminal_sum = Terminal::new();
-    terminal1.borrow_mut().set(Datum::new(0, State::new(2.0, 2.0, 2.0))).unwrap();
-    terminal2.borrow_mut().set(Datum::new(0, State::new(3.0, 3.0, 3.0))).unwrap();
-    terminal_sum.borrow_mut().set(Datum::new(0, State::new(4.0, 4.0, 4.0))).unwrap();
+    terminal1
+        .borrow_mut()
+        .set(Datum::new(0, State::new(2.0, 2.0, 2.0)))
+        .unwrap();
+    terminal2
+        .borrow_mut()
+        .set(Datum::new(0, State::new(3.0, 3.0, 3.0)))
+        .unwrap();
+    terminal_sum
+        .borrow_mut()
+        .set(Datum::new(0, State::new(4.0, 4.0, 4.0)))
+        .unwrap();
     connect(differential.get_side_1(), &terminal1);
     connect(differential.get_side_2(), &terminal2);
     connect(differential.get_sum(), &terminal_sum);
@@ -166,9 +272,18 @@ fn differential_distrust_side_2() {
     const TERM_1: f32 = (EST_1 + 2.0) / 2.0;
     const TERM_2: f32 = (EST_2 + 3.0) / 2.0;
     const TERM_SUM: f32 = (EST_SUM + 4.0) / 2.0;
-    assert_eq!(terminal1.borrow().get().unwrap().unwrap().value, State::new(TERM_1, TERM_1, TERM_1));
-    assert_eq!(terminal2.borrow().get().unwrap().unwrap().value, State::new(TERM_2, TERM_2, TERM_2));
-    assert_eq!(terminal_sum.borrow().get().unwrap().unwrap().value, State::new(TERM_SUM, TERM_SUM, TERM_SUM));
+    assert_eq!(
+        terminal1.borrow().get().unwrap().unwrap().value,
+        State::new(TERM_1, TERM_1, TERM_1)
+    );
+    assert_eq!(
+        terminal2.borrow().get().unwrap().unwrap().value,
+        State::new(TERM_2, TERM_2, TERM_2)
+    );
+    assert_eq!(
+        terminal_sum.borrow().get().unwrap().unwrap().value,
+        State::new(TERM_SUM, TERM_SUM, TERM_SUM)
+    );
 }
 #[test]
 fn differential_distrust_sum() {
@@ -176,9 +291,18 @@ fn differential_distrust_sum() {
     let terminal1 = Terminal::new();
     let terminal2 = Terminal::new();
     let terminal_sum = Terminal::new();
-    terminal1.borrow_mut().set(Datum::new(0, State::new(2.0, 2.0, 2.0))).unwrap();
-    terminal2.borrow_mut().set(Datum::new(0, State::new(3.0, 3.0, 3.0))).unwrap();
-    terminal_sum.borrow_mut().set(Datum::new(0, State::new(4.0, 4.0, 4.0))).unwrap();
+    terminal1
+        .borrow_mut()
+        .set(Datum::new(0, State::new(2.0, 2.0, 2.0)))
+        .unwrap();
+    terminal2
+        .borrow_mut()
+        .set(Datum::new(0, State::new(3.0, 3.0, 3.0)))
+        .unwrap();
+    terminal_sum
+        .borrow_mut()
+        .set(Datum::new(0, State::new(4.0, 4.0, 4.0)))
+        .unwrap();
     connect(differential.get_side_1(), &terminal1);
     connect(differential.get_side_2(), &terminal2);
     connect(differential.get_sum(), &terminal_sum);
@@ -190,9 +314,18 @@ fn differential_distrust_sum() {
     const TERM_1: f32 = (EST_1 + 2.0) / 2.0;
     const TERM_2: f32 = (EST_2 + 3.0) / 2.0;
     const TERM_SUM: f32 = (EST_SUM + 4.0) / 2.0;
-    assert_eq!(terminal1.borrow().get().unwrap().unwrap().value, State::new(TERM_1, TERM_1, TERM_1));
-    assert_eq!(terminal2.borrow().get().unwrap().unwrap().value, State::new(TERM_2, TERM_2, TERM_2));
-    assert_eq!(terminal_sum.borrow().get().unwrap().unwrap().value, State::new(TERM_SUM, TERM_SUM, TERM_SUM));
+    assert_eq!(
+        terminal1.borrow().get().unwrap().unwrap().value,
+        State::new(TERM_1, TERM_1, TERM_1)
+    );
+    assert_eq!(
+        terminal2.borrow().get().unwrap().unwrap().value,
+        State::new(TERM_2, TERM_2, TERM_2)
+    );
+    assert_eq!(
+        terminal_sum.borrow().get().unwrap().unwrap().value,
+        State::new(TERM_SUM, TERM_SUM, TERM_SUM)
+    );
 }
 #[test]
 fn settable_command_device_wrapper() {
@@ -207,10 +340,10 @@ fn settable_command_device_wrapper() {
         }
     }
     impl Settable<Command, ()> for SettableCommand {
-        fn  get_settable_data_ref(&self) -> &SettableData<Command, ()> {
+        fn get_settable_data_ref(&self) -> &SettableData<Command, ()> {
             &self.settable_data
         }
-        fn  get_settable_data_mut(&mut self) -> &mut SettableData<Command, ()> {
+        fn get_settable_data_mut(&mut self) -> &mut SettableData<Command, ()> {
             &mut self.settable_data
         }
         fn impl_set(&mut self, _: Command) -> NothingOrError<()> {
@@ -220,7 +353,10 @@ fn settable_command_device_wrapper() {
     impl Updatable<()> for SettableCommand {
         fn update(&mut self) -> NothingOrError<()> {
             dbg!(self.get_last_request());
-            assert_eq!(self.get_last_request().unwrap(), Command::new(PositionDerivative::Position, 5.0));
+            assert_eq!(
+                self.get_last_request().unwrap(),
+                Command::new(PositionDerivative::Position, 5.0)
+            );
             unsafe {
                 ASSERTED = true;
             }
@@ -231,7 +367,13 @@ fn settable_command_device_wrapper() {
     let mut wrapper = SettableCommandDeviceWrapper::new(SettableCommand::new());
     let terminal = Terminal::new();
     connect(wrapper.get_terminal(), &terminal);
-    terminal.borrow_mut().set(Datum::new(0, Command::new(PositionDerivative::Position, 5.0))).unwrap();
+    terminal
+        .borrow_mut()
+        .set(Datum::new(
+            0,
+            Command::new(PositionDerivative::Position, 5.0),
+        ))
+        .unwrap();
     wrapper.update().unwrap();
     unsafe {
         assert!(ASSERTED);

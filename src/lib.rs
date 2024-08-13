@@ -926,13 +926,15 @@ impl<E: Copy + Debug> Settable<Datum<Command>, E> for Terminal<'_, E> {
     }
     fn impl_set(&mut self, command: Datum<Command>) -> NothingOrError<E> {
         match self.other {
-            Some(other) => if !self.no_recurse_set_command {
-                let mut other_borrow = other.borrow_mut();
-                other_borrow.no_recurse_set_command = true;
-                other_borrow.set(command)?;
-                other_borrow.no_recurse_set_command = false;
-            },
-            None => {},
+            Some(other) => {
+                if !self.no_recurse_set_command {
+                    let mut other_borrow = other.borrow_mut();
+                    other_borrow.no_recurse_set_command = true;
+                    other_borrow.set(command)?;
+                    other_borrow.no_recurse_set_command = false;
+                }
+            }
+            None => {}
         }
         Ok(())
     }
