@@ -45,6 +45,7 @@ impl<T: Settable<Command, E>, E: Copy + Debug> Updatable<E>
     for SettableCommandDeviceWrapper<'_, T, E>
 {
     fn update(&mut self) -> NothingOrError<E> {
+        self.update_terminals()?;
         match <Terminal<E> as Settable<Datum<Command>, E>>::get_last_request(
             &self.terminal.borrow(),
         ) {
