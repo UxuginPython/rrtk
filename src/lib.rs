@@ -600,8 +600,8 @@ pub trait Getter<G, E: Copy + Debug>: Updatable<E> {
 }
 ///Internal data needed for following a `Getter` with a `Settable`.
 pub struct SettableData<S, E: Copy + Debug> {
-    pub(crate) following: SettableFollowing<S, E>,
-    pub(crate) last_request: Option<S>,
+    following: SettableFollowing<S, E>,
+    last_request: Option<S>,
 }
 impl<S, E: Copy + Debug> SettableData<S, E> {
     ///Constructor for SettableData.
