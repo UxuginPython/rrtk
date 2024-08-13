@@ -97,3 +97,27 @@ fn axle() {
     assert_eq!(terminal2.borrow().get().unwrap().unwrap().value, State::new(((1.0 + 4.0) / 2.0 + 4.0) / 2.0, ((2.0 + 5.0) / 2.0 + 5.0) / 2.0, ((3.0 + 6.0) / 2.0 + 6.0) / 2.0));
     assert_eq!(terminal3.borrow().get().unwrap().unwrap().value, State::new(2.5, 3.5, 4.5));
 }
+#[test]
+fn differential() {
+    let mut differential = Differential::<()>::new();
+    let terminal1 = Terminal::new();
+    let terminal2 = Terminal::new();
+    let terminal_sum = Terminal::new();
+    terminal1.borrow_mut().set(Datum::new(0, State::new(2.0, 2.0, 2.0))).unwrap();
+    terminal2.borrow_mut().set(Datum::new(0, State::new(3.0, 3.0, 3.0))).unwrap();
+    terminal_sum.borrow_mut().set(Datum::new(0, State::new(4.0, 4.0, 4.0))).unwrap();
+    connect(differential.get_side_1(), &terminal1);
+    connect(differential.get_side_2(), &terminal2);
+    connect(differential.get_sum(), &terminal_sum);
+    differential.update().unwrap();
+    const EST_1: f32 = 1.6666666666;
+    const EST_2: f32 = 2.6666666666;
+    const EST_SUM: f32 = 4.333333333333;
+    assert_eq!(EST_1 + EST_2, EST_SUM);
+    const TERM_1: f32 = (EST_1 + 2.0) / 2.0;
+    const TERM_2: f32 = (EST_2 + 3.0) / 2.0;
+    const TERM_SUM: f32 = (EST_SUM + 4.0) / 2.0;
+    assert_eq!(terminal1.borrow().get().unwrap().unwrap().value, State::new(TERM_1, TERM_1, TERM_1));
+    assert_eq!(terminal2.borrow().get().unwrap().unwrap().value, State::new(TERM_2, TERM_2, TERM_2));
+    assert_eq!(terminal_sum.borrow().get().unwrap().unwrap().value, State::new(TERM_SUM, TERM_SUM, TERM_SUM));
+}
