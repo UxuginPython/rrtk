@@ -12,6 +12,7 @@ Copyright 2024 UxuginPython on GitHub
 */
 #![cfg(feature = "devices")]
 use rrtk::*;
+use rrtk::devices::*;
 #[test]
 fn terminal() {
     let term1 = Terminal::<()>::new();
@@ -46,4 +47,37 @@ fn terminal() {
         ))
         .unwrap(); //The stuff from `Settable` should take care of everything.
     term1.borrow_mut().update().unwrap(); //This should do nothing.
+}
+#[test]
+fn invert() {
+    let mut invert = Invert::new();
+    let terminal1 = Terminal::<()>::new();
+    let terminal2 = Terminal::<()>::new();
+    terminal1.borrow_mut().set(Datum::new(0, State::new(1.0, 2.0, 3.0))).unwrap();
+    connect(invert.get_terminal_1(), &terminal1);
+    connect(invert.get_terminal_2(), &terminal2);
+    invert.update().unwrap();
+    assert_eq!(terminal1.borrow().get().unwrap().unwrap().value, State::new(1.0, 2.0, 3.0));
+    assert_eq!(terminal2.borrow().get().unwrap().unwrap().value, State::new(-1.0, -2.0, -3.0));
+
+    let mut invert = Invert::new();
+    let terminal1 = Terminal::<()>::new();
+    let terminal2 = Terminal::<()>::new();
+    terminal2.borrow_mut().set(Datum::new(0, State::new(-1.0, -2.0, -3.0))).unwrap();
+    connect(invert.get_terminal_1(), &terminal1);
+    connect(invert.get_terminal_2(), &terminal2);
+    invert.update().unwrap();
+    assert_eq!(terminal1.borrow().get().unwrap().unwrap().value, State::new(1.0, 2.0, 3.0));
+    assert_eq!(terminal2.borrow().get().unwrap().unwrap().value, State::new(-1.0, -2.0, -3.0));
+
+    let mut invert = Invert::new();
+    let terminal1 = Terminal::<()>::new();
+    let terminal2 = Terminal::<()>::new();
+    terminal1.borrow_mut().set(Datum::new(0, State::new(1.0, 2.0, 3.0))).unwrap();
+    terminal2.borrow_mut().set(Datum::new(0, State::new(-4.0, -5.0, -6.0))).unwrap();
+    connect(invert.get_terminal_1(), &terminal1);
+    connect(invert.get_terminal_2(), &terminal2);
+    invert.update().unwrap();
+    assert_eq!(terminal1.borrow().get().unwrap().unwrap().value, State::new((((1.0 + 4.0) / 2.0) + 1.0) / 2.0, ((2.0 + 5.0) / 2.0 + 2.0) / 2.0, ((3.0 + 6.0) / 2.0 + 3.0) / 2.0));
+    assert_eq!(terminal2.borrow().get().unwrap().unwrap().value, State::new(-(((1.0 + 4.0) / 2.0) + 4.0) / 2.0, -((2.0 + 5.0) / 2.0 + 5.0) / 2.0, -((3.0 + 6.0) / 2.0 + 6.0) / 2.0));
 }

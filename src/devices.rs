@@ -40,7 +40,7 @@ impl<'a, E: Copy + Debug> Invert<'a, E> {
     }
     ///Get a reference to the side 2 terminal of the invert device.
     pub fn get_terminal_2(&self) -> &'a RefCell<Terminal<'a, E>> {
-        unsafe { &*(&self.term1 as *const RefCell<Terminal<'a, E>>) }
+        unsafe { &*(&self.term2 as *const RefCell<Terminal<'a, E>>) }
     }
 }
 impl<E: Copy + Debug> Updatable<E> for Invert<'_, E> {
