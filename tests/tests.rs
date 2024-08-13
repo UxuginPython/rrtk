@@ -599,7 +599,9 @@ fn getter_from_history() {
     impl History<i64, ()> for MyHistory {
         fn get(&self, time: i64) -> Option<Datum<i64>> {
             match self.update_test_state {
-                UpdateTestState::Unneeded | UpdateTestState::Waiting => Some(Datum::new(time, time)),
+                UpdateTestState::Unneeded | UpdateTestState::Waiting => {
+                    Some(Datum::new(time, time))
+                }
                 UpdateTestState::Updated => Some(Datum::new(time, 30)),
                 UpdateTestState::ReturnNone => None,
             }
@@ -609,7 +611,7 @@ fn getter_from_history() {
         fn update(&mut self) -> NothingOrError<()> {
             match self.update_test_state {
                 UpdateTestState::Waiting => self.update_test_state = UpdateTestState::Updated,
-                _ => ()
+                _ => (),
             }
             Ok(())
         }
@@ -682,7 +684,8 @@ fn getter_from_history() {
 
     {
         my_history.set_update_test();
-        let mut getter = GetterFromHistory::new_no_delta(&mut my_history, Rc::clone(&my_time_getter));
+        let mut getter =
+            GetterFromHistory::new_no_delta(&mut my_history, Rc::clone(&my_time_getter));
         assert_eq!(getter.get().unwrap().unwrap(), Datum::new(9, 9));
         getter.update().unwrap();
         assert_eq!(getter.get().unwrap().unwrap(), Datum::new(10, 30));

@@ -109,13 +109,12 @@ pub struct Axle<'a, const N: usize, E: Copy + Debug> {
 impl<'a, const N: usize, E: Copy + Debug> Axle<'a, N, E> {
     ///Constructor for `Axle`.
     pub fn new() -> Self {
-        unsafe {
-            let mut inputs: [RefCell<Terminal<'a, E>>; N] = core::mem::MaybeUninit::uninit().assume_init();
-            for i in &mut inputs {
-                *i = Terminal::new();
-            }
-            Self { inputs: inputs }
+        let mut inputs: [RefCell<Terminal<'a, E>>; N] =
+            unsafe { core::mem::MaybeUninit::uninit().assume_init() };
+        for i in &mut inputs {
+            *i = Terminal::new();
         }
+        Self { inputs: inputs }
     }
     ///Get a reference to one of the axle's terminals.
     pub fn get_terminal(&self, terminal: usize) -> &'a RefCell<Terminal<'a, E>> {

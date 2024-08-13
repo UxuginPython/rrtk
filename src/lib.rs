@@ -895,8 +895,8 @@ impl<E: Copy + Debug> Terminal<'_, E> {
                 let mut other = other.borrow_mut();
                 other.other = None;
                 self.other = None;
-            },
-            None => ()
+            }
+            None => (),
         }
     }
 }
