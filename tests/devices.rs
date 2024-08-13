@@ -379,3 +379,22 @@ fn settable_command_device_wrapper() {
         assert!(ASSERTED);
     }
 }
+#[test]
+fn getter_state_device_wrapper() {
+    struct GetterState;
+    impl Getter<State, ()> for GetterState {
+        fn get(&self) -> Output<State, ()> {
+            Ok(Some(Datum::new(0, State::new(1.0, 2.0, 3.0))))
+        }
+    }
+    impl Updatable<()> for GetterState {
+        fn update(&mut self) -> NothingOrError<()> {
+            Ok(())
+        }
+    }
+    let mut wrapper = GetterStateDeviceWrapper::new(GetterState);
+    let terminal = Terminal::new();
+    connect(wrapper.get_terminal(), &terminal);
+    wrapper.update().unwrap();
+    assert_eq!(terminal.borrow().get().unwrap().unwrap().value, State::new(1.0, 2.0, 3.0));
+}
