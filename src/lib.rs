@@ -450,7 +450,6 @@ impl PIDKValues {
             kd: kd,
         }
     }
-    //TODO: test this lol
     ///Calculate the control variable using the coefficients given error, its integral, and its
     ///derivative.
     #[inline]
@@ -477,7 +476,6 @@ impl PositionDerivativeDependentPIDKValues {
             acceleration: acceleration,
         }
     }
-    //TODO: test this lol
     ///Get the k-values for a specific position derivative.
     #[inline]
     pub fn get_k_values(&self, position_derivative: PositionDerivative) -> PIDKValues {
@@ -487,7 +485,6 @@ impl PositionDerivativeDependentPIDKValues {
             PositionDerivative::Acceleration => self.acceleration,
         }
     }
-    //TODO: test this lol
     ///Calculate the control variable using the coefficients for a given position derivative given
     ///error, its integral, and its derivative.
     #[inline]
@@ -863,7 +860,6 @@ impl<E: Copy + Debug> Updatable<E> for NoneGetter {
         Ok(())
     }
 }
-//TODO: test this
 ///A place where a device can connect to another.
 #[cfg(feature = "devices")]
 pub struct Terminal<'a, E: Copy + Debug> {
@@ -1000,7 +996,6 @@ pub fn connect<'a, E: Copy + Debug>(
     term1_borrow.other = Some(term2);
     term2_borrow.other = Some(term1);
 }
-//TODO; test this
 ///A mechanical device.
 #[cfg(feature = "devices")]
 pub trait Device<E: Copy + Debug>: Updatable<E> {

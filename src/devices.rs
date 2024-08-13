@@ -16,7 +16,6 @@ Copyright 2024 UxuginPython on GitHub
 //!devices.
 use crate::*;
 pub mod wrappers;
-//TODO: test this
 ///A device such that positive for one terminal is negative for the other.
 pub struct Invert<'a, E: Copy + Debug> {
     term1: RefCell<Terminal<'a, E>>,
@@ -94,7 +93,6 @@ impl<E: Copy + Debug> Device<E> for Invert<'_, E> {
         Ok(())
     }
 }
-//TODO: Test this.
 ///A connection between terminals that are not directly connected, such as when three or more
 ///terminals are connected. Code-wise, this is almost exactly the same as directly connecting two
 ///terminals, but this type can connect more than two terminals. There is some freedom in exactly

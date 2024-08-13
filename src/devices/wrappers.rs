@@ -13,7 +13,6 @@ Copyright 2024 UxuginPython on GitHub
 //!Provided `Device` implementors that allow a raw `Getter` or `Settable` to work with the device
 //!system.
 use crate::*;
-//TODO: test this
 ///Connect a `Settable<Command, E>` to a `Terminal<E>` for use as a servo motor in the device
 ///system.
 pub struct SettableCommandDeviceWrapper<'a, T: Settable<Command, E>, E: Copy + Debug> {
@@ -58,7 +57,6 @@ impl<T: Settable<Command, E>, E: Copy + Debug> Updatable<E>
         Ok(())
     }
 }
-//TODO: test this
 ///Connect a `Getter<State, E>` to a `Terminal<E>` for use as an encoder in the device system.
 pub struct GetterStateDeviceWrapper<'a, T: Getter<State, E>, E: Copy + Debug> {
     inner: T,

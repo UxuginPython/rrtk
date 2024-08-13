@@ -97,7 +97,6 @@ struct Update1 {
     pub error_int: f32,
     pub output_int_int: Option<f32>,
 }
-//TODO: test this
 ///Automatically integrates the command variable of a PID controller based on the position
 ///derivative of a `Command`. Designed to make it easier to use a standard DC motor and an encoder
 ///as a de facto servo.
