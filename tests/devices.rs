@@ -121,3 +121,75 @@ fn differential() {
     assert_eq!(terminal2.borrow().get().unwrap().unwrap().value, State::new(TERM_2, TERM_2, TERM_2));
     assert_eq!(terminal_sum.borrow().get().unwrap().unwrap().value, State::new(TERM_SUM, TERM_SUM, TERM_SUM));
 }
+#[test]
+fn differential_distrust_side_1() {
+    let mut differential = Differential::<()>::with_distrust(DifferentialDistrust::Side1);
+    let terminal1 = Terminal::new();
+    let terminal2 = Terminal::new();
+    let terminal_sum = Terminal::new();
+    terminal1.borrow_mut().set(Datum::new(0, State::new(2.0, 2.0, 2.0))).unwrap();
+    terminal2.borrow_mut().set(Datum::new(0, State::new(3.0, 3.0, 3.0))).unwrap();
+    terminal_sum.borrow_mut().set(Datum::new(0, State::new(4.0, 4.0, 4.0))).unwrap();
+    connect(differential.get_side_1(), &terminal1);
+    connect(differential.get_side_2(), &terminal2);
+    connect(differential.get_sum(), &terminal_sum);
+    differential.update().unwrap();
+    const EST_1: f32 = 1.0;
+    const EST_2: f32 = 3.0;
+    const EST_SUM: f32 = 4.0;
+    assert_eq!(EST_1 + EST_2, EST_SUM);
+    const TERM_1: f32 = (EST_1 + 2.0) / 2.0;
+    const TERM_2: f32 = (EST_2 + 3.0) / 2.0;
+    const TERM_SUM: f32 = (EST_SUM + 4.0) / 2.0;
+    assert_eq!(terminal1.borrow().get().unwrap().unwrap().value, State::new(TERM_1, TERM_1, TERM_1));
+    assert_eq!(terminal2.borrow().get().unwrap().unwrap().value, State::new(TERM_2, TERM_2, TERM_2));
+    assert_eq!(terminal_sum.borrow().get().unwrap().unwrap().value, State::new(TERM_SUM, TERM_SUM, TERM_SUM));
+}
+#[test]
+fn differential_distrust_side_2() {
+    let mut differential = Differential::<()>::with_distrust(DifferentialDistrust::Side2);
+    let terminal1 = Terminal::new();
+    let terminal2 = Terminal::new();
+    let terminal_sum = Terminal::new();
+    terminal1.borrow_mut().set(Datum::new(0, State::new(2.0, 2.0, 2.0))).unwrap();
+    terminal2.borrow_mut().set(Datum::new(0, State::new(3.0, 3.0, 3.0))).unwrap();
+    terminal_sum.borrow_mut().set(Datum::new(0, State::new(4.0, 4.0, 4.0))).unwrap();
+    connect(differential.get_side_1(), &terminal1);
+    connect(differential.get_side_2(), &terminal2);
+    connect(differential.get_sum(), &terminal_sum);
+    differential.update().unwrap();
+    const EST_1: f32 = 2.0;
+    const EST_2: f32 = 2.0;
+    const EST_SUM: f32 = 4.0;
+    assert_eq!(EST_1 + EST_2, EST_SUM);
+    const TERM_1: f32 = (EST_1 + 2.0) / 2.0;
+    const TERM_2: f32 = (EST_2 + 3.0) / 2.0;
+    const TERM_SUM: f32 = (EST_SUM + 4.0) / 2.0;
+    assert_eq!(terminal1.borrow().get().unwrap().unwrap().value, State::new(TERM_1, TERM_1, TERM_1));
+    assert_eq!(terminal2.borrow().get().unwrap().unwrap().value, State::new(TERM_2, TERM_2, TERM_2));
+    assert_eq!(terminal_sum.borrow().get().unwrap().unwrap().value, State::new(TERM_SUM, TERM_SUM, TERM_SUM));
+}
+#[test]
+fn differential_distrust_sum() {
+    let mut differential = Differential::<()>::with_distrust(DifferentialDistrust::Sum);
+    let terminal1 = Terminal::new();
+    let terminal2 = Terminal::new();
+    let terminal_sum = Terminal::new();
+    terminal1.borrow_mut().set(Datum::new(0, State::new(2.0, 2.0, 2.0))).unwrap();
+    terminal2.borrow_mut().set(Datum::new(0, State::new(3.0, 3.0, 3.0))).unwrap();
+    terminal_sum.borrow_mut().set(Datum::new(0, State::new(4.0, 4.0, 4.0))).unwrap();
+    connect(differential.get_side_1(), &terminal1);
+    connect(differential.get_side_2(), &terminal2);
+    connect(differential.get_sum(), &terminal_sum);
+    differential.update().unwrap();
+    const EST_1: f32 = 2.0;
+    const EST_2: f32 = 3.0;
+    const EST_SUM: f32 = 5.0;
+    assert_eq!(EST_1 + EST_2, EST_SUM);
+    const TERM_1: f32 = (EST_1 + 2.0) / 2.0;
+    const TERM_2: f32 = (EST_2 + 3.0) / 2.0;
+    const TERM_SUM: f32 = (EST_SUM + 4.0) / 2.0;
+    assert_eq!(terminal1.borrow().get().unwrap().unwrap().value, State::new(TERM_1, TERM_1, TERM_1));
+    assert_eq!(terminal2.borrow().get().unwrap().unwrap().value, State::new(TERM_2, TERM_2, TERM_2));
+    assert_eq!(terminal_sum.borrow().get().unwrap().unwrap().value, State::new(TERM_SUM, TERM_SUM, TERM_SUM));
+}
