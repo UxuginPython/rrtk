@@ -396,5 +396,8 @@ fn getter_state_device_wrapper() {
     let terminal = Terminal::new();
     connect(wrapper.get_terminal(), &terminal);
     wrapper.update().unwrap();
-    assert_eq!(terminal.borrow().get().unwrap().unwrap().value, State::new(1.0, 2.0, 3.0));
+    assert_eq!(
+        terminal.borrow().get().unwrap().unwrap().value,
+        State::new(1.0, 2.0, 3.0)
+    );
 }

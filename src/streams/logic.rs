@@ -13,7 +13,6 @@ Copyright 2024 UxuginPython on GitHub
 //!Logic operations for boolean getters.
 use crate::streams::*;
 //TODO: make these take arrays of inputs with generic lengths.
-//TODO: document these better using that combination table thing
 enum AndState {
     DefinitelyFalse, //An input returned false.
     MaybeTrue,       //An input returned None and no input has returned false, so we can't assume an
@@ -29,7 +28,22 @@ impl AndState {
         }
     }
 }
-///Performs an and operation on two boolean getters.
+///Performs an and operation on two boolean getters. This will return `None` if it can't verify
+///that the result should be `true` or `false`. This is caused by inputs returning `None`. It's a
+///bit difficult to state exactly how this is determined, so here's a truth table:
+///```text
+///Input 1 | Input 2 | AndStream
+///--------+---------+----------
+///false   | false   | false
+///None    | false   | false
+///true    | false   | false
+///false   | None    | false
+///None    | None    | None
+///true    | None    | None
+///false   | true    | false
+///None    | true    | None
+///true    | true    | true
+///```
 pub struct AndStream<E: Copy + Debug> {
     input1: InputGetter<bool, E>,
     input2: InputGetter<bool, E>,

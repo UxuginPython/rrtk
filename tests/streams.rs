@@ -1320,3 +1320,102 @@ fn latest() {
 fn empty_latest() {
     let _: Latest<(), 0, ()> = Latest::new([]);
 }
+#[test]
+fn and_stream() {
+    use rrtk::streams::logic::AndStream;
+    use rrtk::*;
+    use std::rc::Rc;
+    struct In1 {
+        index: u8,
+    }
+    impl In1 {
+        fn new() -> Self {
+            Self { index: 0 }
+        }
+    }
+    impl Getter<bool, ()> for In1 {
+        fn get(&self) -> Output<bool, ()> {
+            Ok(match self.index {
+                0 => Some(Datum::new(0, false)),
+                1 => None,
+                2 => Some(Datum::new(0, true)),
+                3 => Some(Datum::new(0, false)),
+                4 => None,
+                5 => Some(Datum::new(0, true)),
+                6 => Some(Datum::new(0, false)),
+                7 => None,
+                8 => Some(Datum::new(0, true)),
+                _ => unimplemented!(),
+            })
+        }
+    }
+    impl Updatable<()> for In1 {
+        fn update(&mut self) -> NothingOrError<()> {
+            self.index += 1;
+            Ok(())
+        }
+    }
+    struct In2 {
+        index: u8,
+    }
+    impl In2 {
+        fn new() -> Self {
+            Self { index: 0 }
+        }
+    }
+    impl Getter<bool, ()> for In2 {
+        fn get(&self) -> Output<bool, ()> {
+            Ok(match self.index {
+                0..=2 => Some(Datum::new(0, false)),
+                3..=5 => None,
+                6..=8 => Some(Datum::new(0, true)),
+                _ => unimplemented!(),
+            })
+        }
+    }
+    impl Updatable<()> for In2 {
+        fn update(&mut self) -> NothingOrError<()> {
+            self.index += 1;
+            Ok(())
+        }
+    }
+    let in1 = make_input_getter(In1::new());
+    let in2 = make_input_getter(In2::new());
+    let mut and = AndStream::new(Rc::clone(&in1), Rc::clone(&in2));
+    assert_eq!(and.get().unwrap().unwrap().value, false);
+    in1.borrow_mut().update().unwrap();
+    in2.borrow_mut().update().unwrap();
+    and.update().unwrap();
+    assert_eq!(and.get().unwrap().unwrap().value, false);
+    in1.borrow_mut().update().unwrap();
+    in2.borrow_mut().update().unwrap();
+    and.update().unwrap();
+    assert_eq!(and.get().unwrap().unwrap().value, false);
+    in1.borrow_mut().update().unwrap();
+    in2.borrow_mut().update().unwrap();
+    and.update().unwrap();
+    assert_eq!(and.get().unwrap().unwrap().value, false);
+    in1.borrow_mut().update().unwrap();
+    in2.borrow_mut().update().unwrap();
+    and.update().unwrap();
+    assert_eq!(and.get().unwrap(), None);
+    in1.borrow_mut().update().unwrap();
+    in2.borrow_mut().update().unwrap();
+    and.update().unwrap();
+    assert_eq!(and.get().unwrap(), None);
+    in1.borrow_mut().update().unwrap();
+    in2.borrow_mut().update().unwrap();
+    and.update().unwrap();
+    assert_eq!(and.get().unwrap().unwrap().value, false);
+    in1.borrow_mut().update().unwrap();
+    in2.borrow_mut().update().unwrap();
+    and.update().unwrap();
+    assert_eq!(and.get().unwrap(), None);
+    in1.borrow_mut().update().unwrap();
+    in2.borrow_mut().update().unwrap();
+    and.update().unwrap();
+    assert_eq!(and.get().unwrap().unwrap().value, true);
+    in1.borrow_mut().update().unwrap();
+    in2.borrow_mut().update().unwrap();
+    and.update().unwrap();
+}
