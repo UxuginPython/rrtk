@@ -127,7 +127,21 @@ impl OrState {
         }
     }
 }
-///Performs an or operation on two boolean getters.
+///Performs an or operation on two boolean getters. This will return `None` if it can't verify that
+///the result should be `true` or `false`.
+///```text
+///Input 1 | Input 2 | OrStream
+///--------+---------+---------
+///false   | false   | false
+///None    | false   | None
+///true    | false   | true
+///false   | None    | None
+///None    | None    | None
+///true    | None    | true
+///false   | true    | true
+///None    | true    | true
+///true    | true    | true
+///```
 pub struct OrStream<E: Copy + Debug> {
     input1: InputGetter<bool, E>,
     input2: InputGetter<bool, E>,
