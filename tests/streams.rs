@@ -1513,3 +1513,41 @@ fn or_stream() {
     in2.borrow_mut().update().unwrap();
     and.update().unwrap();
 }
+#[test]
+fn not_stream() {
+    struct In {
+        index: u8,
+    }
+    impl In {
+        fn new() -> Self {
+            Self {
+                index: 0,
+            }
+        }
+    }
+    impl Getter<bool, ()> for In {
+        fn get(&self) -> Output<bool, ()> {
+            Ok(match self.index {
+                0 => Some(Datum::new(0, false)),
+                1 => None,
+                2 => Some(Datum::new(0, true)),
+                _ => unimplemented!(),
+            })
+        }
+    }
+    impl Updatable<()> for In {
+        fn update(&mut self) -> NothingOrError<()> {
+            self.index += 1;
+            Ok(())
+        }
+    }
+    let input = make_input_getter(In::new());
+    let mut not = NotStream::new(Rc::clone(&input));
+    assert_eq!(not.get().unwrap().unwrap().value, true);
+    input.borrow_mut().update().unwrap();
+    not.update().unwrap();
+    assert_eq!(not.get().unwrap(), None);
+    input.borrow_mut().update().unwrap();
+    not.update().unwrap();
+    assert_eq!(not.get().unwrap().unwrap().value, false);
+}
