@@ -206,7 +206,7 @@ impl<E: Copy + Debug> Updatable<E> for CommandPID<E> {
             Ok(Some(update_0)) => {
                 let delta_time = (datum_state.time - update_0.time) as f32;
                 let error_drv = (error - update_0.error) / delta_time;
-                let error_int_addend = (update_0.error + error) * delta_time;
+                let error_int_addend = (update_0.error + error) / 2.0 * delta_time;
                 match &update_0.maybe_update_1 {
                     None => {
                         let output = self.kvals.evaluate(
