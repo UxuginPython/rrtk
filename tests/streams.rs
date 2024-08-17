@@ -12,6 +12,7 @@ Copyright 2024 UxuginPython on GitHub
 */
 use rrtk::streams::control::*;
 use rrtk::streams::converters::*;
+use rrtk::streams::flow::*;
 use rrtk::streams::logic::*;
 use rrtk::streams::math::*;
 use rrtk::streams::*;
@@ -1520,9 +1521,7 @@ fn not_stream() {
     }
     impl In {
         fn new() -> Self {
-            Self {
-                index: 0,
-            }
+            Self { index: 0 }
         }
     }
     impl Getter<bool, ()> for In {
@@ -1550,4 +1549,48 @@ fn not_stream() {
     input.borrow_mut().update().unwrap();
     not.update().unwrap();
     assert_eq!(not.get().unwrap().unwrap().value, false);
+}
+#[test]
+fn if_stream() {
+    #[derive(Default)]
+    struct Condition {
+        index: u8,
+    }
+    impl Getter<bool, ()> for Condition {
+        fn get(&self) -> Output<bool, ()> {
+            Ok(match self.index {
+                0 => Some(Datum::new(0, false)),
+                1 => None,
+                2 => Some(Datum::new(0, true)),
+                _ => unimplemented!(),
+            })
+        }
+    }
+    impl Updatable<()> for Condition {
+        fn update(&mut self) -> NothingOrError<()> {
+            self.index += 1;
+            Ok(())
+        }
+    }
+    struct Input;
+    impl Getter<u8, ()> for Input {
+        fn get(&self) -> Output<u8, ()> {
+            Ok(Some(Datum::new(0, 0)))
+        }
+    }
+    impl Updatable<()> for Input {
+        fn update(&mut self) -> NothingOrError<()> {
+            Ok(())
+        }
+    }
+    let condition = make_input_getter(Condition::default());
+    let input = make_input_getter(Input);
+    let mut if_stream = IfStream::new(Rc::clone(&condition), Rc::clone(&input));
+    assert_eq!(if_stream.get().unwrap(), None);
+    condition.borrow_mut().update().unwrap();
+    if_stream.update().unwrap();
+    assert_eq!(if_stream.get().unwrap(), None);
+    condition.borrow_mut().update().unwrap();
+    if_stream.update().unwrap();
+    assert_eq!(if_stream.get().unwrap().unwrap().value, 0);
 }
