@@ -1594,3 +1594,63 @@ fn if_stream() {
     if_stream.update().unwrap();
     assert_eq!(if_stream.get().unwrap().unwrap().value, 0);
 }
+#[test]
+fn if_else_stream() {
+    #[derive(Default)]
+    struct Condition {
+        index: u8,
+    }
+    impl Getter<bool, ()> for Condition {
+        fn get(&self) -> Output<bool, ()> {
+            Ok(match self.index {
+                0 => Some(Datum::new(0, false)),
+                1 => None,
+                2 => Some(Datum::new(0, true)),
+                _ => unimplemented!(),
+            })
+        }
+    }
+    impl Updatable<()> for Condition {
+        fn update(&mut self) -> NothingOrError<()> {
+            self.index += 1;
+            Ok(())
+        }
+    }
+    struct True;
+    impl Getter<u8, ()> for True {
+        fn get(&self) -> Output<u8, ()> {
+            Ok(Some(Datum::new(0, 1)))
+        }
+    }
+    impl Updatable<()> for True {
+        fn update(&mut self) -> NothingOrError<()> {
+            Ok(())
+        }
+    }
+    struct False;
+    impl Getter<u8, ()> for False {
+        fn get(&self) -> Output<u8, ()> {
+            Ok(Some(Datum::new(0, 2)))
+        }
+    }
+    impl Updatable<()> for False {
+        fn update(&mut self) -> NothingOrError<()> {
+            Ok(())
+        }
+    }
+    let condition = make_input_getter(Condition::default());
+    let true_input = make_input_getter(True);
+    let false_input = make_input_getter(False);
+    let mut if_else_stream = IfElseStream::new(
+        Rc::clone(&condition),
+        Rc::clone(&true_input),
+        Rc::clone(&false_input),
+    );
+    assert_eq!(if_else_stream.get().unwrap().unwrap().value, 2);
+    condition.borrow_mut().update().unwrap();
+    if_else_stream.update().unwrap();
+    assert_eq!(if_else_stream.get().unwrap(), None);
+    condition.borrow_mut().update().unwrap();
+    if_else_stream.update().unwrap();
+    assert_eq!(if_else_stream.get().unwrap().unwrap().value, 1);
+}
