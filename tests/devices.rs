@@ -327,35 +327,40 @@ fn differential_distrust_sum() {
         State::new(TERM_SUM, TERM_SUM, TERM_SUM)
     );
 }
+//TODO: make this test more thorough with the different combinations of Some/None command and
+//state.
 #[test]
-fn settable_command_device_wrapper() {
-    struct SettableCommand {
-        settable_data: SettableData<Command, ()>,
+fn actuator_wrapper() {
+    struct Actuator {
+        settable_data: SettableData<TerminalData, ()>,
     }
-    impl SettableCommand {
+    impl Actuator {
         fn new() -> Self {
             Self {
                 settable_data: SettableData::new(),
             }
         }
     }
-    impl Settable<Command, ()> for SettableCommand {
-        fn get_settable_data_ref(&self) -> &SettableData<Command, ()> {
+    impl Settable<TerminalData, ()> for Actuator {
+        fn get_settable_data_ref(&self) -> &SettableData<TerminalData, ()> {
             &self.settable_data
         }
-        fn get_settable_data_mut(&mut self) -> &mut SettableData<Command, ()> {
+        fn get_settable_data_mut(&mut self) -> &mut SettableData<TerminalData, ()> {
             &mut self.settable_data
         }
-        fn impl_set(&mut self, _: Command) -> NothingOrError<()> {
+        fn impl_set(&mut self, _: TerminalData) -> NothingOrError<()> {
             Ok(())
         }
     }
-    impl Updatable<()> for SettableCommand {
+    impl Updatable<()> for Actuator {
         fn update(&mut self) -> NothingOrError<()> {
-            dbg!(self.get_last_request());
             assert_eq!(
                 self.get_last_request().unwrap(),
-                Command::new(PositionDerivative::Position, 5.0)
+                TerminalData {
+                    time: 2,
+                    command: Some(Command::new(PositionDerivative::Position, 5.0)),
+                    state: Some(State::new(1.0, 2.0, 3.0)),
+                }
             );
             unsafe {
                 ASSERTED = true;
@@ -364,14 +369,21 @@ fn settable_command_device_wrapper() {
         }
     }
     static mut ASSERTED: bool = false;
-    let mut wrapper = SettableCommandDeviceWrapper::new(SettableCommand::new());
+    let mut wrapper = ActuatorWrapper::new(Actuator::new());
     let terminal = Terminal::new();
     connect(wrapper.get_terminal(), &terminal);
     terminal
         .borrow_mut()
         .set(Datum::new(
-            0,
+            1,
             Command::new(PositionDerivative::Position, 5.0),
+        ))
+        .unwrap();
+    terminal
+        .borrow_mut()
+        .set(Datum::new(
+            2,
+            State::new(1.0, 2.0, 3.0),
         ))
         .unwrap();
     wrapper.update().unwrap();
