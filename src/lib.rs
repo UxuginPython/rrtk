@@ -13,7 +13,7 @@ Copyright 2024 UxuginPython on GitHub
 //!Rust Robotics ToolKit
 //!A set of algorithms and other tools for robotics in Rust.
 //!It is partially `no_std`. It does not currently integrate with any API directly, but this may be added in the future.
-#![warn(missing_docs)]
+//#![warn(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
 #[cfg(feature = "std")]
 use std::cell::RefCell;
@@ -970,6 +970,32 @@ impl<E: Copy + Debug> Getter<State, E> for Terminal<'_, E> {
                 _ => unimplemented!(),
             }
         }
+    }
+}
+#[cfg(feature = "devices")]
+impl<E: Copy + Debug> Getter<TerminalData, E> for Terminal<'_, E> {
+    fn get(&self) -> Output<TerminalData, E> {
+        let command: Option<Datum<Command>> = self.get_last_request();
+        let state = self.get().expect("Terminal get cannot return Err");
+        let (mut time, command) = match command {
+            Some(datum_command) => (Some(datum_command.time), Some(datum_command.value)),
+            None => (None, None),
+        };
+        let state = match state {
+            Some(datum_state) => {
+                time = Some(datum_state.time);
+                Some(datum_state.value)
+            }
+            None => None,
+        };
+        Ok(match time {
+            Some(time) => Some(Datum::new(time, TerminalData {
+                time: time,
+                command: command,
+                state: state,
+            })),
+            None => None,
+        })
     }
 }
 #[cfg(feature = "devices")]
