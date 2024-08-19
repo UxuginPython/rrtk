@@ -15,11 +15,11 @@ Copyright 2024 UxuginPython on GitHub
 use crate::*;
 ///Connect a `Settable<Command, E>` to a `Terminal<E>` for use as a servo motor in the device
 ///system.
-pub struct SettableCommandDeviceWrapper<'a, T: Settable<Command, E>, E: Copy + Debug> {
+pub struct ActuatorWrapper<'a, T: Settable<TerminalData, E>, E: Copy + Debug> {
     inner: T,
     terminal: RefCell<Terminal<'a, E>>,
 }
-impl<'a, T: Settable<Command, E>, E: Copy + Debug> SettableCommandDeviceWrapper<'a, T, E> {
+impl<'a, T: Settable<TerminalData, E>, E: Copy + Debug> ActuatorWrapper<'a, T, E> {
     ///Constructor for `SettableCommandDeviceWrapper`.
     pub fn new(inner: T) -> Self {
         Self {
@@ -32,24 +32,44 @@ impl<'a, T: Settable<Command, E>, E: Copy + Debug> SettableCommandDeviceWrapper<
         unsafe { &*(&self.terminal as *const RefCell<Terminal<'a, E>>) }
     }
 }
-impl<T: Settable<Command, E>, E: Copy + Debug> Device<E>
-    for SettableCommandDeviceWrapper<'_, T, E>
+impl<T: Settable<TerminalData, E>, E: Copy + Debug> Device<E>
+    for ActuatorWrapper<'_, T, E>
 {
     fn update_terminals(&mut self) -> NothingOrError<E> {
         self.terminal.borrow_mut().update()?;
         Ok(())
     }
 }
-impl<T: Settable<Command, E>, E: Copy + Debug> Updatable<E>
-    for SettableCommandDeviceWrapper<'_, T, E>
+impl<T: Settable<TerminalData, E>, E: Copy + Debug> Updatable<E>
+    for ActuatorWrapper<'_, T, E>
 {
     fn update(&mut self) -> NothingOrError<E> {
         self.update_terminals()?;
-        match <Terminal<E> as Settable<Datum<Command>, E>>::get_last_request(
-            &self.terminal.borrow(),
-        ) {
-            Some(command) => {
-                self.inner.set(command.value)?;
+        let terminal_borrow = self.terminal.borrow();
+        let command: Option<Datum<Command>> = terminal_borrow.get_last_request();
+        let state: Option<Datum<State>> = terminal_borrow.get().expect("Terminal get always returns Ok");
+        let (mut time, command) = match command {
+            Some(datum_command) => (Some(datum_command.time), Some(datum_command.value)),
+            None => (None, None),
+        };
+        //This syntax is a bit complex. Basically, we need to shadow the state variable, but that
+        //won't work if we just have two separate statements in the branches. We also want to set
+        //the time to the state's time if it has one, otherwise keeping the possible command time.
+        //This is because the state's is likely to be newer.
+        let state = match state {
+            Some(datum_state) => {
+                time = Some(datum_state.time);
+                Some(datum_state.value)
+            }
+            None => None,
+        };
+        match time {
+            Some(time) => {
+                self.inner.set(TerminalData {
+                    time: time,
+                    command: command,
+                    state: state,
+                })?;
             }
             None => {}
         }

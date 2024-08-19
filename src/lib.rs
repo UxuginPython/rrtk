@@ -996,6 +996,33 @@ pub fn connect<'a, E: Copy + Debug>(
     term1_borrow.other = Some(term2);
     term2_borrow.other = Some(term1);
 }
+#[cfg(feature = "devices")]
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct TerminalData {
+    pub time: i64,
+    pub command: Option<Command>,
+    pub state: Option<State>,
+}
+#[cfg(feature = "devices")]
+impl TryFrom<TerminalData> for Datum<Command> {
+    type Error = ();
+    fn try_from(value: TerminalData) -> Result<Datum<Command>, ()> {
+        match value.command {
+            Some(command) => Ok(Datum::new(value.time, command)),
+            None => Err(())
+        }
+    }
+}
+#[cfg(feature = "devices")]
+impl TryFrom<TerminalData> for Datum<State> {
+    type Error = ();
+    fn try_from(value: TerminalData) -> Result<Datum<State>, ()> {
+        match value.state {
+            Some(state) => Ok(Datum::new(value.time, state)),
+            None => Err(())
+        }
+    }
+}
 ///A mechanical device.
 #[cfg(feature = "devices")]
 pub trait Device<E: Copy + Debug>: Updatable<E> {
