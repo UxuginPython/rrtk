@@ -860,6 +860,16 @@ impl<E: Copy + Debug> Updatable<E> for NoneGetter {
         Ok(())
     }
 }
+impl<E: Copy + Debug> TimeGetter<E> for i64 {
+    fn get(&self) -> TimeOutput<E> {
+        Ok(*self)
+    }
+}
+impl<E: Copy + Debug> Updatable<E> for i64 {
+    fn update(&mut self) -> NothingOrError<E> {
+        Ok(())
+    }
+}
 ///A place where a device can connect to another.
 #[cfg(feature = "devices")]
 pub struct Terminal<'a, E: Copy + Debug> {

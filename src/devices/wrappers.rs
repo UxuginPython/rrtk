@@ -88,3 +88,63 @@ impl<T: Getter<State, E>, E: Copy + Debug> Updatable<E> for GetterStateDeviceWra
         Ok(())
     }
 }
+pub struct PIDWrapper<'a, T: Settable<f32, E>, E: Copy + Debug + 'static> {
+    terminal: RefCell<Terminal<'a, E>>,
+    time: Rc<RefCell<i64>>,
+    state: Rc<RefCell<ConstantGetter<State, E>>>,
+    command: Rc<RefCell<ConstantGetter<Command, E>>>,
+    pid: Rc<RefCell<streams::control::CommandPID<E>>>,
+    inner: T,
+}
+impl<'a, T: Settable<f32, E>, E: Copy + Debug + 'static> PIDWrapper<'a, T, E> {
+    pub fn new(mut inner: T, initial_time: i64, initial_state: State, initial_command: Command, kvalues: PositionDerivativeDependentPIDKValues) -> Self {
+        let terminal = Terminal::new();
+        let time = Rc::new(RefCell::new(initial_time));
+        let state = Rc::new(RefCell::new(ConstantGetter::new(Rc::clone(&time) as InputTimeGetter<E>, initial_state)));
+        let command = Rc::new(RefCell::new(ConstantGetter::new(Rc::clone(&time) as InputTimeGetter<E>, initial_command)));
+        let pid = Rc::new(RefCell::new(streams::control::CommandPID::new(Rc::clone(&state) as InputGetter<State, E>, initial_command, kvalues)));
+        pid.borrow_mut().follow(Rc::clone(&command) as InputGetter<Command, E>);
+        inner.follow(Rc::clone(&pid) as InputGetter<f32, E>);
+        Self {
+            terminal: terminal,
+            time: time,
+            state: state,
+            command: command,
+            pid: pid,
+            inner: inner,
+        }
+    }
+    pub fn get_terminal(&self) -> &'a RefCell<Terminal<'a, E>> {
+        unsafe { &*(&self.terminal as *const RefCell<Terminal<'a, E>>) }
+    }
+}
+impl<T: Settable<f32, E>, E: Copy + Debug + 'static> Device<E> for PIDWrapper<'_, T, E> {
+    fn update_terminals(&mut self) -> NothingOrError<E> {
+        self.terminal.borrow_mut().update()?;
+        Ok(())
+    }
+}
+impl<T: Settable<f32, E>, E: Copy + Debug + 'static> Updatable<E> for PIDWrapper<'_, T, E> {
+    fn update(&mut self) -> NothingOrError<E> {
+        self.update_terminals()?;
+        let terminal_data: Option<Datum<TerminalData>> = self.terminal.borrow().get().expect("This can't return Err");
+        match terminal_data {
+            Some(terminal_data) => {
+                let terminal_data = terminal_data.value;
+                *self.time.borrow_mut() = terminal_data.time;
+                match terminal_data.state {
+                    Some(state) => self.state.borrow_mut().set(state)?,
+                    None => (),
+                }
+                match terminal_data.command {
+                    Some(command) => self.command.borrow_mut().set(command)?,
+                    None => (),
+                }
+                self.pid.borrow_mut().update()?;
+            },
+            None => (),
+        }
+        self.inner.update()?;
+        Ok(())
+    }
+}
