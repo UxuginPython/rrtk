@@ -13,7 +13,7 @@ Copyright 2024 UxuginPython on GitHub
 //!Rust Robotics ToolKit
 //!A set of algorithms and other tools for robotics in Rust.
 //!It is partially `no_std`. It does not currently integrate with any API directly, but this may be added in the future.
-//#![warn(missing_docs)]
+#![warn(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
 #[cfg(feature = "std")]
 use std::cell::RefCell;
@@ -1029,11 +1029,15 @@ pub fn connect<'a, E: Copy + Debug>(
     term1_borrow.other = Some(term2);
     term2_borrow.other = Some(term1);
 }
+///Data that are sent between terminals: A timestamp, an optional command, and a state.
 #[cfg(feature = "devices")]
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct TerminalData {
+    ///Timestamp.
     pub time: i64,
+    ///Optional command from the terminal.
     pub command: Option<Command>,
+    ///Optional state from the terminal.
     pub state: Option<State>,
 }
 #[cfg(feature = "devices")]

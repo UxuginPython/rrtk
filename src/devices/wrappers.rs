@@ -89,6 +89,8 @@ impl<T: Getter<State, E>, E: Copy + Debug> Updatable<E> for GetterStateDeviceWra
         Ok(())
     }
 }
+///Connect a `Settable<f32, E>` motor to the device system through a `CommandPID`. See
+///`streams::control::CommandPID` documentation for more information about how this works.
 pub struct PIDWrapper<'a, T: Settable<f32, E>, E: Copy + Debug + 'static> {
     terminal: RefCell<Terminal<'a, E>>,
     time: Rc<RefCell<i64>>,
@@ -98,6 +100,7 @@ pub struct PIDWrapper<'a, T: Settable<f32, E>, E: Copy + Debug + 'static> {
     inner: T,
 }
 impl<'a, T: Settable<f32, E>, E: Copy + Debug + 'static> PIDWrapper<'a, T, E> {
+    ///Constructor for `PIDWrapper`.
     pub fn new(mut inner: T, initial_time: i64, initial_state: State, initial_command: Command, kvalues: PositionDerivativeDependentPIDKValues) -> Self {
         let terminal = Terminal::new();
         let time = Rc::new(RefCell::new(initial_time));
@@ -115,6 +118,7 @@ impl<'a, T: Settable<f32, E>, E: Copy + Debug + 'static> PIDWrapper<'a, T, E> {
             inner: inner,
         }
     }
+    ///Get a reference to this wrapper's terminal.
     pub fn get_terminal(&self) -> &'a RefCell<Terminal<'a, E>> {
         unsafe { &*(&self.terminal as *const RefCell<Terminal<'a, E>>) }
     }
