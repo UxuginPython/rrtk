@@ -79,6 +79,7 @@ impl<T: Getter<State, E>, E: Copy + Debug> Device<E> for GetterStateDeviceWrappe
 }
 impl<T: Getter<State, E>, E: Copy + Debug> Updatable<E> for GetterStateDeviceWrapper<'_, T, E> {
     fn update(&mut self) -> NothingOrError<E> {
+        self.inner.update()?;
         self.update_terminals()?;
         let new_state_datum = match self.inner.get()? {
             None => return Ok(()),

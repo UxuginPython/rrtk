@@ -48,9 +48,6 @@ pub use motion_profile::*;
 pub enum Error<O: Copy + Debug> {
     ///Returned when a `None` is elevated to an error by a `NoneToError`.
     FromNone,
-    ///Raised when two terminals must be connected, but we cannot get `Rc<RefCell<Terminal<O>>>`s
-    ///for both.
-    CannotConnectTerminals,
     ///A custom error of a user-defined type. Not created by any RRTK type but can be propagated by
     ///them.
     Other(O),
@@ -67,7 +64,7 @@ pub struct State {
 }
 impl State {
     ///Constructor for `State`.
-    pub fn new(position: f32, velocity: f32, acceleration: f32) -> State {
+    pub const fn new(position: f32, velocity: f32, acceleration: f32) -> State {
         State {
             position: position,
             velocity: velocity,
@@ -191,7 +188,7 @@ pub struct Datum<T> {
 }
 impl<T> Datum<T> {
     ///Constructor for Datum type.
-    pub fn new(time: i64, value: T) -> Datum<T> {
+    pub const fn new(time: i64, value: T) -> Datum<T> {
         Datum {
             time: time,
             value: value,
@@ -443,7 +440,7 @@ pub struct PIDKValues {
 }
 impl PIDKValues {
     ///Constructor for `PIDKValues`.
-    pub fn new(kp: f32, ki: f32, kd: f32) -> Self {
+    pub const fn new(kp: f32, ki: f32, kd: f32) -> Self {
         Self {
             kp: kp,
             ki: ki,
@@ -469,7 +466,7 @@ pub struct PositionDerivativeDependentPIDKValues {
 }
 impl PositionDerivativeDependentPIDKValues {
     ///Constructor for `PositionDerivativeDependentPIDKValues`.
-    pub fn new(position: PIDKValues, velocity: PIDKValues, acceleration: PIDKValues) -> Self {
+    pub const fn new(position: PIDKValues, velocity: PIDKValues, acceleration: PIDKValues) -> Self {
         Self {
             position: position,
             velocity: velocity,
@@ -530,7 +527,7 @@ pub struct Command {
 }
 impl Command {
     ///Constructor for `Command`.
-    pub fn new(position_derivative: PositionDerivative, value: f32) -> Self {
+    pub const fn new(position_derivative: PositionDerivative, value: f32) -> Self {
         Self {
             position_derivative: position_derivative,
             value: value,

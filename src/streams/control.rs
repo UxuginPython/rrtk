@@ -86,12 +86,14 @@ impl<E: Copy + Debug> Updatable<E> for PIDControllerStream<E> {
         Ok(())
     }
 }
+#[derive(Clone, Debug, PartialEq)]
 struct Update0 {
     pub time: i64,
     pub output: f32,
     pub error: f32,
     pub maybe_update_1: Option<Update1>,
 }
+#[derive(Clone, Debug, PartialEq)]
 struct Update1 {
     pub output_int: f32,
     pub error_int: f32,
@@ -139,8 +141,10 @@ impl<E: Copy + Debug> Settable<Command, E> for CommandPID<E> {
         &mut self.settable_data
     }
     fn impl_set(&mut self, command: Command) -> NothingOrError<E> {
-        self.reset();
-        self.command = command;
+        if command != self.command {
+            self.reset();
+            self.command = command;
+        }
         Ok(())
     }
 }
