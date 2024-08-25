@@ -15,25 +15,11 @@ Copyright 2024 UxuginPython on GitHub
 //!It is partially `no_std`. It does not currently integrate with any API directly, but this may be added in the future.
 #![warn(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
-#[cfg(feature = "std")]
-use std::cell::RefCell;
-#[cfg(feature = "std")]
-use std::fmt::Debug;
-#[cfg(feature = "std")]
-use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Not, Sub, SubAssign};
-#[cfg(feature = "std")]
-use std::rc::Rc;
-#[cfg(not(feature = "std"))]
 extern crate alloc;
-#[cfg(not(feature = "std"))]
 use alloc::rc::Rc;
-#[cfg(not(feature = "std"))]
 use alloc::vec::Vec;
-#[cfg(not(feature = "std"))]
 use core::cell::RefCell;
-#[cfg(not(feature = "std"))]
 use core::fmt::Debug;
-#[cfg(not(feature = "std"))]
 use core::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Not, Sub, SubAssign};
 #[cfg(feature = "devices")]
 pub mod devices;
