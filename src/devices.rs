@@ -213,29 +213,29 @@ impl<E: Copy + Debug> Updatable<E> for Differential<'_, E> {
                     Some(sum) => sum,
                     None => return Ok(()),
                 };
-                let side2: Datum<State>  = match self.side2.borrow().get()? {
+                let side2: Datum<State> = match self.side2.borrow().get()? {
                     Some(side2) => side2,
                     None => return Ok(()),
                 };
                 self.side1.borrow_mut().set(sum - side2)?;
             }
             DifferentialDistrust::Side2 => {
-                let sum: Datum<State>  = match self.sum.borrow().get()? {
+                let sum: Datum<State> = match self.sum.borrow().get()? {
                     Some(sum) => sum,
                     None => return Ok(()),
                 };
-                let side1: Datum<State>  = match self.side1.borrow().get()? {
+                let side1: Datum<State> = match self.side1.borrow().get()? {
                     Some(side1) => side1,
                     None => return Ok(()),
                 };
                 self.side2.borrow_mut().set(sum - side1)?;
             }
             DifferentialDistrust::Sum => {
-                let side1: Datum<State>  = match self.side1.borrow().get()? {
+                let side1: Datum<State> = match self.side1.borrow().get()? {
                     Some(side1) => side1,
                     None => return Ok(()),
                 };
-                let side2: Datum<State>  = match self.side2.borrow().get()? {
+                let side2: Datum<State> = match self.side2.borrow().get()? {
                     Some(side2) => side2,
                     None => return Ok(()),
                 };

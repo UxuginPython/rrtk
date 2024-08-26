@@ -982,11 +982,14 @@ impl<E: Copy + Debug> Getter<TerminalData, E> for Terminal<'_, E> {
             None => None,
         };
         Ok(match time {
-            Some(time) => Some(Datum::new(time, TerminalData {
-                time: time,
-                command: command,
-                state: state,
-            })),
+            Some(time) => Some(Datum::new(
+                time,
+                TerminalData {
+                    time: time,
+                    command: command,
+                    state: state,
+                },
+            )),
             None => None,
         })
     }
@@ -1032,7 +1035,7 @@ impl TryFrom<TerminalData> for Datum<Command> {
     fn try_from(value: TerminalData) -> Result<Datum<Command>, ()> {
         match value.command {
             Some(command) => Ok(Datum::new(value.time, command)),
-            None => Err(())
+            None => Err(()),
         }
     }
 }
@@ -1042,7 +1045,7 @@ impl TryFrom<TerminalData> for Datum<State> {
     fn try_from(value: TerminalData) -> Result<Datum<State>, ()> {
         match value.state {
             Some(state) => Ok(Datum::new(value.time, state)),
-            None => Err(())
+            None => Err(()),
         }
     }
 }

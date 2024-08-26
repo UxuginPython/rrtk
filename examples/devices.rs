@@ -76,7 +76,10 @@ impl Updatable<()> for Encoder {
 #[cfg(feature = "devices")]
 fn main() {
     println!("Commanding Motor to {:?}", COMMAND);
-    println!("K values are {:?}", K_VALUES.get_k_values(COMMAND.position_derivative));
+    println!(
+        "K values are {:?}",
+        K_VALUES.get_k_values(COMMAND.position_derivative)
+    );
     let motor = Motor::new();
     let mut motor_wrapper = devices::wrappers::PIDWrapper::new(motor, 0, STATE, COMMAND, K_VALUES);
     let encoder = Encoder::default();

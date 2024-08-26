@@ -32,20 +32,21 @@ impl<'a, T: Settable<TerminalData, E>, E: Copy + Debug> ActuatorWrapper<'a, T, E
         unsafe { &*(&self.terminal as *const RefCell<Terminal<'a, E>>) }
     }
 }
-impl<T: Settable<TerminalData, E>, E: Copy + Debug> Device<E>
-    for ActuatorWrapper<'_, T, E>
-{
+impl<T: Settable<TerminalData, E>, E: Copy + Debug> Device<E> for ActuatorWrapper<'_, T, E> {
     fn update_terminals(&mut self) -> NothingOrError<E> {
         self.terminal.borrow_mut().update()?;
         Ok(())
     }
 }
-impl<T: Settable<TerminalData, E>, E: Copy + Debug> Updatable<E>
-    for ActuatorWrapper<'_, T, E>
-{
+impl<T: Settable<TerminalData, E>, E: Copy + Debug> Updatable<E> for ActuatorWrapper<'_, T, E> {
     fn update(&mut self) -> NothingOrError<E> {
         self.update_terminals()?;
-        match self.terminal.borrow().get().expect("Terminal TerminalData get always returns Ok") {
+        match self
+            .terminal
+            .borrow()
+            .get()
+            .expect("Terminal TerminalData get always returns Ok")
+        {
             Some(terminal_data) => self.inner.set(terminal_data.value)?,
             None => {}
         }
@@ -101,13 +102,30 @@ pub struct PIDWrapper<'a, T: Settable<f32, E>, E: Copy + Debug + 'static> {
 }
 impl<'a, T: Settable<f32, E>, E: Copy + Debug + 'static> PIDWrapper<'a, T, E> {
     ///Constructor for `PIDWrapper`.
-    pub fn new(mut inner: T, initial_time: i64, initial_state: State, initial_command: Command, kvalues: PositionDerivativeDependentPIDKValues) -> Self {
+    pub fn new(
+        mut inner: T,
+        initial_time: i64,
+        initial_state: State,
+        initial_command: Command,
+        kvalues: PositionDerivativeDependentPIDKValues,
+    ) -> Self {
         let terminal = Terminal::new();
         let time = Rc::new(RefCell::new(initial_time));
-        let state = Rc::new(RefCell::new(ConstantGetter::new(Rc::clone(&time) as InputTimeGetter<E>, initial_state)));
-        let command = Rc::new(RefCell::new(ConstantGetter::new(Rc::clone(&time) as InputTimeGetter<E>, initial_command)));
-        let pid = Rc::new(RefCell::new(streams::control::CommandPID::new(Rc::clone(&state) as InputGetter<State, E>, initial_command, kvalues)));
-        pid.borrow_mut().follow(Rc::clone(&command) as InputGetter<Command, E>);
+        let state = Rc::new(RefCell::new(ConstantGetter::new(
+            Rc::clone(&time) as InputTimeGetter<E>,
+            initial_state,
+        )));
+        let command = Rc::new(RefCell::new(ConstantGetter::new(
+            Rc::clone(&time) as InputTimeGetter<E>,
+            initial_command,
+        )));
+        let pid = Rc::new(RefCell::new(streams::control::CommandPID::new(
+            Rc::clone(&state) as InputGetter<State, E>,
+            initial_command,
+            kvalues,
+        )));
+        pid.borrow_mut()
+            .follow(Rc::clone(&command) as InputGetter<Command, E>);
         inner.follow(Rc::clone(&pid) as InputGetter<f32, E>);
         Self {
             terminal: terminal,
@@ -132,7 +150,8 @@ impl<T: Settable<f32, E>, E: Copy + Debug + 'static> Device<E> for PIDWrapper<'_
 impl<T: Settable<f32, E>, E: Copy + Debug + 'static> Updatable<E> for PIDWrapper<'_, T, E> {
     fn update(&mut self) -> NothingOrError<E> {
         self.update_terminals()?;
-        let terminal_data: Option<Datum<TerminalData>> = self.terminal.borrow().get().expect("This can't return Err");
+        let terminal_data: Option<Datum<TerminalData>> =
+            self.terminal.borrow().get().expect("This can't return Err");
         match terminal_data {
             Some(terminal_data) => {
                 let terminal_data = terminal_data.value;
@@ -146,7 +165,7 @@ impl<T: Settable<f32, E>, E: Copy + Debug + 'static> Updatable<E> for PIDWrapper
                     None => (),
                 }
                 self.pid.borrow_mut().update()?;
-            },
+            }
             None => (),
         }
         self.inner.update()?;

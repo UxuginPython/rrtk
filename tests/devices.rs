@@ -17,7 +17,10 @@ use rrtk::*;
 #[test]
 fn terminal() {
     let term1 = Terminal::<()>::new();
-    assert_eq!(<rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&term1.borrow()), Ok(None));
+    assert_eq!(
+        <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&term1.borrow()),
+        Ok(None)
+    );
     term1
         .borrow_mut()
         .set(Datum::new(0, State::new(1.0, 2.0, 3.0)))
@@ -62,11 +65,17 @@ fn invert() {
     connect(invert.get_terminal_2(), &terminal2);
     invert.update().unwrap();
     assert_eq!(
-        <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal1.borrow()).unwrap().unwrap().value,
+        <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal1.borrow())
+            .unwrap()
+            .unwrap()
+            .value,
         State::new(1.0, 2.0, 3.0)
     );
     assert_eq!(
-        <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal2.borrow()).unwrap().unwrap().value,
+        <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal2.borrow())
+            .unwrap()
+            .unwrap()
+            .value,
         State::new(-1.0, -2.0, -3.0)
     );
 
@@ -81,11 +90,17 @@ fn invert() {
     connect(invert.get_terminal_2(), &terminal2);
     invert.update().unwrap();
     assert_eq!(
-        <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal1.borrow()).unwrap().unwrap().value,
+        <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal1.borrow())
+            .unwrap()
+            .unwrap()
+            .value,
         State::new(1.0, 2.0, 3.0)
     );
     assert_eq!(
-        <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal2.borrow()).unwrap().unwrap().value,
+        <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal2.borrow())
+            .unwrap()
+            .unwrap()
+            .value,
         State::new(-1.0, -2.0, -3.0)
     );
 
@@ -104,7 +119,10 @@ fn invert() {
     connect(invert.get_terminal_2(), &terminal2);
     invert.update().unwrap();
     assert_eq!(
-        <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal1.borrow()).unwrap().unwrap().value,
+        <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal1.borrow())
+            .unwrap()
+            .unwrap()
+            .value,
         State::new(
             (((1.0 + 4.0) / 2.0) + 1.0) / 2.0,
             ((2.0 + 5.0) / 2.0 + 2.0) / 2.0,
@@ -112,7 +130,10 @@ fn invert() {
         )
     );
     assert_eq!(
-        <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal2.borrow()).unwrap().unwrap().value,
+        <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal2.borrow())
+            .unwrap()
+            .unwrap()
+            .value,
         State::new(
             -(((1.0 + 4.0) / 2.0) + 4.0) / 2.0,
             -((2.0 + 5.0) / 2.0 + 5.0) / 2.0,
@@ -139,7 +160,10 @@ fn axle() {
     connect(axle.get_terminal(2), &terminal3);
     axle.update().unwrap();
     assert_eq!(
-        <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal1.borrow()).unwrap().unwrap().value,
+        <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal1.borrow())
+            .unwrap()
+            .unwrap()
+            .value,
         State::new(
             ((1.0 + 4.0) / 2.0 + 1.0) / 2.0,
             ((2.0 + 5.0) / 2.0 + 2.0) / 2.0,
@@ -147,7 +171,10 @@ fn axle() {
         )
     );
     assert_eq!(
-        <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal2.borrow()).unwrap().unwrap().value,
+        <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal2.borrow())
+            .unwrap()
+            .unwrap()
+            .value,
         State::new(
             ((1.0 + 4.0) / 2.0 + 4.0) / 2.0,
             ((2.0 + 5.0) / 2.0 + 5.0) / 2.0,
@@ -155,7 +182,10 @@ fn axle() {
         )
     );
     assert_eq!(
-        <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal3.borrow()).unwrap().unwrap().value,
+        <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal3.borrow())
+            .unwrap()
+            .unwrap()
+            .value,
         State::new(2.5, 3.5, 4.5)
     );
 }
@@ -189,15 +219,24 @@ fn differential() {
     const TERM_2: f32 = (EST_2 + 3.0) / 2.0;
     const TERM_SUM: f32 = (EST_SUM + 4.0) / 2.0;
     assert_eq!(
-        <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal1.borrow()).unwrap().unwrap().value,
+        <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal1.borrow())
+            .unwrap()
+            .unwrap()
+            .value,
         State::new(TERM_1, TERM_1, TERM_1)
     );
     assert_eq!(
-        <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal2.borrow()).unwrap().unwrap().value,
+        <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal2.borrow())
+            .unwrap()
+            .unwrap()
+            .value,
         State::new(TERM_2, TERM_2, TERM_2)
     );
     assert_eq!(
-        <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal_sum.borrow()).unwrap().unwrap().value,
+        <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal_sum.borrow())
+            .unwrap()
+            .unwrap()
+            .value,
         State::new(TERM_SUM, TERM_SUM, TERM_SUM)
     );
 }
@@ -231,15 +270,24 @@ fn differential_distrust_side_1() {
     const TERM_2: f32 = (EST_2 + 3.0) / 2.0;
     const TERM_SUM: f32 = (EST_SUM + 4.0) / 2.0;
     assert_eq!(
-        <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal1.borrow()).unwrap().unwrap().value,
+        <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal1.borrow())
+            .unwrap()
+            .unwrap()
+            .value,
         State::new(TERM_1, TERM_1, TERM_1)
     );
     assert_eq!(
-        <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal2.borrow()).unwrap().unwrap().value,
+        <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal2.borrow())
+            .unwrap()
+            .unwrap()
+            .value,
         State::new(TERM_2, TERM_2, TERM_2)
     );
     assert_eq!(
-        <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal_sum.borrow()).unwrap().unwrap().value,
+        <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal_sum.borrow())
+            .unwrap()
+            .unwrap()
+            .value,
         State::new(TERM_SUM, TERM_SUM, TERM_SUM)
     );
 }
@@ -273,15 +321,24 @@ fn differential_distrust_side_2() {
     const TERM_2: f32 = (EST_2 + 3.0) / 2.0;
     const TERM_SUM: f32 = (EST_SUM + 4.0) / 2.0;
     assert_eq!(
-        <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal1.borrow()).unwrap().unwrap().value,
+        <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal1.borrow())
+            .unwrap()
+            .unwrap()
+            .value,
         State::new(TERM_1, TERM_1, TERM_1)
     );
     assert_eq!(
-        <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal2.borrow()).unwrap().unwrap().value,
+        <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal2.borrow())
+            .unwrap()
+            .unwrap()
+            .value,
         State::new(TERM_2, TERM_2, TERM_2)
     );
     assert_eq!(
-        <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal_sum.borrow()).unwrap().unwrap().value,
+        <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal_sum.borrow())
+            .unwrap()
+            .unwrap()
+            .value,
         State::new(TERM_SUM, TERM_SUM, TERM_SUM)
     );
 }
@@ -315,15 +372,24 @@ fn differential_distrust_sum() {
     const TERM_2: f32 = (EST_2 + 3.0) / 2.0;
     const TERM_SUM: f32 = (EST_SUM + 4.0) / 2.0;
     assert_eq!(
-        <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal1.borrow()).unwrap().unwrap().value,
+        <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal1.borrow())
+            .unwrap()
+            .unwrap()
+            .value,
         State::new(TERM_1, TERM_1, TERM_1)
     );
     assert_eq!(
-        <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal2.borrow()).unwrap().unwrap().value,
+        <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal2.borrow())
+            .unwrap()
+            .unwrap()
+            .value,
         State::new(TERM_2, TERM_2, TERM_2)
     );
     assert_eq!(
-        <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal_sum.borrow()).unwrap().unwrap().value,
+        <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal_sum.borrow())
+            .unwrap()
+            .unwrap()
+            .value,
         State::new(TERM_SUM, TERM_SUM, TERM_SUM)
     );
 }
@@ -381,10 +447,7 @@ fn actuator_wrapper() {
         .unwrap();
     terminal
         .borrow_mut()
-        .set(Datum::new(
-            2,
-            State::new(1.0, 2.0, 3.0),
-        ))
+        .set(Datum::new(2, State::new(1.0, 2.0, 3.0)))
         .unwrap();
     wrapper.update().unwrap();
     unsafe {
@@ -409,7 +472,93 @@ fn getter_state_device_wrapper() {
     connect(wrapper.get_terminal(), &terminal);
     wrapper.update().unwrap();
     assert_eq!(
-        <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal.borrow()).unwrap().unwrap().value,
+        <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal.borrow())
+            .unwrap()
+            .unwrap()
+            .value,
         State::new(1.0, 2.0, 3.0)
     );
+}
+#[test]
+fn pid_wrapper() {
+    static mut ASSERTS: u8 = 0;
+    const COMMAND: Command = Command::new(PositionDerivative::Position, 5.0);
+    const STATE: State = State::new(0.0, 0.0, 0.0);
+    const K_VALUES: PositionDerivativeDependentPIDKValues =
+        PositionDerivativeDependentPIDKValues::new(
+            PIDKValues::new(1.0, 0.01, 0.1),
+            PIDKValues::new(1.0, 0.01, 0.1),
+            PIDKValues::new(1.0, 0.01, 0.1),
+        );
+    use rrtk::*;
+    struct Motor {
+        settable_data: SettableData<f32, ()>,
+        time: i64,
+    }
+    impl Motor {
+        fn new() -> Self {
+            Self {
+                settable_data: SettableData::new(),
+                time: 0,
+            }
+        }
+    }
+    impl Settable<f32, ()> for Motor {
+        fn impl_set(&mut self, value: f32) -> NothingOrError<()> {
+            assert_eq!(
+                value,
+                match self.time {
+                    1 => 5.0,
+                    2 => 5.05,
+                    3 => 5.1,
+                    4 => 5.15,
+                    _ => unimplemented!(),
+                }
+            );
+            unsafe {
+                ASSERTS += 1;
+            }
+            Ok(())
+        }
+        fn get_settable_data_ref(&self) -> &SettableData<f32, ()> {
+            &self.settable_data
+        }
+        fn get_settable_data_mut(&mut self) -> &mut SettableData<f32, ()> {
+            &mut self.settable_data
+        }
+    }
+    impl Updatable<()> for Motor {
+        fn update(&mut self) -> NothingOrError<()> {
+            self.update_following_data().unwrap();
+            self.time += 1;
+            Ok(())
+        }
+    }
+    #[derive(Default)]
+    struct Encoder {
+        time: i64,
+    }
+    impl Getter<State, ()> for Encoder {
+        fn get(&self) -> Output<State, ()> {
+            Ok(Some(Datum::new(self.time, STATE)))
+        }
+    }
+    impl Updatable<()> for Encoder {
+        fn update(&mut self) -> NothingOrError<()> {
+            self.time += 1;
+            Ok(())
+        }
+    }
+    let motor = Motor::new();
+    let mut motor_wrapper = devices::wrappers::PIDWrapper::new(motor, 0, STATE, COMMAND, K_VALUES);
+    let encoder = Encoder::default();
+    let mut encoder_wrapper = devices::wrappers::GetterStateDeviceWrapper::new(encoder);
+    connect(motor_wrapper.get_terminal(), encoder_wrapper.get_terminal());
+    for _ in 0..5 {
+        motor_wrapper.update().unwrap();
+        encoder_wrapper.update().unwrap();
+    }
+    unsafe {
+        assert_eq!(ASSERTS, 4);
+    }
 }
