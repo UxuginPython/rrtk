@@ -129,3 +129,19 @@ Add moving average stream.
 - Add methods to builtin devices for getting references to their terminals.
 - Slightly improve performance of `Terminal`'s `get` implementation by using an array of `MaybeUninit` rather than `Vec`.
 - Minor documentation fixes.
+### 0.4.0
+- Fix `Invert` `get_terminal_2` which was returning terminal 1.
+- Make terminals pass commands to their connected counterparts.
+- Rename `SettableCommandDeviceWrapper` to `ActuatorWrapper`.
+- Make `ActuatorWrapper` update its inner `Settable`.
+- Make `ActuatorWrapper` call `update_terminals` in its `Updatable` implementation.
+- Fix `CommandPID` error integral doubling bug.
+- Add `TerminalData` type containing a timestamp, an optional command, and an optional state.
+- Implement `Getter<TerminalData, _>` for `Terminal`.
+- Add `PIDWrapper`, a  wrapper very similar to `ActuatorWrapper` that uses a `CommandPID` to control a DC motor rather than needing a servo or a control system set up by the user.
+- Implement `TimeGetter` for `i64`. It will always return its value as a time.
+- Remove unused `CannotConnectTerminals` error variant.
+- Make `GetterStateDeviceWrapper` update its inner `Getter`.
+- Keep `CommandPID` from resetting itself whenever it gets a new command rather than only when the command is different.
+- Mark constructors for `State`, `Datum`, `PIDKValues`, `PositionDerivativeDependentPIDKValues`, and `Command` as `const`.
+- Documentation improvements.
