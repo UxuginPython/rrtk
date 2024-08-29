@@ -580,21 +580,17 @@ pub trait Getter<G, E: Copy + Debug>: Updatable<E> {
 }
 ///Internal data needed for following a `Getter` with a `Settable`.
 pub struct SettableData<S, E: Copy + Debug> {
-    following: SettableFollowing<S, E>,
+    following: Option<InputGetter<S, E>>,
     last_request: Option<S>,
 }
 impl<S, E: Copy + Debug> SettableData<S, E> {
     ///Constructor for SettableData.
     pub fn new() -> Self {
         Self {
-            following: SettableFollowing::Idle,
+            following: None,
             last_request: None,
         }
     }
-}
-enum SettableFollowing<S, E: Copy + Debug> {
-    Idle,
-    Following(InputGetter<S, E>),
 }
 ///Something with a `set` method. Usually used for motors and other mechanical components and
 ///systems. This trait too is fairly broad.
@@ -623,12 +619,12 @@ pub trait Settable<S: Clone, E: Copy + Debug>: Updatable<E> {
     ///`update_following_data` in your `Updatable` implementation.
     fn follow(&mut self, getter: InputGetter<S, E>) {
         let data = self.get_settable_data_mut();
-        data.following = SettableFollowing::Following(getter);
+        data.following = Some(getter);
     }
     ///Stop following the `Getter`.
     fn stop_following(&mut self) {
         let data = self.get_settable_data_mut();
-        data.following = SettableFollowing::Idle;
+        data.following = None;
     }
     ///Get a new value from the `Getter` we're following, if there is one, and call `set`
     ///accordingly. You must add this to your `Updatable` implementation if you are following
@@ -637,8 +633,8 @@ pub trait Settable<S: Clone, E: Copy + Debug>: Updatable<E> {
     fn update_following_data(&mut self) -> NothingOrError<E> {
         let data = self.get_settable_data_ref();
         match &data.following {
-            SettableFollowing::Idle => {}
-            SettableFollowing::Following(getter) => {
+            None => {}
+            Some(getter) => {
                 let new_value = getter.borrow().get()?;
                 match new_value {
                     None => {
