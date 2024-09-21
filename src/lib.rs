@@ -690,3 +690,23 @@ pub trait Device<E: Copy + Debug>: Updatable<E> {
     ///device.
     fn update_terminals(&mut self) -> NothingOrError<E>;
 }
+pub enum MyReference<T> {
+    HeWasABoy(*mut T),
+    SheWasAGirl(Rc<RefCell<T>>),
+}
+impl<T: Updatable<E>, E: Copy + Debug> Updatable<E> for MyReference<T> {
+    fn update(&mut self) -> NothingOrError<E> {
+        match self {
+            Self::HeWasABoy(ptr) => unsafe { (**ptr).update() }
+            Self::SheWasAGirl(noice) => noice.borrow_mut().update(),
+        }
+    }
+}
+impl<T: Getter<U, E>, U, E: Copy + Debug> Getter<U, E> for MyReference<T> {
+    fn get(&self) -> Output<U, E> {
+        match self {
+            Self::HeWasABoy(ptr) => unsafe { (**ptr).get() }
+            Self::SheWasAGirl(noice) => noice.borrow().get(),
+        }
+    }
+}
