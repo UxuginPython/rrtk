@@ -13,7 +13,7 @@ Copyright 2024 UxuginPython on GitHub
 //!Rust Robotics ToolKit
 //!A set of algorithms and other tools for robotics in Rust.
 //!It is partially `no_std`. It does not currently integrate with any API directly, but this may be added in the future.
-#![warn(missing_docs)]
+//#![warn(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
 extern crate alloc;
 use alloc::rc::Rc;
@@ -690,7 +690,7 @@ pub trait Device<E: Copy + Debug>: Updatable<E> {
     ///device.
     fn update_terminals(&mut self) -> NothingOrError<E>;
 }
-pub enum MyReference<T: ?Sized> {
+enum MyReference<T: ?Sized> {
     HeWasABoy(*mut T),
     SheWasAGirl(Rc<RefCell<T>>),
 }
@@ -729,5 +729,35 @@ impl<T: Settable<U, E>, U: Clone, E: Copy + Debug> Settable<U, E> for MyReferenc
             Self::HeWasABoy(ptr) => unsafe { (**ptr).get_settable_data_mut() }
             Self::SheWasAGirl(noice) => unsafe { core::mem::transmute(noice.borrow_mut().get_settable_data_mut()) },
         }
+    }
+}
+pub struct PublicMyReference<T: ?Sized>(MyReference<T>);
+impl<T: ?Sized> PublicMyReference<T> {
+    pub unsafe fn from_ptr(ptr: *mut T) -> Self {
+        Self(MyReference::HeWasABoy(ptr))
+    }
+    pub fn from_noice(noice: Rc<RefCell<T>>) -> Self {
+        Self(MyReference::SheWasAGirl(noice))
+    }
+}
+impl<T: Updatable<E>, E: Copy + Debug> Updatable<E> for PublicMyReference<T> {
+    fn update(&mut self) -> NothingOrError<E> {
+        self.0.update()
+    }
+}
+impl<T: Getter<U, E>, U, E: Copy + Debug> Getter<U, E> for PublicMyReference<T> {
+    fn get(&self) -> Output<U, E> {
+        self.0.get()
+    }
+}
+impl<T: Settable<U, E>, U: Clone, E: Copy + Debug> Settable<U, E> for PublicMyReference<T> {
+    fn impl_set(&mut self, value: U) -> NothingOrError<E> {
+        self.0.impl_set(value)
+    }
+    fn get_settable_data_ref(&self) -> &SettableData<U, E> {
+        self.0.get_settable_data_ref()
+    }
+    fn get_settable_data_mut(&mut self) -> &mut SettableData<U, E> {
+        self.0.get_settable_data_mut()
     }
 }
