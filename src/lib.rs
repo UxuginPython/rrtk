@@ -721,7 +721,7 @@ impl<T: Settable<U, E>, U: Clone, E: Copy + Debug> Settable<U, E> for MyReferenc
     fn get_settable_data_ref(&self) -> &SettableData<U, E> {
         match self {
             Self::HeWasABoy(ptr) => unsafe { (**ptr).get_settable_data_ref() }
-            Self::SheWasAGirl(noice) => unsafe { core::mem::transmute(&*noice.borrow().get_settable_data_ref()) },
+            Self::SheWasAGirl(noice) => unsafe { core::mem::transmute(noice.borrow().get_settable_data_ref()) },
         }
     }
     fn get_settable_data_mut(&mut self) -> &mut SettableData<U, E> {
