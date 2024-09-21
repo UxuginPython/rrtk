@@ -690,7 +690,7 @@ pub trait Device<E: Copy + Debug>: Updatable<E> {
     ///device.
     fn update_terminals(&mut self) -> NothingOrError<E>;
 }
-pub enum MyReference<T> {
+pub enum MyReference<T: ?Sized> {
     HeWasABoy(*mut T),
     SheWasAGirl(Rc<RefCell<T>>),
 }
@@ -707,6 +707,27 @@ impl<T: Getter<U, E>, U, E: Copy + Debug> Getter<U, E> for MyReference<T> {
         match self {
             Self::HeWasABoy(ptr) => unsafe { (**ptr).get() }
             Self::SheWasAGirl(noice) => noice.borrow().get(),
+        }
+    }
+}
+impl<T: Settable<U, E>, U: Clone, E: Copy + Debug> Settable<U, E> for MyReference<T> {
+    fn impl_set(&mut self, value: U) -> NothingOrError<E> {
+        match self {
+            Self::HeWasABoy(ptr) => unsafe { (**ptr).set(value) }
+            Self::SheWasAGirl(noice) => noice.borrow_mut().set(value),
+        }
+    }
+    //cAnNoT rEtUrN vAlUe rEfErEnCiNg tEmPoRaRy vAlUe HECK YEAH I CAN
+    fn get_settable_data_ref(&self) -> &SettableData<U, E> {
+        match self {
+            Self::HeWasABoy(ptr) => unsafe { (**ptr).get_settable_data_ref() }
+            Self::SheWasAGirl(noice) => unsafe { core::mem::transmute(&*noice.borrow().get_settable_data_ref()) },
+        }
+    }
+    fn get_settable_data_mut(&mut self) -> &mut SettableData<U, E> {
+        match self {
+            Self::HeWasABoy(ptr) => unsafe { (**ptr).get_settable_data_mut() }
+            Self::SheWasAGirl(noice) => unsafe { core::mem::transmute(noice.borrow_mut().get_settable_data_mut()) },
         }
     }
 }
