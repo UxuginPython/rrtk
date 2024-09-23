@@ -18,9 +18,11 @@ Copyright 2024 UxuginPython on GitHub
 extern crate alloc;
 use alloc::rc::Rc;
 use alloc::vec::Vec;
-use core::cell::RefCell;
+use core::cell::{Ref, RefCell, RefMut};
 use core::fmt::Debug;
-use core::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Not, Sub, SubAssign};
+use core::ops::{
+    Add, AddAssign, Deref, DerefMut, Div, DivAssign, Mul, MulAssign, Neg, Not, Sub, SubAssign,
+};
 mod datum;
 #[cfg(feature = "devices")]
 pub mod devices;
@@ -690,44 +692,74 @@ pub trait Device<E: Copy + Debug>: Updatable<E> {
     ///device.
     fn update_terminals(&mut self) -> NothingOrError<E>;
 }
+enum MyRefBorrow<'a, T: ?Sized> {
+    Ptr(*const T),
+    Rc(Ref<'a, T>),
+}
+impl<T: ?Sized> Deref for MyRefBorrow<'_, T> {
+    type Target = T;
+    fn deref(&self) -> &T {
+        match self {
+            Self::Ptr(ptr) => unsafe { &**ptr },
+            Self::Rc(rc) => rc,
+        }
+    }
+}
+pub struct PublicMyRefBorrow<'a, T: ?Sized>(MyRefBorrow<'a, T>);
+impl<T: ?Sized> Deref for PublicMyRefBorrow<'_, T> {
+    type Target = T;
+    fn deref(&self) -> &T {
+        &self.0
+    }
+}
+enum MyRefBorrowMut<'a, T: ?Sized> {
+    Ptr(*mut T),
+    Rc(RefMut<'a, T>),
+}
+impl<T: ?Sized> Deref for MyRefBorrowMut<'_, T> {
+    type Target = T;
+    fn deref(&self) -> &T {
+        match self {
+            Self::Ptr(ptr) => unsafe { &**ptr },
+            Self::Rc(rc) => rc,
+        }
+    }
+}
+impl<T: ?Sized> DerefMut for MyRefBorrowMut<'_, T> {
+    fn deref_mut(&mut self) -> &mut T {
+        match self {
+            Self::Ptr(ptr) => unsafe { &mut **ptr },
+            Self::Rc(rc) => rc,
+        }
+    }
+}
+pub struct PublicMyRefBorrowMut<'a, T: ?Sized>(MyRefBorrowMut<'a, T>);
+impl<T: ?Sized> Deref for PublicMyRefBorrowMut<'_, T> {
+    type Target = T;
+    fn deref(&self) -> &T {
+        &self.0
+    }
+}
+impl<T: ?Sized> DerefMut for PublicMyRefBorrowMut<'_, T> {
+    fn deref_mut(&mut self) -> &mut T {
+        &mut self.0
+    }
+}
 enum MyReference<T: ?Sized> {
     HeWasABoy(*mut T),
     SheWasAGirl(Rc<RefCell<T>>),
 }
-impl<T: Updatable<E>, E: Copy + Debug> Updatable<E> for MyReference<T> {
-    fn update(&mut self) -> NothingOrError<E> {
+impl<T: ?Sized> MyReference<T> {
+    fn borrow(&self) -> MyRefBorrow<'_, T> {
         match self {
-            Self::HeWasABoy(ptr) => unsafe { (**ptr).update() }
-            Self::SheWasAGirl(noice) => noice.borrow_mut().update(),
+            Self::HeWasABoy(ptr) => MyRefBorrow::Ptr(*ptr),
+            Self::SheWasAGirl(rc) => MyRefBorrow::Rc(rc.borrow()),
         }
     }
-}
-impl<T: Getter<U, E>, U, E: Copy + Debug> Getter<U, E> for MyReference<T> {
-    fn get(&self) -> Output<U, E> {
+    fn borrow_mut(&self) -> MyRefBorrowMut<'_, T> {
         match self {
-            Self::HeWasABoy(ptr) => unsafe { (**ptr).get() }
-            Self::SheWasAGirl(noice) => noice.borrow().get(),
-        }
-    }
-}
-impl<T: Settable<U, E>, U: Clone, E: Copy + Debug> Settable<U, E> for MyReference<T> {
-    fn impl_set(&mut self, value: U) -> NothingOrError<E> {
-        match self {
-            Self::HeWasABoy(ptr) => unsafe { (**ptr).set(value) }
-            Self::SheWasAGirl(noice) => noice.borrow_mut().set(value),
-        }
-    }
-    //cAnNoT rEtUrN vAlUe rEfErEnCiNg tEmPoRaRy vAlUe HECK YEAH I CAN
-    fn get_settable_data_ref(&self) -> &SettableData<U, E> {
-        match self {
-            Self::HeWasABoy(ptr) => unsafe { (**ptr).get_settable_data_ref() }
-            Self::SheWasAGirl(noice) => unsafe { core::mem::transmute(noice.borrow().get_settable_data_ref()) },
-        }
-    }
-    fn get_settable_data_mut(&mut self) -> &mut SettableData<U, E> {
-        match self {
-            Self::HeWasABoy(ptr) => unsafe { (**ptr).get_settable_data_mut() }
-            Self::SheWasAGirl(noice) => unsafe { core::mem::transmute(noice.borrow_mut().get_settable_data_mut()) },
+            Self::HeWasABoy(ptr) => MyRefBorrowMut::Ptr(*ptr),
+            Self::SheWasAGirl(rc) => MyRefBorrowMut::Rc(rc.borrow_mut()),
         }
     }
 }
@@ -739,25 +771,10 @@ impl<T: ?Sized> PublicMyReference<T> {
     pub fn from_noice(noice: Rc<RefCell<T>>) -> Self {
         Self(MyReference::SheWasAGirl(noice))
     }
-}
-impl<T: Updatable<E>, E: Copy + Debug> Updatable<E> for PublicMyReference<T> {
-    fn update(&mut self) -> NothingOrError<E> {
-        self.0.update()
+    pub fn borrow(&self) -> PublicMyRefBorrow<'_, T> {
+        PublicMyRefBorrow(self.0.borrow())
     }
-}
-impl<T: Getter<U, E>, U, E: Copy + Debug> Getter<U, E> for PublicMyReference<T> {
-    fn get(&self) -> Output<U, E> {
-        self.0.get()
-    }
-}
-impl<T: Settable<U, E>, U: Clone, E: Copy + Debug> Settable<U, E> for PublicMyReference<T> {
-    fn impl_set(&mut self, value: U) -> NothingOrError<E> {
-        self.0.impl_set(value)
-    }
-    fn get_settable_data_ref(&self) -> &SettableData<U, E> {
-        self.0.get_settable_data_ref()
-    }
-    fn get_settable_data_mut(&mut self) -> &mut SettableData<U, E> {
-        self.0.get_settable_data_mut()
+    pub fn borrow_mut(&self) -> PublicMyRefBorrowMut<'_, T> {
+        PublicMyRefBorrowMut(self.0.borrow_mut())
     }
 }
