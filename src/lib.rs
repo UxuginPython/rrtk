@@ -27,10 +27,12 @@ mod datum;
 #[cfg(feature = "devices")]
 pub mod devices;
 mod motion_profile;
+pub mod reference;
 mod state;
 pub mod streams;
 pub use datum::*;
 pub use motion_profile::*;
+pub use reference::*;
 pub use state::*;
 ///RRTK follows the enum style of error handling. This is the error type returned from nearly all
 ///RRTK types, but you can add your own custom error type using `Other(O)`. It is strongly
@@ -691,90 +693,4 @@ pub trait Device<E: Copy + Debug>: Updatable<E> {
     ///Call only the `update` methods of owned terminals and do not update anything else with the
     ///device.
     fn update_terminals(&mut self) -> NothingOrError<E>;
-}
-enum MyRefBorrow<'a, T: ?Sized> {
-    Ptr(*const T),
-    Rc(Ref<'a, T>),
-}
-impl<T: ?Sized> Deref for MyRefBorrow<'_, T> {
-    type Target = T;
-    fn deref(&self) -> &T {
-        match self {
-            Self::Ptr(ptr) => unsafe { &**ptr },
-            Self::Rc(rc) => rc,
-        }
-    }
-}
-pub struct PublicMyRefBorrow<'a, T: ?Sized>(MyRefBorrow<'a, T>);
-impl<T: ?Sized> Deref for PublicMyRefBorrow<'_, T> {
-    type Target = T;
-    fn deref(&self) -> &T {
-        &self.0
-    }
-}
-enum MyRefBorrowMut<'a, T: ?Sized> {
-    Ptr(*mut T),
-    Rc(RefMut<'a, T>),
-}
-impl<T: ?Sized> Deref for MyRefBorrowMut<'_, T> {
-    type Target = T;
-    fn deref(&self) -> &T {
-        match self {
-            Self::Ptr(ptr) => unsafe { &**ptr },
-            Self::Rc(rc) => rc,
-        }
-    }
-}
-impl<T: ?Sized> DerefMut for MyRefBorrowMut<'_, T> {
-    fn deref_mut(&mut self) -> &mut T {
-        match self {
-            Self::Ptr(ptr) => unsafe { &mut **ptr },
-            Self::Rc(rc) => rc,
-        }
-    }
-}
-pub struct PublicMyRefBorrowMut<'a, T: ?Sized>(MyRefBorrowMut<'a, T>);
-impl<T: ?Sized> Deref for PublicMyRefBorrowMut<'_, T> {
-    type Target = T;
-    fn deref(&self) -> &T {
-        &self.0
-    }
-}
-impl<T: ?Sized> DerefMut for PublicMyRefBorrowMut<'_, T> {
-    fn deref_mut(&mut self) -> &mut T {
-        &mut self.0
-    }
-}
-enum MyReference<T: ?Sized> {
-    HeWasABoy(*mut T),
-    SheWasAGirl(Rc<RefCell<T>>),
-}
-impl<T: ?Sized> MyReference<T> {
-    fn borrow(&self) -> MyRefBorrow<'_, T> {
-        match self {
-            Self::HeWasABoy(ptr) => MyRefBorrow::Ptr(*ptr),
-            Self::SheWasAGirl(rc) => MyRefBorrow::Rc(rc.borrow()),
-        }
-    }
-    fn borrow_mut(&self) -> MyRefBorrowMut<'_, T> {
-        match self {
-            Self::HeWasABoy(ptr) => MyRefBorrowMut::Ptr(*ptr),
-            Self::SheWasAGirl(rc) => MyRefBorrowMut::Rc(rc.borrow_mut()),
-        }
-    }
-}
-pub struct PublicMyReference<T: ?Sized>(MyReference<T>);
-impl<T: ?Sized> PublicMyReference<T> {
-    pub unsafe fn from_ptr(ptr: *mut T) -> Self {
-        Self(MyReference::HeWasABoy(ptr))
-    }
-    pub fn from_noice(noice: Rc<RefCell<T>>) -> Self {
-        Self(MyReference::SheWasAGirl(noice))
-    }
-    pub fn borrow(&self) -> PublicMyRefBorrow<'_, T> {
-        PublicMyRefBorrow(self.0.borrow())
-    }
-    pub fn borrow_mut(&self) -> PublicMyRefBorrowMut<'_, T> {
-        PublicMyRefBorrowMut(self.0.borrow_mut())
-    }
 }
