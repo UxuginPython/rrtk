@@ -44,20 +44,22 @@ impl AndState {
 ///None    | true    | None
 ///true    | true    | true
 ///```
-pub struct AndStream<E: Copy + Debug> {
-    input1: InputGetter<bool, E>,
-    input2: InputGetter<bool, E>,
+pub struct AndStream<G1: Getter<bool, E>, G2: Getter<bool, E>, E: Copy + Debug> {
+    input1: Reference<G1>,
+    input2: Reference<G2>,
+    phantom_e: PhantomData<E>,
 }
-impl<E: Copy + Debug> AndStream<E> {
+impl<G1: Getter<bool, E>, G2: Getter<bool, E>, E: Copy + Debug> AndStream<G1, G2, E> {
     ///Constructor for `AndStream`.
-    pub fn new(input1: InputGetter<bool, E>, input2: InputGetter<bool, E>) -> Self {
+    pub fn new(input1: Reference<G1>, input2: Reference<G2>) -> Self {
         Self {
             input1: input1,
             input2: input2,
+            phantom_e: PhantomData,
         }
     }
 }
-impl<E: Copy + Debug> Getter<bool, E> for AndStream<E> {
+impl<G1: Getter<bool, E>, G2: Getter<bool, E>, E: Copy + Debug> Getter<bool, E> for AndStream<G1, G2, E> {
     fn get(&self) -> Output<bool, E> {
         let gotten1 = self.input1.borrow().get()?;
         let gotten2 = self.input2.borrow().get()?;
@@ -107,12 +109,12 @@ impl<E: Copy + Debug> Getter<bool, E> for AndStream<E> {
         }
     }
 }
-impl<E: Copy + Debug> Updatable<E> for AndStream<E> {
+impl<G1: Getter<bool, E>, G2: Getter<bool, E>, E: Copy + Debug> Updatable<E> for AndStream<G1, G2, E> {
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
     }
 }
-enum OrState {
+/*enum OrState {
     DefinitelyTrue, //An input returned true.
     MaybeFalse,     //An input returned None and no input has returned true, so we can't assume an
     //output.
@@ -229,4 +231,4 @@ impl<E: Copy + Debug> Updatable<E> for NotStream<E> {
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
     }
-}
+}*/
