@@ -13,7 +13,7 @@ Copyright 2024 UxuginPython on GitHub
 //!Rust Robotics ToolKit
 //!A set of algorithms and other tools for robotics in Rust.
 //!It is partially `no_std`. It does not currently integrate with any API directly, but this may be added in the future.
-//#![warn(missing_docs)]
+#![warn(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
 extern crate alloc;
 use alloc::rc::Rc;

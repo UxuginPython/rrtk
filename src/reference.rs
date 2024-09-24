@@ -1,3 +1,5 @@
+//!Contains `Reference`, a special enum vith variants for different kinds of references, and
+//!related types. Everything here is reexported at the crate level.
 use crate::*;
 enum InternalBorrow<'a, T: ?Sized> {
     Ptr(*const T),
@@ -12,6 +14,7 @@ impl<T: ?Sized> Deref for InternalBorrow<'_, T> {
         }
     }
 }
+///An immutable borrow of an RRTK `Reference`, similar to `Ref` for a `RefCell`.
 pub struct Borrow<'a, T: ?Sized>(InternalBorrow<'a, T>);
 impl<T: ?Sized> Deref for Borrow<'_, T> {
     type Target = T;
@@ -40,6 +43,7 @@ impl<T: ?Sized> DerefMut for InternalBorrowMut<'_, T> {
         }
     }
 }
+///A mutable borrow of an RRTK `Reference`, similar to `RefMut` for a `RefCell`.
 pub struct BorrowMut<'a, T: ?Sized>(InternalBorrowMut<'a, T>);
 impl<T: ?Sized> Deref for BorrowMut<'_, T> {
     type Target = T;
@@ -72,17 +76,25 @@ impl<T: ?Sized> InternalReference<T> {
         }
     }
 }
+///A special enum with variants for different kinds of references depending on your platform and
+///code structure. (Some variants are alloc- or std-only.)
 pub struct Reference<T: ?Sized>(InternalReference<T>);
 impl<T: ?Sized> Reference<T> {
+    ///Create a `Reference` from a raw mutable pointer. Good if you're not multithreading and you
+    ///want to avoid dynamic allocation. Making the object static is strongly recommended if you
+    ///use this.
     pub unsafe fn from_ptr(ptr: *mut T) -> Self {
         Self(InternalReference::Ptr(ptr))
     }
+    ///Create a `Reference` from an `Rc<RefCell<T>>`.
     pub fn from_rc_refcell(rc_refcell: Rc<RefCell<T>>) -> Self {
         Self(InternalReference::RcRefCell(rc_refcell))
     }
+    ///Immutably borrow a `Reference`, similarly to how you would with a `RefCell`.
     pub fn borrow(&self) -> Borrow<'_, T> {
         Borrow(self.0.borrow())
     }
+    ///Mutably borrow a `Reference`, similarly to how you would with a `RefCell`.
     pub fn borrow_mut(&self) -> BorrowMut<'_, T> {
         BorrowMut(self.0.borrow_mut())
     }
