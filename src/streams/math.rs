@@ -14,11 +14,11 @@ Copyright 2024 UxuginPython on GitHub
 use crate::streams::*;
 ///A stream that adds all its inputs. If an input returns `Ok(None)`, it is excluded.
 pub struct SumStream<T: AddAssign + Clone + Default, const N: usize, E> {
-    addends: [InputGetter<T, E>; N],
+    addends: [Reference<dyn Getter<T, E>>; N],
 }
 impl<T: AddAssign + Clone + Default, const N: usize, E> SumStream<T, N, E> {
     ///Constructor for `SumStream`.
-    pub fn new(addends: [InputGetter<T, E>; N]) -> Self {
+    pub fn new(addends: [Reference<dyn Getter<T, E>>; N]) -> Self {
         if N < 1 {
             panic!("rrtk::streams::SumStream must have at least one input stream");
         }
@@ -80,20 +80,29 @@ impl<T: AddAssign + Clone + Default, const N: usize, E: Copy + Debug> Updatable<
 }
 ///A stream that subtracts one of its inputs from the other. If the subtrahend stream returns
 ///`Ok(None)`, the minuend's value will be returned directly.
-pub struct DifferenceStream<T: Sub<Output = T>, E: Copy + Debug> {
-    minuend: InputGetter<T, E>,
-    subtrahend: InputGetter<T, E>,
+pub struct DifferenceStream<T: Sub<Output = T>, GM: Getter<T, E>, GS: Getter<T, E>, E: Copy + Debug>
+{
+    minuend: Reference<GM>,
+    subtrahend: Reference<GS>,
+    phantom_t: PhantomData<T>,
+    phantom_e: PhantomData<E>,
 }
-impl<T: Sub<Output = T>, E: Copy + Debug> DifferenceStream<T, E> {
+impl<T: Sub<Output = T>, GM: Getter<T, E>, GS: Getter<T, E>, E: Copy + Debug>
+    DifferenceStream<T, GM, GS, E>
+{
     ///Constructor for `DifferenceStream`.
-    pub fn new(minuend: InputGetter<T, E>, subtrahend: InputGetter<T, E>) -> Self {
+    pub fn new(minuend: Reference<GM>, subtrahend: Reference<GS>) -> Self {
         Self {
             minuend: minuend,
             subtrahend: subtrahend,
+            phantom_t: PhantomData,
+            phantom_e: PhantomData,
         }
     }
 }
-impl<T: Sub<Output = T>, E: Copy + Debug> Getter<T, E> for DifferenceStream<T, E> {
+impl<T: Sub<Output = T>, GM: Getter<T, E>, GS: Getter<T, E>, E: Copy + Debug> Getter<T, E>
+    for DifferenceStream<T, GM, GS, E>
+{
     fn get(&self) -> Output<T, E> {
         let minuend_output = self.minuend.borrow().get()?;
         let subtrahend_output = self.subtrahend.borrow().get()?;
@@ -120,7 +129,9 @@ impl<T: Sub<Output = T>, E: Copy + Debug> Getter<T, E> for DifferenceStream<T, E
         Ok(Some(Datum::new(time, value)))
     }
 }
-impl<T: Sub<Output = T>, E: Copy + Debug> Updatable<E> for DifferenceStream<T, E> {
+impl<T: Sub<Output = T>, GM: Getter<T, E>, GS: Getter<T, E>, E: Copy + Debug> Updatable<E>
+    for DifferenceStream<T, GM, GS, E>
+{
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
     }
@@ -130,11 +141,11 @@ impl<T: Sub<Output = T>, E: Copy + Debug> Updatable<E> for DifferenceStream<T, E
 ///behavior, use `rrtk::streams::converters::NoneToValue` or
 ///`rrtk::streams::converters::NoneToError`.
 pub struct ProductStream<T: MulAssign, const N: usize, E> {
-    factors: [InputGetter<T, E>; N],
+    factors: [Reference<dyn Getter<T, E>>; N],
 }
 impl<T: Clone + MulAssign, const N: usize, E> ProductStream<T, N, E> {
     ///Constructor for `ProductStream`.
-    pub fn new(factors: [InputGetter<T, E>; N]) -> Self {
+    pub fn new(factors: [Reference<dyn Getter<T, E>>; N]) -> Self {
         if N < 1 {
             panic!("rrtk::streams::ProductStream must have at least one input stream");
         }
@@ -188,20 +199,28 @@ impl<T: Clone + MulAssign, const N: usize, E: Copy + Debug> Updatable<E>
 }
 ///A stream that divides one if its inputs by the other. If the divisor returns `Ok(None)`, the
 ///dividend's value is returned directly.
-pub struct QuotientStream<T: Div<Output = T>, E> {
-    dividend: InputGetter<T, E>,
-    divisor: InputGetter<T, E>,
+pub struct QuotientStream<T: Div<Output = T>, GD: Getter<T, E>, GS: Getter<T, E>, E: Copy + Debug> {
+    dividend: Reference<GD>,
+    divisor: Reference<GS>,
+    phantom_t: PhantomData<T>,
+    phantom_e: PhantomData<E>,
 }
-impl<T: Div<Output = T>, E> QuotientStream<T, E> {
+impl<T: Div<Output = T>, GD: Getter<T, E>, GS: Getter<T, E>, E: Copy + Debug>
+    QuotientStream<T, GD, GS, E>
+{
     ///Constructor for `QuotientStream`.
-    pub fn new(dividend: InputGetter<T, E>, divisor: InputGetter<T, E>) -> Self {
+    pub fn new(dividend: Reference<GD>, divisor: Reference<GS>) -> Self {
         Self {
             dividend: dividend,
             divisor: divisor,
+            phantom_t: PhantomData,
+            phantom_e: PhantomData,
         }
     }
 }
-impl<T: Div<Output = T>, E: Copy + Debug> Getter<T, E> for QuotientStream<T, E> {
+impl<T: Div<Output = T>, GD: Getter<T, E>, GS: Getter<T, E>, E: Copy + Debug> Getter<T, E>
+    for QuotientStream<T, GD, GS, E>
+{
     fn get(&self) -> Output<T, E> {
         let dividend_output = self.dividend.borrow().get()?;
         let divisor_output = self.divisor.borrow().get()?;
@@ -228,7 +247,9 @@ impl<T: Div<Output = T>, E: Copy + Debug> Getter<T, E> for QuotientStream<T, E> 
         Ok(Some(Datum::new(time, value)))
     }
 }
-impl<T: Div<Output = T>, E: Copy + Debug> Updatable<E> for QuotientStream<T, E> {
+impl<T: Div<Output = T>, GD: Getter<T, E>, GS: Getter<T, E>, E: Copy + Debug> Updatable<E>
+    for QuotientStream<T, GD, GS, E>
+{
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
     }
@@ -236,22 +257,26 @@ impl<T: Div<Output = T>, E: Copy + Debug> Updatable<E> for QuotientStream<T, E> 
 ///A stream that exponentiates one of its inputs to the other. If the exponent input returns
 ///`Ok(None)`, the base's value is returned directly. Only available with `std`.
 #[cfg(feature = "std")]
-pub struct ExponentStream<E> {
-    base: InputGetter<f32, E>,
-    exponent: InputGetter<f32, E>,
+pub struct ExponentStream<GB: Getter<f32, E>, GE: Getter<f32, E>, E: Copy + Debug> {
+    base: Reference<GB>,
+    exponent: Reference<GE>,
+    phantom_e: PhantomData<E>,
 }
 #[cfg(feature = "std")]
-impl<E> ExponentStream<E> {
+impl<GB: Getter<f32, E>, GE: Getter<f32, E>, E: Copy + Debug> ExponentStream<GB, GE, E> {
     ///Constructor for `ExponentStream`.
-    pub fn new(base: InputGetter<f32, E>, exponent: InputGetter<f32, E>) -> Self {
+    pub fn new(base: Reference<GB>, exponent: Reference<GE>) -> Self {
         Self {
             base: base,
             exponent: exponent,
+            phantom_e: PhantomData,
         }
     }
 }
 #[cfg(feature = "std")]
-impl<E: Copy + Debug> Getter<f32, E> for ExponentStream<E> {
+impl<GB: Getter<f32, E>, GE: Getter<f32, E>, E: Copy + Debug> Getter<f32, E>
+    for ExponentStream<GB, GE, E>
+{
     fn get(&self) -> Output<f32, E> {
         let base_output = self.base.borrow().get()?;
         let exponent_output = self.exponent.borrow().get()?;
@@ -279,12 +304,14 @@ impl<E: Copy + Debug> Getter<f32, E> for ExponentStream<E> {
     }
 }
 #[cfg(feature = "std")]
-impl<E: Copy + Debug> Updatable<E> for ExponentStream<E> {
+impl<GB: Getter<f32, E>, GE: Getter<f32, E>, E: Copy + Debug> Updatable<E>
+    for ExponentStream<GB, GE, E>
+{
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
     }
 }
-///A stream that computes the numerical derivative of its input.
+/*///A stream that computes the numerical derivative of its input.
 pub struct DerivativeStream<E: Copy + Debug> {
     input: InputGetter<f32, E>,
     value: Output<f32, E>,
@@ -404,4 +431,4 @@ impl<E: Copy + Debug> Updatable<E> for IntegralStream<E> {
         self.prev_output = Some(output);
         return Ok(());
     }
-}
+}*/
