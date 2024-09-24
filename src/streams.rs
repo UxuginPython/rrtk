@@ -14,22 +14,20 @@ Copyright 2024 UxuginPython on GitHub
 //!some helpful builtin streams for controlling your robot. See the `pid` example to learn more
 //!about how to use the stream system.
 use crate::*;
-#[cfg(not(feature = "std"))]
+#[cfg(feature = "alloc")]
 use alloc::collections::vec_deque::VecDeque;
-#[cfg(feature = "std")]
-use std::collections::vec_deque::VecDeque;
-pub mod control;
-pub mod converters;
-pub mod flow;
-pub mod logic;
-pub mod math;
+//pub mod control;
+//pub mod converters;
+//pub mod flow;
+//pub mod logic;
+//pub mod math;
 ///Returns the output of whichever input has the latest time.
 pub struct Latest<T, const C: usize, E: Copy + Debug> {
-    inputs: [InputGetter<T, E>; C],
+    inputs: [Reference<dyn Getter<T, E>>; C],
 }
 impl<T, const C: usize, E: Copy + Debug> Latest<T, C, E> {
     ///Constructor for `Latest`.
-    pub fn new(inputs: [InputGetter<T, E>; C]) -> Self {
+    pub fn new(inputs: [Reference<dyn Getter<T, E>>; C]) -> Self {
         if C < 1 {
             panic!("rrtk::streams::Latest C must be at least 1.");
         }
@@ -64,26 +62,30 @@ impl<T, const C: usize, E: Copy + Debug> Updatable<E> for Latest<T, C, E> {
     }
 }
 ///Expires data that are too old to be useful.
-pub struct Expirer<T, E: Copy + Debug> {
-    input: InputGetter<T, E>,
-    time_getter: InputTimeGetter<E>,
+pub struct Expirer<T, G: Getter<T, E>, TG: TimeGetter<E>, E: Copy + Debug> {
+    input: Reference<G>,
+    time_getter: Reference<TG>,
     max_time_delta: i64,
+    phantom_t: PhantomData<T>,
+    phantom_e: PhantomData<E>,
 }
-impl<T, E: Copy + Debug> Expirer<T, E> {
+impl<T, G: Getter<T, E>, TG: TimeGetter<E>, E: Copy + Debug> Expirer<T, G, TG, E> {
     ///Constructor for `Expirer`.
     pub fn new(
-        input: InputGetter<T, E>,
-        time_getter: InputTimeGetter<E>,
+        input: Reference<G>,
+        time_getter: Reference<TG>,
         max_time_delta: i64,
     ) -> Self {
         Self {
             input: input,
             time_getter: time_getter,
             max_time_delta: max_time_delta,
+            phantom_t: PhantomData,
+            phantom_e: PhantomData,
         }
     }
 }
-impl<T, E: Copy + Debug> Getter<T, E> for Expirer<T, E> {
+impl<T, G: Getter<T, E>, TG: TimeGetter<E>, E: Copy + Debug> Getter<T, E> for Expirer<T, G, TG, E> {
     fn get(&self) -> Output<T, E> {
         let output = match self.input.borrow().get()? {
             Some(datum) => datum,
@@ -96,7 +98,7 @@ impl<T, E: Copy + Debug> Getter<T, E> for Expirer<T, E> {
         Ok(Some(output))
     }
 }
-impl<T, E: Copy + Debug> Updatable<E> for Expirer<T, E> {
+impl<T, G: Getter<T, E>, TG: TimeGetter<E>, E: Copy + Debug> Updatable<E> for Expirer<T, G, TG, E> {
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
     }

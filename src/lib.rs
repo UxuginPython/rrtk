@@ -15,11 +15,15 @@ Copyright 2024 UxuginPython on GitHub
 //!It is partially `no_std`. It does not currently integrate with any API directly, but this may be added in the future.
 #![warn(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
+#[cfg(feature = "alloc")]
 extern crate alloc;
+#[cfg(feature = "alloc")]
 use alloc::rc::Rc;
+#[cfg(feature = "alloc")]
 use alloc::vec::Vec;
 use core::cell::RefCell;
 use core::fmt::Debug;
+use core::marker::PhantomData;
 use core::ops::{
     Add, AddAssign, Deref, DerefMut, Div, DivAssign, Mul, MulAssign, Neg, Not, Sub, SubAssign,
 };
@@ -29,7 +33,7 @@ pub mod devices;
 mod motion_profile;
 pub mod reference;
 mod state;
-//pub mod streams;
+pub mod streams;
 pub use datum::*;
 pub use motion_profile::*;
 pub use reference::*;

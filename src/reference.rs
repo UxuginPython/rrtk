@@ -3,7 +3,6 @@
 use crate::*;
 #[cfg(feature = "alloc")]
 use core::cell::{Ref, RefMut};
-use core::marker::PhantomData;
 #[cfg(feature = "std")]
 use std::sync::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 enum InternalBorrow<'a, T: ?Sized> {
