@@ -1,10 +1,13 @@
 //!Contains `Reference`, a special enum vith variants for different kinds of references, and
 //!related types. Everything here is reexported at the crate level.
 use crate::*;
+#[cfg(feature = "alloc")]
+use core::cell::{Ref, RefMut};
+use core::marker::PhantomData;
 #[cfg(feature = "std")]
 use std::sync::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 enum InternalBorrow<'a, T: ?Sized> {
-    Ptr(*const T),
+    Ptr(*const T, PhantomData<&'a ()>),
     #[cfg(feature = "alloc")]
     RefCellRef(Ref<'a, T>),
     #[cfg(feature = "std")]
@@ -14,7 +17,7 @@ impl<T: ?Sized> Deref for InternalBorrow<'_, T> {
     type Target = T;
     fn deref(&self) -> &T {
         match self {
-            Self::Ptr(ptr) => unsafe { &**ptr },
+            Self::Ptr(ptr, _) => unsafe { &**ptr },
             #[cfg(feature = "alloc")]
             Self::RefCellRef(refcell_ref) => refcell_ref,
             #[cfg(feature = "std")]
@@ -31,7 +34,7 @@ impl<T: ?Sized> Deref for Borrow<'_, T> {
     }
 }
 enum InternalBorrowMut<'a, T: ?Sized> {
-    Ptr(*mut T),
+    Ptr(*mut T, PhantomData<&'a ()>),
     #[cfg(feature = "alloc")]
     RefCellRefMut(RefMut<'a, T>),
     #[cfg(feature = "std")]
@@ -41,7 +44,7 @@ impl<T: ?Sized> Deref for InternalBorrowMut<'_, T> {
     type Target = T;
     fn deref(&self) -> &T {
         match self {
-            Self::Ptr(ptr) => unsafe { &**ptr },
+            Self::Ptr(ptr, _) => unsafe { &**ptr },
             #[cfg(feature = "alloc")]
             Self::RefCellRefMut(refcell_ref_mut) => refcell_ref_mut,
             #[cfg(feature = "std")]
@@ -52,7 +55,7 @@ impl<T: ?Sized> Deref for InternalBorrowMut<'_, T> {
 impl<T: ?Sized> DerefMut for InternalBorrowMut<'_, T> {
     fn deref_mut(&mut self) -> &mut T {
         match self {
-            Self::Ptr(ptr) => unsafe { &mut **ptr },
+            Self::Ptr(ptr, _) => unsafe { &mut **ptr },
             #[cfg(feature = "alloc")]
             Self::RefCellRefMut(refcell_ref_mut) => refcell_ref_mut,
             #[cfg(feature = "std")]
@@ -83,7 +86,7 @@ enum InternalReference<T: ?Sized> {
 impl<T: ?Sized> InternalReference<T> {
     fn borrow(&self) -> InternalBorrow<'_, T> {
         match self {
-            Self::Ptr(ptr) => InternalBorrow::Ptr(*ptr),
+            Self::Ptr(ptr) => InternalBorrow::Ptr(*ptr, PhantomData),
             #[cfg(feature = "alloc")]
             Self::RcRefCell(rc_refcell) => InternalBorrow::RefCellRef(rc_refcell.borrow()),
             #[cfg(feature = "std")]
@@ -98,7 +101,7 @@ impl<T: ?Sized> InternalReference<T> {
     }
     fn borrow_mut(&self) -> InternalBorrowMut<'_, T> {
         match self {
-            Self::Ptr(ptr) => InternalBorrowMut::Ptr(*ptr),
+            Self::Ptr(ptr) => InternalBorrowMut::Ptr(*ptr, PhantomData),
             #[cfg(feature = "alloc")]
             Self::RcRefCell(rc_refcell) => {
                 InternalBorrowMut::RefCellRefMut(rc_refcell.borrow_mut())
