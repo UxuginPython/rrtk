@@ -12,10 +12,13 @@ Copyright 2024 UxuginPython on GitHub
 */
 //!Streams that perform mathematical operations.
 use crate::streams::*;
+//TODO: Make SumStream and ProductStream not use Vec
 ///A stream that adds all its inputs. If an input returns `Ok(None)`, it is excluded.
+#[cfg(feature = "alloc")]
 pub struct SumStream<T: AddAssign + Clone + Default, const N: usize, E> {
     addends: [Reference<dyn Getter<T, E>>; N],
 }
+#[cfg(feature = "alloc")]
 impl<T: AddAssign + Clone + Default, const N: usize, E> SumStream<T, N, E> {
     ///Constructor for `SumStream`.
     pub fn new(addends: [Reference<dyn Getter<T, E>>; N]) -> Self {
@@ -25,6 +28,7 @@ impl<T: AddAssign + Clone + Default, const N: usize, E> SumStream<T, N, E> {
         Self { addends: addends }
     }
 }
+#[cfg(feature = "alloc")]
 impl<T: AddAssign + Clone + Default, const N: usize, E: Copy + Debug> Getter<T, E>
     for SumStream<T, N, E>
 {
@@ -71,6 +75,7 @@ impl<T: AddAssign + Clone + Default, const N: usize, E: Copy + Debug> Getter<T, 
         }
     }
 }
+#[cfg(feature = "alloc")]
 impl<T: AddAssign + Clone + Default, const N: usize, E: Copy + Debug> Updatable<E>
     for SumStream<T, N, E>
 {
@@ -140,9 +145,11 @@ impl<T: Sub<Output = T>, GM: Getter<T, E>, GS: Getter<T, E>, E: Copy + Debug> Up
 ///calculation, effectively treating it as though it had returned 1. If this is not the desired
 ///behavior, use `rrtk::streams::converters::NoneToValue` or
 ///`rrtk::streams::converters::NoneToError`.
+#[cfg(feature = "alloc")]
 pub struct ProductStream<T: MulAssign, const N: usize, E> {
     factors: [Reference<dyn Getter<T, E>>; N],
 }
+#[cfg(feature = "alloc")]
 impl<T: Clone + MulAssign, const N: usize, E> ProductStream<T, N, E> {
     ///Constructor for `ProductStream`.
     pub fn new(factors: [Reference<dyn Getter<T, E>>; N]) -> Self {
@@ -152,6 +159,7 @@ impl<T: Clone + MulAssign, const N: usize, E> ProductStream<T, N, E> {
         Self { factors: factors }
     }
 }
+#[cfg(feature = "alloc")]
 impl<T: Clone + MulAssign, const N: usize, E: Copy + Debug> Getter<T, E>
     for ProductStream<T, N, E>
 {
@@ -190,6 +198,7 @@ impl<T: Clone + MulAssign, const N: usize, E: Copy + Debug> Getter<T, E>
         }
     }
 }
+#[cfg(feature = "alloc")]
 impl<T: Clone + MulAssign, const N: usize, E: Copy + Debug> Updatable<E>
     for ProductStream<T, N, E>
 {
