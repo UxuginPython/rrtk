@@ -29,7 +29,7 @@ pub mod devices;
 mod motion_profile;
 pub mod reference;
 mod state;
-pub mod streams;
+//pub mod streams;
 pub use datum::*;
 pub use motion_profile::*;
 pub use reference::*;
@@ -129,10 +129,6 @@ impl PositionDerivativeDependentPIDKValues {
 pub type Output<T, E> = Result<Option<Datum<T>>, Error<E>>;
 ///Returned from `TimeGetter` objects, which may return either a time or an error.
 pub type TimeOutput<E> = Result<i64, Error<E>>;
-///Makes `Getter`s easier to work with by containing them in an `Rc<RefCell<_>>`.
-pub type InputGetter<T, E> = Rc<RefCell<dyn Getter<T, E>>>;
-///Makes `TimeGetter`s easier to work with by containing them in an `Rc<RefCell<_>>`.
-pub type InputTimeGetter<E> = Rc<RefCell<dyn TimeGetter<E>>>;
 ///Returned when something may return either nothing or an error.
 pub type NothingOrError<E> = Result<(), Error<E>>;
 ///An object for getting the absolute time.
@@ -222,7 +218,7 @@ pub trait Getter<G, E: Copy + Debug>: Updatable<E> {
 }
 ///Internal data needed for following a `Getter` with a `Settable`.
 pub struct SettableData<S, E: Copy + Debug> {
-    following: Option<InputGetter<S, E>>,
+    following: Option<Reference<dyn Getter<S, E>>>,
     last_request: Option<S>,
 }
 impl<S, E: Copy + Debug> SettableData<S, E> {
@@ -259,7 +255,7 @@ pub trait Settable<S: Clone, E: Copy + Debug>: Updatable<E> {
     fn get_settable_data_mut(&mut self) -> &mut SettableData<S, E>;
     ///Begin following a `Getter` of the same type. For this to work, you must have
     ///`update_following_data` in your `Updatable` implementation.
-    fn follow(&mut self, getter: InputGetter<S, E>) {
+    fn follow(&mut self, getter: Reference<dyn Getter<S, E>>) {
         let data = self.get_settable_data_mut();
         data.following = Some(getter);
     }
@@ -296,19 +292,7 @@ pub trait Settable<S: Clone, E: Copy + Debug>: Updatable<E> {
         data.last_request.clone()
     }
 }
-///A fast way to turn anything implementing `Getter` into an `InputGetter`.
-pub fn make_input_getter<T: Getter<G, E> + 'static, G, E: Copy + Debug>(
-    getter: T,
-) -> InputGetter<G, E> {
-    Rc::new(RefCell::new(getter)) as Rc<RefCell<dyn Getter<G, E>>>
-}
-///A fast way to turn anything implementing `TimeGetter` into an `InputTimeGetter`.
-pub fn make_input_time_getter<T: TimeGetter<E> + 'static, E: Copy + Debug>(
-    time_getter: T,
-) -> InputTimeGetter<E> {
-    Rc::new(RefCell::new(time_getter)) as Rc<RefCell<dyn TimeGetter<E>>>
-}
-///Because `Stream`s always return a timestamp (as long as they don't return `Err(_)` or
+/*///Because `Stream`s always return a timestamp (as long as they don't return `Err(_)` or
 ///`Ok(None)`), we can use this to treat them like `TimeGetter`s.
 pub struct TimeGetterFromGetter<T: Clone, E> {
     elevator: streams::converters::NoneToError<T, E>,
@@ -420,16 +404,16 @@ impl<G: Clone, E: Copy + Debug> Getter<G, E> for GetterFromHistory<'_, G, E> {
             None => None,
         })
     }
-}
+}*/
 ///Getter for returning a constant value.
-pub struct ConstantGetter<T, E: Copy + Debug> {
+pub struct ConstantGetter<T: Clone, TG: TimeGetter<E>, E: Copy + Debug> {
     settable_data: SettableData<T, E>,
-    time_getter: InputTimeGetter<E>,
+    time_getter: Reference<TG>,
     value: T,
 }
-impl<T, E: Copy + Debug> ConstantGetter<T, E> {
+impl<T: Clone, TG: TimeGetter<E>, E: Copy + Debug> ConstantGetter<T, TG, E> {
     ///Constructor for `ConstantGetter`.
-    pub fn new(time_getter: InputTimeGetter<E>, value: T) -> Self {
+    pub fn new(time_getter: Reference<TG>, value: T) -> Self {
         Self {
             settable_data: SettableData::new(),
             time_getter: time_getter,
@@ -437,13 +421,13 @@ impl<T, E: Copy + Debug> ConstantGetter<T, E> {
         }
     }
 }
-impl<T: Clone, E: Copy + Debug> Getter<T, E> for ConstantGetter<T, E> {
+impl<T: Clone, TG: TimeGetter<E>, E: Copy + Debug> Getter<T, E> for ConstantGetter<T, TG, E> {
     fn get(&self) -> Output<T, E> {
         let time = self.time_getter.borrow().get()?;
         Ok(Some(Datum::new(time, self.value.clone())))
     }
 }
-impl<T: Clone, E: Copy + Debug> Settable<T, E> for ConstantGetter<T, E> {
+impl<T: Clone, TG: TimeGetter<E>, E: Copy + Debug> Settable<T, E> for ConstantGetter<T, TG, E> {
     fn get_settable_data_ref(&self) -> &SettableData<T, E> {
         &self.settable_data
     }
@@ -455,7 +439,7 @@ impl<T: Clone, E: Copy + Debug> Settable<T, E> for ConstantGetter<T, E> {
         Ok(())
     }
 }
-impl<T: Clone, E: Copy + Debug> Updatable<E> for ConstantGetter<T, E> {
+impl<T: Clone, TG: TimeGetter<E>, E: Copy + Debug> Updatable<E> for ConstantGetter<T, TG, E> {
     ///This does not need to be called.
     fn update(&mut self) -> NothingOrError<E> {
         self.update_following_data()?;
