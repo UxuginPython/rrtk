@@ -59,7 +59,9 @@ impl<G1: Getter<bool, E>, G2: Getter<bool, E>, E: Copy + Debug> AndStream<G1, G2
         }
     }
 }
-impl<G1: Getter<bool, E>, G2: Getter<bool, E>, E: Copy + Debug> Getter<bool, E> for AndStream<G1, G2, E> {
+impl<G1: Getter<bool, E>, G2: Getter<bool, E>, E: Copy + Debug> Getter<bool, E>
+    for AndStream<G1, G2, E>
+{
     fn get(&self) -> Output<bool, E> {
         let gotten1 = self.input1.borrow().get()?;
         let gotten2 = self.input2.borrow().get()?;
@@ -109,12 +111,14 @@ impl<G1: Getter<bool, E>, G2: Getter<bool, E>, E: Copy + Debug> Getter<bool, E> 
         }
     }
 }
-impl<G1: Getter<bool, E>, G2: Getter<bool, E>, E: Copy + Debug> Updatable<E> for AndStream<G1, G2, E> {
+impl<G1: Getter<bool, E>, G2: Getter<bool, E>, E: Copy + Debug> Updatable<E>
+    for AndStream<G1, G2, E>
+{
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
     }
 }
-/*enum OrState {
+enum OrState {
     DefinitelyTrue, //An input returned true.
     MaybeFalse,     //An input returned None and no input has returned true, so we can't assume an
     //output.
@@ -144,20 +148,24 @@ impl OrState {
 ///None    | true    | true
 ///true    | true    | true
 ///```
-pub struct OrStream<E: Copy + Debug> {
-    input1: InputGetter<bool, E>,
-    input2: InputGetter<bool, E>,
+pub struct OrStream<G1: Getter<bool, E>, G2: Getter<bool, E>, E: Copy + Debug> {
+    input1: Reference<G1>,
+    input2: Reference<G2>,
+    phantom_e: PhantomData<E>,
 }
-impl<E: Copy + Debug> OrStream<E> {
+impl<G1: Getter<bool, E>, G2: Getter<bool, E>, E: Copy + Debug> OrStream<G1, G2, E> {
     ///Constructor for `OrStream`.
-    pub fn new(input1: InputGetter<bool, E>, input2: InputGetter<bool, E>) -> Self {
+    pub fn new(input1: Reference<G1>, input2: Reference<G2>) -> Self {
         Self {
             input1: input1,
             input2: input2,
+            phantom_e: PhantomData,
         }
     }
 }
-impl<E: Copy + Debug> Getter<bool, E> for OrStream<E> {
+impl<G1: Getter<bool, E>, G2: Getter<bool, E>, E: Copy + Debug> Getter<bool, E>
+    for OrStream<G1, G2, E>
+{
     fn get(&self) -> Output<bool, E> {
         let gotten1 = self.input1.borrow().get()?;
         let gotten2 = self.input2.borrow().get()?;
@@ -203,22 +211,28 @@ impl<E: Copy + Debug> Getter<bool, E> for OrStream<E> {
         }
     }
 }
-impl<E: Copy + Debug> Updatable<E> for OrStream<E> {
+impl<G1: Getter<bool, E>, G2: Getter<bool, E>, E: Copy + Debug> Updatable<E>
+    for OrStream<G1, G2, E>
+{
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
     }
 }
 ///Performs a not operation on a boolean getter.
-pub struct NotStream<E: Copy + Debug> {
-    input: InputGetter<bool, E>,
+pub struct NotStream<G: Getter<bool, E>, E: Copy + Debug> {
+    input: Reference<G>,
+    phantom_e: PhantomData<E>,
 }
-impl<E: Copy + Debug> NotStream<E> {
+impl<G: Getter<bool, E>, E: Copy + Debug> NotStream<G, E> {
     ///Constructor for `NotStream`.
-    pub fn new(input: InputGetter<bool, E>) -> Self {
-        Self { input: input }
+    pub fn new(input: Reference<G>) -> Self {
+        Self {
+            input: input,
+            phantom_e: PhantomData,
+        }
     }
 }
-impl<E: Copy + Debug> Getter<bool, E> for NotStream<E> {
+impl<G: Getter<bool, E>, E: Copy + Debug> Getter<bool, E> for NotStream<G, E> {
     fn get(&self) -> Output<bool, E> {
         match self.input.borrow().get() {
             Ok(Some(datum)) => Ok(Some(!datum)),
@@ -227,8 +241,8 @@ impl<E: Copy + Debug> Getter<bool, E> for NotStream<E> {
         }
     }
 }
-impl<E: Copy + Debug> Updatable<E> for NotStream<E> {
+impl<G: Getter<bool, E>, E: Copy + Debug> Updatable<E> for NotStream<G, E> {
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
     }
-}*/
+}
