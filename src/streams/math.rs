@@ -311,16 +311,16 @@ impl<GB: Getter<f32, E>, GE: Getter<f32, E>, E: Copy + Debug> Updatable<E>
         Ok(())
     }
 }
-/*///A stream that computes the numerical derivative of its input.
-pub struct DerivativeStream<E: Copy + Debug> {
-    input: InputGetter<f32, E>,
+///A stream that computes the numerical derivative of its input.
+pub struct DerivativeStream<G: Getter<f32, E>, E: Copy + Debug> {
+    input: Reference<G>,
     value: Output<f32, E>,
     //doesn't matter if this is an Err or Ok(None) - we can't use it either way if it's not Some
     prev_output: Option<Datum<f32>>,
 }
-impl<E: Copy + Debug> DerivativeStream<E> {
+impl<G: Getter<f32, E>, E: Copy + Debug> DerivativeStream<G, E> {
     ///Constructor for `DerivativeStream`.
-    pub fn new(input: InputGetter<f32, E>) -> Self {
+    pub fn new(input: Reference<G>) -> Self {
         Self {
             input: input,
             value: Ok(None),
@@ -328,12 +328,12 @@ impl<E: Copy + Debug> DerivativeStream<E> {
         }
     }
 }
-impl<E: Copy + Debug> Getter<f32, E> for DerivativeStream<E> {
+impl<G: Getter<f32, E>, E: Copy + Debug> Getter<f32, E> for DerivativeStream<G, E> {
     fn get(&self) -> Output<f32, E> {
         self.value.clone()
     }
 }
-impl<E: Copy + Debug> Updatable<E> for DerivativeStream<E> {
+impl<G: Getter<f32, E>, E: Copy + Debug> Updatable<E> for DerivativeStream<G, E> {
     fn update(&mut self) -> NothingOrError<E> {
         let output = self.input.borrow().get();
         match output {
@@ -369,14 +369,14 @@ impl<E: Copy + Debug> Updatable<E> for DerivativeStream<E> {
     }
 }
 ///A stream that computes the trapezoidal numerical integral of its input.
-pub struct IntegralStream<E: Copy + Debug> {
-    input: InputGetter<f32, E>,
+pub struct IntegralStream<G: Getter<f32, E>, E: Copy + Debug> {
+    input: Reference<G>,
     value: Output<f32, E>,
     prev_output: Option<Datum<f32>>,
 }
-impl<E: Copy + Debug> IntegralStream<E> {
+impl<G: Getter<f32, E>, E: Copy + Debug> IntegralStream<G, E> {
     ///Constructor for `IntegralStream`.
-    pub fn new(input: InputGetter<f32, E>) -> Self {
+    pub fn new(input: Reference<G>) -> Self {
         Self {
             input: input,
             value: Ok(None),
@@ -384,12 +384,12 @@ impl<E: Copy + Debug> IntegralStream<E> {
         }
     }
 }
-impl<E: Copy + Debug> Getter<f32, E> for IntegralStream<E> {
+impl<G: Getter<f32, E>, E: Copy + Debug> Getter<f32, E> for IntegralStream<G, E> {
     fn get(&self) -> Output<f32, E> {
         self.value.clone()
     }
 }
-impl<E: Copy + Debug> Updatable<E> for IntegralStream<E> {
+impl<G: Getter<f32, E>, E: Copy + Debug> Updatable<E> for IntegralStream<G, E> {
     fn update(&mut self) -> NothingOrError<E> {
         let output = self.input.borrow().get();
         match output {
@@ -431,4 +431,4 @@ impl<E: Copy + Debug> Updatable<E> for IntegralStream<E> {
         self.prev_output = Some(output);
         return Ok(());
     }
-}*/
+}
