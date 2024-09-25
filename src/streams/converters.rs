@@ -16,16 +16,22 @@ Copyright 2024 UxuginPython on GitHub
 use crate::streams::math::*;
 use crate::streams::*;
 ///A stream converting all `Ok(None)` values from its input to `Err(_)` variants.
-pub struct NoneToError<T: Clone, E> {
-    input: InputGetter<T, E>,
+pub struct NoneToError<T: Clone, G: Getter<T, E> E> {
+    input: Reference<G>,
+    phantom_t: PhantomData<T>,
+    phantom_e: PhantomData<E>,
 }
-impl<T: Clone, E> NoneToError<T, E> {
+impl<T: Clone, G: Getter<T, E>, E> NoneToError<T, G, E> {
     ///Constructor for `NoneToError`.
-    pub fn new(input: InputGetter<T, E>) -> Self {
-        Self { input: input }
+    pub fn new(input: Reference<G>) -> Self {
+        Self {
+            input: input,
+            phantom_t: PhantomData,
+            phantom_e: PhantomData,
+        }
     }
 }
-impl<T: Clone, E: Copy + Debug> Getter<T, E> for NoneToError<T, E> {
+impl<T: Clone, G: Getter<T, E>, E: Copy + Debug> Getter<T, E> for NoneToError<T, G, E> {
     fn get(&self) -> Output<T, E> {
         let output = self.input.borrow().get()?;
         match output {
@@ -38,19 +44,19 @@ impl<T: Clone, E: Copy + Debug> Getter<T, E> for NoneToError<T, E> {
         }
     }
 }
-impl<T: Clone, E: Copy + Debug> Updatable<E> for NoneToError<T, E> {
+impl<T: Clone, G: Getter<T, E>, E: Copy + Debug> Updatable<E> for NoneToError<T, G, E> {
     ///This does not need to be called.
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
     }
 }
 ///A stream converting all `Ok(None)` values from its input to a default `Ok(Some(_))` value.
-pub struct NoneToValue<T, E> {
-    input: InputGetter<T, E>,
-    time_getter: InputTimeGetter<E>,
+pub struct NoneToValue<T: Clone, G: Getter<T, E>, TG: TimeGetter<E>, E: Copy + Debug> {
+    input: Reference<G>,
+    time_getter: Reference<TG>,
     none_value: T,
 }
-impl<T, E> NoneToValue<T, E> {
+impl<T: Clone, G: Getter<T, E>, TG: TimeGetter<E>, E: Copy + Debug> NoneToValue<T, G, TG, E> {
     ///Constructor for `NoneToValue`.
     pub fn new(input: InputGetter<T, E>, time_getter: InputTimeGetter<E>, none_value: T) -> Self {
         Self {
@@ -60,7 +66,7 @@ impl<T, E> NoneToValue<T, E> {
         }
     }
 }
-impl<T: Clone, E: Copy + Debug> Getter<T, E> for NoneToValue<T, E> {
+impl<T: Clone, G: Getter<T, E>, TG: TimeGetter<E>, E: Copy + Debug> Getter<T, E> for NoneToValue<T, G, TG, E> {
     fn get(&self) -> Output<T, E> {
         let output = self.input.borrow().get()?;
         match output {
@@ -76,12 +82,12 @@ impl<T: Clone, E: Copy + Debug> Getter<T, E> for NoneToValue<T, E> {
         }
     }
 }
-impl<T: Clone, E: Copy + Debug> Updatable<E> for NoneToValue<T, E> {
+impl<T: Clone, G: Getter<T, E>, TG: TimeGetter<E>, E: Copy + Debug> Updatable<E> for NoneToValue<T, G, TG, E> {
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
     }
 }
-///A stream that integrates an acceleration getter to construct a full state. Mostly useful for
+/*///A stream that integrates an acceleration getter to construct a full state. Mostly useful for
 ///encoders.
 pub struct AccelerationToState<E: Copy + Debug> {
     acc: InputGetter<f32, E>,
@@ -256,4 +262,4 @@ impl<E: Copy + Debug> Updatable<E> for PositionToState<E> {
         self.acc.borrow_mut().update()?;
         Ok(())
     }
-}
+}*/
