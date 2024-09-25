@@ -14,7 +14,7 @@ Copyright 2024 UxuginPython on GitHub
 //!some helpful builtin streams for controlling your robot. See the `pid` example to learn more
 //!about how to use the stream system.
 use crate::*;
-//pub mod control;
+pub mod control;
 //pub mod converters;
 pub mod flow;
 pub mod logic;
