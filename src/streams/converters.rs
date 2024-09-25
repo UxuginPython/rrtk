@@ -16,12 +16,12 @@ Copyright 2024 UxuginPython on GitHub
 use crate::streams::math::*;
 use crate::streams::*;
 ///A stream converting all `Ok(None)` values from its input to `Err(_)` variants.
-pub struct NoneToError<T: Clone, G: Getter<T, E> E> {
+pub struct NoneToError<T: Clone, G: Getter<T, E>, E: Copy + Debug> {
     input: Reference<G>,
     phantom_t: PhantomData<T>,
     phantom_e: PhantomData<E>,
 }
-impl<T: Clone, G: Getter<T, E>, E> NoneToError<T, G, E> {
+impl<T: Clone, G: Getter<T, E>, E: Copy + Debug> NoneToError<T, G, E> {
     ///Constructor for `NoneToError`.
     pub fn new(input: Reference<G>) -> Self {
         Self {
@@ -55,18 +55,22 @@ pub struct NoneToValue<T: Clone, G: Getter<T, E>, TG: TimeGetter<E>, E: Copy + D
     input: Reference<G>,
     time_getter: Reference<TG>,
     none_value: T,
+    phantom_e: PhantomData<E>,
 }
 impl<T: Clone, G: Getter<T, E>, TG: TimeGetter<E>, E: Copy + Debug> NoneToValue<T, G, TG, E> {
     ///Constructor for `NoneToValue`.
-    pub fn new(input: InputGetter<T, E>, time_getter: InputTimeGetter<E>, none_value: T) -> Self {
+    pub fn new(input: Reference<G>, time_getter: Reference<TG>, none_value: T) -> Self {
         Self {
             input: input,
             time_getter: time_getter,
             none_value: none_value,
+            phantom_e: PhantomData,
         }
     }
 }
-impl<T: Clone, G: Getter<T, E>, TG: TimeGetter<E>, E: Copy + Debug> Getter<T, E> for NoneToValue<T, G, TG, E> {
+impl<T: Clone, G: Getter<T, E>, TG: TimeGetter<E>, E: Copy + Debug> Getter<T, E>
+    for NoneToValue<T, G, TG, E>
+{
     fn get(&self) -> Output<T, E> {
         let output = self.input.borrow().get()?;
         match output {
@@ -82,7 +86,9 @@ impl<T: Clone, G: Getter<T, E>, TG: TimeGetter<E>, E: Copy + Debug> Getter<T, E>
         }
     }
 }
-impl<T: Clone, G: Getter<T, E>, TG: TimeGetter<E>, E: Copy + Debug> Updatable<E> for NoneToValue<T, G, TG, E> {
+impl<T: Clone, G: Getter<T, E>, TG: TimeGetter<E>, E: Copy + Debug> Updatable<E>
+    for NoneToValue<T, G, TG, E>
+{
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
     }
