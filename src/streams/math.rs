@@ -15,11 +15,11 @@ use crate::streams::*;
 //TODO: Make SumStream and ProductStream not use Vec
 ///A stream that adds all its inputs. If an input returns `Ok(None)`, it is excluded.
 #[cfg(feature = "alloc")]
-pub struct SumStream<T: AddAssign + Clone + Default, const N: usize, E> {
+pub struct SumStream<T: AddAssign + Clone, const N: usize, E> {
     addends: [Reference<dyn Getter<T, E>>; N],
 }
 #[cfg(feature = "alloc")]
-impl<T: AddAssign + Clone + Default, const N: usize, E> SumStream<T, N, E> {
+impl<T: AddAssign + Clone, const N: usize, E> SumStream<T, N, E> {
     ///Constructor for `SumStream`.
     pub fn new(addends: [Reference<dyn Getter<T, E>>; N]) -> Self {
         if N < 1 {
@@ -29,40 +29,33 @@ impl<T: AddAssign + Clone + Default, const N: usize, E> SumStream<T, N, E> {
     }
 }
 #[cfg(feature = "alloc")]
-impl<T: AddAssign + Clone + Default, const N: usize, E: Copy + Debug> Getter<T, E>
-    for SumStream<T, N, E>
-{
+impl<T: AddAssign + Clone, const N: usize, E: Copy + Debug> Getter<T, E> for SumStream<T, N, E> {
     fn get(&self) -> Output<T, E> {
         //Err(...) -> return Err immediately
         //Ok(None) -> skip
         //Ok(Some(...)) -> add to value
-        let mut outputs = Vec::new();
+        let mut outputs = Vec::with_capacity(N);
         for i in &self.addends {
-            outputs.push(i.borrow().get()?);
-        }
-        let mut value = T::default();
-        for i in &outputs {
-            match i {
-                Some(output) => {
-                    value += output.value.clone();
-                }
-                None => {}
+            match i.borrow().get()? {
+                Some(x) => outputs.push(x),
+                None => (),
             }
+        }
+        let mut value = outputs[0].value.clone();
+        for i in &outputs[1..] {
+            value += i.value.clone();
         }
         let mut time = None;
         for i in &outputs {
-            match i {
-                Some(output) => match time {
-                    Some(old_time) => {
-                        if output.time > old_time {
-                            time = Some(output.time);
-                        }
+            match time {
+                Some(old_time) => {
+                    if i.time > old_time {
+                        time = Some(i.time);
                     }
-                    None => {
-                        time = Some(output.time);
-                    }
-                },
-                None => {}
+                }
+                None => {
+                    time = Some(i.time);
+                }
             }
         }
         match time {
@@ -76,9 +69,7 @@ impl<T: AddAssign + Clone + Default, const N: usize, E: Copy + Debug> Getter<T, 
     }
 }
 #[cfg(feature = "alloc")]
-impl<T: AddAssign + Clone + Default, const N: usize, E: Copy + Debug> Updatable<E>
-    for SumStream<T, N, E>
-{
+impl<T: AddAssign + Clone, const N: usize, E: Copy + Debug> Updatable<E> for SumStream<T, N, E> {
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
     }
