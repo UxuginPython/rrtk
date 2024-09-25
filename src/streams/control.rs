@@ -12,6 +12,8 @@ Copyright 2024 UxuginPython on GitHub
 */
 //!Streams performing control theory operations.
 use crate::streams::*;
+#[cfg(feature = "alloc")]
+use alloc::collections::vec_deque::VecDeque;
 //This does store the timestamp twice, once in prev_error and once in output. Processor performance
 //and readability would suggest doing it this way, but 8 bytes could technically be saved here if
 //needed in the future. The difference is extremely minimal.

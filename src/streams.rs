@@ -14,8 +14,6 @@ Copyright 2024 UxuginPython on GitHub
 //!some helpful builtin streams for controlling your robot. See the `pid` example to learn more
 //!about how to use the stream system.
 use crate::*;
-#[cfg(feature = "alloc")]
-use alloc::collections::vec_deque::VecDeque;
 //pub mod control;
 //pub mod converters;
 pub mod flow;
