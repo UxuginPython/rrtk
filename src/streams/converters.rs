@@ -141,7 +141,75 @@ mod acceleration_to_state {
     }
     impl<G: Getter<f32, E>, E: Copy + Debug> Updatable<E> for AccelerationToState<G, E> {
         fn update(&mut self) -> NothingOrError<E> {
-            todo!();
+            match self.acc.borrow().get() {
+                Ok(gotten) => match gotten {
+                    Some(new_acc_datum) => {
+                        let new_time = new_acc_datum.time;
+                        let new_acc = new_acc_datum.value;
+                        match &self.update {
+                            Some(update_0) => {
+                                let old_time = update_0.last_update_time;
+                                let old_acc = update_0.acc;
+                                let delta_time = (new_time - old_time) as f32;
+                                let vel_addend = (old_acc + new_acc) / 2.0 * delta_time;
+                                match &update_0.update_1 {
+                                    Some(update_1) => {
+                                        let old_vel = update_1.vel;
+                                        let new_vel = old_vel + vel_addend;
+                                        let pos_addend = (old_vel + new_vel) / 2.0 * delta_time;
+                                        match &update_1.update_2 {
+                                            Some(old_pos) => {
+                                                self.update = Some(Update0 {
+                                                    last_update_time: new_time,
+                                                    acc: new_acc,
+                                                    update_1: Some(Update1 {
+                                                        vel: new_vel,
+                                                        update_2: Some(old_pos + pos_addend),
+                                                    }),
+                                                })
+                                            }
+                                            None => {
+                                                self.update = Some(Update0 {
+                                                    last_update_time: new_time,
+                                                    acc: new_acc,
+                                                    update_1: Some(Update1 {
+                                                        vel: new_vel,
+                                                        update_2: Some(pos_addend),
+                                                    }),
+                                                })
+                                            }
+                                        }
+                                    }
+                                    None => {
+                                        self.update = Some(Update0 {
+                                            last_update_time: new_time,
+                                            acc: new_acc,
+                                            update_1: Some(Update1 {
+                                                vel: vel_addend,
+                                                update_2: None,
+                                            }),
+                                        })
+                                    }
+                                }
+                            }
+                            None => {
+                                self.update = Some(Update0 {
+                                    last_update_time: new_time,
+                                    acc: new_acc,
+                                    update_1: None,
+                                });
+                            }
+                        }
+                    }
+                    None => (), //This just does nothing if the input gives a None. It does not reset
+                                //it or anything.
+                },
+                Err(error) => {
+                    self.update = None;
+                    return Err(error);
+                }
+            }
+            Ok(())
         }
     }
 }
