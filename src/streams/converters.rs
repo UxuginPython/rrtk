@@ -213,66 +213,56 @@ mod acceleration_to_state {
         }
     }
 }
-/*///A stream that integrates and derivates a velocity getter to construct a full state. Mostly
-///useful for encoders.
-pub struct VelocityToState<E: Copy + Debug> {
-    acc: InputGetter<f32, E>,
-    vel: InputGetter<f32, E>,
-    pos: InputGetter<f32, E>,
-}
-impl<E: Copy + Debug + 'static> VelocityToState<E> {
-    ///Constructor for `VelocityToState`.
-    pub fn new(vel: InputGetter<f32, E>) -> Self {
-        let acc = make_input_getter(DerivativeStream::new(Rc::clone(&vel)));
-        let pos = make_input_getter(IntegralStream::new(Rc::clone(&vel)));
-        Self {
-            acc: acc,
-            vel: vel,
-            pos: pos,
+pub use velocity_to_state::VelocityToState;
+mod velocity_to_state {
+    use super::*;
+    struct Update0 {
+        last_update_time: i64,
+        vel: f32,
+        update_1: Option<Update1>,
+    }
+    struct Update1 {
+        acc: f32,
+        pos: f32,
+    }
+    ///A stream that integrates and derivates a velocity getter to construct a full state. Mostly
+    ///useful for encoders.
+    pub struct VelocityToState<G: Getter<f32, E>, E: Copy + Debug> {
+        vel: Reference<G>,
+        update: Option<Update0>,
+        phantom_e: PhantomData<E>,
+    }
+    impl<G: Getter<f32, E>, E: Copy + Debug> VelocityToState<G, E> {
+        ///Constructor for `VelocityToState`.
+        pub fn new(vel: Reference<G>) -> Self {
+            Self {
+                vel: vel,
+                update: None,
+                phantom_e: PhantomData,
+            }
+        }
+    }
+    impl<G: Getter<f32, E>, E: Copy + Debug> Getter<State, E> for VelocityToState<G, E> {
+        fn get(&self) -> Output<State, E> {
+            match &self.update {
+                Some(update_0) => match &update_0.update_1 {
+                    Some(update_1) => Ok(Some(Datum::new(
+                        update_0.last_update_time,
+                        State::new(update_1.pos, update_0.vel, update_1.acc),
+                    ))),
+                    None => Ok(None),
+                },
+                None => Ok(None),
+            }
+        }
+    }
+    impl<G: Getter<f32, E>, E: Copy + Debug> Updatable<E> for VelocityToState<G, E> {
+        fn update(&mut self) -> NothingOrError<E> {
+            todo!();
         }
     }
 }
-impl<E: Copy + Debug> Getter<State, E> for VelocityToState<E> {
-    fn get(&self) -> Output<State, E> {
-        let acc = self.acc.borrow().get()?;
-        let vel = self.vel.borrow().get()?;
-        let pos = self.pos.borrow().get()?;
-        match acc {
-            Some(_) => {}
-            None => {
-                return Ok(None);
-            }
-        }
-        match vel {
-            Some(_) => {}
-            None => {
-                return Ok(None);
-            }
-        }
-        match pos {
-            Some(_) => {}
-            None => {
-                return Ok(None);
-            }
-        }
-        let acc = acc.unwrap();
-        let vel = vel.unwrap();
-        let pos = pos.unwrap();
-        let time = acc.time;
-        Ok(Some(Datum::new(
-            time,
-            State::new(pos.value, vel.value, acc.value),
-        )))
-    }
-}
-impl<E: Copy + Debug> Updatable<E> for VelocityToState<E> {
-    fn update(&mut self) -> NothingOrError<E> {
-        self.acc.borrow_mut().update()?;
-        self.pos.borrow_mut().update()?;
-        Ok(())
-    }
-}
-///A stream that derivates a position getter to construct a full state. Mostly useful for encoders.
+/*///A stream that derivates a position getter to construct a full state. Mostly useful for encoders.
 pub struct PositionToState<E: Copy + Debug> {
     acc: InputGetter<f32, E>,
     vel: InputGetter<f32, E>,
