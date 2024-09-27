@@ -320,22 +320,19 @@ impl<T: Clone, E: Copy + Debug> Updatable<E> for TimeGetterFromGetter<T, E> {
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
     }
-}
+}*/
 ///As histories return values at times, we can ask them to return values at the time of now or now
 ///with a delta. This makes that much easier and is the recommended way of following
 ///`MotionProfile`s.
-pub struct GetterFromHistory<'a, G, E: Copy + Debug> {
+pub struct GetterFromHistory<'a, G, TG: TimeGetter<E>, E: Copy + Debug> {
     history: &'a mut dyn History<G, E>,
-    time_getter: InputTimeGetter<E>,
+    time_getter: Reference<TG>,
     time_delta: i64,
 }
-impl<'a, G, E: Copy + Debug> GetterFromHistory<'a, G, E> {
+impl<'a, G, TG: TimeGetter<E>, E: Copy + Debug> GetterFromHistory<'a, G, TG, E> {
     ///Constructor such that the time in the request to the history will be directly that returned
     ///from the `TimeGetter` with no delta.
-    pub fn new_no_delta(
-        history: &'a mut impl History<G, E>,
-        time_getter: InputTimeGetter<E>,
-    ) -> Self {
+    pub fn new_no_delta(history: &'a mut impl History<G, E>, time_getter: Reference<TG>) -> Self {
         Self {
             history: history,
             time_getter: time_getter,
@@ -346,7 +343,7 @@ impl<'a, G, E: Copy + Debug> GetterFromHistory<'a, G, E> {
     ///is the moment this constructor is called.
     pub fn new_start_at_zero(
         history: &'a mut impl History<G, E>,
-        time_getter: InputTimeGetter<E>,
+        time_getter: Reference<TG>,
     ) -> Result<Self, Error<E>> {
         let time_delta = -time_getter.borrow().get()?;
         Ok(Self {
@@ -359,7 +356,7 @@ impl<'a, G, E: Copy + Debug> GetterFromHistory<'a, G, E> {
     ///that time defined as the moment of construction.
     pub fn new_custom_start(
         history: &'a mut impl History<G, E>,
-        time_getter: InputTimeGetter<E>,
+        time_getter: Reference<TG>,
         start: i64,
     ) -> Result<Self, Error<E>> {
         let time_delta = start - time_getter.borrow().get()?;
@@ -372,7 +369,7 @@ impl<'a, G, E: Copy + Debug> GetterFromHistory<'a, G, E> {
     ///Constructor with a custom time delta.
     pub fn new_custom_delta(
         history: &'a mut impl History<G, E>,
-        time_getter: InputTimeGetter<E>,
+        time_getter: Reference<TG>,
         time_delta: i64,
     ) -> Self {
         Self {
@@ -393,14 +390,14 @@ impl<'a, G, E: Copy + Debug> GetterFromHistory<'a, G, E> {
         Ok(())
     }
 }
-impl<G, E: Copy + Debug> Updatable<E> for GetterFromHistory<'_, G, E> {
+impl<G, TG: TimeGetter<E>, E: Copy + Debug> Updatable<E> for GetterFromHistory<'_, G, TG, E> {
     fn update(&mut self) -> NothingOrError<E> {
         self.history.update()?;
         self.time_getter.borrow_mut().update()?;
         Ok(())
     }
 }
-impl<G: Clone, E: Copy + Debug> Getter<G, E> for GetterFromHistory<'_, G, E> {
+impl<G, TG: TimeGetter<E>, E: Copy + Debug> Getter<G, E> for GetterFromHistory<'_, G, TG, E> {
     fn get(&self) -> Output<G, E> {
         let time = self.time_getter.borrow().get()?;
         Ok(match self.history.get(time + self.time_delta) {
@@ -408,7 +405,7 @@ impl<G: Clone, E: Copy + Debug> Getter<G, E> for GetterFromHistory<'_, G, E> {
             None => None,
         })
     }
-}*/
+}
 ///Getter for returning a constant value.
 pub struct ConstantGetter<T: Clone, TG: TimeGetter<E>, E: Copy + Debug> {
     settable_data: SettableData<T, E>,
