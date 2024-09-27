@@ -39,7 +39,7 @@ mod state;
 pub mod streams;
 pub use datum::*;
 pub use motion_profile::*;
-pub use reference::*;
+pub use reference::Reference;
 pub use state::*;
 ///RRTK follows the enum style of error handling. This is the error type returned from nearly all
 ///RRTK types, but you can add your own custom error type using `Other(O)`. It is strongly
