@@ -1,18 +1,24 @@
 # Rust Robotics ToolKit
 ### A set of algorithms and other tools for robotics in Rust.
 
-It is partially `no_std`. It does not currently integrate with any API directly, but this may be added in the future.
+It is almost entirely `no_std` and most things work without `alloc`. It does not currently integrate with any API directly. This may be added in the future, probably through another crate.
 
 ## License
 #### GNU Lesser General Public License, version 3 only
 
 ## Features
+- Architecture based on `Getter`, `Settable`, and `Updatable` traits
 - Node-like stream system for data processing
     - Basic arithmetic + integral and derivative
+    - Logic and control flow management
     - PID
     - Moving average
     - EWMA
-- Simple device control system
+    - Trait for making your own
+- Graph-based device control system
+    - Devices hold terminals which can be connected together
+    - Differential, axle, and direction reversal builtin
+    - Easily connect streams to the device system through wrappers
 - Trapezoidal motion profile following
 
 [RRTK Stream Builder](https://crates.io/crates/rrtk_stream_builder) now available: Code generation from visual nodes for the stream system.
@@ -145,3 +151,7 @@ Add moving average stream.
 - Keep `CommandPID` from resetting itself whenever it gets a new command rather than only when the command is different.
 - Mark constructors for `State`, `Datum`, `PIDKValues`, `PositionDerivativeDependentPIDKValues`, and `Command` as `const`.
 - Documentation improvements.
+### 0.5.0-alpha.1
+- Make a new `Reference` type that can hold a `*mut T`, `Rc<RefCell<T>>`, or `*const RwLock<T>`, allowing you to not need a dynamic allocator.
+- Add `alloc` feature.
+- Temporarily remove `devices::wrappers::PIDWrapper`. It will be back by the time this is stable.
