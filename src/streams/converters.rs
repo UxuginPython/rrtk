@@ -13,7 +13,6 @@ Copyright 2024 UxuginPython on GitHub
 //!Streams that convert from one type to another. Some of these also do keep the same type and are
 //!for convenience in certain situations, for example when you do not want to handle a `None`
 //!variant yourself.
-use crate::streams::math::*;
 use crate::streams::*;
 ///A stream converting all `Ok(None)` values from its input to `Err(_)` variants.
 pub struct NoneToError<T: Clone, G: Getter<T, E>, E: Copy + Debug> {
@@ -313,61 +312,54 @@ mod velocity_to_state {
         }
     }
 }
-/*///A stream that derivates a position getter to construct a full state. Mostly useful for encoders.
-pub struct PositionToState<E: Copy + Debug> {
-    acc: InputGetter<f32, E>,
-    vel: InputGetter<f32, E>,
-    pos: InputGetter<f32, E>,
-}
-impl<E: Copy + Debug + 'static> PositionToState<E> {
-    ///Constructor for `PositionToState`.
-    pub fn new(pos: InputGetter<f32, E>) -> Self {
-        let vel = make_input_getter(DerivativeStream::new(Rc::clone(&pos)));
-        let acc = make_input_getter(DerivativeStream::new(Rc::clone(&vel)));
-        Self {
-            acc: acc,
-            vel: vel,
-            pos: pos,
+pub use position_to_state::PositionToState;
+mod position_to_state {
+    use super::*;
+    struct Update0 {
+        last_update_time: i64,
+        pos: f32,
+        update_1: Option<Update1>,
+    }
+    struct Update1 {
+        vel: f32,
+        update_2: Option<f32>, //acceleration
+    }
+    ///A stream that derivates a position getter to construct a full state. Mostly useful for encoders.
+    pub struct PositionToState<G: Getter<f32, E>, E: Copy + Debug> {
+        pos: Reference<G>,
+        update: Option<Update0>,
+        phantom_e: PhantomData<E>,
+    }
+    impl<G: Getter<f32, E>, E: Copy + Debug> PositionToState<G, E> {
+        ///Constructor for `PositionToState`.
+        pub fn new(pos: Reference<G>) -> Self {
+            Self {
+                pos: pos,
+                update: None,
+                phantom_e: PhantomData,
+            }
+        }
+    }
+    impl<G: Getter<f32, E>, E: Copy + Debug> Getter<State, E> for PositionToState<G, E> {
+        fn get(&self) -> Output<State, E> {
+            match &self.update {
+                Some(update_0) => match &update_0.update_1 {
+                    Some(update_1) => match update_1.update_2 {
+                        Some(acc) => Ok(Some(Datum::new(
+                            update_0.last_update_time,
+                            State::new(update_0.pos, update_1.vel, acc),
+                        ))),
+                        None => Ok(None),
+                    },
+                    None => Ok(None),
+                },
+                None => Ok(None),
+            }
+        }
+    }
+    impl<G: Getter<f32, E>, E: Copy + Debug> Updatable<E> for PositionToState<G, E> {
+        fn update(&mut self) -> NothingOrError<E> {
+            todo!();
         }
     }
 }
-impl<E: Copy + Debug> Getter<State, E> for PositionToState<E> {
-    fn get(&self) -> Output<State, E> {
-        let acc = self.acc.borrow().get()?;
-        let vel = self.vel.borrow().get()?;
-        let pos = self.pos.borrow().get()?;
-        match acc {
-            Some(_) => {}
-            None => {
-                return Ok(None);
-            }
-        }
-        match vel {
-            Some(_) => {}
-            None => {
-                return Ok(None);
-            }
-        }
-        match pos {
-            Some(_) => {}
-            None => {
-                return Ok(None);
-            }
-        }
-        let acc = acc.unwrap();
-        let vel = vel.unwrap();
-        let pos = pos.unwrap();
-        let time = acc.time;
-        Ok(Some(Datum::new(
-            time,
-            State::new(pos.value, vel.value, acc.value),
-        )))
-    }
-}
-impl<E: Copy + Debug> Updatable<E> for PositionToState<E> {
-    fn update(&mut self) -> NothingOrError<E> {
-        self.vel.borrow_mut().update()?;
-        self.acc.borrow_mut().update()?;
-        Ok(())
-    }
-}*/
