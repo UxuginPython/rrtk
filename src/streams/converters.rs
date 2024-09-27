@@ -359,7 +359,59 @@ mod position_to_state {
     }
     impl<G: Getter<f32, E>, E: Copy + Debug> Updatable<E> for PositionToState<G, E> {
         fn update(&mut self) -> NothingOrError<E> {
-            todo!();
+            match self.pos.borrow().get() {
+                Ok(gotten) => match gotten {
+                    Some(new_pos_datum) => {
+                        let new_time = new_pos_datum.time;
+                        let new_pos = new_pos_datum.value;
+                        match &self.update {
+                            Some(update_0) => {
+                                let old_time = update_0.last_update_time;
+                                let delta_time = (new_time - old_time) as f32;
+                                let old_pos = update_0.pos;
+                                let new_vel = (new_pos - old_pos) / delta_time;
+                                match &update_0.update_1 {
+                                    Some(update_1) => {
+                                        let old_vel = update_1.vel;
+                                        let new_acc = (new_vel - old_vel) / delta_time;
+                                        self.update = Some(Update0 {
+                                            last_update_time: new_time,
+                                            pos: new_pos,
+                                            update_1: Some(Update1 {
+                                                vel: new_vel,
+                                                update_2: Some(new_acc),
+                                            }),
+                                        });
+                                    }
+                                    None => {
+                                        self.update = Some(Update0 {
+                                            last_update_time: new_time,
+                                            pos: new_pos,
+                                            update_1: Some(Update1 {
+                                                vel: new_vel,
+                                                update_2: None,
+                                            }),
+                                        });
+                                    }
+                                }
+                            }
+                            None => {
+                                self.update = Some(Update0 {
+                                    last_update_time: new_time,
+                                    pos: new_pos,
+                                    update_1: None,
+                                });
+                            }
+                        }
+                    }
+                    None => (),
+                },
+                Err(error) => {
+                    self.update = None;
+                    return Err(error);
+                }
+            }
+            Ok(())
         }
     }
 }
