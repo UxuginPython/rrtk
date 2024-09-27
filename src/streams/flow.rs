@@ -22,7 +22,7 @@ pub struct IfStream<T, GC: Getter<bool, E>, GI: Getter<T, E>, E: Copy + Debug> {
 }
 impl<T, GC: Getter<bool, E>, GI: Getter<T, E>, E: Copy + Debug> IfStream<T, GC, GI, E> {
     ///Constructor for `IfStream`.
-    pub fn new(condition: Reference<GC>, input: Reference<GI>) -> Self {
+    pub const fn new(condition: Reference<GC>, input: Reference<GI>) -> Self {
         Self {
             condition: condition,
             input: input,
@@ -67,7 +67,7 @@ impl<T, GC: Getter<bool, E>, GT: Getter<T, E>, GF: Getter<T, E>, E: Copy + Debug
     IfElseStream<T, GC, GT, GF, E>
 {
     ///Constructor for `IfElseStream`.
-    pub fn new(
+    pub const fn new(
         condition: Reference<GC>,
         true_output: Reference<GT>,
         false_output: Reference<GF>,
@@ -112,7 +112,7 @@ pub struct FreezeStream<T: Clone, GC: Getter<bool, E>, GI: Getter<T, E>, E: Copy
 }
 impl<T: Clone, GC: Getter<bool, E>, GI: Getter<T, E>, E: Copy + Debug> FreezeStream<T, GC, GI, E> {
     ///Constructor for `FreezeStream`.
-    pub fn new(condition: Reference<GC>, input: Reference<GI>) -> Self {
+    pub const fn new(condition: Reference<GC>, input: Reference<GI>) -> Self {
         Self {
             condition: condition,
             input: input,

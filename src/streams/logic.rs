@@ -51,7 +51,7 @@ pub struct AndStream<G1: Getter<bool, E>, G2: Getter<bool, E>, E: Copy + Debug> 
 }
 impl<G1: Getter<bool, E>, G2: Getter<bool, E>, E: Copy + Debug> AndStream<G1, G2, E> {
     ///Constructor for `AndStream`.
-    pub fn new(input1: Reference<G1>, input2: Reference<G2>) -> Self {
+    pub const fn new(input1: Reference<G1>, input2: Reference<G2>) -> Self {
         Self {
             input1: input1,
             input2: input2,
@@ -155,7 +155,7 @@ pub struct OrStream<G1: Getter<bool, E>, G2: Getter<bool, E>, E: Copy + Debug> {
 }
 impl<G1: Getter<bool, E>, G2: Getter<bool, E>, E: Copy + Debug> OrStream<G1, G2, E> {
     ///Constructor for `OrStream`.
-    pub fn new(input1: Reference<G1>, input2: Reference<G2>) -> Self {
+    pub const fn new(input1: Reference<G1>, input2: Reference<G2>) -> Self {
         Self {
             input1: input1,
             input2: input2,
@@ -225,7 +225,7 @@ pub struct NotStream<G: Getter<bool, E>, E: Copy + Debug> {
 }
 impl<G: Getter<bool, E>, E: Copy + Debug> NotStream<G, E> {
     ///Constructor for `NotStream`.
-    pub fn new(input: Reference<G>) -> Self {
+    pub const fn new(input: Reference<G>) -> Self {
         Self {
             input: input,
             phantom_e: PhantomData,

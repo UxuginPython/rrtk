@@ -22,7 +22,7 @@ pub struct NoneToError<T: Clone, G: Getter<T, E>, E: Copy + Debug> {
 }
 impl<T: Clone, G: Getter<T, E>, E: Copy + Debug> NoneToError<T, G, E> {
     ///Constructor for `NoneToError`.
-    pub fn new(input: Reference<G>) -> Self {
+    pub const fn new(input: Reference<G>) -> Self {
         Self {
             input: input,
             phantom_t: PhantomData,
@@ -58,7 +58,7 @@ pub struct NoneToValue<T: Clone, G: Getter<T, E>, TG: TimeGetter<E>, E: Copy + D
 }
 impl<T: Clone, G: Getter<T, E>, TG: TimeGetter<E>, E: Copy + Debug> NoneToValue<T, G, TG, E> {
     ///Constructor for `NoneToValue`.
-    pub fn new(input: Reference<G>, time_getter: Reference<TG>, none_value: T) -> Self {
+    pub const fn new(input: Reference<G>, time_getter: Reference<TG>, none_value: T) -> Self {
         Self {
             input: input,
             time_getter: time_getter,
@@ -113,7 +113,7 @@ mod acceleration_to_state {
     }
     impl<G: Getter<f32, E>, E: Copy + Debug> AccelerationToState<G, E> {
         ///Constructor for `AccelerationToState`.
-        pub fn new(acc: Reference<G>) -> Self {
+        pub const fn new(acc: Reference<G>) -> Self {
             Self {
                 acc: acc,
                 update: None,
@@ -233,7 +233,7 @@ mod velocity_to_state {
     }
     impl<G: Getter<f32, E>, E: Copy + Debug> VelocityToState<G, E> {
         ///Constructor for `VelocityToState`.
-        pub fn new(vel: Reference<G>) -> Self {
+        pub const fn new(vel: Reference<G>) -> Self {
             Self {
                 vel: vel,
                 update: None,
@@ -332,7 +332,7 @@ mod position_to_state {
     }
     impl<G: Getter<f32, E>, E: Copy + Debug> PositionToState<G, E> {
         ///Constructor for `PositionToState`.
-        pub fn new(pos: Reference<G>) -> Self {
+        pub const fn new(pos: Reference<G>) -> Self {
             Self {
                 pos: pos,
                 update: None,

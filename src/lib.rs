@@ -21,6 +21,9 @@ extern crate alloc;
 use alloc::rc::Rc;
 #[cfg(feature = "alloc")]
 use alloc::vec::Vec;
+//There is nothing preventing this from being used without any features; we just don't currently,
+//and it makes Cargo show a warning since there's an unused use.
+#[cfg(any(feature = "alloc", feature = "devices"))]
 use core::cell::RefCell;
 use core::fmt::Debug;
 use core::marker::PhantomData;
@@ -227,7 +230,7 @@ pub struct SettableData<S, E: Copy + Debug> {
 }
 impl<S, E: Copy + Debug> SettableData<S, E> {
     ///Constructor for SettableData.
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self {
             following: None,
             last_request: None,
@@ -303,7 +306,7 @@ pub struct TimeGetterFromGetter<T: Clone, G: Getter<T, E>, E: Copy + Debug> {
 }
 impl<T: Clone, G: Getter<T, E>, E: Copy + Debug> TimeGetterFromGetter<T, G, E> {
     ///Constructor for `TimeGetterFromGetter`.
-    pub fn new(stream: Reference<G>) -> Self {
+    pub const fn new(stream: Reference<G>) -> Self {
         Self {
             elevator: streams::converters::NoneToError::new(stream),
         }
@@ -414,7 +417,7 @@ pub struct ConstantGetter<T: Clone, TG: TimeGetter<E>, E: Copy + Debug> {
 }
 impl<T: Clone, TG: TimeGetter<E>, E: Copy + Debug> ConstantGetter<T, TG, E> {
     ///Constructor for `ConstantGetter`.
-    pub fn new(time_getter: Reference<TG>, value: T) -> Self {
+    pub const fn new(time_getter: Reference<TG>, value: T) -> Self {
         Self {
             settable_data: SettableData::new(),
             time_getter: time_getter,
@@ -452,7 +455,7 @@ pub struct NoneGetter;
 impl NoneGetter {
     ///Constructor for `NoneGetter`. Since `NoneGetter` is a unit struct, you can use this or just
     ///the struct's name.
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self
     }
 }
@@ -488,7 +491,7 @@ pub struct Terminal<'a, E: Copy + Debug> {
 impl<E: Copy + Debug> Terminal<'_, E> {
     ///Direct constructor for a `Terminal`. You almost always actually want `RefCell<Terminal>`
     ///however, in which case you should call `new`, which returns `RefCell<Terminal>`.
-    pub fn new_raw() -> Self {
+    pub const fn new_raw() -> Self {
         Self {
             settable_data_state: SettableData::new(),
             settable_data_command: SettableData::new(),
@@ -498,7 +501,7 @@ impl<E: Copy + Debug> Terminal<'_, E> {
     }
     ///This constructs a `RefCell<Terminal>`. This is almost always what you want, and what is
     ///needed for connecting terminals. If you do just want a `Terminal`, use `raw_get` instead.
-    pub fn new() -> RefCell<Self> {
+    pub const fn new() -> RefCell<Self> {
         RefCell::new(Self::new_raw())
     }
     ///Disconnect this terminal and the one that it is connected to. You can connect terminals by

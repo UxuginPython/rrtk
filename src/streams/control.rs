@@ -28,7 +28,7 @@ pub struct PIDControllerStream<G: Getter<f32, E>, E: Copy + Debug> {
 }
 impl<G: Getter<f32, E>, E: Copy + Debug> PIDControllerStream<G, E> {
     ///Constructor for `PIDControllerStream`.
-    pub fn new(input: Reference<G>, setpoint: f32, kvals: PIDKValues) -> Self {
+    pub const fn new(input: Reference<G>, setpoint: f32, kvals: PIDKValues) -> Self {
         Self {
             input: input,
             setpoint: setpoint,
@@ -113,7 +113,7 @@ pub struct CommandPID<G: Getter<State, E>, E: Copy + Debug> {
 }
 impl<G: Getter<State, E>, E: Copy + Debug> CommandPID<G, E> {
     ///Constructor for `CommandPID`.
-    pub fn new(
+    pub const fn new(
         input: Reference<G>,
         command: Command,
         kvalues: PositionDerivativeDependentPIDKValues,
@@ -291,7 +291,7 @@ pub struct EWMAStream<G: Getter<f32, E>, E: Copy + Debug> {
 }
 impl<G: Getter<f32, E>, E: Copy + Debug> EWMAStream<G, E> {
     ///Constructor for `EWMAStream`.
-    pub fn new(input: Reference<G>, smoothing_constant: f32) -> Self {
+    pub const fn new(input: Reference<G>, smoothing_constant: f32) -> Self {
         Self {
             input: input,
             smoothing_constant: smoothing_constant,
@@ -363,7 +363,7 @@ pub struct MovingAverageStream<G: Getter<f32, E>, E: Copy + Debug> {
 #[cfg(feature = "alloc")]
 impl<G: Getter<f32, E>, E: Copy + Debug> MovingAverageStream<G, E> {
     ///Constructor for `MovingAverageStream`.
-    pub fn new(input: Reference<G>, window: i64) -> Self {
+    pub const fn new(input: Reference<G>, window: i64) -> Self {
         Self {
             input: input,
             window: window,

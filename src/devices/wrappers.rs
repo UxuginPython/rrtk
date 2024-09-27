@@ -21,7 +21,7 @@ pub struct ActuatorWrapper<'a, T: Settable<TerminalData, E>, E: Copy + Debug> {
 }
 impl<'a, T: Settable<TerminalData, E>, E: Copy + Debug> ActuatorWrapper<'a, T, E> {
     ///Constructor for `SettableCommandDeviceWrapper`.
-    pub fn new(inner: T) -> Self {
+    pub const fn new(inner: T) -> Self {
         Self {
             inner: inner,
             terminal: Terminal::new(),
@@ -61,7 +61,7 @@ pub struct GetterStateDeviceWrapper<'a, T: Getter<State, E>, E: Copy + Debug> {
 }
 impl<'a, T: Getter<State, E>, E: Copy + Debug> GetterStateDeviceWrapper<'a, T, E> {
     ///Constructor for `GetterStateDeviceWrapper`.
-    pub fn new(inner: T) -> Self {
+    pub const fn new(inner: T) -> Self {
         Self {
             inner: inner,
             terminal: Terminal::new(),
@@ -102,7 +102,7 @@ pub struct PIDWrapper<'a, T: Settable<f32, E>, E: Copy + Debug + 'static> {
 }
 impl<'a, T: Settable<f32, E>, E: Copy + Debug + 'static> PIDWrapper<'a, T, E> {
     ///Constructor for `PIDWrapper`.
-    pub fn new(
+    pub fn new( //TODO when this is updated to use Reference: Check if this can be a const fn
         mut inner: T,
         initial_time: i64,
         initial_state: State,

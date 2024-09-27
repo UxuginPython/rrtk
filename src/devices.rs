@@ -23,7 +23,7 @@ pub struct Invert<'a, E: Copy + Debug> {
 }
 impl<'a, E: Copy + Debug> Invert<'a, E> {
     ///Constructor for `Invert`.
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self {
             term1: Terminal::new(),
             term2: Terminal::new(),
@@ -174,7 +174,7 @@ pub struct Differential<'a, E: Copy + Debug> {
 }
 impl<'a, E: Copy + Debug> Differential<'a, E> {
     ///Constructor for `Differential`. Trusts all branches equally.
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self {
             side1: Terminal::new(),
             side2: Terminal::new(),

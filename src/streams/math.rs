@@ -21,7 +21,7 @@ pub struct SumStream<T: AddAssign + Clone, const N: usize, E> {
 #[cfg(feature = "alloc")]
 impl<T: AddAssign + Clone, const N: usize, E> SumStream<T, N, E> {
     ///Constructor for `SumStream`.
-    pub fn new(addends: [Reference<dyn Getter<T, E>>; N]) -> Self {
+    pub const fn new(addends: [Reference<dyn Getter<T, E>>; N]) -> Self {
         if N < 1 {
             panic!("rrtk::streams::SumStream must have at least one input stream");
         }
@@ -87,7 +87,7 @@ impl<T: Sub<Output = T>, GM: Getter<T, E>, GS: Getter<T, E>, E: Copy + Debug>
     DifferenceStream<T, GM, GS, E>
 {
     ///Constructor for `DifferenceStream`.
-    pub fn new(minuend: Reference<GM>, subtrahend: Reference<GS>) -> Self {
+    pub const fn new(minuend: Reference<GM>, subtrahend: Reference<GS>) -> Self {
         Self {
             minuend: minuend,
             subtrahend: subtrahend,
@@ -143,7 +143,7 @@ pub struct ProductStream<T: MulAssign, const N: usize, E> {
 #[cfg(feature = "alloc")]
 impl<T: Clone + MulAssign, const N: usize, E> ProductStream<T, N, E> {
     ///Constructor for `ProductStream`.
-    pub fn new(factors: [Reference<dyn Getter<T, E>>; N]) -> Self {
+    pub const fn new(factors: [Reference<dyn Getter<T, E>>; N]) -> Self {
         if N < 1 {
             panic!("rrtk::streams::ProductStream must have at least one input stream");
         }
@@ -209,7 +209,7 @@ impl<T: Div<Output = T>, GD: Getter<T, E>, GS: Getter<T, E>, E: Copy + Debug>
     QuotientStream<T, GD, GS, E>
 {
     ///Constructor for `QuotientStream`.
-    pub fn new(dividend: Reference<GD>, divisor: Reference<GS>) -> Self {
+    pub const fn new(dividend: Reference<GD>, divisor: Reference<GS>) -> Self {
         Self {
             dividend: dividend,
             divisor: divisor,
@@ -265,7 +265,7 @@ pub struct ExponentStream<GB: Getter<f32, E>, GE: Getter<f32, E>, E: Copy + Debu
 #[cfg(feature = "std")]
 impl<GB: Getter<f32, E>, GE: Getter<f32, E>, E: Copy + Debug> ExponentStream<GB, GE, E> {
     ///Constructor for `ExponentStream`.
-    pub fn new(base: Reference<GB>, exponent: Reference<GE>) -> Self {
+    pub const fn new(base: Reference<GB>, exponent: Reference<GE>) -> Self {
         Self {
             base: base,
             exponent: exponent,
@@ -320,7 +320,7 @@ pub struct DerivativeStream<G: Getter<f32, E>, E: Copy + Debug> {
 }
 impl<G: Getter<f32, E>, E: Copy + Debug> DerivativeStream<G, E> {
     ///Constructor for `DerivativeStream`.
-    pub fn new(input: Reference<G>) -> Self {
+    pub const fn new(input: Reference<G>) -> Self {
         Self {
             input: input,
             value: Ok(None),
@@ -376,7 +376,7 @@ pub struct IntegralStream<G: Getter<f32, E>, E: Copy + Debug> {
 }
 impl<G: Getter<f32, E>, E: Copy + Debug> IntegralStream<G, E> {
     ///Constructor for `IntegralStream`.
-    pub fn new(input: Reference<G>) -> Self {
+    pub const fn new(input: Reference<G>) -> Self {
         Self {
             input: input,
             value: Ok(None),
