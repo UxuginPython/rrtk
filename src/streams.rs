@@ -1,15 +1,5 @@
-// SPDX-License-Identifier: LGPL-3.0-only
-/*
-Copyright 2024 UxuginPython on GitHub
-
-     This file is part of Rust Robotics ToolKit.
-
-    Rust Robotics ToolKit is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software Foundation, version 3.
-
-    Rust Robotics ToolKit is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.
-
-    You should have received a copy of the GNU Lesser General Public License along with Rust Robotics ToolKit. If not, see <https://www.gnu.org/licenses/>.
-*/
+// SPDX-License-Identifier: BSD-3-Clause
+// Copyright 2024 UxuginPython
 //!Getters that do data processing and have other getters as inputs are called streams. These are
 //!some helpful builtin streams for controlling your robot. See the `pid` example to learn more
 //!about how to use the stream system.

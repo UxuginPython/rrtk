@@ -4,7 +4,10 @@
 It is almost entirely `no_std` and most things work without `alloc`. It does not currently integrate with any API directly. This may be added in the future, probably through another crate.
 
 ## License
-#### GNU Lesser General Public License, version 3 only
+#### BSD 3-Clause
+This means that you can do pretty much whatever you want as long as you give me attribution and you don't remove the notices or use my name to endorse stuff I don't.
+
+**RRTK was previously licensed under LGPL. Versions 0.5.0-alpha.1 and earlier have been retroactively dual licensed under LGPL-3.0-only OR BSD-3-Clause. Versions after 0.5.0-alpha.1 are just BSD-3-Clause.**
 
 ## Features
 - Architecture based on `Getter`, `Settable`, and `Updatable` traits
