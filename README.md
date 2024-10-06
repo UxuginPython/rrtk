@@ -5,9 +5,9 @@ It is partially `no_std`. It does not currently integrate with any API directly,
 
 ## License
 #### BSD 3-Clause
-This means that you can do pretty much whatever you want as long as you give me attribution and you don't remove the notices or use my name to endorse stuff I don't.
+This basically means that you can do whatever you want as long as you give me attribution and you don't remove the license notices or use my name to endorse stuff I don't. Read the actual license for details though.
 
-**RRTK was previously licensed under LGPL. Versions 0.5.0-alpha.1 and earlier have been retroactively dual licensed under LGPL-3.0-only OR BSD-3-Clause. Versions after 0.5.0-alpha.1 are just BSD-3-Clause.**
+**RRTK was previously licensed under LGPL. Versions 0.5.0-alpha.1 and earlier have been retroactively dual licensed under LGPL-3.0-only OR BSD-3-Clause. Versions after 0.5.0-alpha.1 are just BSD-3-Clause.** This transition does not remove any freedoms, and the LGPL for old versions is maintained solely due to its irrevocability. It is entirely redundant freedoms-wise.
 
 ## Features
 - Node-like stream system for data processing
