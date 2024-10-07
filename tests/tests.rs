@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // Copyright 2024 UxuginPython
-// TODO: update tests to use Reference
+use std::cell::RefCell;
 #[cfg(feature = "std")]
 use std::rc::Rc;
 #[cfg(not(feature = "std"))]
@@ -479,8 +479,8 @@ fn time_getter_from_stream() {
             Ok(())
         }
     }
-    let stream = make_input_getter(Stream::new());
-    let mut time_getter = TimeGetterFromGetter::new(Rc::clone(&stream));
+    let stream = Reference::from_rc_refcell(Rc::new(RefCell::new(Stream::new())));
+    let mut time_getter = TimeGetterFromGetter::new(stream.clone());
     time_getter.update().unwrap(); //This should do nothing.
     assert_eq!(time_getter.get(), Ok(0));
     stream.borrow_mut().update().unwrap();
@@ -548,8 +548,11 @@ fn settable() {
     assert_eq!(my_settable.get_last_request(), None);
     my_settable.set(3).unwrap();
     assert_eq!(my_settable.get_last_request(), Some(3));
-    let my_getter = make_input_getter(MyGetter::new());
-    my_settable.follow(Rc::clone(&my_getter));
+    let my_getter = Reference::from_rc_refcell(Rc::new(RefCell::new(MyGetter::new())));
+    //let my_getter_dyn: Reference<dyn Getter<u8, ()>> = my_getter.clone();
+    let x = my_getter.clone();
+    let my_getter_dyn = to_dyn!(Getter<u8, ()>, x);
+    my_settable.follow(my_getter_dyn);
     my_settable.update().unwrap();
     assert_eq!(my_settable.get_last_request(), Some(3));
     my_getter.borrow_mut().update().unwrap();
@@ -628,10 +631,10 @@ fn getter_from_history() {
     }
 
     let mut my_history = MyHistory::new();
-    let my_time_getter = make_input_time_getter(MyTimeGetter::new());
+    let my_time_getter = Reference::from_rc_refcell(Rc::new(RefCell::new(MyTimeGetter::new())));
 
     {
-        let no_delta = GetterFromHistory::new_no_delta(&mut my_history, Rc::clone(&my_time_getter));
+        let no_delta = GetterFromHistory::new_no_delta(&mut my_history, my_time_getter.clone());
         assert_eq!(no_delta.get().unwrap().unwrap(), Datum::new(5, 5));
         my_time_getter.borrow_mut().update().unwrap();
         assert_eq!(no_delta.get().unwrap().unwrap(), Datum::new(6, 6));
@@ -639,8 +642,7 @@ fn getter_from_history() {
 
     {
         let start_at_zero =
-            GetterFromHistory::new_start_at_zero(&mut my_history, Rc::clone(&my_time_getter))
-                .unwrap();
+            GetterFromHistory::new_start_at_zero(&mut my_history, my_time_getter.clone()).unwrap();
         assert_eq!(start_at_zero.get().unwrap().unwrap(), Datum::new(6, 0));
         my_time_getter.borrow_mut().update().unwrap();
         assert_eq!(start_at_zero.get().unwrap().unwrap(), Datum::new(7, 1));
@@ -648,7 +650,7 @@ fn getter_from_history() {
 
     {
         let custom_start =
-            GetterFromHistory::new_custom_start(&mut my_history, Rc::clone(&my_time_getter), 10)
+            GetterFromHistory::new_custom_start(&mut my_history, my_time_getter.clone(), 10)
                 .unwrap();
         assert_eq!(custom_start.get().unwrap().unwrap(), Datum::new(7, 10));
         my_time_getter.borrow_mut().update().unwrap();
@@ -657,15 +659,14 @@ fn getter_from_history() {
 
     {
         let custom_delta =
-            GetterFromHistory::new_custom_delta(&mut my_history, Rc::clone(&my_time_getter), 5);
+            GetterFromHistory::new_custom_delta(&mut my_history, my_time_getter.clone(), 5);
         assert_eq!(custom_delta.get().unwrap().unwrap(), Datum::new(8, 13));
         my_time_getter.borrow_mut().update().unwrap();
         assert_eq!(custom_delta.get().unwrap().unwrap(), Datum::new(9, 14));
     }
 
     {
-        let mut getter =
-            GetterFromHistory::new_no_delta(&mut my_history, Rc::clone(&my_time_getter));
+        let mut getter = GetterFromHistory::new_no_delta(&mut my_history, my_time_getter.clone());
         assert_eq!(getter.get().unwrap().unwrap(), Datum::new(9, 9));
         getter.set_delta(5);
         assert_eq!(getter.get().unwrap().unwrap(), Datum::new(9, 14));
@@ -675,8 +676,7 @@ fn getter_from_history() {
 
     {
         my_history.set_update_test();
-        let mut getter =
-            GetterFromHistory::new_no_delta(&mut my_history, Rc::clone(&my_time_getter));
+        let mut getter = GetterFromHistory::new_no_delta(&mut my_history, my_time_getter.clone());
         assert_eq!(getter.get().unwrap().unwrap(), Datum::new(9, 9));
         getter.update().unwrap();
         assert_eq!(getter.get().unwrap().unwrap(), Datum::new(10, 30));
@@ -684,7 +684,7 @@ fn getter_from_history() {
 
     {
         my_history.set_none_test();
-        let getter = GetterFromHistory::new_no_delta(&mut my_history, Rc::clone(&my_time_getter));
+        let getter = GetterFromHistory::new_no_delta(&mut my_history, my_time_getter.clone());
         assert_eq!(getter.get().unwrap(), None);
     }
 }
@@ -701,7 +701,10 @@ fn constant_getter() {
             Ok(())
         }
     }
-    let mut constant_getter = ConstantGetter::new(make_input_time_getter(MyTimeGetter), 10);
+    let mut constant_getter = ConstantGetter::new(
+        Reference::from_rc_refcell(Rc::new(RefCell::new(MyTimeGetter))),
+        10,
+    );
     assert_eq!(constant_getter.get().unwrap().unwrap().value, 10);
     constant_getter.update().unwrap(); //This should do nothing.
     assert_eq!(constant_getter.get().unwrap().unwrap().value, 10);
