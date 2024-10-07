@@ -116,6 +116,15 @@ impl<T: ?Sized> InternalReference<T> {
         }
     }
 }
+impl<T: ?Sized> Clone for InternalReference<T> {
+    fn clone(&self) -> Self {
+        match self {
+            Self::Ptr(ptr) => Self::Ptr(*ptr),
+            Self::RcRefCell(rc_refcell) => Self::RcRefCell(Rc::clone(&rc_refcell)),
+            Self::PtrRwLock(ptr_rwlock) => Self::PtrRwLock(*ptr_rwlock),
+        }
+    }
+}
 ///A special enum with variants for different kinds of references depending on your platform and
 ///code structure. (Some variants are alloc- or std-only.)
 pub struct Reference<T: ?Sized>(InternalReference<T>);
@@ -123,17 +132,17 @@ impl<T: ?Sized> Reference<T> {
     ///Create a `Reference` from a raw mutable pointer. Good if you're not multithreading and you
     ///want to avoid dynamic allocation. Making the object static is strongly recommended if you
     ///use this.
-    pub unsafe fn from_ptr(ptr: *mut T) -> Self {
+    pub const unsafe fn from_ptr(ptr: *mut T) -> Self {
         Self(InternalReference::Ptr(ptr))
     }
     ///Create a `Reference` from an `Rc<RefCell<T>>`.
     #[cfg(feature = "alloc")]
-    pub fn from_rc_refcell(rc_refcell: Rc<RefCell<T>>) -> Self {
+    pub const fn from_rc_refcell(rc_refcell: Rc<RefCell<T>>) -> Self {
         Self(InternalReference::RcRefCell(rc_refcell))
     }
     ///Create a `Reference` from a `*const RwLock<T>`.
     #[cfg(feature = "std")]
-    pub unsafe fn from_rwlock_ptr(ptr_rwlock: *const RwLock<T>) -> Self {
+    pub const unsafe fn from_rwlock_ptr(ptr_rwlock: *const RwLock<T>) -> Self {
         Self(InternalReference::PtrRwLock(ptr_rwlock))
     }
     ///Immutably borrow a `Reference`, similarly to how you would with a `RefCell`.
@@ -144,4 +153,45 @@ impl<T: ?Sized> Reference<T> {
     pub fn borrow_mut(&self) -> BorrowMut<'_, T> {
         BorrowMut(self.0.borrow_mut())
     }
+}
+impl<T: ?Sized> Clone for Reference<T> {
+    fn clone(&self) -> Self {
+        Self(self.0.clone())
+    }
+}
+#[cfg(all(not(feature = "alloc"), not(feature = "std")))]
+#[macro_export]
+macro_rules! to_dyn {
+    ($trait:path, $was:ident) => {
+        match $was.0 {
+            InternalReference::Ptr(ptr) => Reference::from_ptr(ptr as *mut dyn $trait),
+        }
+    };
+}
+#[cfg(all(feature = "alloc", not(feature = "std")))]
+#[macro_export]
+macro_rules! to_dyn {
+    ($trait:path, $was:ident) => {
+        match $was.0 {
+            InternalReference::Ptr(ptr) => Reference::from_ptr(ptr as *mut dyn $trait),
+            InternalReference::RcRefCell(rc_refcell) => {
+                Reference::from_rc_refcell(rc_refcell as Rc<RefCell<dyn $trait>>)
+            }
+        }
+    };
+}
+#[cfg(feature = "std")]
+#[macro_export]
+macro_rules! to_dyn {
+    ($trait:path, $was:ident) => {
+        match $was.0 {
+            InternalReference::Ptr(ptr) => Reference::from_ptr(ptr as *mut dyn $trait),
+            InternalReference::RcRefCell(rc_refcell) => {
+                Reference::from_rc_refcell(rc_refcell as Rc<RefCell<dyn $trait>>)
+            }
+            InternalReference::PtrRwLock(ptr_rw_lock) => {
+                Reference::from_rwlock_ptr(ptr_rw_lock as *const std::sync::RwLock<dyn $trait>)
+            }
+        }
+    };
 }
