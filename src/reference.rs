@@ -159,22 +159,28 @@ impl<T: ?Sized> Clone for Reference<T> {
 ///# struct Foo;
 ///# trait Bar {}
 ///# impl Bar for Foo {}
-///let ref_foo = Reference::from_rc_refcell(Rc::new(RefCell::new(Foo)));
-///let ref_dyn_bar = to_dyn!(Bar, ref_foo);
+///static mut FOO: Foo = Foo;
+///unsafe {
+///    let ref_foo = Reference::from_ptr(core::ptr::addr_of_mut!(FOO));
+///    let ref_dyn_bar = to_dyn!(Bar, ref_foo);
+///}
 ///```
 #[macro_export]
 macro_rules! to_dyn {
-    ($trait:path, $was:ident) => {
+    ($trait:path, $was:ident) => {{
+        #[cfg(feature = "alloc")]
+        extern crate alloc;
         match $was {
             Reference::Ptr(ptr) => unsafe { Reference::from_ptr(ptr as *mut dyn $trait) },
             #[cfg(feature = "alloc")]
-            Reference::RcRefCell(rc_refcell) => {
-                Reference::from_rc_refcell(rc_refcell as Rc<RefCell<dyn $trait>>)
-            }
+            Reference::RcRefCell(rc_refcell) => Reference::from_rc_refcell(
+                rc_refcell as alloc::rc::Rc<core::cell::RefCell<dyn $trait>>,
+            ),
             #[cfg(feature = "std")]
             Reference::PtrRwLock(ptr_rw_lock) => unsafe {
                 Reference::from_rwlock_ptr(ptr_rw_lock as *const std::sync::RwLock<dyn $trait>)
             },
+            _ => unimplemented!(),
         }
-    };
+    }};
 }

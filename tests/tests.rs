@@ -1,12 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // Copyright 2024 UxuginPython
-use std::cell::RefCell;
-#[cfg(feature = "std")]
-use std::rc::Rc;
-#[cfg(not(feature = "std"))]
-extern crate alloc;
-#[cfg(not(feature = "std"))]
-use alloc::rc::Rc;
 use rrtk::*;
 #[test]
 fn state_new() {
@@ -459,7 +452,7 @@ fn time_getter_from_stream() {
         time: i64,
     }
     impl Stream {
-        fn new() -> Self {
+        const fn new() -> Self {
             Self { time: 0 }
         }
     }
@@ -479,14 +472,17 @@ fn time_getter_from_stream() {
             Ok(())
         }
     }
-    let stream = Reference::from_rc_refcell(Rc::new(RefCell::new(Stream::new())));
-    let mut time_getter = TimeGetterFromGetter::new(stream.clone());
-    time_getter.update().unwrap(); //This should do nothing.
-    assert_eq!(time_getter.get(), Ok(0));
-    stream.borrow_mut().update().unwrap();
-    assert_eq!(time_getter.get(), Err(Error::FromNone));
-    stream.borrow_mut().update().unwrap();
-    assert_eq!(time_getter.get(), Err(Error::Other(())));
+    unsafe {
+        static mut STREAM: Stream = Stream::new();
+        let stream = Reference::from_ptr(core::ptr::addr_of_mut!(STREAM));
+        let mut time_getter = TimeGetterFromGetter::new(stream.clone());
+        time_getter.update().unwrap(); //This should do nothing.
+        assert_eq!(time_getter.get(), Ok(0));
+        stream.borrow_mut().update().unwrap();
+        assert_eq!(time_getter.get(), Err(Error::FromNone));
+        stream.borrow_mut().update().unwrap();
+        assert_eq!(time_getter.get(), Err(Error::Other(())));
+    }
 }
 #[test]
 fn settable() {
@@ -495,7 +491,7 @@ fn settable() {
         value: u8,
     }
     impl MyGetter {
-        fn new() -> Self {
+        const fn new() -> Self {
             Self {
                 none: true,
                 value: 5,
@@ -548,23 +544,26 @@ fn settable() {
     assert_eq!(my_settable.get_last_request(), None);
     my_settable.set(3).unwrap();
     assert_eq!(my_settable.get_last_request(), Some(3));
-    let my_getter = Reference::from_rc_refcell(Rc::new(RefCell::new(MyGetter::new())));
-    //let my_getter_dyn: Reference<dyn Getter<u8, ()>> = my_getter.clone();
-    let x = my_getter.clone();
-    let my_getter_dyn = to_dyn!(Getter<u8, ()>, x);
-    my_settable.follow(my_getter_dyn);
-    my_settable.update().unwrap();
-    assert_eq!(my_settable.get_last_request(), Some(3));
-    my_getter.borrow_mut().update().unwrap();
-    my_settable.update().unwrap();
-    assert_eq!(my_settable.get_last_request(), Some(6));
-    my_getter.borrow_mut().update().unwrap();
-    my_settable.update().unwrap();
-    assert_eq!(my_settable.get_last_request(), Some(7));
-    my_settable.stop_following();
-    my_getter.borrow_mut().update().unwrap();
-    my_settable.update().unwrap();
-    assert_eq!(my_settable.get_last_request(), Some(7));
+    unsafe {
+        static mut MY_GETTER: MyGetter = MyGetter::new();
+        let my_getter = Reference::from_ptr(core::ptr::addr_of_mut!(MY_GETTER));
+        //let my_getter_dyn: Reference<dyn Getter<u8, ()>> = my_getter.clone();
+        let x = my_getter.clone();
+        let my_getter_dyn = to_dyn!(Getter<u8, ()>, x);
+        my_settable.follow(my_getter_dyn);
+        my_settable.update().unwrap();
+        assert_eq!(my_settable.get_last_request(), Some(3));
+        my_getter.borrow_mut().update().unwrap();
+        my_settable.update().unwrap();
+        assert_eq!(my_settable.get_last_request(), Some(6));
+        my_getter.borrow_mut().update().unwrap();
+        my_settable.update().unwrap();
+        assert_eq!(my_settable.get_last_request(), Some(7));
+        my_settable.stop_following();
+        my_getter.borrow_mut().update().unwrap();
+        my_settable.update().unwrap();
+        assert_eq!(my_settable.get_last_request(), Some(7));
+    }
 }
 #[test]
 fn getter_from_history() {
@@ -614,7 +613,7 @@ fn getter_from_history() {
         time: i64,
     }
     impl MyTimeGetter {
-        fn new() -> Self {
+        const fn new() -> Self {
             Self { time: 5 }
         }
     }
@@ -631,61 +630,67 @@ fn getter_from_history() {
     }
 
     let mut my_history = MyHistory::new();
-    let my_time_getter = Reference::from_rc_refcell(Rc::new(RefCell::new(MyTimeGetter::new())));
+    unsafe {
+        static mut TIME_GETTER: MyTimeGetter = MyTimeGetter::new();
+        let my_time_getter = Reference::from_ptr(core::ptr::addr_of_mut!(TIME_GETTER));
 
-    {
-        let no_delta = GetterFromHistory::new_no_delta(&mut my_history, my_time_getter.clone());
-        assert_eq!(no_delta.get().unwrap().unwrap(), Datum::new(5, 5));
-        my_time_getter.borrow_mut().update().unwrap();
-        assert_eq!(no_delta.get().unwrap().unwrap(), Datum::new(6, 6));
-    }
+        {
+            let no_delta = GetterFromHistory::new_no_delta(&mut my_history, my_time_getter.clone());
+            assert_eq!(no_delta.get().unwrap().unwrap(), Datum::new(5, 5));
+            my_time_getter.borrow_mut().update().unwrap();
+            assert_eq!(no_delta.get().unwrap().unwrap(), Datum::new(6, 6));
+        }
 
-    {
-        let start_at_zero =
-            GetterFromHistory::new_start_at_zero(&mut my_history, my_time_getter.clone()).unwrap();
-        assert_eq!(start_at_zero.get().unwrap().unwrap(), Datum::new(6, 0));
-        my_time_getter.borrow_mut().update().unwrap();
-        assert_eq!(start_at_zero.get().unwrap().unwrap(), Datum::new(7, 1));
-    }
+        {
+            let start_at_zero =
+                GetterFromHistory::new_start_at_zero(&mut my_history, my_time_getter.clone())
+                    .unwrap();
+            assert_eq!(start_at_zero.get().unwrap().unwrap(), Datum::new(6, 0));
+            my_time_getter.borrow_mut().update().unwrap();
+            assert_eq!(start_at_zero.get().unwrap().unwrap(), Datum::new(7, 1));
+        }
 
-    {
-        let custom_start =
-            GetterFromHistory::new_custom_start(&mut my_history, my_time_getter.clone(), 10)
-                .unwrap();
-        assert_eq!(custom_start.get().unwrap().unwrap(), Datum::new(7, 10));
-        my_time_getter.borrow_mut().update().unwrap();
-        assert_eq!(custom_start.get().unwrap().unwrap(), Datum::new(8, 11));
-    }
+        {
+            let custom_start =
+                GetterFromHistory::new_custom_start(&mut my_history, my_time_getter.clone(), 10)
+                    .unwrap();
+            assert_eq!(custom_start.get().unwrap().unwrap(), Datum::new(7, 10));
+            my_time_getter.borrow_mut().update().unwrap();
+            assert_eq!(custom_start.get().unwrap().unwrap(), Datum::new(8, 11));
+        }
 
-    {
-        let custom_delta =
-            GetterFromHistory::new_custom_delta(&mut my_history, my_time_getter.clone(), 5);
-        assert_eq!(custom_delta.get().unwrap().unwrap(), Datum::new(8, 13));
-        my_time_getter.borrow_mut().update().unwrap();
-        assert_eq!(custom_delta.get().unwrap().unwrap(), Datum::new(9, 14));
-    }
+        {
+            let custom_delta =
+                GetterFromHistory::new_custom_delta(&mut my_history, my_time_getter.clone(), 5);
+            assert_eq!(custom_delta.get().unwrap().unwrap(), Datum::new(8, 13));
+            my_time_getter.borrow_mut().update().unwrap();
+            assert_eq!(custom_delta.get().unwrap().unwrap(), Datum::new(9, 14));
+        }
 
-    {
-        let mut getter = GetterFromHistory::new_no_delta(&mut my_history, my_time_getter.clone());
-        assert_eq!(getter.get().unwrap().unwrap(), Datum::new(9, 9));
-        getter.set_delta(5);
-        assert_eq!(getter.get().unwrap().unwrap(), Datum::new(9, 14));
-        getter.set_time(20).unwrap();
-        assert_eq!(getter.get().unwrap().unwrap(), Datum::new(9, 20));
-    }
+        {
+            let mut getter =
+                GetterFromHistory::new_no_delta(&mut my_history, my_time_getter.clone());
+            assert_eq!(getter.get().unwrap().unwrap(), Datum::new(9, 9));
+            getter.set_delta(5);
+            assert_eq!(getter.get().unwrap().unwrap(), Datum::new(9, 14));
+            getter.set_time(20).unwrap();
+            assert_eq!(getter.get().unwrap().unwrap(), Datum::new(9, 20));
+        }
 
-    {
-        my_history.set_update_test();
-        let mut getter = GetterFromHistory::new_no_delta(&mut my_history, my_time_getter.clone());
-        assert_eq!(getter.get().unwrap().unwrap(), Datum::new(9, 9));
-        getter.update().unwrap();
-        assert_eq!(getter.get().unwrap().unwrap(), Datum::new(10, 30));
-    }
+        {
+            my_history.set_update_test();
+            let mut getter =
+                GetterFromHistory::new_no_delta(&mut my_history, my_time_getter.clone());
+            assert_eq!(getter.get().unwrap().unwrap(), Datum::new(9, 9));
+            getter.update().unwrap();
+            assert_eq!(getter.get().unwrap().unwrap(), Datum::new(10, 30));
+        }
 
-    {
-        my_history.set_none_test();
-        let getter = GetterFromHistory::new_no_delta(&mut my_history, my_time_getter.clone());
-        assert_eq!(getter.get().unwrap(), None);
+        {
+            my_history.set_none_test();
+            let getter = GetterFromHistory::new_no_delta(&mut my_history, my_time_getter.clone());
+            assert_eq!(getter.get().unwrap(), None);
+        }
     }
 }
 #[test]
@@ -701,15 +706,18 @@ fn constant_getter() {
             Ok(())
         }
     }
-    let mut constant_getter = ConstantGetter::new(
-        Reference::from_rc_refcell(Rc::new(RefCell::new(MyTimeGetter))),
-        10,
-    );
-    assert_eq!(constant_getter.get().unwrap().unwrap().value, 10);
-    constant_getter.update().unwrap(); //This should do nothing.
-    assert_eq!(constant_getter.get().unwrap().unwrap().value, 10);
-    constant_getter.set(20).unwrap();
-    assert_eq!(constant_getter.get().unwrap().unwrap().value, 20);
+    unsafe {
+        static mut MY_TIME_GETTER: MyTimeGetter = MyTimeGetter;
+        let mut constant_getter = ConstantGetter::new(
+            Reference::from_ptr(core::ptr::addr_of_mut!(MY_TIME_GETTER)),
+            10,
+        );
+        assert_eq!(constant_getter.get().unwrap().unwrap().value, 10);
+        constant_getter.update().unwrap(); //This should do nothing.
+        assert_eq!(constant_getter.get().unwrap().unwrap().value, 10);
+        constant_getter.set(20).unwrap();
+        assert_eq!(constant_getter.get().unwrap().unwrap().value, 20);
+    }
 }
 #[test]
 fn none_getter() {
