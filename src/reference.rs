@@ -154,15 +154,22 @@ impl<T: ?Sized> Clone for Reference<T> {
 ///`Reference<dyn Bar>`. To convert it, you would do this:
 ///```
 ///# use rrtk::*;
-///# use std::cell::RefCell;
-///# use std::rc::Rc;
 ///# struct Foo;
-///# trait Bar {}
+///# impl Foo {
+///#     fn foo_func(&self) {}
+///# }
+///# trait Bar {
+///#     fn bar_func(&self) {}
+///# }
 ///# impl Bar for Foo {}
 ///static mut FOO: Foo = Foo;
 ///unsafe {
 ///    let ref_foo = Reference::from_ptr(core::ptr::addr_of_mut!(FOO));
+///    ref_foo.borrow().foo_func();
+///    ref_foo.borrow().bar_func();
 ///    let ref_dyn_bar = to_dyn!(Bar, ref_foo);
+///    //ref_dyn_bar.borrow().foo_func(); //It won't compile with this.
+///    ref_dyn_bar.borrow().bar_func();
 ///}
 ///```
 #[macro_export]
