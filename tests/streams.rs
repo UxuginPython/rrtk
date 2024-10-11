@@ -498,7 +498,7 @@ fn sum_stream() {
 fn empty_sum_stream() {
     let _: SumStream<f32, 0, ()> = SumStream::new([]);
 }
-/*#[test]
+#[test]
 fn difference_stream() {
     #[derive(Clone, Copy, Debug)]
     struct DummyError;
@@ -506,7 +506,7 @@ fn difference_stream() {
         index: u8,
     }
     impl Stream1 {
-        pub fn new() -> Self {
+        pub const fn new() -> Self {
             Self { index: 0 }
         }
     }
@@ -530,7 +530,7 @@ fn difference_stream() {
         index: u8,
     }
     impl Stream2 {
-        pub fn new() -> Self {
+        pub const fn new() -> Self {
             Self { index: 0 }
         }
     }
@@ -550,104 +550,108 @@ fn difference_stream() {
             Ok(())
         }
     }
-    let stream1 = make_input_getter(Stream1::new());
-    let stream2 = make_input_getter(Stream2::new());
-    let stream = DifferenceStream::new(Rc::clone(&stream1), Rc::clone(&stream2));
-    //Err, Err
-    match stream.get() {
-        Ok(_) => {
-            panic!();
+    unsafe {
+        static mut STREAM_1: Stream1 = Stream1::new();
+        let stream1 = Reference::from_ptr(core::ptr::addr_of_mut!(STREAM_1));
+        static mut STREAM_2: Stream2 = Stream2::new();
+        let stream2 = Reference::from_ptr(core::ptr::addr_of_mut!(STREAM_2));
+        let stream = DifferenceStream::new(stream1.clone(), stream2.clone());
+        //Err, Err
+        match stream.get() {
+            Ok(_) => {
+                panic!();
+            }
+            Err(_) => {}
         }
-        Err(_) => {}
-    }
-    stream1.borrow_mut().update().unwrap();
-    stream2.borrow_mut().update().unwrap();
-    //Err, None
-    match stream.get() {
-        Ok(_) => {
-            panic!();
+        stream1.borrow_mut().update().unwrap();
+        stream2.borrow_mut().update().unwrap();
+        //Err, None
+        match stream.get() {
+            Ok(_) => {
+                panic!();
+            }
+            Err(_) => {}
         }
-        Err(_) => {}
-    }
-    stream1.borrow_mut().update().unwrap();
-    stream2.borrow_mut().update().unwrap();
-    //Err, Some
-    match stream.get() {
-        Ok(_) => {
-            panic!();
+        stream1.borrow_mut().update().unwrap();
+        stream2.borrow_mut().update().unwrap();
+        //Err, Some
+        match stream.get() {
+            Ok(_) => {
+                panic!();
+            }
+            Err(_) => {}
         }
-        Err(_) => {}
-    }
-    stream1.borrow_mut().update().unwrap();
-    stream2.borrow_mut().update().unwrap();
-    //None, Err
-    match stream.get() {
-        Ok(_) => {
-            panic!();
+        stream1.borrow_mut().update().unwrap();
+        stream2.borrow_mut().update().unwrap();
+        //None, Err
+        match stream.get() {
+            Ok(_) => {
+                panic!();
+            }
+            Err(_) => {}
         }
-        Err(_) => {}
-    }
-    stream1.borrow_mut().update().unwrap();
-    stream2.borrow_mut().update().unwrap();
-    //None, None
-    match stream.get() {
-        Ok(Some(_)) => {
-            panic!();
+        stream1.borrow_mut().update().unwrap();
+        stream2.borrow_mut().update().unwrap();
+        //None, None
+        match stream.get() {
+            Ok(Some(_)) => {
+                panic!();
+            }
+            Ok(None) => {}
+            Err(_) => {
+                panic!();
+            }
         }
-        Ok(None) => {}
-        Err(_) => {
-            panic!();
+        stream1.borrow_mut().update().unwrap();
+        stream2.borrow_mut().update().unwrap();
+        //None, Some
+        match stream.get() {
+            Ok(Some(_)) => {
+                panic!();
+            }
+            Ok(None) => {}
+            Err(_) => {
+                panic!();
+            }
         }
-    }
-    stream1.borrow_mut().update().unwrap();
-    stream2.borrow_mut().update().unwrap();
-    //None, Some
-    match stream.get() {
-        Ok(Some(_)) => {
-            panic!();
+        stream1.borrow_mut().update().unwrap();
+        stream2.borrow_mut().update().unwrap();
+        //Some, Err
+        match stream.get() {
+            Ok(_) => {
+                panic!();
+            }
+            Err(_) => {}
         }
-        Ok(None) => {}
-        Err(_) => {
-            panic!();
+        stream1.borrow_mut().update().unwrap();
+        stream2.borrow_mut().update().unwrap();
+        //Some, None
+        match stream.get() {
+            Ok(Some(x)) => {
+                assert_eq!(x.time, 1);
+                assert_eq!(x.value, 10.0);
+            }
+            Ok(None) => {
+                panic!();
+            }
+            Err(_) => {
+                panic!();
+            }
         }
-    }
-    stream1.borrow_mut().update().unwrap();
-    stream2.borrow_mut().update().unwrap();
-    //Some, Err
-    match stream.get() {
-        Ok(_) => {
-            panic!();
-        }
-        Err(_) => {}
-    }
-    stream1.borrow_mut().update().unwrap();
-    stream2.borrow_mut().update().unwrap();
-    //Some, None
-    match stream.get() {
-        Ok(Some(x)) => {
-            assert_eq!(x.time, 1);
-            assert_eq!(x.value, 10.0);
-        }
-        Ok(None) => {
-            panic!();
-        }
-        Err(_) => {
-            panic!();
-        }
-    }
-    stream1.borrow_mut().update().unwrap();
-    stream2.borrow_mut().update().unwrap();
-    //Some, Some
-    match stream.get() {
-        Ok(Some(x)) => {
-            assert_eq!(x.time, 2);
-            assert_eq!(x.value, 7.0);
-        }
-        Ok(None) => {
-            panic!();
-        }
-        Err(_) => {
-            panic!();
+        stream1.borrow_mut().update().unwrap();
+        stream2.borrow_mut().update().unwrap();
+        //Some, Some
+        match stream.get() {
+            Ok(Some(x)) => {
+                assert_eq!(x.time, 2);
+                assert_eq!(x.value, 7.0);
+            }
+            Ok(None) => {
+                panic!();
+            }
+            Err(_) => {
+                panic!();
+            }
         }
     }
 }
@@ -659,7 +663,7 @@ fn product_stream() {
         index: u8,
     }
     impl ErroringStream {
-        pub fn new() -> Self {
+        pub const fn new() -> Self {
             Self { index: 0 }
         }
     }
@@ -682,7 +686,7 @@ fn product_stream() {
     }
     struct NormalStream;
     impl NormalStream {
-        pub fn new() -> Self {
+        pub const fn new() -> Self {
             Self {}
         }
     }
@@ -696,22 +700,29 @@ fn product_stream() {
             Ok(())
         }
     }
-    let erroring = make_input_getter(ErroringStream::new());
-    let normal = make_input_getter(NormalStream::new());
-    let stream = ProductStream::new([Rc::clone(&erroring), Rc::clone(&normal)]);
-    match stream.get() {
-        Ok(_) => {
-            panic!("error not propagated")
+    unsafe {
+        static mut ERRORING: ErroringStream = ErroringStream::new();
+        let erroring = Reference::from_ptr(core::ptr::addr_of_mut!(ERRORING));
+        static mut NORMAL: NormalStream = NormalStream::new();
+        let normal = Reference::from_ptr(core::ptr::addr_of_mut!(NORMAL));
+        let stream = ProductStream::new([
+            to_dyn!(Getter<f32, _>, erroring.clone()),
+            to_dyn!(Getter<f32, _>, normal.clone()),
+        ]);
+        match stream.get() {
+            Ok(_) => {
+                panic!("error not propagated")
+            }
+            Err(_) => {}
         }
-        Err(_) => {}
+        //normal does not need update
+        erroring.borrow_mut().update().unwrap();
+        assert_eq!(stream.get().unwrap().unwrap().time, 1);
+        assert_eq!(stream.get().unwrap().unwrap().value, 5.0);
+        erroring.borrow_mut().update().unwrap();
+        assert_eq!(stream.get().unwrap().unwrap().time, 2);
+        assert_eq!(stream.get().unwrap().unwrap().value, 15.0);
     }
-    //normal does not need update
-    erroring.borrow_mut().update().unwrap();
-    assert_eq!(stream.get().unwrap().unwrap().time, 1);
-    assert_eq!(stream.get().unwrap().unwrap().value, 5.0);
-    erroring.borrow_mut().update().unwrap();
-    assert_eq!(stream.get().unwrap().unwrap().time, 2);
-    assert_eq!(stream.get().unwrap().unwrap().value, 15.0);
 }
 #[test]
 #[should_panic]
@@ -726,7 +737,7 @@ fn quotient_stream() {
         index: u8,
     }
     impl Stream1 {
-        pub fn new() -> Self {
+        pub const fn new() -> Self {
             Self { index: 0 }
         }
     }
@@ -750,7 +761,7 @@ fn quotient_stream() {
         index: u8,
     }
     impl Stream2 {
-        pub fn new() -> Self {
+        pub const fn new() -> Self {
             Self { index: 0 }
         }
     }
@@ -770,108 +781,112 @@ fn quotient_stream() {
             Ok(())
         }
     }
-    let stream1 = make_input_getter(Stream1::new());
-    let stream2 = make_input_getter(Stream2::new());
-    let stream = QuotientStream::new(Rc::clone(&stream1), Rc::clone(&stream2));
-    //Err, Err
-    match stream.get() {
-        Ok(_) => {
-            panic!();
+    unsafe {
+        static mut STREAM_1: Stream1 = Stream1::new();
+        let stream1 = Reference::from_ptr(core::ptr::addr_of_mut!(STREAM_1));
+        static mut STREAM_2: Stream2 = Stream2::new();
+        let stream2 = Reference::from_ptr(core::ptr::addr_of_mut!(STREAM_2));
+        let stream = QuotientStream::new(stream1.clone(), stream2.clone());
+        //Err, Err
+        match stream.get() {
+            Ok(_) => {
+                panic!();
+            }
+            Err(_) => {}
         }
-        Err(_) => {}
-    }
-    stream1.borrow_mut().update().unwrap();
-    stream2.borrow_mut().update().unwrap();
-    //Err, None
-    match stream.get() {
-        Ok(_) => {
-            panic!();
+        stream1.borrow_mut().update().unwrap();
+        stream2.borrow_mut().update().unwrap();
+        //Err, None
+        match stream.get() {
+            Ok(_) => {
+                panic!();
+            }
+            Err(_) => {}
         }
-        Err(_) => {}
-    }
-    stream1.borrow_mut().update().unwrap();
-    stream2.borrow_mut().update().unwrap();
-    //Err, Some
-    match stream.get() {
-        Ok(_) => {
-            panic!();
+        stream1.borrow_mut().update().unwrap();
+        stream2.borrow_mut().update().unwrap();
+        //Err, Some
+        match stream.get() {
+            Ok(_) => {
+                panic!();
+            }
+            Err(_) => {}
         }
-        Err(_) => {}
-    }
-    stream1.borrow_mut().update().unwrap();
-    stream2.borrow_mut().update().unwrap();
-    //None, Err
-    match stream.get() {
-        Ok(_) => {
-            panic!();
+        stream1.borrow_mut().update().unwrap();
+        stream2.borrow_mut().update().unwrap();
+        //None, Err
+        match stream.get() {
+            Ok(_) => {
+                panic!();
+            }
+            Err(_) => {}
         }
-        Err(_) => {}
-    }
-    stream1.borrow_mut().update().unwrap();
-    stream2.borrow_mut().update().unwrap();
-    //None, None
-    match stream.get() {
-        Ok(Some(_)) => {
-            panic!();
+        stream1.borrow_mut().update().unwrap();
+        stream2.borrow_mut().update().unwrap();
+        //None, None
+        match stream.get() {
+            Ok(Some(_)) => {
+                panic!();
+            }
+            Ok(None) => {}
+            Err(_) => {
+                panic!();
+            }
         }
-        Ok(None) => {}
-        Err(_) => {
-            panic!();
+        stream1.borrow_mut().update().unwrap();
+        stream2.borrow_mut().update().unwrap();
+        //None, Some
+        match stream.get() {
+            Ok(Some(_)) => {
+                panic!();
+            }
+            Ok(None) => {}
+            Err(_) => {
+                panic!();
+            }
         }
-    }
-    stream1.borrow_mut().update().unwrap();
-    stream2.borrow_mut().update().unwrap();
-    //None, Some
-    match stream.get() {
-        Ok(Some(_)) => {
-            panic!();
+        stream1.borrow_mut().update().unwrap();
+        stream2.borrow_mut().update().unwrap();
+        //Some, Err
+        match stream.get() {
+            Ok(_) => {
+                panic!();
+            }
+            Err(_) => {}
         }
-        Ok(None) => {}
-        Err(_) => {
-            panic!();
+        stream1.borrow_mut().update().unwrap();
+        stream2.borrow_mut().update().unwrap();
+        //Some, None
+        match stream.get() {
+            Ok(Some(x)) => {
+                assert_eq!(x.time, 1);
+                assert_eq!(x.value, 12.0);
+            }
+            Ok(None) => {
+                panic!();
+            }
+            Err(_) => {
+                panic!();
+            }
         }
-    }
-    stream1.borrow_mut().update().unwrap();
-    stream2.borrow_mut().update().unwrap();
-    //Some, Err
-    match stream.get() {
-        Ok(_) => {
-            panic!();
-        }
-        Err(_) => {}
-    }
-    stream1.borrow_mut().update().unwrap();
-    stream2.borrow_mut().update().unwrap();
-    //Some, None
-    match stream.get() {
-        Ok(Some(x)) => {
-            assert_eq!(x.time, 1);
-            assert_eq!(x.value, 12.0);
-        }
-        Ok(None) => {
-            panic!();
-        }
-        Err(_) => {
-            panic!();
-        }
-    }
-    stream1.borrow_mut().update().unwrap();
-    stream2.borrow_mut().update().unwrap();
-    //Some, Some
-    match stream.get() {
-        Ok(Some(x)) => {
-            assert_eq!(x.time, 2);
-            assert_eq!(x.value, 4.0);
-        }
-        Ok(None) => {
-            panic!();
-        }
-        Err(_) => {
-            panic!();
+        stream1.borrow_mut().update().unwrap();
+        stream2.borrow_mut().update().unwrap();
+        //Some, Some
+        match stream.get() {
+            Ok(Some(x)) => {
+                assert_eq!(x.time, 2);
+                assert_eq!(x.value, 4.0);
+            }
+            Ok(None) => {
+                panic!();
+            }
+            Err(_) => {
+                panic!();
+            }
         }
     }
 }
-#[test]
+/*#[test]
 #[cfg(feature = "std")]
 fn exponent_stream() {
     #[derive(Clone, Copy, Debug)]
