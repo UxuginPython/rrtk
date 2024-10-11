@@ -422,7 +422,8 @@ fn position_to_state() {
         );
     }
 }
-/*#[test]
+#[test]
+#[cfg(feature = "alloc")]
 fn sum_stream() {
     #[derive(Clone, Copy, Debug)]
     struct Nothing;
@@ -430,7 +431,7 @@ fn sum_stream() {
         index: u8,
     }
     impl ErroringStream {
-        pub fn new() -> Self {
+        pub const fn new() -> Self {
             Self { index: 0 }
         }
     }
@@ -453,7 +454,7 @@ fn sum_stream() {
     }
     struct NormalStream;
     impl NormalStream {
-        pub fn new() -> Self {
+        pub const fn new() -> Self {
             Self {}
         }
     }
@@ -467,29 +468,37 @@ fn sum_stream() {
             Ok(())
         }
     }
-    let erroring = make_input_getter(ErroringStream::new());
-    let normal = make_input_getter(NormalStream::new());
-    let stream = SumStream::new([Rc::clone(&erroring), Rc::clone(&normal)]);
-    match stream.get() {
-        Ok(_) => {
-            panic!("error not propagated")
+    unsafe {
+        static mut ERRORING: ErroringStream = ErroringStream::new();
+        let erroring = Reference::from_ptr(core::ptr::addr_of_mut!(ERRORING));
+        static mut NORMAL: NormalStream = NormalStream::new();
+        let normal = Reference::from_ptr(core::ptr::addr_of_mut!(NORMAL));
+        let stream = SumStream::new([
+            to_dyn!(Getter<f32, _>, erroring.clone()),
+            to_dyn!(Getter<f32, _>, normal.clone()),
+        ]);
+        match stream.get() {
+            Ok(_) => {
+                panic!("error not propagated")
+            }
+            Err(_) => {}
         }
-        Err(_) => {}
+        //normal does not need update
+        erroring.borrow_mut().update().unwrap();
+        assert_eq!(stream.get().unwrap().unwrap().time, 1);
+        assert_eq!(stream.get().unwrap().unwrap().value, 1.0);
+        erroring.borrow_mut().update().unwrap();
+        assert_eq!(stream.get().unwrap().unwrap().time, 2);
+        assert_eq!(stream.get().unwrap().unwrap().value, 2.0);
     }
-    //normal does not need update
-    erroring.borrow_mut().update().unwrap();
-    assert_eq!(stream.get().unwrap().unwrap().time, 1);
-    assert_eq!(stream.get().unwrap().unwrap().value, 1.0);
-    erroring.borrow_mut().update().unwrap();
-    assert_eq!(stream.get().unwrap().unwrap().time, 2);
-    assert_eq!(stream.get().unwrap().unwrap().value, 2.0);
 }
 #[test]
 #[should_panic]
+#[cfg(feature = "alloc")]
 fn empty_sum_stream() {
     let _: SumStream<f32, 0, ()> = SumStream::new([]);
 }
-#[test]
+/*#[test]
 fn difference_stream() {
     #[derive(Clone, Copy, Debug)]
     struct DummyError;

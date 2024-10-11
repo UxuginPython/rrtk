@@ -174,7 +174,7 @@ impl<T: ?Sized> Clone for Reference<T> {
 ///```
 #[macro_export]
 macro_rules! to_dyn {
-    ($trait:path, $was:ident) => {{
+    ($trait:path, $was:expr) => {{
         #[cfg(feature = "alloc")]
         extern crate alloc;
         match $was {
