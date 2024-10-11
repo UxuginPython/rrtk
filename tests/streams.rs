@@ -1114,7 +1114,7 @@ fn integral_stream() {
         assert_eq!(stream.get().unwrap().unwrap().value, 1.0);
     }
 }
-/*#[test]
+#[test]
 fn stream_pid() {
     #[derive(Clone, Copy, Debug)]
     struct DummyError;
@@ -1122,7 +1122,7 @@ fn stream_pid() {
         time: i64,
     }
     impl DummyStream {
-        pub fn new() -> Self {
+        pub const fn new() -> Self {
             Self { time: 0 }
         }
     }
@@ -1137,16 +1137,19 @@ fn stream_pid() {
             Ok(())
         }
     }
-    let input = make_input_getter(DummyStream::new());
-    let mut stream =
-        PIDControllerStream::new(Rc::clone(&input), 5.0, PIDKValues::new(1.0, 0.01, 0.1));
-    stream.update().unwrap();
-    assert_eq!(stream.get().unwrap().unwrap().time, 0);
-    assert_eq!(stream.get().unwrap().unwrap().value, 5.0);
-    input.borrow_mut().update().unwrap();
-    stream.update().unwrap();
-    assert_eq!(stream.get().unwrap().unwrap().time, 2);
-    assert_eq!(stream.get().unwrap().unwrap().value, 4.04);
+    unsafe {
+        static mut INPUT: DummyStream = DummyStream::new();
+        let input = Reference::from_ptr(core::ptr::addr_of_mut!(INPUT));
+        let mut stream =
+            PIDControllerStream::new(input.clone(), 5.0, PIDKValues::new(1.0, 0.01, 0.1));
+        stream.update().unwrap();
+        assert_eq!(stream.get().unwrap().unwrap().time, 0);
+        assert_eq!(stream.get().unwrap().unwrap().value, 5.0);
+        input.borrow_mut().update().unwrap();
+        stream.update().unwrap();
+        assert_eq!(stream.get().unwrap().unwrap().time, 2);
+        assert_eq!(stream.get().unwrap().unwrap().value, 4.04);
+    }
 }
 #[test]
 fn ewma_stream() {
@@ -1156,7 +1159,7 @@ fn ewma_stream() {
         time: i64,
     }
     impl DummyStream {
-        pub fn new() -> Self {
+        pub const fn new() -> Self {
             Self { time: 0 }
         }
     }
@@ -1182,34 +1185,37 @@ fn ewma_stream() {
             Ok(())
         }
     }
-    let input = make_input_getter(DummyStream::new());
-    let mut stream = EWMAStream::new(Rc::clone(&input), 0.25);
-    input.borrow_mut().update().unwrap();
-    stream.update().unwrap();
-    assert_eq!(stream.get().unwrap().unwrap().value, 110.0);
-    input.borrow_mut().update().unwrap();
-    stream.update().unwrap();
-    assert_eq!(stream.get().unwrap().unwrap().value, 110.5);
-    input.borrow_mut().update().unwrap();
-    stream.update().unwrap();
-    assert_eq!(stream.get().unwrap().unwrap().value, 113.25);
-    input.borrow_mut().update().unwrap();
-    stream.update().unwrap();
-    assert_eq!(stream.get().unwrap().unwrap().value, 105.125);
-    input.borrow_mut().update().unwrap();
-    stream.update().unwrap();
-    assert_eq!(stream.get().unwrap().unwrap().value, 103.5625);
-    input.borrow_mut().update().unwrap();
-    stream.update().unwrap();
-    //Floating-point stuff gets a bit weird after this because of rounding, but it still appears to
-    //work correctly.
-    assert_eq!(stream.get().unwrap().unwrap().value, 107.28125);
-    input.borrow_mut().update().unwrap();
-    stream.update().unwrap();
-    assert_eq!(stream.get().unwrap().unwrap().value, 109.140625);
-    input.borrow_mut().update().unwrap();
-    stream.update().unwrap();
-    assert_eq!(stream.get().unwrap().unwrap().value, 104.5703125);
+    unsafe {
+        static mut INPUT: DummyStream = DummyStream::new();
+        let input = Reference::from_ptr(core::ptr::addr_of_mut!(INPUT));
+        let mut stream = EWMAStream::new(input.clone(), 0.25);
+        input.borrow_mut().update().unwrap();
+        stream.update().unwrap();
+        assert_eq!(stream.get().unwrap().unwrap().value, 110.0);
+        input.borrow_mut().update().unwrap();
+        stream.update().unwrap();
+        assert_eq!(stream.get().unwrap().unwrap().value, 110.5);
+        input.borrow_mut().update().unwrap();
+        stream.update().unwrap();
+        assert_eq!(stream.get().unwrap().unwrap().value, 113.25);
+        input.borrow_mut().update().unwrap();
+        stream.update().unwrap();
+        assert_eq!(stream.get().unwrap().unwrap().value, 105.125);
+        input.borrow_mut().update().unwrap();
+        stream.update().unwrap();
+        assert_eq!(stream.get().unwrap().unwrap().value, 103.5625);
+        input.borrow_mut().update().unwrap();
+        stream.update().unwrap();
+        //Floating-point stuff gets a bit weird after this because of rounding, but it still appears to
+        //work correctly.
+        assert_eq!(stream.get().unwrap().unwrap().value, 107.28125);
+        input.borrow_mut().update().unwrap();
+        stream.update().unwrap();
+        assert_eq!(stream.get().unwrap().unwrap().value, 109.140625);
+        input.borrow_mut().update().unwrap();
+        stream.update().unwrap();
+        assert_eq!(stream.get().unwrap().unwrap().value, 104.5703125);
+    }
 }
 #[test]
 fn moving_average_stream() {
@@ -1219,7 +1225,7 @@ fn moving_average_stream() {
         time: i64,
     }
     impl DummyStream {
-        pub fn new() -> Self {
+        pub const fn new() -> Self {
             Self { time: 0 }
         }
     }
@@ -1245,34 +1251,37 @@ fn moving_average_stream() {
             Ok(())
         }
     }
-    let input = make_input_getter(DummyStream::new());
-    let mut stream = MovingAverageStream::new(Rc::clone(&input), 5);
-    input.borrow_mut().update().unwrap();
-    stream.update().unwrap();
-    assert_eq!(stream.get().unwrap().unwrap().value, 110.0);
-    input.borrow_mut().update().unwrap();
-    stream.update().unwrap();
-    assert_eq!(stream.get().unwrap().unwrap().value, 110.4);
-    input.borrow_mut().update().unwrap();
-    stream.update().unwrap();
-    assert_eq!(stream.get().unwrap().unwrap().value, 112.8);
-    input.borrow_mut().update().unwrap();
-    stream.update().unwrap();
-    assert_eq!(stream.get().unwrap().unwrap().value, 107.4);
-    input.borrow_mut().update().unwrap();
-    stream.update().unwrap();
-    assert_eq!(stream.get().unwrap().unwrap().value, 102.8);
-    input.borrow_mut().update().unwrap();
-    stream.update().unwrap();
-    assert_eq!(stream.get().unwrap().unwrap().value, 104.6);
-    input.borrow_mut().update().unwrap();
-    stream.update().unwrap();
-    assert_eq!(stream.get().unwrap().unwrap().value, 109.2);
-    input.borrow_mut().update().unwrap();
-    stream.update().unwrap();
-    assert_eq!(stream.get().unwrap().unwrap().value, 106.6);
+    unsafe {
+        static mut INPUT: DummyStream = DummyStream::new();
+        let input = Reference::from_ptr(core::ptr::addr_of_mut!(INPUT));
+        let mut stream = MovingAverageStream::new(input.clone(), 5);
+        input.borrow_mut().update().unwrap();
+        stream.update().unwrap();
+        assert_eq!(stream.get().unwrap().unwrap().value, 110.0);
+        input.borrow_mut().update().unwrap();
+        stream.update().unwrap();
+        assert_eq!(stream.get().unwrap().unwrap().value, 110.4);
+        input.borrow_mut().update().unwrap();
+        stream.update().unwrap();
+        assert_eq!(stream.get().unwrap().unwrap().value, 112.8);
+        input.borrow_mut().update().unwrap();
+        stream.update().unwrap();
+        assert_eq!(stream.get().unwrap().unwrap().value, 107.4);
+        input.borrow_mut().update().unwrap();
+        stream.update().unwrap();
+        assert_eq!(stream.get().unwrap().unwrap().value, 102.8);
+        input.borrow_mut().update().unwrap();
+        stream.update().unwrap();
+        assert_eq!(stream.get().unwrap().unwrap().value, 104.6);
+        input.borrow_mut().update().unwrap();
+        stream.update().unwrap();
+        assert_eq!(stream.get().unwrap().unwrap().value, 109.2);
+        input.borrow_mut().update().unwrap();
+        stream.update().unwrap();
+        assert_eq!(stream.get().unwrap().unwrap().value, 106.6);
+    }
 }
-#[test]
+/*#[test]
 fn latest() {
     struct Stream1 {
         time: i64,
