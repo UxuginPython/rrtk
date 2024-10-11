@@ -294,13 +294,13 @@ fn none_to_value() {
         }
     }
 }
-/*#[test]
+#[test]
 fn acceleration_to_state() {
     struct AccGetter {
         time: i64,
     }
     impl AccGetter {
-        fn new() -> Self {
+        const fn new() -> Self {
             Self { time: 0 }
         }
     }
@@ -315,25 +315,28 @@ fn acceleration_to_state() {
             Ok(())
         }
     }
-    let acc_getter = make_input_getter(AccGetter::new());
-    let mut state_getter = AccelerationToState::new(Rc::clone(&acc_getter));
-    let output = state_getter.get();
-    assert!(output.unwrap().is_none());
-    acc_getter.borrow_mut().update().unwrap();
-    state_getter.update().unwrap();
-    let output = state_getter.get();
-    assert!(output.unwrap().is_none());
-    acc_getter.borrow_mut().update().unwrap();
-    state_getter.update().unwrap();
-    let output = state_getter.get();
-    assert!(output.unwrap().is_none());
-    acc_getter.borrow_mut().update().unwrap();
-    state_getter.update().unwrap();
-    let output = state_getter.get();
-    assert_eq!(
-        output.unwrap().unwrap(),
-        Datum::new(3, State::new(1.5, 2.0, 1.0))
-    );
+    unsafe {
+        static mut ACC_GETTER: AccGetter = AccGetter::new();
+        let acc_getter = Reference::from_ptr(core::ptr::addr_of_mut!(ACC_GETTER));
+        let mut state_getter = AccelerationToState::new(acc_getter.clone());
+        let output = state_getter.get();
+        assert!(output.unwrap().is_none());
+        acc_getter.borrow_mut().update().unwrap();
+        state_getter.update().unwrap();
+        let output = state_getter.get();
+        assert!(output.unwrap().is_none());
+        acc_getter.borrow_mut().update().unwrap();
+        state_getter.update().unwrap();
+        let output = state_getter.get();
+        assert!(output.unwrap().is_none());
+        acc_getter.borrow_mut().update().unwrap();
+        state_getter.update().unwrap();
+        let output = state_getter.get();
+        assert_eq!(
+            output.unwrap().unwrap(),
+            Datum::new(3, State::new(1.5, 2.0, 1.0))
+        );
+    }
 }
 #[test]
 fn velocity_to_state() {
@@ -341,7 +344,7 @@ fn velocity_to_state() {
         time: i64,
     }
     impl VelGetter {
-        fn new() -> Self {
+        const fn new() -> Self {
             Self { time: 0 }
         }
     }
@@ -356,21 +359,24 @@ fn velocity_to_state() {
             Ok(())
         }
     }
-    let vel_getter = make_input_getter(VelGetter::new());
-    let mut state_getter = VelocityToState::new(Rc::clone(&vel_getter));
-    let output = state_getter.get();
-    assert!(output.unwrap().is_none());
-    vel_getter.borrow_mut().update().unwrap();
-    state_getter.update().unwrap();
-    let output = state_getter.get();
-    assert!(output.unwrap().is_none());
-    vel_getter.borrow_mut().update().unwrap();
-    state_getter.update().unwrap();
-    let output = state_getter.get();
-    assert_eq!(
-        output.unwrap().unwrap(),
-        Datum::new(2, State::new(1.5, 2.0, 1.0))
-    );
+    unsafe {
+        static mut VEL_GETTER: VelGetter = VelGetter::new();
+        let vel_getter = Reference::from_ptr(core::ptr::addr_of_mut!(VEL_GETTER));
+        let mut state_getter = VelocityToState::new(vel_getter.clone());
+        let output = state_getter.get();
+        assert!(output.unwrap().is_none());
+        vel_getter.borrow_mut().update().unwrap();
+        state_getter.update().unwrap();
+        let output = state_getter.get();
+        assert!(output.unwrap().is_none());
+        vel_getter.borrow_mut().update().unwrap();
+        state_getter.update().unwrap();
+        let output = state_getter.get();
+        assert_eq!(
+            output.unwrap().unwrap(),
+            Datum::new(2, State::new(1.5, 2.0, 1.0))
+        );
+    }
 }
 #[test]
 fn position_to_state() {
@@ -378,7 +384,7 @@ fn position_to_state() {
         time: i64,
     }
     impl PosGetter {
-        fn new() -> Self {
+        const fn new() -> Self {
             Self { time: 0 }
         }
     }
@@ -393,27 +399,30 @@ fn position_to_state() {
             Ok(())
         }
     }
-    let pos_getter = make_input_getter(PosGetter::new());
-    let mut state_getter = PositionToState::new(Rc::clone(&pos_getter));
-    let output = state_getter.get();
-    assert!(output.unwrap().is_none());
-    pos_getter.borrow_mut().update().unwrap();
-    state_getter.update().unwrap();
-    let output = state_getter.get();
-    assert!(output.unwrap().is_none());
-    pos_getter.borrow_mut().update().unwrap();
-    state_getter.update().unwrap();
-    let output = state_getter.get();
-    assert!(output.unwrap().is_none());
-    pos_getter.borrow_mut().update().unwrap();
-    state_getter.update().unwrap();
-    let output = state_getter.get();
-    assert_eq!(
-        output.unwrap().unwrap(),
-        Datum::new(3, State::new(3.0, 1.0, 0.0))
-    );
+    unsafe {
+        static mut POS_GETTER: PosGetter = PosGetter::new();
+        let pos_getter = Reference::from_ptr(core::ptr::addr_of_mut!(POS_GETTER));
+        let mut state_getter = PositionToState::new(pos_getter.clone());
+        let output = state_getter.get();
+        assert!(output.unwrap().is_none());
+        pos_getter.borrow_mut().update().unwrap();
+        state_getter.update().unwrap();
+        let output = state_getter.get();
+        assert!(output.unwrap().is_none());
+        pos_getter.borrow_mut().update().unwrap();
+        state_getter.update().unwrap();
+        let output = state_getter.get();
+        assert!(output.unwrap().is_none());
+        pos_getter.borrow_mut().update().unwrap();
+        state_getter.update().unwrap();
+        let output = state_getter.get();
+        assert_eq!(
+            output.unwrap().unwrap(),
+            Datum::new(3, State::new(3.0, 1.0, 0.0))
+        );
+    }
 }
-#[test]
+/*#[test]
 fn sum_stream() {
     #[derive(Clone, Copy, Debug)]
     struct Nothing;
