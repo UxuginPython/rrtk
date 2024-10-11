@@ -9,33 +9,36 @@ use rrtk::streams::logic::*;
 use rrtk::streams::math::*;
 use rrtk::streams::*;
 use rrtk::*;
-/*#[test]
+#[test]
 fn time_getter_from_stream() {
     struct DummyStream {
         time: i64,
     }
     impl DummyStream {
-        pub fn new() -> Self {
+        pub const fn new() -> Self {
             Self { time: 0 }
         }
     }
-    impl<E: Copy + Debug> Getter<f32, E> for DummyStream {
-        fn get(&self) -> Output<f32, E> {
+    impl Getter<f32, ()> for DummyStream {
+        fn get(&self) -> Output<f32, ()> {
             Ok(Some(Datum::new(self.time, 0.0)))
         }
     }
-    impl<E: Copy + Debug> Updatable<E> for DummyStream {
-        fn update(&mut self) -> NothingOrError<E> {
+    impl Updatable<()> for DummyStream {
+        fn update(&mut self) -> NothingOrError<()> {
             self.time += 1;
             Ok(())
         }
     }
-    let stream: InputGetter<_, ()> = make_input_getter(DummyStream::new());
-    let time_getter = TimeGetterFromGetter::new(Rc::clone(&stream));
-    stream.borrow_mut().update().unwrap();
-    assert_eq!(time_getter.get().unwrap(), 1);
+    unsafe {
+        static mut STREAM: DummyStream = DummyStream::new();
+        let stream = Reference::from_ptr(core::ptr::addr_of_mut!(STREAM));
+        let time_getter = TimeGetterFromGetter::new(stream.clone());
+        stream.borrow_mut().update().unwrap();
+        assert_eq!(time_getter.get().unwrap(), 1);
+    }
 }
-#[test]
+/*#[test]
 fn make_input_getter_() {
     struct DummyStream {
         time: i64,
