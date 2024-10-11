@@ -1344,7 +1344,10 @@ fn latest() {
         let stream1 = Reference::from_ptr(core::ptr::addr_of_mut!(STREAM_1));
         static mut STREAM_2: Stream2 = Stream2::new();
         let stream2 = Reference::from_ptr(core::ptr::addr_of_mut!(STREAM_2));
-        let mut latest = Latest::new([to_dyn!(Getter<u8, _>, stream1.clone()), to_dyn!(Getter<u8, _>, stream2.clone())]);
+        let mut latest = Latest::new([
+            to_dyn!(Getter<u8, _>, stream1.clone()),
+            to_dyn!(Getter<u8, _>, stream2.clone()),
+        ]);
         latest.update().unwrap(); //This should do nothing.
         assert_eq!(latest.get(), Ok(Some(Datum::new(1, 1))));
         stream1.borrow_mut().update().unwrap();
@@ -1372,13 +1375,13 @@ fn latest() {
 fn empty_latest() {
     let _: Latest<(), 0, ()> = Latest::new([]);
 }
-/*#[test]
+#[test]
 fn and_stream() {
     struct In1 {
         index: u8,
     }
     impl In1 {
-        fn new() -> Self {
+        const fn new() -> Self {
             Self { index: 0 }
         }
     }
@@ -1408,7 +1411,7 @@ fn and_stream() {
         index: u8,
     }
     impl In2 {
-        fn new() -> Self {
+        const fn new() -> Self {
             Self { index: 0 }
         }
     }
@@ -1428,45 +1431,49 @@ fn and_stream() {
             Ok(())
         }
     }
-    let in1 = make_input_getter(In1::new());
-    let in2 = make_input_getter(In2::new());
-    let mut and = AndStream::new(Rc::clone(&in1), Rc::clone(&in2));
-    assert_eq!(and.get().unwrap().unwrap().value, false);
-    in1.borrow_mut().update().unwrap();
-    in2.borrow_mut().update().unwrap();
-    and.update().unwrap();
-    assert_eq!(and.get().unwrap().unwrap().value, false);
-    in1.borrow_mut().update().unwrap();
-    in2.borrow_mut().update().unwrap();
-    and.update().unwrap();
-    assert_eq!(and.get().unwrap().unwrap().value, false);
-    in1.borrow_mut().update().unwrap();
-    in2.borrow_mut().update().unwrap();
-    and.update().unwrap();
-    assert_eq!(and.get().unwrap().unwrap().value, false);
-    in1.borrow_mut().update().unwrap();
-    in2.borrow_mut().update().unwrap();
-    and.update().unwrap();
-    assert_eq!(and.get().unwrap(), None);
-    in1.borrow_mut().update().unwrap();
-    in2.borrow_mut().update().unwrap();
-    and.update().unwrap();
-    assert_eq!(and.get().unwrap(), None);
-    in1.borrow_mut().update().unwrap();
-    in2.borrow_mut().update().unwrap();
-    and.update().unwrap();
-    assert_eq!(and.get().unwrap().unwrap().value, false);
-    in1.borrow_mut().update().unwrap();
-    in2.borrow_mut().update().unwrap();
-    and.update().unwrap();
-    assert_eq!(and.get().unwrap(), None);
-    in1.borrow_mut().update().unwrap();
-    in2.borrow_mut().update().unwrap();
-    and.update().unwrap();
-    assert_eq!(and.get().unwrap().unwrap().value, true);
-    in1.borrow_mut().update().unwrap();
-    in2.borrow_mut().update().unwrap();
-    and.update().unwrap();
+    unsafe {
+        static mut IN_1: In1 = In1::new();
+        let in1 = Reference::from_ptr(core::ptr::addr_of_mut!(IN_1));
+        static mut IN_2: In2 = In2::new();
+        let in2 = Reference::from_ptr(core::ptr::addr_of_mut!(IN_2));
+        let mut and = AndStream::new(in1.clone(), in2.clone());
+        assert_eq!(and.get().unwrap().unwrap().value, false);
+        in1.borrow_mut().update().unwrap();
+        in2.borrow_mut().update().unwrap();
+        and.update().unwrap();
+        assert_eq!(and.get().unwrap().unwrap().value, false);
+        in1.borrow_mut().update().unwrap();
+        in2.borrow_mut().update().unwrap();
+        and.update().unwrap();
+        assert_eq!(and.get().unwrap().unwrap().value, false);
+        in1.borrow_mut().update().unwrap();
+        in2.borrow_mut().update().unwrap();
+        and.update().unwrap();
+        assert_eq!(and.get().unwrap().unwrap().value, false);
+        in1.borrow_mut().update().unwrap();
+        in2.borrow_mut().update().unwrap();
+        and.update().unwrap();
+        assert_eq!(and.get().unwrap(), None);
+        in1.borrow_mut().update().unwrap();
+        in2.borrow_mut().update().unwrap();
+        and.update().unwrap();
+        assert_eq!(and.get().unwrap(), None);
+        in1.borrow_mut().update().unwrap();
+        in2.borrow_mut().update().unwrap();
+        and.update().unwrap();
+        assert_eq!(and.get().unwrap().unwrap().value, false);
+        in1.borrow_mut().update().unwrap();
+        in2.borrow_mut().update().unwrap();
+        and.update().unwrap();
+        assert_eq!(and.get().unwrap(), None);
+        in1.borrow_mut().update().unwrap();
+        in2.borrow_mut().update().unwrap();
+        and.update().unwrap();
+        assert_eq!(and.get().unwrap().unwrap().value, true);
+        in1.borrow_mut().update().unwrap();
+        in2.borrow_mut().update().unwrap();
+        and.update().unwrap();
+    }
 }
 #[test]
 fn or_stream() {
@@ -1474,7 +1481,7 @@ fn or_stream() {
         index: u8,
     }
     impl In1 {
-        fn new() -> Self {
+        const fn new() -> Self {
             Self { index: 0 }
         }
     }
@@ -1504,7 +1511,7 @@ fn or_stream() {
         index: u8,
     }
     impl In2 {
-        fn new() -> Self {
+        const fn new() -> Self {
             Self { index: 0 }
         }
     }
@@ -1524,45 +1531,49 @@ fn or_stream() {
             Ok(())
         }
     }
-    let in1 = make_input_getter(In1::new());
-    let in2 = make_input_getter(In2::new());
-    let mut and = OrStream::new(Rc::clone(&in1), Rc::clone(&in2));
-    assert_eq!(and.get().unwrap().unwrap().value, false);
-    in1.borrow_mut().update().unwrap();
-    in2.borrow_mut().update().unwrap();
-    and.update().unwrap();
-    assert_eq!(and.get().unwrap(), None);
-    in1.borrow_mut().update().unwrap();
-    in2.borrow_mut().update().unwrap();
-    and.update().unwrap();
-    assert_eq!(and.get().unwrap().unwrap().value, true);
-    in1.borrow_mut().update().unwrap();
-    in2.borrow_mut().update().unwrap();
-    and.update().unwrap();
-    assert_eq!(and.get().unwrap(), None);
-    in1.borrow_mut().update().unwrap();
-    in2.borrow_mut().update().unwrap();
-    and.update().unwrap();
-    assert_eq!(and.get().unwrap(), None);
-    in1.borrow_mut().update().unwrap();
-    in2.borrow_mut().update().unwrap();
-    and.update().unwrap();
-    assert_eq!(and.get().unwrap().unwrap().value, true);
-    in1.borrow_mut().update().unwrap();
-    in2.borrow_mut().update().unwrap();
-    and.update().unwrap();
-    assert_eq!(and.get().unwrap().unwrap().value, true);
-    in1.borrow_mut().update().unwrap();
-    in2.borrow_mut().update().unwrap();
-    and.update().unwrap();
-    assert_eq!(and.get().unwrap().unwrap().value, true);
-    in1.borrow_mut().update().unwrap();
-    in2.borrow_mut().update().unwrap();
-    and.update().unwrap();
-    assert_eq!(and.get().unwrap().unwrap().value, true);
-    in1.borrow_mut().update().unwrap();
-    in2.borrow_mut().update().unwrap();
-    and.update().unwrap();
+    unsafe {
+        static mut IN_1: In1 = In1::new();
+        let in1 = Reference::from_ptr(core::ptr::addr_of_mut!(IN_1));
+        static mut IN_2: In2 = In2::new();
+        let in2 = Reference::from_ptr(core::ptr::addr_of_mut!(IN_2));
+        let mut and = OrStream::new(in1.clone(), in2.clone());
+        assert_eq!(and.get().unwrap().unwrap().value, false);
+        in1.borrow_mut().update().unwrap();
+        in2.borrow_mut().update().unwrap();
+        and.update().unwrap();
+        assert_eq!(and.get().unwrap(), None);
+        in1.borrow_mut().update().unwrap();
+        in2.borrow_mut().update().unwrap();
+        and.update().unwrap();
+        assert_eq!(and.get().unwrap().unwrap().value, true);
+        in1.borrow_mut().update().unwrap();
+        in2.borrow_mut().update().unwrap();
+        and.update().unwrap();
+        assert_eq!(and.get().unwrap(), None);
+        in1.borrow_mut().update().unwrap();
+        in2.borrow_mut().update().unwrap();
+        and.update().unwrap();
+        assert_eq!(and.get().unwrap(), None);
+        in1.borrow_mut().update().unwrap();
+        in2.borrow_mut().update().unwrap();
+        and.update().unwrap();
+        assert_eq!(and.get().unwrap().unwrap().value, true);
+        in1.borrow_mut().update().unwrap();
+        in2.borrow_mut().update().unwrap();
+        and.update().unwrap();
+        assert_eq!(and.get().unwrap().unwrap().value, true);
+        in1.borrow_mut().update().unwrap();
+        in2.borrow_mut().update().unwrap();
+        and.update().unwrap();
+        assert_eq!(and.get().unwrap().unwrap().value, true);
+        in1.borrow_mut().update().unwrap();
+        in2.borrow_mut().update().unwrap();
+        and.update().unwrap();
+        assert_eq!(and.get().unwrap().unwrap().value, true);
+        in1.borrow_mut().update().unwrap();
+        in2.borrow_mut().update().unwrap();
+        and.update().unwrap();
+    }
 }
 #[test]
 fn not_stream() {
@@ -1570,7 +1581,7 @@ fn not_stream() {
         index: u8,
     }
     impl In {
-        fn new() -> Self {
+        const fn new() -> Self {
             Self { index: 0 }
         }
     }
@@ -1590,17 +1601,20 @@ fn not_stream() {
             Ok(())
         }
     }
-    let input = make_input_getter(In::new());
-    let mut not = NotStream::new(Rc::clone(&input));
-    assert_eq!(not.get().unwrap().unwrap().value, true);
-    input.borrow_mut().update().unwrap();
-    not.update().unwrap();
-    assert_eq!(not.get().unwrap(), None);
-    input.borrow_mut().update().unwrap();
-    not.update().unwrap();
-    assert_eq!(not.get().unwrap().unwrap().value, false);
+    unsafe {
+        static mut INPUT: In = In::new();
+        let input = Reference::from_ptr(core::ptr::addr_of_mut!(INPUT));
+        let mut not = NotStream::new(input.clone());
+        assert_eq!(not.get().unwrap().unwrap().value, true);
+        input.borrow_mut().update().unwrap();
+        not.update().unwrap();
+        assert_eq!(not.get().unwrap(), None);
+        input.borrow_mut().update().unwrap();
+        not.update().unwrap();
+        assert_eq!(not.get().unwrap().unwrap().value, false);
+    }
 }
-#[test]
+/*#[test]
 fn if_stream() {
     #[derive(Default)]
     struct Condition {
