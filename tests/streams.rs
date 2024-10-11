@@ -1614,9 +1614,8 @@ fn not_stream() {
         assert_eq!(not.get().unwrap().unwrap().value, false);
     }
 }
-/*#[test]
+#[test]
 fn if_stream() {
-    #[derive(Default)]
     struct Condition {
         index: u8,
     }
@@ -1647,20 +1646,23 @@ fn if_stream() {
             Ok(())
         }
     }
-    let condition = make_input_getter(Condition::default());
-    let input = make_input_getter(Input);
-    let mut if_stream = IfStream::new(Rc::clone(&condition), Rc::clone(&input));
-    assert_eq!(if_stream.get().unwrap(), None);
-    condition.borrow_mut().update().unwrap();
-    if_stream.update().unwrap();
-    assert_eq!(if_stream.get().unwrap(), None);
-    condition.borrow_mut().update().unwrap();
-    if_stream.update().unwrap();
-    assert_eq!(if_stream.get().unwrap().unwrap().value, 0);
+    unsafe {
+        static mut CONDITION: Condition = Condition { index: 0 };
+        let condition = Reference::from_ptr(core::ptr::addr_of_mut!(CONDITION));
+        static mut INPUT: Input = Input;
+        let input = Reference::from_ptr(core::ptr::addr_of_mut!(INPUT));
+        let mut if_stream = IfStream::new(condition.clone(), input.clone());
+        assert_eq!(if_stream.get().unwrap(), None);
+        condition.borrow_mut().update().unwrap();
+        if_stream.update().unwrap();
+        assert_eq!(if_stream.get().unwrap(), None);
+        condition.borrow_mut().update().unwrap();
+        if_stream.update().unwrap();
+        assert_eq!(if_stream.get().unwrap().unwrap().value, 0);
+    }
 }
 #[test]
 fn if_else_stream() {
-    #[derive(Default)]
     struct Condition {
         index: u8,
     }
@@ -1702,25 +1704,25 @@ fn if_else_stream() {
             Ok(())
         }
     }
-    let condition = make_input_getter(Condition::default());
-    let true_input = make_input_getter(True);
-    let false_input = make_input_getter(False);
-    let mut if_else_stream = IfElseStream::new(
-        Rc::clone(&condition),
-        Rc::clone(&true_input),
-        Rc::clone(&false_input),
-    );
-    assert_eq!(if_else_stream.get().unwrap().unwrap().value, 2);
-    condition.borrow_mut().update().unwrap();
-    if_else_stream.update().unwrap();
-    assert_eq!(if_else_stream.get().unwrap(), None);
-    condition.borrow_mut().update().unwrap();
-    if_else_stream.update().unwrap();
-    assert_eq!(if_else_stream.get().unwrap().unwrap().value, 1);
+    unsafe {
+        static mut CONDITION: Condition = Condition { index: 0 };
+        let condition = Reference::from_ptr(core::ptr::addr_of_mut!(CONDITION));
+        static mut TRUE_INPUT: True = True;
+        let true_input = Reference::from_ptr(core::ptr::addr_of_mut!(TRUE_INPUT));
+        static mut FALSE_INPUT: False = False;
+        let false_input = Reference::from_ptr(core::ptr::addr_of_mut!(FALSE_INPUT));
+        let mut if_else_stream = IfElseStream::new(condition.clone(), true_input, false_input);
+        assert_eq!(if_else_stream.get().unwrap().unwrap().value, 2);
+        condition.borrow_mut().update().unwrap();
+        if_else_stream.update().unwrap();
+        assert_eq!(if_else_stream.get().unwrap(), None);
+        condition.borrow_mut().update().unwrap();
+        if_else_stream.update().unwrap();
+        assert_eq!(if_else_stream.get().unwrap().unwrap().value, 1);
+    }
 }
 #[test]
 fn freeze_stream() {
-    #[derive(Default)]
     struct Condition {
         time: i64,
     }
@@ -1742,7 +1744,6 @@ fn freeze_stream() {
             Ok(())
         }
     }
-    #[derive(Default)]
     struct Input {
         time: i64,
     }
@@ -1757,49 +1758,53 @@ fn freeze_stream() {
             Ok(())
         }
     }
-    let condition = make_input_getter(Condition::default());
-    let input = make_input_getter(Input::default());
-    let mut freeze = FreezeStream::new(Rc::clone(&condition), Rc::clone(&input));
-    freeze.update().unwrap();
-    assert_eq!(freeze.get().unwrap().unwrap().value, 0);
-    condition.borrow_mut().update().unwrap();
-    input.borrow_mut().update().unwrap();
-    freeze.update().unwrap();
-    assert_eq!(freeze.get().unwrap().unwrap().value, 1);
-    condition.borrow_mut().update().unwrap();
-    input.borrow_mut().update().unwrap();
-    freeze.update().unwrap();
-    assert_eq!(freeze.get().unwrap().unwrap().value, 1);
-    condition.borrow_mut().update().unwrap();
-    input.borrow_mut().update().unwrap();
-    freeze.update().unwrap();
-    assert_eq!(freeze.get().unwrap().unwrap().value, 1);
-    condition.borrow_mut().update().unwrap();
-    input.borrow_mut().update().unwrap();
-    freeze.update().unwrap();
-    assert_eq!(freeze.get().unwrap().unwrap().value, 4);
-    condition.borrow_mut().update().unwrap();
-    input.borrow_mut().update().unwrap();
-    freeze.update().unwrap();
-    assert_eq!(freeze.get().unwrap().unwrap().value, 5);
-    condition.borrow_mut().update().unwrap();
-    input.borrow_mut().update().unwrap();
-    freeze.update().unwrap();
-    assert_eq!(freeze.get().unwrap(), None);
-    condition.borrow_mut().update().unwrap();
-    input.borrow_mut().update().unwrap();
-    freeze.update().unwrap();
-    assert_eq!(freeze.get().unwrap(), None);
-    condition.borrow_mut().update().unwrap();
-    input.borrow_mut().update().unwrap();
-    freeze.update().unwrap();
-    assert_eq!(freeze.get().unwrap().unwrap().value, 8);
-    condition.borrow_mut().update().unwrap();
-    input.borrow_mut().update().unwrap();
-    freeze.update().unwrap();
-    assert_eq!(freeze.get().unwrap().unwrap().value, 9);
+    unsafe {
+        static mut CONDITION: Condition = Condition { time: 0 };
+        let condition = Reference::from_ptr(core::ptr::addr_of_mut!(CONDITION));
+        static mut INPUT: Input = Input { time: 0 };
+        let input = Reference::from_ptr(core::ptr::addr_of_mut!(INPUT));
+        let mut freeze = FreezeStream::new(condition.clone(), input.clone());
+        freeze.update().unwrap();
+        assert_eq!(freeze.get().unwrap().unwrap().value, 0);
+        condition.borrow_mut().update().unwrap();
+        input.borrow_mut().update().unwrap();
+        freeze.update().unwrap();
+        assert_eq!(freeze.get().unwrap().unwrap().value, 1);
+        condition.borrow_mut().update().unwrap();
+        input.borrow_mut().update().unwrap();
+        freeze.update().unwrap();
+        assert_eq!(freeze.get().unwrap().unwrap().value, 1);
+        condition.borrow_mut().update().unwrap();
+        input.borrow_mut().update().unwrap();
+        freeze.update().unwrap();
+        assert_eq!(freeze.get().unwrap().unwrap().value, 1);
+        condition.borrow_mut().update().unwrap();
+        input.borrow_mut().update().unwrap();
+        freeze.update().unwrap();
+        assert_eq!(freeze.get().unwrap().unwrap().value, 4);
+        condition.borrow_mut().update().unwrap();
+        input.borrow_mut().update().unwrap();
+        freeze.update().unwrap();
+        assert_eq!(freeze.get().unwrap().unwrap().value, 5);
+        condition.borrow_mut().update().unwrap();
+        input.borrow_mut().update().unwrap();
+        freeze.update().unwrap();
+        assert_eq!(freeze.get().unwrap(), None);
+        condition.borrow_mut().update().unwrap();
+        input.borrow_mut().update().unwrap();
+        freeze.update().unwrap();
+        assert_eq!(freeze.get().unwrap(), None);
+        condition.borrow_mut().update().unwrap();
+        input.borrow_mut().update().unwrap();
+        freeze.update().unwrap();
+        assert_eq!(freeze.get().unwrap().unwrap().value, 8);
+        condition.borrow_mut().update().unwrap();
+        input.borrow_mut().update().unwrap();
+        freeze.update().unwrap();
+        assert_eq!(freeze.get().unwrap().unwrap().value, 9);
+    }
 }
-#[test]
+/*#[test]
 fn command_pid() {
     #[derive(Default)]
     struct Input {
