@@ -1281,13 +1281,13 @@ fn moving_average_stream() {
         assert_eq!(stream.get().unwrap().unwrap().value, 106.6);
     }
 }
-/*#[test]
+#[test]
 fn latest() {
     struct Stream1 {
         time: i64,
     }
     impl Stream1 {
-        pub fn new() -> Self {
+        pub const fn new() -> Self {
             Self { time: 0 }
         }
     }
@@ -1315,7 +1315,7 @@ fn latest() {
         time: i64,
     }
     impl Stream2 {
-        pub fn new() -> Self {
+        pub const fn new() -> Self {
             Self { time: 0 }
         }
     }
@@ -1339,36 +1339,40 @@ fn latest() {
             Ok(())
         }
     }
-    let stream1 = make_input_getter(Stream1::new());
-    let stream2 = make_input_getter(Stream2::new());
-    let mut latest = Latest::new([Rc::clone(&stream1), Rc::clone(&stream2)]);
-    latest.update().unwrap(); //This should do nothing.
-    assert_eq!(latest.get(), Ok(Some(Datum::new(1, 1))));
-    stream1.borrow_mut().update().unwrap();
-    stream2.borrow_mut().update().unwrap();
-    assert_eq!(latest.get(), Ok(Some(Datum::new(1, 2))));
-    stream1.borrow_mut().update().unwrap();
-    stream2.borrow_mut().update().unwrap();
-    assert_eq!(latest.get(), Ok(Some(Datum::new(0, 1))));
-    stream1.borrow_mut().update().unwrap();
-    stream2.borrow_mut().update().unwrap();
-    assert_eq!(latest.get(), Ok(Some(Datum::new(0, 1))));
-    stream1.borrow_mut().update().unwrap();
-    stream2.borrow_mut().update().unwrap();
-    assert_eq!(latest.get(), Ok(None));
-    stream1.borrow_mut().update().unwrap();
-    stream2.borrow_mut().update().unwrap();
-    assert_eq!(latest.get(), Ok(None));
-    stream1.borrow_mut().update().unwrap();
-    stream2.borrow_mut().update().unwrap();
-    assert_eq!(latest.get(), Ok(None));
+    unsafe {
+        static mut STREAM_1: Stream1 = Stream1::new();
+        let stream1 = Reference::from_ptr(core::ptr::addr_of_mut!(STREAM_1));
+        static mut STREAM_2: Stream2 = Stream2::new();
+        let stream2 = Reference::from_ptr(core::ptr::addr_of_mut!(STREAM_2));
+        let mut latest = Latest::new([to_dyn!(Getter<u8, _>, stream1.clone()), to_dyn!(Getter<u8, _>, stream2.clone())]);
+        latest.update().unwrap(); //This should do nothing.
+        assert_eq!(latest.get(), Ok(Some(Datum::new(1, 1))));
+        stream1.borrow_mut().update().unwrap();
+        stream2.borrow_mut().update().unwrap();
+        assert_eq!(latest.get(), Ok(Some(Datum::new(1, 2))));
+        stream1.borrow_mut().update().unwrap();
+        stream2.borrow_mut().update().unwrap();
+        assert_eq!(latest.get(), Ok(Some(Datum::new(0, 1))));
+        stream1.borrow_mut().update().unwrap();
+        stream2.borrow_mut().update().unwrap();
+        assert_eq!(latest.get(), Ok(Some(Datum::new(0, 1))));
+        stream1.borrow_mut().update().unwrap();
+        stream2.borrow_mut().update().unwrap();
+        assert_eq!(latest.get(), Ok(None));
+        stream1.borrow_mut().update().unwrap();
+        stream2.borrow_mut().update().unwrap();
+        assert_eq!(latest.get(), Ok(None));
+        stream1.borrow_mut().update().unwrap();
+        stream2.borrow_mut().update().unwrap();
+        assert_eq!(latest.get(), Ok(None));
+    }
 }
 #[test]
 #[should_panic]
 fn empty_latest() {
     let _: Latest<(), 0, ()> = Latest::new([]);
 }
-#[test]
+/*#[test]
 fn and_stream() {
     struct In1 {
         index: u8,
