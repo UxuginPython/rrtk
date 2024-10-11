@@ -1804,9 +1804,8 @@ fn freeze_stream() {
         assert_eq!(freeze.get().unwrap().unwrap().value, 9);
     }
 }
-/*#[test]
+#[test]
 fn command_pid() {
-    #[derive(Default)]
     struct Input {
         time: i64,
     }
@@ -1821,65 +1820,76 @@ fn command_pid() {
             Ok(())
         }
     }
-    let kvals = PositionDerivativeDependentPIDKValues::new(
-        PIDKValues::new(1.0, 0.01, 0.1),
-        PIDKValues::new(1.0, 0.01, 0.1),
-        PIDKValues::new(1.0, 0.01, 0.1),
-    );
-    let input = make_input_getter(Input::default());
-    let mut pid = CommandPID::new(
-        Rc::clone(&input),
-        Command::new(PositionDerivative::Position, 5.0),
-        kvals,
-    );
-    assert_eq!(pid.get().unwrap(), None);
-    pid.update().unwrap();
-    assert_eq!(pid.get().unwrap().unwrap().value, 5.0);
-    input.borrow_mut().update().unwrap();
-    pid.update().unwrap();
-    assert_eq!(pid.get().unwrap().unwrap().value, 5.05);
-    input.borrow_mut().update().unwrap();
-    pid.update().unwrap();
-    assert_eq!(pid.get().unwrap().unwrap().value, 5.1);
-    input.borrow_mut().update().unwrap();
-    pid.update().unwrap();
-    assert_eq!(pid.get().unwrap().unwrap().value, 5.15);
+    unsafe {
+        let kvals = PositionDerivativeDependentPIDKValues::new(
+            PIDKValues::new(1.0, 0.01, 0.1),
+            PIDKValues::new(1.0, 0.01, 0.1),
+            PIDKValues::new(1.0, 0.01, 0.1),
+        );
+        {
+            static mut INPUT: Input = Input { time: 0 };
+            let input = Reference::from_ptr(core::ptr::addr_of_mut!(INPUT));
+            let mut pid = CommandPID::new(
+                input.clone(),
+                Command::new(PositionDerivative::Position, 5.0),
+                kvals,
+            );
+            assert_eq!(pid.get().unwrap(), None);
+            pid.update().unwrap();
+            assert_eq!(pid.get().unwrap().unwrap().value, 5.0);
+            input.borrow_mut().update().unwrap();
+            pid.update().unwrap();
+            assert_eq!(pid.get().unwrap().unwrap().value, 5.05);
+            input.borrow_mut().update().unwrap();
+            pid.update().unwrap();
+            assert_eq!(pid.get().unwrap().unwrap().value, 5.1);
+            input.borrow_mut().update().unwrap();
+            pid.update().unwrap();
+            assert_eq!(pid.get().unwrap().unwrap().value, 5.15);
+        }
 
-    let input = make_input_getter(Input::default());
-    let mut pid = CommandPID::new(
-        Rc::clone(&input),
-        Command::new(PositionDerivative::Velocity, 5.0),
-        kvals,
-    );
-    assert_eq!(pid.get().unwrap(), None);
-    pid.update().unwrap();
-    assert_eq!(pid.get().unwrap(), None);
-    input.borrow_mut().update().unwrap();
-    pid.update().unwrap();
-    assert_eq!(pid.get().unwrap().unwrap().value, 5.025);
-    input.borrow_mut().update().unwrap();
-    pid.update().unwrap();
-    assert_eq!(pid.get().unwrap().unwrap().value, 10.1);
-    input.borrow_mut().update().unwrap();
-    pid.update().unwrap();
-    assert_eq!(pid.get().unwrap().unwrap().value, 15.225);
+        {
+            static mut INPUT: Input = Input { time: 0 };
+            let input = Reference::from_ptr(core::ptr::addr_of_mut!(INPUT));
+            let mut pid = CommandPID::new(
+                input.clone(),
+                Command::new(PositionDerivative::Velocity, 5.0),
+                kvals,
+            );
+            assert_eq!(pid.get().unwrap(), None);
+            pid.update().unwrap();
+            assert_eq!(pid.get().unwrap(), None);
+            input.borrow_mut().update().unwrap();
+            pid.update().unwrap();
+            assert_eq!(pid.get().unwrap().unwrap().value, 5.025);
+            input.borrow_mut().update().unwrap();
+            pid.update().unwrap();
+            assert_eq!(pid.get().unwrap().unwrap().value, 10.1);
+            input.borrow_mut().update().unwrap();
+            pid.update().unwrap();
+            assert_eq!(pid.get().unwrap().unwrap().value, 15.225);
+        }
 
-    let input = make_input_getter(Input::default());
-    let mut pid = CommandPID::new(
-        Rc::clone(&input),
-        Command::new(PositionDerivative::Acceleration, 5.0),
-        kvals,
-    );
-    assert_eq!(pid.get().unwrap(), None);
-    pid.update().unwrap();
-    assert_eq!(pid.get().unwrap(), None);
-    input.borrow_mut().update().unwrap();
-    pid.update().unwrap();
-    assert_eq!(pid.get().unwrap(), None);
-    input.borrow_mut().update().unwrap();
-    pid.update().unwrap();
-    assert_eq!(pid.get().unwrap().unwrap().value, 7.5625);
-    input.borrow_mut().update().unwrap();
-    pid.update().unwrap();
-    assert_eq!(pid.get().unwrap().unwrap().value, 20.225);
-}*/
+        {
+            static mut INPUT: Input = Input { time: 0 };
+            let input = Reference::from_ptr(core::ptr::addr_of_mut!(INPUT));
+            let mut pid = CommandPID::new(
+                input.clone(),
+                Command::new(PositionDerivative::Acceleration, 5.0),
+                kvals,
+            );
+            assert_eq!(pid.get().unwrap(), None);
+            pid.update().unwrap();
+            assert_eq!(pid.get().unwrap(), None);
+            input.borrow_mut().update().unwrap();
+            pid.update().unwrap();
+            assert_eq!(pid.get().unwrap(), None);
+            input.borrow_mut().update().unwrap();
+            pid.update().unwrap();
+            assert_eq!(pid.get().unwrap().unwrap().value, 7.5625);
+            input.borrow_mut().update().unwrap();
+            pid.update().unwrap();
+            assert_eq!(pid.get().unwrap().unwrap().value, 20.225);
+        }
+    }
+}
