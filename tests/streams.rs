@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // Copyright 2024 UxuginPython
-// TODO: update tests to use Reference
 use core::fmt::Debug;
 use rrtk::streams::control::*;
 use rrtk::streams::converters::*;
@@ -38,34 +37,6 @@ fn time_getter_from_stream() {
         assert_eq!(time_getter.get().unwrap(), 1);
     }
 }
-/*#[test]
-fn make_input_getter_() {
-    struct DummyStream {
-        time: i64,
-    }
-    impl DummyStream {
-        pub fn new() -> Self {
-            Self { time: 0 }
-        }
-    }
-    impl<E: Copy + Debug> Getter<f32, E> for DummyStream {
-        fn get(&self) -> Output<f32, E> {
-            Ok(Some(Datum::new(self.time, 0.0)))
-        }
-    }
-    impl<E: Copy + Debug> Updatable<E> for DummyStream {
-        fn update(&mut self) -> NothingOrError<E> {
-            self.time += 1;
-            Ok(())
-        }
-    }
-    let tg_stream: InputGetter<_, ()> = make_input_getter(DummyStream::new());
-    let time_getter = make_input_time_getter(TimeGetterFromGetter::new(Rc::clone(&tg_stream)));
-    let stream = ConstantGetter::new(Rc::clone(&time_getter), 20u8);
-    assert_eq!(stream.get().unwrap().unwrap().value, 20);
-    tg_stream.borrow_mut().update().unwrap();
-    assert_eq!(stream.get().unwrap().unwrap().value, 20);
-}*/
 #[test]
 fn expirer() {
     struct DummyStream;
