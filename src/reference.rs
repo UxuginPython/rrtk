@@ -177,6 +177,7 @@ macro_rules! to_dyn {
     ($trait:path, $was:expr) => {{
         #[cfg(feature = "alloc")]
         extern crate alloc;
+        #[allow(unreachable_patterns)]
         match $was {
             Reference::Ptr(ptr) => unsafe { Reference::from_ptr(ptr as *mut dyn $trait) },
             #[cfg(feature = "alloc")]
