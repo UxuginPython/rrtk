@@ -471,6 +471,7 @@ fn getter_state_device_wrapper() {
     );
 }
 #[test]
+#[cfg(feature = "alloc")]
 fn pid_wrapper() {
     static mut ASSERTS: u8 = 0;
     const COMMAND: Command = Command::new(PositionDerivative::Position, 5.0);

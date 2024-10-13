@@ -80,19 +80,21 @@ impl<T: Getter<State, E>, E: Copy + Debug> Updatable<E> for GetterStateDeviceWra
         Ok(())
     }
 }
-/*///Connect a `Settable<f32, E>` motor to the device system through a `CommandPID`. See
+///Connect a `Settable<f32, E>` motor to the device system through a `CommandPID`. See
 ///`streams::control::CommandPID` documentation for more information about how this works.
+#[cfg(feature = "alloc")]
 pub struct PIDWrapper<'a, T: Settable<f32, E>, E: Copy + Debug + 'static> {
     terminal: RefCell<Terminal<'a, E>>,
-    time: Rc<RefCell<i64>>,
-    state: Rc<RefCell<ConstantGetter<State, E>>>,
-    command: Rc<RefCell<ConstantGetter<Command, E>>>,
-    pid: Rc<RefCell<streams::control::CommandPID<E>>>,
+    time: Reference<i64>,
+    state: Reference<ConstantGetter<State, i64, E>>,
+    command: Reference<ConstantGetter<Command, i64, E>>,
+    pid: Reference<streams::control::CommandPID<ConstantGetter<State, i64, E>, E>>,
     inner: T,
 }
+#[cfg(feature = "alloc")]
 impl<'a, T: Settable<f32, E>, E: Copy + Debug + 'static> PIDWrapper<'a, T, E> {
     ///Constructor for `PIDWrapper`.
-    pub fn new( //TODO when this is updated to use Reference: Check if this can be a const fn
+    pub fn new(
         mut inner: T,
         initial_time: i64,
         initial_state: State,
@@ -100,23 +102,21 @@ impl<'a, T: Settable<f32, E>, E: Copy + Debug + 'static> PIDWrapper<'a, T, E> {
         kvalues: PositionDerivativeDependentPIDKValues,
     ) -> Self {
         let terminal = Terminal::new();
-        let time = Rc::new(RefCell::new(initial_time));
-        let state = Rc::new(RefCell::new(ConstantGetter::new(
-            Rc::clone(&time) as InputTimeGetter<E>,
+        let time = Reference::from_rc_refcell(Rc::new(RefCell::new(initial_time)));
+        let state = Reference::from_rc_refcell(Rc::new(RefCell::new(ConstantGetter::new(
+            time.clone(),
             initial_state,
-        )));
-        let command = Rc::new(RefCell::new(ConstantGetter::new(
-            Rc::clone(&time) as InputTimeGetter<E>,
+        ))));
+        let command = Reference::from_rc_refcell(Rc::new(RefCell::new(ConstantGetter::new(
+            time.clone(),
             initial_command,
-        )));
-        let pid = Rc::new(RefCell::new(streams::control::CommandPID::new(
-            Rc::clone(&state) as InputGetter<State, E>,
-            initial_command,
-            kvalues,
+        ))));
+        let pid = Reference::from_rc_refcell(Rc::new(RefCell::new(
+            streams::control::CommandPID::new(state.clone(), initial_command, kvalues),
         )));
         pid.borrow_mut()
-            .follow(Rc::clone(&command) as InputGetter<Command, E>);
-        inner.follow(Rc::clone(&pid) as InputGetter<f32, E>);
+            .follow(to_dyn!(Getter<Command, E>, command.clone()));
+        inner.follow(to_dyn!(Getter<f32, E>, pid.clone()));
         Self {
             terminal: terminal,
             time: time,
@@ -131,12 +131,14 @@ impl<'a, T: Settable<f32, E>, E: Copy + Debug + 'static> PIDWrapper<'a, T, E> {
         unsafe { &*(&self.terminal as *const RefCell<Terminal<'a, E>>) }
     }
 }
+#[cfg(feature = "alloc")]
 impl<T: Settable<f32, E>, E: Copy + Debug + 'static> Device<E> for PIDWrapper<'_, T, E> {
     fn update_terminals(&mut self) -> NothingOrError<E> {
         self.terminal.borrow_mut().update()?;
         Ok(())
     }
 }
+#[cfg(feature = "alloc")]
 impl<T: Settable<f32, E>, E: Copy + Debug + 'static> Updatable<E> for PIDWrapper<'_, T, E> {
     fn update(&mut self) -> NothingOrError<E> {
         self.update_terminals()?;
@@ -161,4 +163,4 @@ impl<T: Settable<f32, E>, E: Copy + Debug + 'static> Updatable<E> for PIDWrapper
         self.inner.update()?;
         Ok(())
     }
-}*/
+}
