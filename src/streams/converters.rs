@@ -5,12 +5,12 @@
 //!variant yourself.
 use crate::streams::*;
 ///A stream converting all `Ok(None)` values from its input to `Err(_)` variants.
-pub struct NoneToError<T: Clone, G: Getter<T, E>, E: Copy + Debug> {
+pub struct NoneToError<T: Clone, G: Getter<T, E> + ?Sized, E: Copy + Debug> {
     input: Reference<G>,
     phantom_t: PhantomData<T>,
     phantom_e: PhantomData<E>,
 }
-impl<T: Clone, G: Getter<T, E>, E: Copy + Debug> NoneToError<T, G, E> {
+impl<T: Clone, G: Getter<T, E> + ?Sized, E: Copy + Debug> NoneToError<T, G, E> {
     ///Constructor for `NoneToError`.
     pub const fn new(input: Reference<G>) -> Self {
         Self {
@@ -20,7 +20,7 @@ impl<T: Clone, G: Getter<T, E>, E: Copy + Debug> NoneToError<T, G, E> {
         }
     }
 }
-impl<T: Clone, G: Getter<T, E>, E: Copy + Debug> Getter<T, E> for NoneToError<T, G, E> {
+impl<T: Clone, G: Getter<T, E> + ?Sized, E: Copy + Debug> Getter<T, E> for NoneToError<T, G, E> {
     fn get(&self) -> Output<T, E> {
         let output = self.input.borrow().get()?;
         match output {
@@ -33,20 +33,20 @@ impl<T: Clone, G: Getter<T, E>, E: Copy + Debug> Getter<T, E> for NoneToError<T,
         }
     }
 }
-impl<T: Clone, G: Getter<T, E>, E: Copy + Debug> Updatable<E> for NoneToError<T, G, E> {
+impl<T: Clone, G: Getter<T, E> + ?Sized, E: Copy + Debug> Updatable<E> for NoneToError<T, G, E> {
     ///This does not need to be called.
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
     }
 }
 ///A stream converting all `Ok(None)` values from its input to a default `Ok(Some(_))` value.
-pub struct NoneToValue<T: Clone, G: Getter<T, E>, TG: TimeGetter<E>, E: Copy + Debug> {
+pub struct NoneToValue<T: Clone, G: Getter<T, E> + ?Sized, TG: TimeGetter<E> + ?Sized, E: Copy + Debug> {
     input: Reference<G>,
     time_getter: Reference<TG>,
     none_value: T,
     phantom_e: PhantomData<E>,
 }
-impl<T: Clone, G: Getter<T, E>, TG: TimeGetter<E>, E: Copy + Debug> NoneToValue<T, G, TG, E> {
+impl<T: Clone, G: Getter<T, E> + ?Sized, TG: TimeGetter<E> + ?Sized, E: Copy + Debug> NoneToValue<T, G, TG, E> {
     ///Constructor for `NoneToValue`.
     pub const fn new(input: Reference<G>, time_getter: Reference<TG>, none_value: T) -> Self {
         Self {
@@ -57,7 +57,7 @@ impl<T: Clone, G: Getter<T, E>, TG: TimeGetter<E>, E: Copy + Debug> NoneToValue<
         }
     }
 }
-impl<T: Clone, G: Getter<T, E>, TG: TimeGetter<E>, E: Copy + Debug> Getter<T, E>
+impl<T: Clone, G: Getter<T, E> + ?Sized, TG: TimeGetter<E> + ?Sized, E: Copy + Debug> Getter<T, E>
     for NoneToValue<T, G, TG, E>
 {
     fn get(&self) -> Output<T, E> {
@@ -75,7 +75,7 @@ impl<T: Clone, G: Getter<T, E>, TG: TimeGetter<E>, E: Copy + Debug> Getter<T, E>
         }
     }
 }
-impl<T: Clone, G: Getter<T, E>, TG: TimeGetter<E>, E: Copy + Debug> Updatable<E>
+impl<T: Clone, G: Getter<T, E> + ?Sized, TG: TimeGetter<E> + ?Sized, E: Copy + Debug> Updatable<E>
     for NoneToValue<T, G, TG, E>
 {
     fn update(&mut self) -> NothingOrError<E> {
@@ -96,12 +96,12 @@ mod acceleration_to_state {
     }
     ///A stream that integrates an acceleration getter to construct a full state. Mostly useful for
     ///encoders.
-    pub struct AccelerationToState<G: Getter<f32, E>, E: Copy + Debug> {
+    pub struct AccelerationToState<G: Getter<f32, E> + ?Sized, E: Copy + Debug> {
         acc: Reference<G>,
         update: Option<Update0>,
         phantom_e: PhantomData<E>,
     }
-    impl<G: Getter<f32, E>, E: Copy + Debug> AccelerationToState<G, E> {
+    impl<G: Getter<f32, E> + ?Sized, E: Copy + Debug> AccelerationToState<G, E> {
         ///Constructor for `AccelerationToState`.
         pub const fn new(acc: Reference<G>) -> Self {
             Self {
@@ -111,7 +111,7 @@ mod acceleration_to_state {
             }
         }
     }
-    impl<G: Getter<f32, E>, E: Copy + Debug> Getter<State, E> for AccelerationToState<G, E> {
+    impl<G: Getter<f32, E> + ?Sized, E: Copy + Debug> Getter<State, E> for AccelerationToState<G, E> {
         fn get(&self) -> Output<State, E> {
             match &self.update {
                 Some(update_0) => match &update_0.update_1 {
@@ -128,7 +128,7 @@ mod acceleration_to_state {
             }
         }
     }
-    impl<G: Getter<f32, E>, E: Copy + Debug> Updatable<E> for AccelerationToState<G, E> {
+    impl<G: Getter<f32, E> + ?Sized, E: Copy + Debug> Updatable<E> for AccelerationToState<G, E> {
         fn update(&mut self) -> NothingOrError<E> {
             match self.acc.borrow().get() {
                 Ok(gotten) => match gotten {
@@ -216,12 +216,12 @@ mod velocity_to_state {
     }
     ///A stream that integrates and derivates a velocity getter to construct a full state. Mostly
     ///useful for encoders.
-    pub struct VelocityToState<G: Getter<f32, E>, E: Copy + Debug> {
+    pub struct VelocityToState<G: Getter<f32, E> + ?Sized, E: Copy + Debug> {
         vel: Reference<G>,
         update: Option<Update0>,
         phantom_e: PhantomData<E>,
     }
-    impl<G: Getter<f32, E>, E: Copy + Debug> VelocityToState<G, E> {
+    impl<G: Getter<f32, E> + ?Sized, E: Copy + Debug> VelocityToState<G, E> {
         ///Constructor for `VelocityToState`.
         pub const fn new(vel: Reference<G>) -> Self {
             Self {
@@ -231,7 +231,7 @@ mod velocity_to_state {
             }
         }
     }
-    impl<G: Getter<f32, E>, E: Copy + Debug> Getter<State, E> for VelocityToState<G, E> {
+    impl<G: Getter<f32, E> + ?Sized, E: Copy + Debug> Getter<State, E> for VelocityToState<G, E> {
         fn get(&self) -> Output<State, E> {
             match &self.update {
                 Some(update_0) => match &update_0.update_1 {
@@ -245,7 +245,7 @@ mod velocity_to_state {
             }
         }
     }
-    impl<G: Getter<f32, E>, E: Copy + Debug> Updatable<E> for VelocityToState<G, E> {
+    impl<G: Getter<f32, E> + ?Sized, E: Copy + Debug> Updatable<E> for VelocityToState<G, E> {
         fn update(&mut self) -> NothingOrError<E> {
             match self.vel.borrow().get() {
                 Ok(gotten) => match gotten {
@@ -315,12 +315,12 @@ mod position_to_state {
         update_2: Option<f32>, //acceleration
     }
     ///A stream that derivates a position getter to construct a full state. Mostly useful for encoders.
-    pub struct PositionToState<G: Getter<f32, E>, E: Copy + Debug> {
+    pub struct PositionToState<G: Getter<f32, E> + ?Sized, E: Copy + Debug> {
         pos: Reference<G>,
         update: Option<Update0>,
         phantom_e: PhantomData<E>,
     }
-    impl<G: Getter<f32, E>, E: Copy + Debug> PositionToState<G, E> {
+    impl<G: Getter<f32, E> + ?Sized, E: Copy + Debug> PositionToState<G, E> {
         ///Constructor for `PositionToState`.
         pub const fn new(pos: Reference<G>) -> Self {
             Self {
@@ -330,7 +330,7 @@ mod position_to_state {
             }
         }
     }
-    impl<G: Getter<f32, E>, E: Copy + Debug> Getter<State, E> for PositionToState<G, E> {
+    impl<G: Getter<f32, E> + ?Sized, E: Copy + Debug> Getter<State, E> for PositionToState<G, E> {
         fn get(&self) -> Output<State, E> {
             match &self.update {
                 Some(update_0) => match &update_0.update_1 {
@@ -347,7 +347,7 @@ mod position_to_state {
             }
         }
     }
-    impl<G: Getter<f32, E>, E: Copy + Debug> Updatable<E> for PositionToState<G, E> {
+    impl<G: Getter<f32, E> + ?Sized, E: Copy + Debug> Updatable<E> for PositionToState<G, E> {
         fn update(&mut self) -> NothingOrError<E> {
             match self.pos.borrow().get() {
                 Ok(gotten) => match gotten {
