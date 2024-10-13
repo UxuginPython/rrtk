@@ -630,6 +630,7 @@ fn difference_stream() {
     }
 }
 #[test]
+#[cfg(feature = "alloc")]
 fn product_stream() {
     #[derive(Clone, Copy, Debug)]
     struct Nothing;
@@ -700,6 +701,7 @@ fn product_stream() {
 }
 #[test]
 #[should_panic]
+#[cfg(feature = "alloc")]
 fn empty_product_stream() {
     let _: ProductStream<f32, 0, ()> = ProductStream::new([]);
 }
@@ -1192,6 +1194,7 @@ fn ewma_stream() {
     }
 }
 #[test]
+#[cfg(feature = "alloc")]
 fn moving_average_stream() {
     #[derive(Clone, Copy, Debug)]
     struct DummyError;
