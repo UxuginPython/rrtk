@@ -66,8 +66,12 @@ impl<T: AddAssign + Clone, const N: usize, E: Copy + Debug> Updatable<E> for Sum
 }
 ///A stream that subtracts one of its inputs from the other. If the subtrahend stream returns
 ///`Ok(None)`, the minuend's value will be returned directly.
-pub struct DifferenceStream<T: Sub<Output = T>, GM: Getter<T, E> + ?Sized, GS: Getter<T, E> + ?Sized, E: Copy + Debug>
-{
+pub struct DifferenceStream<
+    T: Sub<Output = T>,
+    GM: Getter<T, E> + ?Sized,
+    GS: Getter<T, E> + ?Sized,
+    E: Copy + Debug,
+> {
     minuend: Reference<GM>,
     subtrahend: Reference<GS>,
     phantom_t: PhantomData<T>,
@@ -86,8 +90,8 @@ impl<T: Sub<Output = T>, GM: Getter<T, E> + ?Sized, GS: Getter<T, E> + ?Sized, E
         }
     }
 }
-impl<T: Sub<Output = T>, GM: Getter<T, E> + ?Sized, GS: Getter<T, E> + ?Sized, E: Copy + Debug> Getter<T, E>
-    for DifferenceStream<T, GM, GS, E>
+impl<T: Sub<Output = T>, GM: Getter<T, E> + ?Sized, GS: Getter<T, E> + ?Sized, E: Copy + Debug>
+    Getter<T, E> for DifferenceStream<T, GM, GS, E>
 {
     fn get(&self) -> Output<T, E> {
         let minuend_output = self.minuend.borrow().get()?;
@@ -115,8 +119,8 @@ impl<T: Sub<Output = T>, GM: Getter<T, E> + ?Sized, GS: Getter<T, E> + ?Sized, E
         Ok(Some(Datum::new(time, value)))
     }
 }
-impl<T: Sub<Output = T>, GM: Getter<T, E> + ?Sized, GS: Getter<T, E> + ?Sized, E: Copy + Debug> Updatable<E>
-    for DifferenceStream<T, GM, GS, E>
+impl<T: Sub<Output = T>, GM: Getter<T, E> + ?Sized, GS: Getter<T, E> + ?Sized, E: Copy + Debug>
+    Updatable<E> for DifferenceStream<T, GM, GS, E>
 {
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
@@ -189,7 +193,12 @@ impl<T: Clone + MulAssign, const N: usize, E: Copy + Debug> Updatable<E>
 }
 ///A stream that divides one if its inputs by the other. If the divisor returns `Ok(None)`, the
 ///dividend's value is returned directly.
-pub struct QuotientStream<T: Div<Output = T>, GD: Getter<T, E> + ?Sized, GS: Getter<T, E> + ?Sized, E: Copy + Debug> {
+pub struct QuotientStream<
+    T: Div<Output = T>,
+    GD: Getter<T, E> + ?Sized,
+    GS: Getter<T, E> + ?Sized,
+    E: Copy + Debug,
+> {
     dividend: Reference<GD>,
     divisor: Reference<GS>,
     phantom_t: PhantomData<T>,
@@ -208,8 +217,8 @@ impl<T: Div<Output = T>, GD: Getter<T, E> + ?Sized, GS: Getter<T, E> + ?Sized, E
         }
     }
 }
-impl<T: Div<Output = T>, GD: Getter<T, E> + ?Sized, GS: Getter<T, E> + ?Sized, E: Copy + Debug> Getter<T, E>
-    for QuotientStream<T, GD, GS, E>
+impl<T: Div<Output = T>, GD: Getter<T, E> + ?Sized, GS: Getter<T, E> + ?Sized, E: Copy + Debug>
+    Getter<T, E> for QuotientStream<T, GD, GS, E>
 {
     fn get(&self) -> Output<T, E> {
         let dividend_output = self.dividend.borrow().get()?;
@@ -237,8 +246,8 @@ impl<T: Div<Output = T>, GD: Getter<T, E> + ?Sized, GS: Getter<T, E> + ?Sized, E
         Ok(Some(Datum::new(time, value)))
     }
 }
-impl<T: Div<Output = T>, GD: Getter<T, E> + ?Sized, GS: Getter<T, E> + ?Sized, E: Copy + Debug> Updatable<E>
-    for QuotientStream<T, GD, GS, E>
+impl<T: Div<Output = T>, GD: Getter<T, E> + ?Sized, GS: Getter<T, E> + ?Sized, E: Copy + Debug>
+    Updatable<E> for QuotientStream<T, GD, GS, E>
 {
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
@@ -247,13 +256,16 @@ impl<T: Div<Output = T>, GD: Getter<T, E> + ?Sized, GS: Getter<T, E> + ?Sized, E
 ///A stream that exponentiates one of its inputs to the other. If the exponent input returns
 ///`Ok(None)`, the base's value is returned directly. Only available with `std`.
 #[cfg(feature = "std")]
-pub struct ExponentStream<GB: Getter<f32, E> + ?Sized, GE: Getter<f32, E> + ?Sized, E: Copy + Debug> {
+pub struct ExponentStream<GB: Getter<f32, E> + ?Sized, GE: Getter<f32, E> + ?Sized, E: Copy + Debug>
+{
     base: Reference<GB>,
     exponent: Reference<GE>,
     phantom_e: PhantomData<E>,
 }
 #[cfg(feature = "std")]
-impl<GB: Getter<f32, E> + ?Sized, GE: Getter<f32, E> + ?Sized, E: Copy + Debug> ExponentStream<GB, GE, E> {
+impl<GB: Getter<f32, E> + ?Sized, GE: Getter<f32, E> + ?Sized, E: Copy + Debug>
+    ExponentStream<GB, GE, E>
+{
     ///Constructor for `ExponentStream`.
     pub const fn new(base: Reference<GB>, exponent: Reference<GE>) -> Self {
         Self {

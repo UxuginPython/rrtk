@@ -302,14 +302,18 @@ impl<T: Clone, G: Getter<T, E> + ?Sized, E: Copy + Debug> TimeGetterFromGetter<T
         }
     }
 }
-impl<T: Clone, G: Getter<T, E> + ?Sized, E: Copy + Debug> TimeGetter<E> for TimeGetterFromGetter<T, G, E> {
+impl<T: Clone, G: Getter<T, E> + ?Sized, E: Copy + Debug> TimeGetter<E>
+    for TimeGetterFromGetter<T, G, E>
+{
     fn get(&self) -> TimeOutput<E> {
         let output = self.elevator.get()?;
         let output = output.expect("`NoneToError` made all `Ok(None)`s into `Err(_)`s, and `?` returned all `Err(_)`s, so we're sure this is now an `Ok(Some(_))`.");
         return Ok(output.time);
     }
 }
-impl<T: Clone, G: Getter<T, E> + ?Sized, E: Copy + Debug> Updatable<E> for TimeGetterFromGetter<T, G, E> {
+impl<T: Clone, G: Getter<T, E> + ?Sized, E: Copy + Debug> Updatable<E>
+    for TimeGetterFromGetter<T, G, E>
+{
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
     }
@@ -415,13 +419,17 @@ impl<T: Clone, TG: TimeGetter<E> + ?Sized, E: Copy + Debug> ConstantGetter<T, TG
         }
     }
 }
-impl<T: Clone, TG: TimeGetter<E> + ?Sized, E: Copy + Debug> Getter<T, E> for ConstantGetter<T, TG, E> {
+impl<T: Clone, TG: TimeGetter<E> + ?Sized, E: Copy + Debug> Getter<T, E>
+    for ConstantGetter<T, TG, E>
+{
     fn get(&self) -> Output<T, E> {
         let time = self.time_getter.borrow().get()?;
         Ok(Some(Datum::new(time, self.value.clone())))
     }
 }
-impl<T: Clone, TG: TimeGetter<E> + ?Sized, E: Copy + Debug> Settable<T, E> for ConstantGetter<T, TG, E> {
+impl<T: Clone, TG: TimeGetter<E> + ?Sized, E: Copy + Debug> Settable<T, E>
+    for ConstantGetter<T, TG, E>
+{
     fn get_settable_data_ref(&self) -> &SettableData<T, E> {
         &self.settable_data
     }
@@ -433,7 +441,9 @@ impl<T: Clone, TG: TimeGetter<E> + ?Sized, E: Copy + Debug> Settable<T, E> for C
         Ok(())
     }
 }
-impl<T: Clone, TG: TimeGetter<E> + ?Sized, E: Copy + Debug> Updatable<E> for ConstantGetter<T, TG, E> {
+impl<T: Clone, TG: TimeGetter<E> + ?Sized, E: Copy + Debug> Updatable<E>
+    for ConstantGetter<T, TG, E>
+{
     ///This does not need to be called.
     fn update(&mut self) -> NothingOrError<E> {
         self.update_following_data()?;

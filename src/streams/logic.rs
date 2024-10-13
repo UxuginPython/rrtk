@@ -39,7 +39,9 @@ pub struct AndStream<G1: Getter<bool, E> + ?Sized, G2: Getter<bool, E> + ?Sized,
     input2: Reference<G2>,
     phantom_e: PhantomData<E>,
 }
-impl<G1: Getter<bool, E> + ?Sized, G2: Getter<bool, E> + ?Sized, E: Copy + Debug> AndStream<G1, G2, E> {
+impl<G1: Getter<bool, E> + ?Sized, G2: Getter<bool, E> + ?Sized, E: Copy + Debug>
+    AndStream<G1, G2, E>
+{
     ///Constructor for `AndStream`.
     pub const fn new(input1: Reference<G1>, input2: Reference<G2>) -> Self {
         Self {
@@ -143,7 +145,9 @@ pub struct OrStream<G1: Getter<bool, E> + ?Sized, G2: Getter<bool, E> + ?Sized, 
     input2: Reference<G2>,
     phantom_e: PhantomData<E>,
 }
-impl<G1: Getter<bool, E> + ?Sized, G2: Getter<bool, E> + ?Sized, E: Copy + Debug> OrStream<G1, G2, E> {
+impl<G1: Getter<bool, E> + ?Sized, G2: Getter<bool, E> + ?Sized, E: Copy + Debug>
+    OrStream<G1, G2, E>
+{
     ///Constructor for `OrStream`.
     pub const fn new(input1: Reference<G1>, input2: Reference<G2>) -> Self {
         Self {

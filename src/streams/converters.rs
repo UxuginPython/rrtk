@@ -40,13 +40,20 @@ impl<T: Clone, G: Getter<T, E> + ?Sized, E: Copy + Debug> Updatable<E> for NoneT
     }
 }
 ///A stream converting all `Ok(None)` values from its input to a default `Ok(Some(_))` value.
-pub struct NoneToValue<T: Clone, G: Getter<T, E> + ?Sized, TG: TimeGetter<E> + ?Sized, E: Copy + Debug> {
+pub struct NoneToValue<
+    T: Clone,
+    G: Getter<T, E> + ?Sized,
+    TG: TimeGetter<E> + ?Sized,
+    E: Copy + Debug,
+> {
     input: Reference<G>,
     time_getter: Reference<TG>,
     none_value: T,
     phantom_e: PhantomData<E>,
 }
-impl<T: Clone, G: Getter<T, E> + ?Sized, TG: TimeGetter<E> + ?Sized, E: Copy + Debug> NoneToValue<T, G, TG, E> {
+impl<T: Clone, G: Getter<T, E> + ?Sized, TG: TimeGetter<E> + ?Sized, E: Copy + Debug>
+    NoneToValue<T, G, TG, E>
+{
     ///Constructor for `NoneToValue`.
     pub const fn new(input: Reference<G>, time_getter: Reference<TG>, none_value: T) -> Self {
         Self {
