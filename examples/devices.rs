@@ -1,22 +1,22 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // Copyright 2024 UxuginPython
-#[cfg(feature = "devices")]
+#[cfg(all(feature = "devices", feature = "alloc"))]
 const COMMAND: Command = Command::new(PositionDerivative::Position, 5.0);
-#[cfg(feature = "devices")]
+#[cfg(all(feature = "devices", feature = "alloc"))]
 const STATE: State = State::new(0.0, 0.0, 0.0);
-#[cfg(feature = "devices")]
+#[cfg(all(feature = "devices", feature = "alloc"))]
 const K_VALUES: PositionDerivativeDependentPIDKValues = PositionDerivativeDependentPIDKValues::new(
     PIDKValues::new(1.0, 0.01, 0.1),
     PIDKValues::new(1.0, 0.01, 0.1),
     PIDKValues::new(1.0, 0.01, 0.1),
 );
-#[cfg(feature = "devices")]
+#[cfg(all(feature = "devices", feature = "alloc"))]
 use rrtk::*;
-#[cfg(feature = "devices")]
+#[cfg(all(feature = "devices", feature = "alloc"))]
 struct Motor {
     settable_data: SettableData<f32, ()>,
 }
-#[cfg(feature = "devices")]
+#[cfg(all(feature = "devices", feature = "alloc"))]
 impl Motor {
     fn new() -> Self {
         Self {
@@ -24,7 +24,7 @@ impl Motor {
         }
     }
 }
-#[cfg(feature = "devices")]
+#[cfg(all(feature = "devices", feature = "alloc"))]
 impl Settable<f32, ()> for Motor {
     fn impl_set(&mut self, value: f32) -> NothingOrError<()> {
         println!("Motor voltage set to {:?}", value);
@@ -37,33 +37,33 @@ impl Settable<f32, ()> for Motor {
         &mut self.settable_data
     }
 }
-#[cfg(feature = "devices")]
+#[cfg(all(feature = "devices", feature = "alloc"))]
 impl Updatable<()> for Motor {
     fn update(&mut self) -> NothingOrError<()> {
         self.update_following_data().unwrap();
         Ok(())
     }
 }
-#[cfg(feature = "devices")]
+#[cfg(all(feature = "devices", feature = "alloc"))]
 #[derive(Default)]
 struct Encoder {
     time: i64,
 }
-#[cfg(feature = "devices")]
+#[cfg(all(feature = "devices", feature = "alloc"))]
 impl Getter<State, ()> for Encoder {
     fn get(&self) -> Output<State, ()> {
         println!("Encoder returning state {:?}", STATE);
         Ok(Some(Datum::new(self.time, STATE)))
     }
 }
-#[cfg(feature = "devices")]
+#[cfg(all(feature = "devices", feature = "alloc"))]
 impl Updatable<()> for Encoder {
     fn update(&mut self) -> NothingOrError<()> {
         self.time += 1;
         Ok(())
     }
 }
-#[cfg(feature = "devices")]
+#[cfg(all(feature = "devices", feature = "alloc"))]
 fn main() {
     println!("Commanding Motor to {:?}", COMMAND);
     println!(
@@ -80,7 +80,15 @@ fn main() {
         encoder_wrapper.update().unwrap();
     }
 }
-#[cfg(not(feature = "devices"))]
+#[cfg(all(not(feature = "devices"), feature = "alloc"))]
 fn main() {
     println!("Enable the `devices` feature to run this example.\nAssuming you're using Cargo, add the `--features devices` flag to your command.");
+}
+#[cfg(all(not(feature = "alloc"), feature = "devices"))]
+fn main() {
+    println!("Enable the `alloc` feature to run this example.\nAssuming you're using Cargo, add the `--features alloc` flag to your command.");
+}
+#[cfg(all(not(feature = "alloc"), not(feature = "devices")))]
+fn main() {
+    println!("Enable the `alloc` and `devices` features to run this example.\nAssuming you're using Cargo, add the `--features alloc,devices` flag to your command.");
 }
