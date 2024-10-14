@@ -728,10 +728,12 @@ fn none_getter() {
 }
 #[test]
 fn static_reference() {
-    let _: Reference<u8> = static_reference!(5, u8);
+    let x = static_reference!(u8, 5);
+    assert_eq!(*x.borrow(), 5);
 }
 #[test]
 #[cfg(feature = "std")]
 fn static_rwlock_reference() {
-    let _: Reference<u8> = static_rwlock_reference!(5, u8);
+    let x = static_rwlock_reference!(u8, 5);
+    assert_eq!(*x.borrow(), 5);
 }

@@ -693,7 +693,7 @@ pub fn rc_refcell_reference<T>(was: T) -> Reference<T> {
 ///you're doing multiprocessing where multiple things could mutate it at once.
 #[macro_export]
 macro_rules! static_reference {
-    ($was: expr, $type_: ty) => {{
+    ($type_: ty, $was: expr) => {{
         static mut WAS: $type_ = $was;
         unsafe { Reference::from_ptr(core::ptr::addr_of_mut!(WAS)) }
     }};
@@ -702,7 +702,7 @@ macro_rules! static_reference {
 #[cfg(feature = "std")]
 #[macro_export]
 macro_rules! static_rwlock_reference {
-    ($was: expr, $type_: ty) => {{
+    ($type_: ty, $was: expr) => {{
         static WAS: std::sync::RwLock<$type_> = std::sync::RwLock::new($was);
         unsafe { Reference::from_rwlock_ptr(core::ptr::addr_of!(WAS)) }
     }};
