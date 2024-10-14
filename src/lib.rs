@@ -682,3 +682,28 @@ pub trait Device<E: Copy + Debug>: Updatable<E> {
     ///device.
     fn update_terminals(&mut self) -> NothingOrError<E>;
 }
+///Create a new `Rc<RefCell>` of something and return a `Reference` to it. Because of how `Rc`
+///works, it won't be dropped until the last clone of the `Reference` is.
+#[cfg(feature = "alloc")]
+pub fn rc_refcell_reference<T>(was: T) -> Reference<T> {
+    Reference::from_rc_refcell(Rc::new(RefCell::new(was)))
+}
+///Create a static of something and return a `Ptr`-variant `Reference` to it. This contains a raw
+///mutable pointer. It will never use-after-free because its target is static, but be careful if
+///you're doing multiprocessing where multiple things could mutate it at once.
+#[macro_export]
+macro_rules! static_reference {
+    ($was: expr, $type_: ty) => {{
+        static mut WAS: $type_ = $was;
+        unsafe { Reference::from_ptr(core::ptr::addr_of_mut!(WAS)) }
+    }};
+}
+///Create a static `RwLock` of something and return a `PtrRwLock`-variant `Reference` to it.
+#[cfg(feature = "std")]
+#[macro_export]
+macro_rules! static_rwlock_reference {
+    ($was: expr, $type_: ty) => {{
+        static WAS: std::sync::RwLock<$type_> = std::sync::RwLock::new($was);
+        unsafe { Reference::from_rwlock_ptr(core::ptr::addr_of!(WAS)) }
+    }};
+}

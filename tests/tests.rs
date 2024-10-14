@@ -726,3 +726,12 @@ fn none_getter() {
     <NoneGetter as Updatable<()>>::update(&mut getter).unwrap();
     assert_eq!(<NoneGetter as Getter<(), ()>>::get(&getter), Ok(None));
 }
+#[test]
+fn static_reference() {
+    let _: Reference<u8> = static_reference!(5, u8);
+}
+#[test]
+#[cfg(feature = "std")]
+fn static_rwlock_reference() {
+    let _: Reference<u8> = static_rwlock_reference!(5, u8);
+}

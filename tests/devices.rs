@@ -550,6 +550,7 @@ fn pid_wrapper() {
         motor_wrapper.update().unwrap();
         encoder_wrapper.update().unwrap();
     }
+    #[allow(static_mut_refs)]
     unsafe {
         assert_eq!(ASSERTS, 4);
     }
