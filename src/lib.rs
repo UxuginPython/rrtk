@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // Copyright 2024 UxuginPython
-//!Rust Robotics ToolKit
-//!A set of algorithms and other tools for robotics in Rust.
+//!# Rust Robotics ToolKit
+//!**A set of algorithms and other tools for robotics in Rust.**
+//!
 //!It is almost entirely `no_std` and most things work without `alloc`. It does not currently integrate with any API directly. This may be added in the future, probably through another crate.
 #![warn(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
