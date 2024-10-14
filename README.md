@@ -157,3 +157,12 @@ Add moving average stream.
 - Make a new `Reference` type that can hold a `*mut T`, `Rc<RefCell<T>>`, or `*const RwLock<T>`, allowing you to not need a dynamic allocator.
 - Add `alloc` feature.
 - Temporarily remove `devices::wrappers::PIDWrapper`. It will be back by the time this is stable.
+### 0.5.0-alpha.2
+- Move to BSD 3-Clause license.
+- Implement `Clone` for `Reference`
+- Add `to_dyn!` macro for creating `Reference<dyn Trait>` objects.
+- Add function `rc_refcell_reference` and macros `static_reference!` and `static_rwlock_reference!` which work similarly to the former `make_input_getter`. They put their input into a container if required and then return a `Reference` to it.
+- Make all stream inputs `?Sized`. This allows the use of `Reference<dyn Getter<_, _>>` and `Reference<dyn TimeGetter<_, _>>` in the builtin streams.
+- Add `PIDWrapper` back.
+- Update many tests to use `Reference`.
+- Minor documentation changes.
