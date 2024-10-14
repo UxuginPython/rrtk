@@ -11,30 +11,15 @@ use rrtk::*;
 //processing and control theory. Using the PID controller shown here in production is discouraged.
 #[cfg(feature = "alloc")]
 struct StreamPID {
-    //Avoiding dynamic dispatch in favor of Rust's zero-cost abstraction does come at a significant
-    //readability cost, but it can improve performance.
-    int: Reference<
-        IntegralStream<
-            DifferenceStream<
-                f32,
-                ConstantGetter<f32, TimeGetterFromGetter<f32, dyn Getter<f32, ()>, ()>, ()>,
-                dyn Getter<f32, ()>,
-                (),
-            >,
-            (),
-        >,
-    >,
-    drv: Reference<
-        DerivativeStream<
-            DifferenceStream<
-                f32,
-                ConstantGetter<f32, TimeGetterFromGetter<f32, dyn Getter<f32, ()>, ()>, ()>,
-                dyn Getter<f32, ()>,
-                (),
-            >,
-            (),
-        >,
-    >,
+    //It is possible to avoid dynamic dispatch by using the actual stream types instead of
+    //`dyn Getter`, but doing that fully makes the types look like this:
+    //Reference<IntegralStream<DifferenceStream<f32, ConstantGetter<f32, TimeGetterFromGetter<f32, dyn Getter<f32, ()>, ()>, ()>, dyn Getter<f32, ()>, ()>, ()>>
+    //Here, to make this example legible, we don't do that. However, if you're actually making
+    //something for production, expanding the type fully to avoid dynamic dispatch may be a good
+    //idea. It really depends on how much readability you're willing to give up for a small
+    //performance boost.
+    int: Reference<dyn Getter<f32, ()>>,
+    drv: Reference<dyn Getter<f32, ()>>,
     output: SumStream<f32, 3, ()>,
 }
 #[cfg(feature = "alloc")]
@@ -80,8 +65,8 @@ impl StreamPID {
             to_dyn!(Getter<f32, ()>, kd_mul.clone()),
         ]);
         Self {
-            int: int,
-            drv: drv,
+            int: to_dyn!(Getter<f32, ()>, int),
+            drv: to_dyn!(Getter<f32, ()>, drv),
             output: output,
         }
     }
