@@ -88,6 +88,7 @@ pub enum Reference<T: ?Sized> {
     ///A raw immutable pointer to an `RwLock<T>`.
     #[cfg(feature = "std")]
     PtrRwLock(*const RwLock<T>),
+    ///An `Arc<RwLock<T>>`.
     #[cfg(feature = "std")]
     ArcRwLock(Arc<RwLock<T>>),
 }
@@ -108,6 +109,7 @@ impl<T: ?Sized> Reference<T> {
     pub const unsafe fn from_rw_lock_ptr(ptr_rw_lock: *const RwLock<T>) -> Self {
         Self::PtrRwLock(ptr_rw_lock)
     }
+    ///Create a new `Reference` from an `Arc<RwLock<T>>`.
     #[cfg(feature = "std")]
     pub const fn from_arc_rw_lock(arc_rw_lock: Arc<RwLock<T>>) -> Self {
         Self::ArcRwLock(arc_rw_lock)

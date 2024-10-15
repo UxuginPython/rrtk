@@ -4,7 +4,7 @@
 //!**A set of algorithms and other tools for robotics in Rust.**
 //!
 //!It is almost entirely `no_std` and most things work without `alloc`. It does not currently integrate with any API directly. This may be added in the future, probably through another crate.
-//#![warn(missing_docs)]
+#![warn(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
 #[cfg(feature = "std")]
 use alloc::sync::Arc;
@@ -712,6 +712,9 @@ macro_rules! static_rw_lock_reference {
         unsafe { Reference::from_rw_lock_ptr(core::ptr::addr_of!(WAS)) }
     }};
 }
+///Create a new `Arc<RwLock>` of something and return a `Reference` to it. Because of how `Arc` and
+///`Rc`, its single-threaded counterpart, work, it won't be dropped until the last clone of the
+///`Reference` is.
 #[cfg(feature = "std")]
 pub fn arc_rw_lock_reference<T>(was: T) -> Reference<T> {
     Reference::from_arc_rw_lock(Arc::new(RwLock::new(was)))
