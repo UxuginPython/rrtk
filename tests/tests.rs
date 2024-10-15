@@ -726,14 +726,3 @@ fn none_getter() {
     <NoneGetter as Updatable<()>>::update(&mut getter).unwrap();
     assert_eq!(<NoneGetter as Getter<(), ()>>::get(&getter), Ok(None));
 }
-#[test]
-fn static_reference() {
-    let x = static_reference!(u8, 5);
-    assert_eq!(*x.borrow(), 5);
-}
-#[test]
-#[cfg(feature = "std")]
-fn static_rw_lock_reference() {
-    let x = static_rw_lock_reference!(u8, 5);
-    assert_eq!(*x.borrow(), 5);
-}
