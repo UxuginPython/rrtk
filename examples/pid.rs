@@ -31,31 +31,31 @@ impl StreamPID {
         ki: f32,
         kd: f32,
     ) -> Self {
-        let time_getter = rc_refcell_reference(TimeGetterFromGetter::new(input.clone()));
-        let setpoint = rc_refcell_reference(ConstantGetter::new(time_getter.clone(), setpoint));
-        let kp = rc_refcell_reference(ConstantGetter::new(time_getter.clone(), kp));
-        let ki = rc_refcell_reference(ConstantGetter::new(time_getter.clone(), ki));
-        let kd = rc_refcell_reference(ConstantGetter::new(time_getter.clone(), kd));
-        let error = rc_refcell_reference(DifferenceStream::new(setpoint.clone(), input.clone()));
-        let int = rc_refcell_reference(IntegralStream::new(error.clone()));
-        let drv = rc_refcell_reference(DerivativeStream::new(error.clone()));
+        let time_getter = rc_ref_cell_reference(TimeGetterFromGetter::new(input.clone()));
+        let setpoint = rc_ref_cell_reference(ConstantGetter::new(time_getter.clone(), setpoint));
+        let kp = rc_ref_cell_reference(ConstantGetter::new(time_getter.clone(), kp));
+        let ki = rc_ref_cell_reference(ConstantGetter::new(time_getter.clone(), ki));
+        let kd = rc_ref_cell_reference(ConstantGetter::new(time_getter.clone(), kd));
+        let error = rc_ref_cell_reference(DifferenceStream::new(setpoint.clone(), input.clone()));
+        let int = rc_ref_cell_reference(IntegralStream::new(error.clone()));
+        let drv = rc_ref_cell_reference(DerivativeStream::new(error.clone()));
         //`ProductStream`'s behavior is to treat all `None` values as 1.0 so that it's as if they
         //were not included. However, this is not what we want with the coefficient. `NoneToValue`
         //is used to convert all `None` values to `Some(0.0)` to effectively exlude them from the
         //final sum.
         let int_zeroer =
-            rc_refcell_reference(NoneToValue::new(int.clone(), time_getter.clone(), 0.0));
+            rc_ref_cell_reference(NoneToValue::new(int.clone(), time_getter.clone(), 0.0));
         let drv_zeroer =
-            rc_refcell_reference(NoneToValue::new(drv.clone(), time_getter.clone(), 0.0));
-        let kp_mul = rc_refcell_reference(ProductStream::new([
+            rc_ref_cell_reference(NoneToValue::new(drv.clone(), time_getter.clone(), 0.0));
+        let kp_mul = rc_ref_cell_reference(ProductStream::new([
             to_dyn!(Getter<f32, ()>, kp.clone()),
             to_dyn!(Getter<f32, ()>, error.clone()),
         ]));
-        let ki_mul = rc_refcell_reference(ProductStream::new([
+        let ki_mul = rc_ref_cell_reference(ProductStream::new([
             to_dyn!(Getter<f32, ()>, ki.clone()),
             to_dyn!(Getter<f32, ()>, int_zeroer.clone()),
         ]));
-        let kd_mul = rc_refcell_reference(ProductStream::new([
+        let kd_mul = rc_ref_cell_reference(ProductStream::new([
             to_dyn!(Getter<f32, ()>, kd.clone()),
             to_dyn!(Getter<f32, ()>, drv_zeroer.clone()),
         ]));
@@ -123,7 +123,7 @@ fn main() {
     const KD: f32 = 0.1;
     println!("PID Controller using RRTK Streams");
     println!("kp = {:?}; ki = {:?}; kd = {:?}", KP, KI, KD);
-    let input = to_dyn!(Getter<f32, ()>, rc_refcell_reference(MyStream::new()));
+    let input = to_dyn!(Getter<f32, ()>, rc_ref_cell_reference(MyStream::new()));
     let mut stream = StreamPID::new(input.clone(), SETPOINT, KP, KI, KD);
     stream.update().unwrap();
     println!(

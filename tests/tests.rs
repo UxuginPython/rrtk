@@ -733,7 +733,7 @@ fn static_reference() {
 }
 #[test]
 #[cfg(feature = "std")]
-fn static_rwlock_reference() {
-    let x = static_rwlock_reference!(u8, 5);
+fn static_rw_lock_reference() {
+    let x = static_rw_lock_reference!(u8, 5);
     assert_eq!(*x.borrow(), 5);
 }

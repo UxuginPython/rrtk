@@ -102,16 +102,16 @@ impl<'a, T: Settable<f32, E>, E: Copy + Debug + 'static> PIDWrapper<'a, T, E> {
         kvalues: PositionDerivativeDependentPIDKValues,
     ) -> Self {
         let terminal = Terminal::new();
-        let time = Reference::from_rc_refcell(Rc::new(RefCell::new(initial_time)));
-        let state = Reference::from_rc_refcell(Rc::new(RefCell::new(ConstantGetter::new(
+        let time = Reference::from_rc_ref_cell(Rc::new(RefCell::new(initial_time)));
+        let state = Reference::from_rc_ref_cell(Rc::new(RefCell::new(ConstantGetter::new(
             time.clone(),
             initial_state,
         ))));
-        let command = Reference::from_rc_refcell(Rc::new(RefCell::new(ConstantGetter::new(
+        let command = Reference::from_rc_ref_cell(Rc::new(RefCell::new(ConstantGetter::new(
             time.clone(),
             initial_command,
         ))));
-        let pid = Reference::from_rc_refcell(Rc::new(RefCell::new(
+        let pid = Reference::from_rc_ref_cell(Rc::new(RefCell::new(
             streams::control::CommandPID::new(state.clone(), initial_command, kvalues),
         )));
         pid.borrow_mut()

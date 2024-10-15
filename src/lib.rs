@@ -4,8 +4,12 @@
 //!**A set of algorithms and other tools for robotics in Rust.**
 //!
 //!It is almost entirely `no_std` and most things work without `alloc`. It does not currently integrate with any API directly. This may be added in the future, probably through another crate.
-#![warn(missing_docs)]
+//#![warn(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
+#[cfg(feature = "std")]
+use alloc::sync::Arc;
+#[cfg(feature = "std")]
+use std::sync::RwLock;
 #[cfg(feature = "alloc")]
 extern crate alloc;
 #[cfg(feature = "alloc")]
@@ -686,8 +690,8 @@ pub trait Device<E: Copy + Debug>: Updatable<E> {
 ///Create a new `Rc<RefCell>` of something and return a `Reference` to it. Because of how `Rc`
 ///works, it won't be dropped until the last clone of the `Reference` is.
 #[cfg(feature = "alloc")]
-pub fn rc_refcell_reference<T>(was: T) -> Reference<T> {
-    Reference::from_rc_refcell(Rc::new(RefCell::new(was)))
+pub fn rc_ref_cell_reference<T>(was: T) -> Reference<T> {
+    Reference::from_rc_ref_cell(Rc::new(RefCell::new(was)))
 }
 ///Create a static of something and return a `Ptr`-variant `Reference` to it. This contains a raw
 ///mutable pointer. It will never use-after-free because its target is static, but be careful if
@@ -702,9 +706,13 @@ macro_rules! static_reference {
 ///Create a static `RwLock` of something and return a `PtrRwLock`-variant `Reference` to it.
 #[cfg(feature = "std")]
 #[macro_export]
-macro_rules! static_rwlock_reference {
+macro_rules! static_rw_lock_reference {
     ($type_: ty, $was: expr) => {{
         static WAS: std::sync::RwLock<$type_> = std::sync::RwLock::new($was);
-        unsafe { Reference::from_rwlock_ptr(core::ptr::addr_of!(WAS)) }
+        unsafe { Reference::from_rw_lock_ptr(core::ptr::addr_of!(WAS)) }
     }};
+}
+#[cfg(feature = "std")]
+pub fn arc_rw_lock_reference<T>(was: T) -> Reference<T> {
+    Reference::from_arc_rw_lock(Arc::new(RwLock::new(was)))
 }
