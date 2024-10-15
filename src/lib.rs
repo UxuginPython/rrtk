@@ -9,7 +9,7 @@
 #[cfg(feature = "std")]
 use alloc::sync::Arc;
 #[cfg(feature = "std")]
-use std::sync::RwLock;
+use std::sync::{Mutex, RwLock};
 #[cfg(feature = "alloc")]
 extern crate alloc;
 #[cfg(feature = "alloc")]
@@ -712,10 +712,26 @@ macro_rules! static_rw_lock_reference {
         unsafe { Reference::from_rw_lock_ptr(core::ptr::addr_of!(WAS)) }
     }};
 }
+///Create a new static `Mutex` of something and return a `PtrMutex`-variant `Reference` to it.
+#[cfg(feature = "std")]
+#[macro_export]
+macro_rules! static_mutex_reference {
+    ($type_: ty, $was: expr) => {{
+        static WAS: std::sync::Mutex<$type_> = std::sync::Mutex::new($was);
+        unsafe { Reference::from_mutex_ptr(core::ptr::addr_of!(WAS)) }
+    }};
+}
 ///Create a new `Arc<RwLock>` of something and return a `Reference` to it. Because of how `Arc` and
 ///`Rc`, its single-threaded counterpart, work, it won't be dropped until the last clone of the
 ///`Reference` is.
 #[cfg(feature = "std")]
 pub fn arc_rw_lock_reference<T>(was: T) -> Reference<T> {
     Reference::from_arc_rw_lock(Arc::new(RwLock::new(was)))
+}
+///Create a new `Arc<Mutex>` of something and return a `Reference` to it. Because of how `Arc` and
+///`Rc`, its single-threaded counterpart, work, it won't be dropped until the last clone of the
+///`Reference` is.
+#[cfg(feature = "std")]
+pub fn arc_mutex_reference<T>(was: T) -> Reference<T> {
+    Reference::from_arc_mutex(Arc::new(Mutex::new(was)))
 }

@@ -4,7 +4,7 @@ use crate::*;
 #[cfg(feature = "alloc")]
 use core::cell::{Ref, RefMut};
 #[cfg(feature = "std")]
-use std::sync::{RwLockReadGuard, RwLockWriteGuard};
+use std::sync::{MutexGuard, RwLockReadGuard, RwLockWriteGuard};
 ///An immutable borrow of an RRTK `Reference`, similar to `Ref` for a `RefCell`.
 ///This is marked as non-exhaustive because some variants are only available with some features.
 ///This means that if you write a `match` without all the features enabled, it won't cover all the
@@ -20,6 +20,9 @@ pub enum Borrow<'a, T: ?Sized> {
     ///An `RwLockReadGuard`.
     #[cfg(feature = "std")]
     RwLockReadGuard(RwLockReadGuard<'a, T>),
+    ///A `MutexGuard`.
+    #[cfg(feature = "std")]
+    MutexGuard(MutexGuard<'a, T>),
 }
 impl<T: ?Sized> Deref for Borrow<'_, T> {
     type Target = T;
@@ -30,6 +33,8 @@ impl<T: ?Sized> Deref for Borrow<'_, T> {
             Self::RefCellRef(ref_cell_ref) => ref_cell_ref,
             #[cfg(feature = "std")]
             Self::RwLockReadGuard(rw_lock_read_guard) => rw_lock_read_guard,
+            #[cfg(feature = "std")]
+            Self::MutexGuard(mutex_guard) => mutex_guard,
         }
     }
 }
@@ -48,6 +53,9 @@ pub enum BorrowMut<'a, T: ?Sized> {
     ///An `RwLockWriteGuard`.
     #[cfg(feature = "std")]
     RwLockWriteGuard(RwLockWriteGuard<'a, T>),
+    ///A `MutexGuard`.
+    #[cfg(feature = "std")]
+    MutexGuard(MutexGuard<'a, T>),
 }
 impl<T: ?Sized> Deref for BorrowMut<'_, T> {
     type Target = T;
@@ -58,6 +66,8 @@ impl<T: ?Sized> Deref for BorrowMut<'_, T> {
             Self::RefCellRefMut(ref_cell_ref_mut) => ref_cell_ref_mut,
             #[cfg(feature = "std")]
             Self::RwLockWriteGuard(rw_lock_write_guard) => rw_lock_write_guard,
+            #[cfg(feature = "std")]
+            Self::MutexGuard(mutex_guard) => mutex_guard,
         }
     }
 }
@@ -69,6 +79,8 @@ impl<T: ?Sized> DerefMut for BorrowMut<'_, T> {
             Self::RefCellRefMut(ref_cell_ref_mut) => ref_cell_ref_mut,
             #[cfg(feature = "std")]
             Self::RwLockWriteGuard(rw_lock_write_guard) => rw_lock_write_guard,
+            #[cfg(feature = "std")]
+            Self::MutexGuard(mutex_guard) => mutex_guard,
         }
     }
 }
@@ -88,9 +100,15 @@ pub enum Reference<T: ?Sized> {
     ///A raw immutable pointer to an `RwLock<T>`.
     #[cfg(feature = "std")]
     PtrRwLock(*const RwLock<T>),
+    ///A raw pointer to a `Mutex<T>`.
+    #[cfg(feature = "std")]
+    PtrMutex(*const Mutex<T>),
     ///An `Arc<RwLock<T>>`.
     #[cfg(feature = "std")]
     ArcRwLock(Arc<RwLock<T>>),
+    ///An `Arc<Mutex<T>>`.
+    #[cfg(feature = "std")]
+    ArcMutex(Arc<Mutex<T>>),
 }
 impl<T: ?Sized> Reference<T> {
     ///Create a `Reference` from a raw mutable pointer. Good if you're not multithreading and you
@@ -109,10 +127,20 @@ impl<T: ?Sized> Reference<T> {
     pub const unsafe fn from_rw_lock_ptr(ptr_rw_lock: *const RwLock<T>) -> Self {
         Self::PtrRwLock(ptr_rw_lock)
     }
+    ///Create a `Reference` from a `*const Mutex<T>`.
+    #[cfg(feature = "std")]
+    pub const unsafe fn from_mutex_ptr(ptr_mutex: *const Mutex<T>) -> Self {
+        Self::PtrMutex(ptr_mutex)
+    }
     ///Create a new `Reference` from an `Arc<RwLock<T>>`.
     #[cfg(feature = "std")]
     pub const fn from_arc_rw_lock(arc_rw_lock: Arc<RwLock<T>>) -> Self {
         Self::ArcRwLock(arc_rw_lock)
+    }
+    ///Create a `Reference` from an `Arc<Mutex<T>>`.
+    #[cfg(feature = "std")]
+    pub const fn from_arc_mutex(arc_mutex: Arc<Mutex<T>>) -> Self {
+        Self::ArcMutex(arc_mutex)
     }
     ///Immutably borrow the reference like a `RefCell`.
     pub fn borrow(&self) -> Borrow<'_, T> {
@@ -129,10 +157,24 @@ impl<T: ?Sized> Reference<T> {
                 )
             },
             #[cfg(feature = "std")]
+            Self::PtrMutex(ptr_mutex) => unsafe {
+                Borrow::MutexGuard(
+                    (**ptr_mutex)
+                        .lock()
+                        .expect("RRTK Reference borrow failed to get Mutex lock"),
+                )
+            },
+            #[cfg(feature = "std")]
             Self::ArcRwLock(arc_rw_lock) => Borrow::RwLockReadGuard(
                 arc_rw_lock
                     .read()
                     .expect("RRTK Reference borrow failed to get RwLock read lock"),
+            ),
+            #[cfg(feature = "std")]
+            Self::ArcMutex(arc_mutex) => Borrow::MutexGuard(
+                arc_mutex
+                    .lock()
+                    .expect("RRTK Reference borrow failed to get Mutex lock"),
             ),
         }
     }
@@ -151,10 +193,24 @@ impl<T: ?Sized> Reference<T> {
                 )
             },
             #[cfg(feature = "std")]
+            Self::PtrMutex(ptr_mutex) => unsafe {
+                BorrowMut::MutexGuard(
+                    (**ptr_mutex)
+                        .lock()
+                        .expect("RRTK Reference mutable borrow failed to get Mutex lock"),
+                )
+            },
+            #[cfg(feature = "std")]
             Self::ArcRwLock(arc_rw_lock) => BorrowMut::RwLockWriteGuard(
                 arc_rw_lock
                     .write()
                     .expect("RRTK Reference mutable borrow failed to get RwLock write lock"),
+            ),
+            #[cfg(feature = "std")]
+            Self::ArcMutex(arc_mutex) => BorrowMut::MutexGuard(
+                arc_mutex
+                    .lock()
+                    .expect("RRTK Reference mutable borrow failed to get Mutex lock"),
             ),
         }
     }
@@ -168,7 +224,11 @@ impl<T: ?Sized> Clone for Reference<T> {
             #[cfg(feature = "std")]
             Self::PtrRwLock(ptr_rw_lock) => Self::PtrRwLock(*ptr_rw_lock),
             #[cfg(feature = "std")]
+            Self::PtrMutex(ptr_mutex) => Self::PtrMutex(*ptr_mutex),
+            #[cfg(feature = "std")]
             Self::ArcRwLock(arc_rw_lock) => Self::ArcRwLock(Arc::clone(&arc_rw_lock)),
+            #[cfg(feature = "std")]
+            Self::ArcMutex(arc_mutex) => Self::ArcMutex(Arc::clone(&arc_mutex)),
         }
     }
 }
