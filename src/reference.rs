@@ -124,12 +124,12 @@ impl<T: ?Sized> Reference<T> {
     }
     ///Create a `Reference` from a `*const RwLock<T>`.
     #[cfg(feature = "std")]
-    pub const unsafe fn from_rw_lock_ptr(ptr_rw_lock: *const RwLock<T>) -> Self {
+    pub const unsafe fn from_ptr_rw_lock(ptr_rw_lock: *const RwLock<T>) -> Self {
         Self::PtrRwLock(ptr_rw_lock)
     }
     ///Create a `Reference` from a `*const Mutex<T>`.
     #[cfg(feature = "std")]
-    pub const unsafe fn from_mutex_ptr(ptr_mutex: *const Mutex<T>) -> Self {
+    pub const unsafe fn from_ptr_mutex(ptr_mutex: *const Mutex<T>) -> Self {
         Self::PtrMutex(ptr_mutex)
     }
     ///Create a new `Reference` from an `Arc<RwLock<T>>`.
@@ -268,7 +268,7 @@ macro_rules! to_dyn {
             ),
             #[cfg(feature = "std")]
             Reference::PtrRwLock(ptr_rw_lock) => unsafe {
-                Reference::from_rw_lock_ptr(ptr_rw_lock as *const std::sync::RwLock<dyn $trait>)
+                Reference::from_ptr_rw_lock(ptr_rw_lock as *const std::sync::RwLock<dyn $trait>)
             },
             _ => unimplemented!(),
         }

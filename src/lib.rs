@@ -709,7 +709,7 @@ macro_rules! static_reference {
 macro_rules! static_rw_lock_reference {
     ($type_: ty, $was: expr) => {{
         static WAS: std::sync::RwLock<$type_> = std::sync::RwLock::new($was);
-        unsafe { Reference::from_rw_lock_ptr(core::ptr::addr_of!(WAS)) }
+        unsafe { Reference::from_ptr_rw_lock(core::ptr::addr_of!(WAS)) }
     }};
 }
 ///Create a new static `Mutex` of something and return a `PtrMutex`-variant `Reference` to it.
@@ -718,7 +718,7 @@ macro_rules! static_rw_lock_reference {
 macro_rules! static_mutex_reference {
     ($type_: ty, $was: expr) => {{
         static WAS: std::sync::Mutex<$type_> = std::sync::Mutex::new($was);
-        unsafe { Reference::from_mutex_ptr(core::ptr::addr_of!(WAS)) }
+        unsafe { Reference::from_ptr_mutex(core::ptr::addr_of!(WAS)) }
     }};
 }
 ///Create a new `Arc<RwLock>` of something and return a `Reference` to it. Because of how `Arc` and
