@@ -166,3 +166,7 @@ Add moving average stream.
 - Add `PIDWrapper` back.
 - Update many tests to use `Reference`.
 - Minor documentation changes.
+### 0.5.0-beta.1
+- Add `ArcRwLock`, `PtrMutex`, and `ArcMutex` `Reference` variants.
+- Standardize snake_case of `ref_cell` and `rw_lock`.
+- Standardize that the outermost container comes first in variable and function names: a `*const RwLock` is `ptr_rw_lock`, not `rw_lock_ptr`.
