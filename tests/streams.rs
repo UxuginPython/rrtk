@@ -467,6 +467,24 @@ fn sum_stream() {
     }
 }
 #[test]
+#[cfg(feature = "alloc")]
+fn sum_stream_all_none() {
+    struct Input;
+    impl Getter<f32, ()> for Input {
+        fn get(&self) -> Output<f32, ()> {
+            Ok(None)
+        }
+    }
+    impl Updatable<()> for Input {
+        fn update(&mut self) -> NothingOrError<()> {
+            Ok(())
+        }
+    }
+    let input = static_reference!(Input, Input);
+    let sum_stream = SumStream::new([to_dyn!(Getter<f32, ()>, input)]);
+    assert_eq!(sum_stream.get(), Ok(None));
+}
+#[test]
 #[should_panic]
 #[cfg(feature = "alloc")]
 fn empty_sum_stream() {

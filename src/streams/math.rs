@@ -2,14 +2,13 @@
 // Copyright 2024 UxuginPython
 //!Streams that perform mathematical operations.
 use crate::streams::*;
+use core::mem::MaybeUninit;
 //TODO: Make SumStream and ProductStream not use Vec
 ///A stream that adds all its inputs. If an input returns `Ok(None)`, it is excluded.
-#[cfg(feature = "alloc")]
-pub struct SumStream<T: AddAssign + Clone, const N: usize, E> {
+pub struct SumStream<T: AddAssign + Copy, const N: usize, E> {
     addends: [Reference<dyn Getter<T, E>>; N],
 }
-#[cfg(feature = "alloc")]
-impl<T: AddAssign + Clone, const N: usize, E> SumStream<T, N, E> {
+impl<T: AddAssign + Copy, const N: usize, E> SumStream<T, N, E> {
     ///Constructor for `SumStream`.
     pub const fn new(addends: [Reference<dyn Getter<T, E>>; N]) -> Self {
         if N < 1 {
@@ -18,48 +17,47 @@ impl<T: AddAssign + Clone, const N: usize, E> SumStream<T, N, E> {
         Self { addends: addends }
     }
 }
-#[cfg(feature = "alloc")]
-impl<T: AddAssign + Clone, const N: usize, E: Copy + Debug> Getter<T, E> for SumStream<T, N, E> {
+impl<T: AddAssign + Copy, const N: usize, E: Copy + Debug> Getter<T, E> for SumStream<T, N, E> {
     fn get(&self) -> Output<T, E> {
         //Err(...) -> return Err immediately
         //Ok(None) -> skip
         //Ok(Some(...)) -> add to value
-        let mut outputs = Vec::with_capacity(N);
+        let mut outputs = [MaybeUninit::uninit(); N];
+        //This is always equal to the index of the next uninitialized slot if there is one.
+        let mut outputs_filled = 0;
         for i in &self.addends {
             match i.borrow().get()? {
-                Some(x) => outputs.push(x),
+                Some(x) => {
+                    outputs[outputs_filled].write(x);
+                    outputs_filled += 1;
+                }
                 None => (),
             }
         }
-        let mut value = outputs[0].value.clone();
-        for i in &outputs[1..] {
-            value += i.value.clone();
+        if outputs_filled == 0 {
+            return Ok(None);
         }
-        let mut time = None;
-        for i in &outputs {
-            match time {
-                Some(old_time) => {
-                    if i.time > old_time {
-                        time = Some(i.time);
-                    }
+        //We can safely assume_init on outputs indexes within 0..outputs_filled.
+        unsafe {
+            //We now know that at least 1 input is filled. It is at index 0.
+            let mut value = outputs[0].assume_init().value;
+            //This works because outputs_filled is equal to the index of the next free slot and the
+            //range thing cuts off one before it.
+            for i in 1..outputs_filled {
+                value += outputs[i].assume_init().value;
+            }
+            let mut time = outputs[0].assume_init().time;
+            for i in 1..outputs_filled {
+                let maybe_new_time = outputs[i].assume_init().time;
+                if maybe_new_time > time {
+                    time = maybe_new_time;
                 }
-                None => {
-                    time = Some(i.time);
-                }
             }
-        }
-        match time {
-            Some(time_) => {
-                return Ok(Some(Datum::new(time_, value)));
-            }
-            None => {
-                return Ok(None);
-            }
+            return Ok(Some(Datum::new(time, value)));
         }
     }
 }
-#[cfg(feature = "alloc")]
-impl<T: AddAssign + Clone, const N: usize, E: Copy + Debug> Updatable<E> for SumStream<T, N, E> {
+impl<T: AddAssign + Copy, const N: usize, E: Copy + Debug> Updatable<E> for SumStream<T, N, E> {
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
     }
