@@ -38,22 +38,13 @@ impl<T: AddAssign + Copy, const N: usize, E: Copy + Debug> Getter<T, E> for SumS
             return Ok(None);
         }
         //We can safely assume_init on outputs indexes within 0..outputs_filled.
+        let (value, other_outputs) = outputs.split_at(1);
         unsafe {
-            //We now know that at least 1 input is filled. It is at index 0.
-            let mut value = outputs[0].assume_init().value;
-            //This works because outputs_filled is equal to the index of the next free slot and the
-            //range thing cuts off one before it.
-            for i in 1..outputs_filled {
-                value += outputs[i].assume_init().value;
+            let mut value = value[0].assume_init();
+            for i in 0..outputs_filled - 1 {
+                value += other_outputs[i].assume_init();
             }
-            let mut time = outputs[0].assume_init().time;
-            for i in 1..outputs_filled {
-                let maybe_new_time = outputs[i].assume_init().time;
-                if maybe_new_time > time {
-                    time = maybe_new_time;
-                }
-            }
-            return Ok(Some(Datum::new(time, value)));
+            Ok(Some(value))
         }
     }
 }
@@ -156,19 +147,13 @@ impl<T: MulAssign + Copy, const N: usize, E: Copy + Debug> Getter<T, E> for Prod
         if outputs_filled == 0 {
             return Ok(None);
         }
+        let (value, other_outputs) = outputs.split_at(1);
         unsafe {
-            let mut value = outputs[0].assume_init().value;
-            for i in 1..outputs_filled {
-                value *= outputs[i].assume_init().value;
+            let mut value = value[0].assume_init();
+            for i in 0..outputs_filled - 1 {
+                value *= other_outputs[i].assume_init();
             }
-            let mut time = outputs[0].assume_init().time;
-            for i in 1..outputs_filled {
-                let output = outputs[i].assume_init();
-                if output.time > time {
-                    time = output.time;
-                }
-            }
-            Ok(Some(Datum::new(time, value)))
+            Ok(Some(value))
         }
     }
 }
