@@ -3,7 +3,6 @@
 //!Streams that perform mathematical operations.
 use crate::streams::*;
 use core::mem::MaybeUninit;
-//TODO: Make SumStream and ProductStream not use Vec
 ///A stream that adds all its inputs. If an input returns `Ok(None)`, it is excluded.
 pub struct SumStream<T: AddAssign + Copy, const N: usize, E> {
     addends: [Reference<dyn Getter<T, E>>; N],
