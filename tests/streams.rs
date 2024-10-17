@@ -397,7 +397,6 @@ fn position_to_state() {
     }
 }
 #[test]
-#[cfg(feature = "alloc")]
 fn sum_stream() {
     #[derive(Clone, Copy, Debug)]
     struct Nothing;
@@ -467,7 +466,6 @@ fn sum_stream() {
     }
 }
 #[test]
-#[cfg(feature = "alloc")]
 fn sum_stream_all_none() {
     struct Input;
     impl Getter<f32, ()> for Input {
@@ -486,7 +484,6 @@ fn sum_stream_all_none() {
 }
 #[test]
 #[should_panic]
-#[cfg(feature = "alloc")]
 fn empty_sum_stream() {
     let _: SumStream<f32, 0, ()> = SumStream::new([]);
 }
