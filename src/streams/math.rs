@@ -128,12 +128,10 @@ impl<T: Sub<Output = T>, GM: Getter<T, E> + ?Sized, GS: Getter<T, E> + ?Sized, E
 ///calculation, effectively treating it as though it had returned 1. If this is not the desired
 ///behavior, use `rrtk::streams::converters::NoneToValue` or
 ///`rrtk::streams::converters::NoneToError`.
-#[cfg(feature = "alloc")]
-pub struct ProductStream<T: MulAssign, const N: usize, E> {
+pub struct ProductStream<T: MulAssign + Copy, const N: usize, E> {
     factors: [Reference<dyn Getter<T, E>>; N],
 }
-#[cfg(feature = "alloc")]
-impl<T: Clone + MulAssign, const N: usize, E> ProductStream<T, N, E> {
+impl<T: MulAssign + Copy, const N: usize, E> ProductStream<T, N, E> {
     ///Constructor for `ProductStream`.
     pub const fn new(factors: [Reference<dyn Getter<T, E>>; N]) -> Self {
         if N < 1 {
@@ -142,49 +140,39 @@ impl<T: Clone + MulAssign, const N: usize, E> ProductStream<T, N, E> {
         Self { factors: factors }
     }
 }
-#[cfg(feature = "alloc")]
-impl<T: Clone + MulAssign, const N: usize, E: Copy + Debug> Getter<T, E>
-    for ProductStream<T, N, E>
-{
+impl<T: MulAssign + Copy, const N: usize, E: Copy + Debug> Getter<T, E> for ProductStream<T, N, E> {
     fn get(&self) -> Output<T, E> {
-        let mut outputs = Vec::with_capacity(self.factors.len());
+        let mut outputs = [MaybeUninit::uninit(); N];
+        let mut outputs_filled = 0;
         for i in &self.factors {
             match i.borrow().get()? {
-                Some(x) => outputs.push(x),
+                Some(x) => {
+                    outputs[outputs_filled].write(x);
+                    outputs_filled += 1;
+                }
                 None => (),
             }
         }
-        let mut value = outputs[0].value.clone();
-        for i in &outputs[1..] {
-            value *= i.value.clone();
+        if outputs_filled == 0 {
+            return Ok(None);
         }
-        let mut time = None;
-        for output in &outputs {
-            match time {
-                Some(old_time) => {
-                    if output.time > old_time {
-                        time = Some(output.time);
-                    }
+        unsafe {
+            let mut value = outputs[0].assume_init().value;
+            for i in 1..outputs_filled {
+                value *= outputs[i].assume_init().value;
+            }
+            let mut time = outputs[0].assume_init().time;
+            for i in 1..outputs_filled {
+                let output = outputs[i].assume_init();
+                if output.time > time {
+                    time = output.time;
                 }
-                None => {
-                    time = Some(output.time);
-                }
             }
-        }
-        match time {
-            Some(time_) => {
-                return Ok(Some(Datum::new(time_, value)));
-            }
-            None => {
-                return Ok(None);
-            }
+            Ok(Some(Datum::new(time, value)))
         }
     }
 }
-#[cfg(feature = "alloc")]
-impl<T: Clone + MulAssign, const N: usize, E: Copy + Debug> Updatable<E>
-    for ProductStream<T, N, E>
-{
+impl<T: MulAssign + Copy, const N: usize, E: Copy + Debug> Updatable<E> for ProductStream<T, N, E> {
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
     }

@@ -648,7 +648,6 @@ fn difference_stream() {
     }
 }
 #[test]
-#[cfg(feature = "alloc")]
 fn product_stream() {
     #[derive(Clone, Copy, Debug)]
     struct Nothing;
@@ -718,8 +717,24 @@ fn product_stream() {
     }
 }
 #[test]
+fn product_stream_all_none() {
+    struct Input;
+    impl Getter<f32, ()> for Input {
+        fn get(&self) -> Output<f32, ()> {
+            Ok(None)
+        }
+    }
+    impl Updatable<()> for Input {
+        fn update(&mut self) -> NothingOrError<()> {
+            Ok(())
+        }
+    }
+    let input = static_reference!(Input, Input);
+    let product_stream = ProductStream::new([to_dyn!(Getter<f32, ()>, input)]);
+    assert_eq!(product_stream.get(), Ok(None));
+}
+#[test]
 #[should_panic]
-#[cfg(feature = "alloc")]
 fn empty_product_stream() {
     let _: ProductStream<f32, 0, ()> = ProductStream::new([]);
 }
