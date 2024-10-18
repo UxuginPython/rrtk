@@ -1,5 +1,7 @@
-//!Contains `Reference`, a special enum vith variants for different kinds of references, and
-//!related types. Everything here is reexported at the crate level.
+//!`Reference` is a container privately holding an enum with variants containing different kinds of
+//!references, the availability of some of which depends on features. `Reference` is borrowed like
+//!a `RefCell`. This module contains it and its related types. `Reference` is also reexported at
+//!the crate level.
 use crate::*;
 #[cfg(feature = "alloc")]
 use core::cell::{Ref, RefMut};
@@ -85,13 +87,16 @@ impl<T: ?Sized> DerefMut for BorrowMut<'_, T> {
     }
 }
 ///A special enum with variants for different kinds of references depending on your platform and
-///code structure. (Some variants are alloc- or std-only.)
+///code structure. (Some variants are alloc- or std-only.) It is usually contained in a
+///`Reference`, which is a safe wrapper. You should generally use `Reference` over
+///`ReferenceUnsafe` unless you specifically need to match against it, probably for some form of
+///type conversion.
 ///This is marked as non-exhaustive because some variants are only available with some features.
 ///This means that if you write a `match` without all the features enabled, it won't cover all the
 ///variants if another crate in the tree enables more features. This is a problem because features
 ///are additive, so it is marked as non-exhaustive to remedy this.
 #[non_exhaustive]
-pub enum Reference<T: ?Sized> {
+pub enum ReferenceUnsafe<T: ?Sized> {
     ///A raw mutable pointer.
     Ptr(*mut T),
     ///An `Rc<RefCell<T>>`.
@@ -110,40 +115,40 @@ pub enum Reference<T: ?Sized> {
     #[cfg(feature = "std")]
     ArcMutex(Arc<Mutex<T>>),
 }
-impl<T: ?Sized> Reference<T> {
-    ///Create a `Reference` from a raw mutable pointer. Good if you're not multithreading and you
-    ///want to avoid dynamic allocation. Making the object static is strongly recommended if you
-    ///use this.
+impl<T: ?Sized> ReferenceUnsafe<T> {
+    ///Create a `ReferenceUnsafe` from a raw mutable pointer. This is useful if you are not
+    ///multithreading and you want to avoid dynamic allocation. Making the object static is
+    ///strongly recommended.
     pub const unsafe fn from_ptr(ptr: *mut T) -> Self {
         Self::Ptr(ptr)
     }
-    ///Create a `Reference` from an `Rc<RefCell<T>>`.
+    ///Create a `ReferenceUnsafe` from an `Rc<RefCell<T>>`.
     #[cfg(feature = "alloc")]
     pub const fn from_rc_ref_cell(rc_ref_cell: Rc<RefCell<T>>) -> Self {
         Self::RcRefCell(rc_ref_cell)
     }
-    ///Create a `Reference` from a `*const RwLock<T>`.
+    ///Create a `ReferenceUnsafe` from a `*const RwLock<T>`.
     #[cfg(feature = "std")]
     pub const unsafe fn from_ptr_rw_lock(ptr_rw_lock: *const RwLock<T>) -> Self {
         Self::PtrRwLock(ptr_rw_lock)
     }
-    ///Create a `Reference` from a `*const Mutex<T>`.
+    ///Create a `ReferenceUnsafe` from a `*const Mutex<T>`.
     #[cfg(feature = "std")]
     pub const unsafe fn from_ptr_mutex(ptr_mutex: *const Mutex<T>) -> Self {
         Self::PtrMutex(ptr_mutex)
     }
-    ///Create a new `Reference` from an `Arc<RwLock<T>>`.
+    ///Create a new `ReferenceUnsafe` from an `Arc<RwLock<T>>`.
     #[cfg(feature = "std")]
     pub const fn from_arc_rw_lock(arc_rw_lock: Arc<RwLock<T>>) -> Self {
         Self::ArcRwLock(arc_rw_lock)
     }
-    ///Create a `Reference` from an `Arc<Mutex<T>>`.
+    ///Create a `ReferenceUnsafe` from an `Arc<Mutex<T>>`.
     #[cfg(feature = "std")]
     pub const fn from_arc_mutex(arc_mutex: Arc<Mutex<T>>) -> Self {
         Self::ArcMutex(arc_mutex)
     }
     ///Immutably borrow the reference like a `RefCell`.
-    pub fn borrow(&self) -> Borrow<'_, T> {
+    pub unsafe fn borrow(&self) -> Borrow<'_, T> {
         match self {
             Self::Ptr(ptr) => Borrow::Ptr(*ptr, PhantomData),
             #[cfg(feature = "alloc")]
@@ -179,7 +184,7 @@ impl<T: ?Sized> Reference<T> {
         }
     }
     ///Mutably borrow the reference like a `RefCell`.
-    pub fn borrow_mut(&self) -> BorrowMut<'_, T> {
+    pub unsafe fn borrow_mut(&self) -> BorrowMut<'_, T> {
         match self {
             Self::Ptr(ptr) => BorrowMut::Ptr(*ptr, PhantomData),
             #[cfg(feature = "alloc")]
@@ -215,7 +220,7 @@ impl<T: ?Sized> Reference<T> {
         }
     }
 }
-impl<T: ?Sized> Clone for Reference<T> {
+impl<T: ?Sized> Clone for ReferenceUnsafe<T> {
     fn clone(&self) -> Self {
         match self {
             Self::Ptr(ptr) => Self::Ptr(*ptr),
@@ -230,6 +235,59 @@ impl<T: ?Sized> Clone for Reference<T> {
             #[cfg(feature = "std")]
             Self::ArcMutex(arc_mutex) => Self::ArcMutex(Arc::clone(&arc_mutex)),
         }
+    }
+}
+///A container privately holding an enum with variants containing different kinds of references,
+///the availability of some of which depends on features. `Reference` is borrowed like a `RefCell`.
+///It is also reexported at the crate level.
+#[repr(transparent)]
+pub struct Reference<T: ?Sized>(ReferenceUnsafe<T>);
+impl<T: ?Sized> Reference<T> {
+    ///Create a `Reference` from a raw mutable pointer.
+    pub const unsafe fn from_ptr(ptr: *mut T) -> Self {
+        Self(ReferenceUnsafe::from_ptr(ptr))
+    }
+    ///Create a `Reference` from an `Rc<RefCell<T>>`.
+    #[cfg(feature = "alloc")]
+    pub const fn from_rc_ref_cell(rc_ref_cell: Rc<RefCell<T>>) -> Self {
+        Self(ReferenceUnsafe::from_rc_ref_cell(rc_ref_cell))
+    }
+    ///Create a `Reference` from a `*const RwLock<T>`.
+    #[cfg(feature = "std")]
+    pub const unsafe fn from_ptr_rw_lock(ptr_rw_lock: *const RwLock<T>) -> Self {
+        Self(ReferenceUnsafe::from_ptr_rw_lock(ptr_rw_lock))
+    }
+    ///Create a `Reference` from a `*const Mutex<T>`.
+    #[cfg(feature = "std")]
+    pub const unsafe fn from_ptr_mutex(ptr_mutex: *const Mutex<T>) -> Self {
+        Self(ReferenceUnsafe::from_ptr_mutex(ptr_mutex))
+    }
+    ///Create a `Reference` from an `Arc<RwLock<T>>`.
+    #[cfg(feature = "std")]
+    pub const fn from_arc_rw_lock(arc_rw_lock: Arc<RwLock<T>>) -> Self {
+        Self(ReferenceUnsafe::from_arc_rw_lock(arc_rw_lock))
+    }
+    ///Create a `Reference` from an `Arc<Mutex<T>>`.
+    #[cfg(feature = "std")]
+    pub const fn from_arc_mutex(arc_mutex: Arc<Mutex<T>>) -> Self {
+        Self(ReferenceUnsafe::from_arc_mutex(arc_mutex))
+    }
+    ///Get the inner `ReferenceUnsafe`.
+    pub fn into_unsafe(self) -> ReferenceUnsafe<T> {
+        self.0
+    }
+    ///Immutably borrow the `Reference` like a `RefCell`.
+    pub fn borrow(&self) -> Borrow<'_, T> {
+        unsafe { self.0.borrow() }
+    }
+    ///Mutably borrow the `Reference` like a `RefCell`.
+    pub fn borrow_mut(&self) -> BorrowMut<'_, T> {
+        unsafe { self.0.borrow_mut() }
+    }
+}
+impl<T: ?Sized> Clone for Reference<T> {
+    fn clone(&self) -> Self {
+        Self(self.0.clone())
     }
 }
 ///If you have a `Reference<Foo>` where `Foo` implements the `Bar` trait, you may end up wanting a
@@ -260,14 +318,16 @@ macro_rules! to_dyn {
         #[cfg(feature = "alloc")]
         extern crate alloc;
         #[allow(unreachable_patterns)]
-        match $was {
-            Reference::Ptr(ptr) => unsafe { Reference::from_ptr(ptr as *mut dyn $trait) },
+        match $was.into_unsafe() {
+            reference::ReferenceUnsafe::Ptr(ptr) => unsafe {
+                Reference::from_ptr(ptr as *mut dyn $trait)
+            },
             #[cfg(feature = "alloc")]
-            Reference::RcRefCell(rc_ref_cell) => Reference::from_rc_ref_cell(
+            reference::ReferenceUnsafe::RcRefCell(rc_ref_cell) => Reference::from_rc_ref_cell(
                 rc_ref_cell as alloc::rc::Rc<core::cell::RefCell<dyn $trait>>,
             ),
             #[cfg(feature = "std")]
-            Reference::PtrRwLock(ptr_rw_lock) => unsafe {
+            reference::ReferenceUnsafe::PtrRwLock(ptr_rw_lock) => unsafe {
                 Reference::from_ptr_rw_lock(ptr_rw_lock as *const std::sync::RwLock<dyn $trait>)
             },
             _ => unimplemented!(),
