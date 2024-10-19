@@ -8,6 +8,7 @@ use core::cell::{Ref, RefMut};
 #[cfg(feature = "std")]
 use std::sync::{MutexGuard, RwLockReadGuard, RwLockWriteGuard};
 ///An immutable borrow of an RRTK `Reference`, similar to `Ref` for a `RefCell`.
+///
 ///This is marked as non-exhaustive because some variants are only available with some features.
 ///This means that if you write a `match` without all the features enabled, it won't cover all the
 ///variants if another crate in the tree enables more features. This is a problem because features
@@ -41,6 +42,7 @@ impl<T: ?Sized> Deref for Borrow<'_, T> {
     }
 }
 ///A mutable borrow of an RRTK `Reference`, similar to `RefMut` for a `RefCell`.
+///
 ///This is marked as non-exhaustive because some variants are only available with some features.
 ///This means that if you write a `match` without all the features enabled, it won't cover all the
 ///variants if another crate in the tree enables more features. This is a problem because features
@@ -91,6 +93,7 @@ impl<T: ?Sized> DerefMut for BorrowMut<'_, T> {
 ///`Reference`, which is a safe wrapper. You should generally use `Reference` over
 ///`ReferenceUnsafe` unless you specifically need to match against it, probably for some form of
 ///type conversion.
+///
 ///This is marked as non-exhaustive because some variants are only available with some features.
 ///This means that if you write a `match` without all the features enabled, it won't cover all the
 ///variants if another crate in the tree enables more features. This is a problem because features
@@ -313,24 +316,26 @@ impl<T: ?Sized> Clone for Reference<T> {
 ///`Reference<dyn Bar>`. To convert it, you would do this:
 ///```
 ///# use rrtk::*;
-///# struct Foo;
-///# impl Foo {
-///#     fn foo_func(&self) {}
-///# }
-///# trait Bar {
-///#     fn bar_func(&self) {}
-///# }
-///# impl Bar for Foo {}
-///static mut FOO: Foo = Foo;
-///unsafe {
-///    let ref_foo = Reference::from_ptr(core::ptr::addr_of_mut!(FOO));
-///    ref_foo.borrow().foo_func();
-///    ref_foo.borrow().bar_func();
-///    let ref_dyn_bar = to_dyn!(Bar, ref_foo);
-///    //ref_dyn_bar.borrow().foo_func(); //It won't compile with this.
-///    ref_dyn_bar.borrow().bar_func();
+///struct Foo;
+///impl Foo {
+///    fn foo_func(&self) {}
 ///}
+///trait Bar {
+///    fn bar_func(&self) {}
+///}
+///impl Bar for Foo {}
+///let ref_foo = static_reference!(Foo, Foo);
+///ref_foo.borrow().foo_func();
+///ref_foo.borrow().bar_func();
+///let ref_dyn_bar = to_dyn!(Bar, ref_foo);
+///ref_dyn_bar.borrow().bar_func();
 ///```
+///
+///The documentation shows `rrtk::to_dyn` and `rrtk::reference::to_dyn` separately. These are the
+///same macro exported in two different places. These paths point to the same code in RRTK. Rust's
+///scoping rules for macros are a bit odd, but you should be able to use `rrtk::to_dyn` and
+///`rrtk::reference::to_dyn` interchangably.
+//TODO: add a note about cargo doc making the macros look like there are two
 #[macro_export]
 macro_rules! to_dyn {
     ($trait:path, $was:expr) => {{
@@ -364,6 +369,11 @@ pub fn rc_ref_cell_reference<T>(was: T) -> Reference<T> {
 ///Create a static of something and return a `Ptr`-variant `Reference` to it. This contains a raw
 ///mutable pointer. It will never use-after-free because its target is static, but be careful if
 ///you're doing multiprocessing where multiple things could mutate it at once.
+///
+///The documentation shows `rrtk::static_reference` and `rrtk::reference::static_reference` separately. These are the
+///same macro exported in two different places. These paths point to the same code in RRTK. Rust's
+///scoping rules for macros are a bit odd, but you should be able to use `rrtk::static_reference` and
+///`rrtk::reference::static_reference` interchangably.
 #[macro_export]
 macro_rules! static_reference {
     ($type_: ty, $was: expr) => {{
@@ -373,6 +383,11 @@ macro_rules! static_reference {
 }
 pub use static_reference;
 ///Create a static `RwLock` of something and return a `PtrRwLock`-variant `Reference` to it.
+///
+///The documentation shows `rrtk::static_rw_lock_reference` and `rrtk::reference::static_rw_lock_reference` separately. These are the
+///same macro exported in two different places. These paths point to the same code in RRTK. Rust's
+///scoping rules for macros are a bit odd, but you should be able to use `rrtk::static_rw_lock_reference` and
+///`rrtk::reference::static_rw_lock_reference` interchangably.
 #[cfg(feature = "std")]
 #[macro_export]
 macro_rules! static_rw_lock_reference {
@@ -384,6 +399,11 @@ macro_rules! static_rw_lock_reference {
 #[cfg(feature = "std")]
 pub use static_rw_lock_reference;
 ///Create a new static `Mutex` of something and return a `PtrMutex`-variant `Reference` to it.
+///
+///The documentation shows `rrtk::static_mutex_reference` and `rrtk::reference::static_mutex_reference` separately. These are the
+///same macro exported in two different places. These paths point to the same code in RRTK. Rust's
+///scoping rules for macros are a bit odd, but you should be able to use `rrtk::static_mutex_reference` and
+///`rrtk::reference::static_mutex_reference` interchangably.
 #[cfg(feature = "std")]
 #[macro_export]
 macro_rules! static_mutex_reference {
