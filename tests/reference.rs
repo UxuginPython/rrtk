@@ -2,6 +2,25 @@
 // Copyright 2024 UxuginPython
 use rrtk::*;
 #[test]
+fn macros() {
+    //Macro scoping is confusing. The purpose of this test is to verify that it is done correctly.
+    let _ = static_reference!(u8, 5);
+    let _ = reference::static_reference!(u8, 5);
+    #[cfg(feature = "std")]
+    let _ = static_rw_lock_reference!(u8, 5);
+    #[cfg(feature = "std")]
+    let _ = reference::static_rw_lock_reference!(u8, 5);
+    #[cfg(feature = "std")]
+    let _ = static_mutex_reference!(u8, 5);
+    #[cfg(feature = "std")]
+    let _ = reference::static_mutex_reference!(u8, 5);
+
+    let x = static_reference!(u8, 5);
+    let _ = to_dyn!(core::fmt::Display, x);
+    let y = static_reference!(u8, 5);
+    let _ = reference::to_dyn!(core::fmt::Display, y);
+}
+#[test]
 fn ptr() {
     let x = static_reference!(u8, 5);
     {

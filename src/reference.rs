@@ -353,6 +353,7 @@ macro_rules! to_dyn {
         }
     }};
 }
+pub use to_dyn;
 ///Create a new `Rc<RefCell>` of something and return a `Reference` to it. Because of how `Rc`
 ///works, it won't be dropped until the last clone of the `Reference` is. This is reexported at the
 ///crate level.
@@ -370,6 +371,7 @@ macro_rules! static_reference {
         unsafe { Reference::from_ptr(core::ptr::addr_of_mut!(WAS)) }
     }};
 }
+pub use static_reference;
 ///Create a static `RwLock` of something and return a `PtrRwLock`-variant `Reference` to it.
 #[cfg(feature = "std")]
 #[macro_export]
@@ -379,6 +381,8 @@ macro_rules! static_rw_lock_reference {
         unsafe { Reference::from_ptr_rw_lock(core::ptr::addr_of!(WAS)) }
     }};
 }
+#[cfg(feature = "std")]
+pub use static_rw_lock_reference;
 ///Create a new static `Mutex` of something and return a `PtrMutex`-variant `Reference` to it.
 #[cfg(feature = "std")]
 #[macro_export]
@@ -395,6 +399,8 @@ macro_rules! static_mutex_reference {
 pub fn arc_rw_lock_reference<T>(was: T) -> Reference<T> {
     Reference::from_arc_rw_lock(Arc::new(RwLock::new(was)))
 }
+#[cfg(feature = "std")]
+pub use static_mutex_reference;
 ///Create a new `Arc<Mutex>` of something and return a `Reference` to it. Because of how `Arc` and
 ///`Rc`, its single-threaded counterpart, work, it won't be dropped until the last clone of the
 ///`Reference` is. This is reexported at the crate level.
