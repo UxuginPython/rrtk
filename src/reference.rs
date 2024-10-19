@@ -335,7 +335,6 @@ impl<T: ?Sized> Clone for Reference<T> {
 ///same macro exported in two different places. These paths point to the same code in RRTK. Rust's
 ///scoping rules for macros are a bit odd, but you should be able to use `rrtk::to_dyn` and
 ///`rrtk::reference::to_dyn` interchangably.
-//TODO: add a note about cargo doc making the macros look like there are two
 #[macro_export]
 macro_rules! to_dyn {
     ($trait_:path, $was:expr) => {{
