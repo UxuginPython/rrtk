@@ -34,7 +34,11 @@ mod state;
 pub mod streams;
 pub use datum::*;
 pub use motion_profile::*;
+#[cfg(feature = "alloc")]
+pub use reference::rc_ref_cell_reference;
 pub use reference::Reference;
+#[cfg(feature = "std")]
+pub use reference::{arc_mutex_reference, arc_rw_lock_reference};
 pub use state::*;
 ///RRTK follows the enum style of error handling. This is the error type returned from nearly all
 ///RRTK types, but you can add your own custom error type using `Other(O)`. It is strongly
@@ -686,52 +690,4 @@ pub trait Device<E: Copy + Debug>: Updatable<E> {
     ///Call only the `update` methods of owned terminals and do not update anything else with the
     ///device.
     fn update_terminals(&mut self) -> NothingOrError<E>;
-}
-///Create a new `Rc<RefCell>` of something and return a `Reference` to it. Because of how `Rc`
-///works, it won't be dropped until the last clone of the `Reference` is.
-#[cfg(feature = "alloc")]
-pub fn rc_ref_cell_reference<T>(was: T) -> Reference<T> {
-    Reference::from_rc_ref_cell(Rc::new(RefCell::new(was)))
-}
-///Create a static of something and return a `Ptr`-variant `Reference` to it. This contains a raw
-///mutable pointer. It will never use-after-free because its target is static, but be careful if
-///you're doing multiprocessing where multiple things could mutate it at once.
-#[macro_export]
-macro_rules! static_reference {
-    ($type_: ty, $was: expr) => {{
-        static mut WAS: $type_ = $was;
-        unsafe { Reference::from_ptr(core::ptr::addr_of_mut!(WAS)) }
-    }};
-}
-///Create a static `RwLock` of something and return a `PtrRwLock`-variant `Reference` to it.
-#[cfg(feature = "std")]
-#[macro_export]
-macro_rules! static_rw_lock_reference {
-    ($type_: ty, $was: expr) => {{
-        static WAS: std::sync::RwLock<$type_> = std::sync::RwLock::new($was);
-        unsafe { Reference::from_ptr_rw_lock(core::ptr::addr_of!(WAS)) }
-    }};
-}
-///Create a new static `Mutex` of something and return a `PtrMutex`-variant `Reference` to it.
-#[cfg(feature = "std")]
-#[macro_export]
-macro_rules! static_mutex_reference {
-    ($type_: ty, $was: expr) => {{
-        static WAS: std::sync::Mutex<$type_> = std::sync::Mutex::new($was);
-        unsafe { Reference::from_ptr_mutex(core::ptr::addr_of!(WAS)) }
-    }};
-}
-///Create a new `Arc<RwLock>` of something and return a `Reference` to it. Because of how `Arc` and
-///`Rc`, its single-threaded counterpart, work, it won't be dropped until the last clone of the
-///`Reference` is.
-#[cfg(feature = "std")]
-pub fn arc_rw_lock_reference<T>(was: T) -> Reference<T> {
-    Reference::from_arc_rw_lock(Arc::new(RwLock::new(was)))
-}
-///Create a new `Arc<Mutex>` of something and return a `Reference` to it. Because of how `Arc` and
-///`Rc`, its single-threaded counterpart, work, it won't be dropped until the last clone of the
-///`Reference` is.
-#[cfg(feature = "std")]
-pub fn arc_mutex_reference<T>(was: T) -> Reference<T> {
-    Reference::from_arc_mutex(Arc::new(Mutex::new(was)))
 }
