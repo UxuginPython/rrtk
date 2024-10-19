@@ -338,21 +338,21 @@ impl<T: ?Sized> Clone for Reference<T> {
 //TODO: add a note about cargo doc making the macros look like there are two
 #[macro_export]
 macro_rules! to_dyn {
-    ($trait:path, $was:expr) => {{
+    ($trait_:path, $was:expr) => {{
         #[cfg(feature = "alloc")]
         extern crate alloc;
         #[allow(unreachable_patterns)]
         match $was.into_unsafe() {
             reference::ReferenceUnsafe::Ptr(ptr) => unsafe {
-                Reference::from_ptr(ptr as *mut dyn $trait)
+                Reference::from_ptr(ptr as *mut dyn $trait_)
             },
             #[cfg(feature = "alloc")]
             reference::ReferenceUnsafe::RcRefCell(rc_ref_cell) => Reference::from_rc_ref_cell(
-                rc_ref_cell as alloc::rc::Rc<core::cell::RefCell<dyn $trait>>,
+                rc_ref_cell as alloc::rc::Rc<core::cell::RefCell<dyn $trait_>>,
             ),
             #[cfg(feature = "std")]
             reference::ReferenceUnsafe::PtrRwLock(ptr_rw_lock) => unsafe {
-                Reference::from_ptr_rw_lock(ptr_rw_lock as *const std::sync::RwLock<dyn $trait>)
+                Reference::from_ptr_rw_lock(ptr_rw_lock as *const std::sync::RwLock<dyn $trait_>)
             },
             _ => unimplemented!(),
         }
