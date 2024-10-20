@@ -170,3 +170,15 @@ Add moving average stream.
 - Add `ArcRwLock`, `PtrMutex`, and `ArcMutex` `Reference` variants.
 - Standardize snake_case of `ref_cell` and `rw_lock`.
 - Standardize that the outermost container comes first in variable and function names: a `*const RwLock` is `ptr_rw_lock`, not `rw_lock_ptr`.
+### 0.5.0
+- Fix the potential for undefined behavior without an unsafe block by directly constructing `Reference` variants.
+  - Rename `Reference` to `ReferenceUnsafe`.
+    - Make `borrow` and `borrow_mut` methods of `ReferenceUnsafe` unsafe.
+  - Add a wrapper struct for `ReferenceUnsafe` under the name `Reference`.
+    - `Reference` (the wrapper struct) cannot be constructed with a raw pointer without an unsafe block or a macro that ensures that the pointer's target is static.
+    - `Reference` has all of the same methods as `ReferenceUnsafe` except that `borrow` and `borrow_mut` are safe.
+    - `Reference` has one additional method, `into_unsafe`, which returns its inner `ReferenceUnsafe`.
+- Rewrite `SumStream` and `ProductStream` to not require `alloc`.
+- Change macro scoping to allow both `rrtk::reference::to_dyn!` and `rrtk::to_dyn!` as valid paths, and similar scoping for other `Reference`-related macros. See the [documentation](https://docs.rs/rrtk/0.5.0) for more information.
+- Derive `Eq` for `Datum`.
+- Documentation improvements.
