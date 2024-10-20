@@ -177,7 +177,7 @@ Add moving average stream.
   - Add a wrapper struct for `ReferenceUnsafe` under the name `Reference`.
     - `Reference` (the wrapper struct) cannot be constructed with a raw pointer without an unsafe block or a macro that ensures that the pointer's target is static.
     - `Reference` has all of the same methods as `ReferenceUnsafe` except that `borrow` and `borrow_mut` are safe.
-    - `Reference` has one additional method, `into_unsafe`, which returns its inner `ReferenceUnsafe`.
+    - `Reference` has one additional method, `into_inner`, which returns its inner `ReferenceUnsafe`.
 - Rewrite `SumStream` and `ProductStream` to not require `alloc`.
 - Change macro scoping to allow both `rrtk::reference::to_dyn!` and `rrtk::to_dyn!` as valid paths, and similar scoping for other `Reference`-related macros. See the [documentation](https://docs.rs/rrtk/0.5.0) for more information.
 - Derive `Eq` for `Datum`.

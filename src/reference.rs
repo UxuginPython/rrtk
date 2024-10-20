@@ -245,6 +245,11 @@ impl<T: ?Sized> Clone for ReferenceUnsafe<T> {
         }
     }
 }
+impl<T: ?Sized> From<Reference<T>> for ReferenceUnsafe<T> {
+    fn from(was: Reference<T>) -> Self {
+        was.into_inner()
+    }
+}
 ///A container privately holding an enum with variants containing different kinds of references,
 ///the availability of some of which depends on crate features. `Reference` is borrowed like a `RefCell`.
 ///It is also reexported at the crate level.
@@ -295,7 +300,7 @@ impl<T: ?Sized> Reference<T> {
         Self(ReferenceUnsafe::from_arc_mutex(arc_mutex))
     }
     ///Get the inner `ReferenceUnsafe`.
-    pub fn into_unsafe(self) -> ReferenceUnsafe<T> {
+    pub fn into_inner(self) -> ReferenceUnsafe<T> {
         self.0
     }
     ///Immutably borrow the `Reference` like a `RefCell`.
@@ -341,7 +346,7 @@ macro_rules! to_dyn {
         #[cfg(feature = "alloc")]
         extern crate alloc;
         #[allow(unreachable_patterns)]
-        match $was.into_unsafe() {
+        match $was.into_inner() {
             reference::ReferenceUnsafe::Ptr(ptr) => unsafe {
                 Reference::from_ptr(ptr as *mut dyn $trait_)
             },
