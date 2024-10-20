@@ -2,7 +2,7 @@
 // Copyright 2024 UxuginPython
 use crate::*;
 ///A container for a time and something else, usually an `f32` or a `State`.
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct Datum<T> {
     ///Timestamp for the datum. This should probably be absolute.
     pub time: i64,
