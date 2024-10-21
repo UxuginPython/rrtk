@@ -97,6 +97,7 @@ pub struct Axle<'a, const N: usize, E: Copy + Debug> {
 impl<'a, const N: usize, E: Copy + Debug> Axle<'a, N, E> {
     ///Constructor for `Axle`.
     pub fn new() -> Self {
+        //FIXME: Although this does work, it is still technically undefined behavior.
         let mut inputs: [RefCell<Terminal<'a, E>>; N] =
             unsafe { core::mem::MaybeUninit::uninit().assume_init() };
         for i in &mut inputs {

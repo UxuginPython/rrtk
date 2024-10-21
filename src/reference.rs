@@ -1,4 +1,4 @@
-//!`Reference` is a container privately holding an enum with variants containing different kinds of
+//!`Reference` is a container holding an enum with variants containing different kinds of
 //!references, the availability of some of which depends on crate features. `Reference` is borrowed like
 //!a `RefCell`. This module contains it and its related types. `Reference` is also reexported at
 //!the crate level.
@@ -101,15 +101,15 @@ impl<T: ?Sized> DerefMut for BorrowMut<'_, T> {
 #[non_exhaustive]
 pub enum ReferenceUnsafe<T: ?Sized> {
     ///A raw mutable pointer. This is a useful variant if you are not multithreading and you want
-    ///to avoid dynamic allocation. Making the object static is strongly recommended.
+    ///to avoid dynamic allocation. Making the target static is recommended.
     Ptr(*mut T),
     ///An `Rc<RefCell<T>>`.
     #[cfg(feature = "alloc")]
     RcRefCell(Rc<RefCell<T>>),
-    ///A raw immutable pointer to an `RwLock<T>`.
+    ///A raw immutable pointer to an `RwLock<T>`. Making the `RwLock` itself static is recommended.
     #[cfg(feature = "std")]
     PtrRwLock(*const RwLock<T>),
-    ///A raw pointer to a `Mutex<T>`.
+    ///A raw pointer to a `Mutex<T>`. Making the `Mutex` itself static is recommended.
     #[cfg(feature = "std")]
     PtrMutex(*const Mutex<T>),
     ///An `Arc<RwLock<T>>`.
@@ -121,8 +121,8 @@ pub enum ReferenceUnsafe<T: ?Sized> {
 }
 impl<T: ?Sized> ReferenceUnsafe<T> {
     ///Create a `ReferenceUnsafe` from a raw mutable pointer. This is useful if you are not
-    ///multithreading and you want to avoid dynamic allocation. Making the object static is
-    ///strongly recommended.
+    ///multithreading and you want to avoid dynamic allocation. Making the target static is
+    ///recommended.
     pub const unsafe fn from_ptr(ptr: *mut T) -> Self {
         Self::Ptr(ptr)
     }
@@ -132,13 +132,13 @@ impl<T: ?Sized> ReferenceUnsafe<T> {
         Self::RcRefCell(rc_ref_cell)
     }
     ///Create a `ReferenceUnsafe` from a `*const RwLock<T>`. Making the `RwLock` itself static is
-    ///strongly recommended.
+    ///recommended.
     #[cfg(feature = "std")]
     pub const unsafe fn from_ptr_rw_lock(ptr_rw_lock: *const RwLock<T>) -> Self {
         Self::PtrRwLock(ptr_rw_lock)
     }
     ///Create a `ReferenceUnsafe` from a `*const Mutex<T>`. Making the `Mutex` itself static is
-    ///strongly recommended.
+    ///recommended.
     #[cfg(feature = "std")]
     pub const unsafe fn from_ptr_mutex(ptr_mutex: *const Mutex<T>) -> Self {
         Self::PtrMutex(ptr_mutex)
@@ -257,28 +257,28 @@ impl<T: ?Sized> From<Reference<T>> for ReferenceUnsafe<T> {
 pub struct Reference<T: ?Sized>(ReferenceUnsafe<T>);
 impl<T: ?Sized> Reference<T> {
     ///Create a `Reference` from a raw mutable pointer. This is useful if you are not
-    ///multithreading and you want to avoid dynamic allocation. Making the object static is
-    ///strongly recommended. The `static_reference!` macro is a convenient way of making the object
-    ///static and getting a `Reference` of the raw pointer variant. Because the object is
+    ///multithreading and you want to avoid dynamic allocation. Making the target static is
+    ///recommended. The `static_reference!` macro is a convenient way of making an object
+    ///static and getting a `Reference` of the raw pointer variant to it. Because the object is
     ///guaranteed to be static, it can be called without an unsafe block.
     pub const unsafe fn from_ptr(ptr: *mut T) -> Self {
         Self(ReferenceUnsafe::from_ptr(ptr))
     }
     ///Create a `Reference` from an `Rc<RefCell<T>>`. The `rc_ref_cell_reference` function is a
-    ///convenient way of putting an object in an `Rc<RefCell>` and getting a `Reference` of this
+    ///convenient way of putting an object in an `Rc<RefCell<T>>` and getting a `Reference` of this
     ///variant to it.
     #[cfg(feature = "alloc")]
     pub const fn from_rc_ref_cell(rc_ref_cell: Rc<RefCell<T>>) -> Self {
         Self(ReferenceUnsafe::from_rc_ref_cell(rc_ref_cell))
     }
     ///Create a `Reference` from a `*const RwLock<T>`. Making the `RwLock` itself static is
-    ///strongly recommended. The `static_rw_lock_reference!` macro is a convenient way of putting
+    ///recommended. The `static_rw_lock_reference!` macro is a convenient way of putting
     ///an object in a static `RwLock` and getting a `Reference` of this variant to it.
     #[cfg(feature = "std")]
     pub const unsafe fn from_ptr_rw_lock(ptr_rw_lock: *const RwLock<T>) -> Self {
         Self(ReferenceUnsafe::from_ptr_rw_lock(ptr_rw_lock))
     }
-    ///Create a `Reference` from a `*const Mutex<T>`. Making the `Mutex` itself static is strongly
+    ///Create a `Reference` from a `*const Mutex<T>`. Making the `Mutex` itself static is
     ///recommended. The `static_mutex_reference!` macro is a convenient way of putting an object in
     ///a static `Mutex` and getting a `Reference` of this variant to it.
     #[cfg(feature = "std")]
