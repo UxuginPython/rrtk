@@ -16,7 +16,7 @@ use super::*;
 pub struct Time(pub i64);
 impl Time {
     ///The constructor for `Time`.
-    pub fn new(value: i64) -> Self {
+    pub const fn new(value: i64) -> Self {
         Self(value)
     }
 }
@@ -47,7 +47,7 @@ impl Mul for Time {
     fn mul(self, rhs: Self) -> Quantity {
         Quantity::new(
             (self.0 as f32 / 1_000_000_000.0) * (rhs.0 as f32 / 1_000_000_000.0),
-            Unit::new(0, 2),
+            SECOND_SQUARED,
         )
     }
 }
@@ -56,7 +56,7 @@ impl Div for Time {
     fn div(self, rhs: Self) -> Quantity {
         Quantity::new(
             (self.0 as f32 / 1_000_000_000.0) / (rhs.0 as f32 / 1_000_000_000.0),
-            Unit::new(0, 0),
+            DIMENSIONLESS,
         )
     }
 }
@@ -72,7 +72,7 @@ pub struct Unit {
 }
 impl Unit {
     ///Constructor for `Unit`.
-    pub fn new(millimeter_exp: i8, second_exp: i8) -> Self {
+    pub const fn new(millimeter_exp: i8, second_exp: i8) -> Self {
         Self {
             millimeter_exp: millimeter_exp,
             second_exp: second_exp,
@@ -132,6 +132,19 @@ impl Div for Unit {
         }
     }
 }
+///The `Unit` for a dimensionless quantity.
+pub const DIMENSIONLESS: Unit = Unit::new(0, 0);
+///The `Unit` for a distance in millimeters.
+pub const MILLIMETER: Unit = Unit::new(1, 0);
+///The `Unit` for a velocity in millimeters per second.
+pub const MILLIMETER_PER_SECOND: Unit = Unit::new(1, -1);
+///The `Unit` for an acceleration in millimeters per second squared.
+pub const MILLIMETER_PER_SECOND_SQUARED: Unit = Unit::new(1, -2);
+///The `Unit` for a time in seconds.
+pub const SECOND: Unit = Unit::new(1, 0);
+///The `Unit` for a quantity with units of seconds squared. This is mostly useless but is used for
+///multiplication of `Time` objects.
+pub const SECOND_SQUARED: Unit = Unit::new(0, 2);
 ///A quantity with a unit.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Quantity {
@@ -142,7 +155,7 @@ pub struct Quantity {
 }
 impl Quantity {
     ///Constructor for `Quantity`.
-    pub fn new(value: f32, unit: Unit) -> Self {
+    pub const fn new(value: f32, unit: Unit) -> Self {
         Self {
             value: value,
             unit: unit,
