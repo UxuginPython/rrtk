@@ -34,13 +34,13 @@ impl Sub for Time {
 impl Mul for Time {
     type Output = Quantity;
     fn mul(self, rhs: Self) -> Quantity {
-        Quantity::new((self.0 * rhs.0) as f32, 0, 2)
+        Quantity::new((self.0 as f32 / 1_000_000_000.0) * (rhs.0 as f32 / 1_000_000_000.0), 0, 2)
     }
 }
 impl Div for Time {
     type Output = Quantity;
     fn div(self, rhs: Self) -> Quantity {
-        Quantity::new((self.0 / rhs.0) as f32, 0, 0)
+        Quantity::new((self.0 as f32 / 1_000_000_000.0) / (rhs.0 as f32 / 1_000_000_000.0), 0, 0)
     }
 }
 #[derive(Clone, Copy, Debug, PartialEq)]
