@@ -34,27 +34,77 @@ impl Sub for Time {
 impl Mul for Time {
     type Output = Quantity;
     fn mul(self, rhs: Self) -> Quantity {
-        Quantity::new((self.0 as f32 / 1_000_000_000.0) * (rhs.0 as f32 / 1_000_000_000.0), 0, 2)
+        Quantity::new(
+            (self.0 as f32 / 1_000_000_000.0) * (rhs.0 as f32 / 1_000_000_000.0),
+            Dimension::new(0, 2),
+        )
     }
 }
 impl Div for Time {
     type Output = Quantity;
     fn div(self, rhs: Self) -> Quantity {
-        Quantity::new((self.0 as f32 / 1_000_000_000.0) / (rhs.0 as f32 / 1_000_000_000.0), 0, 0)
+        Quantity::new(
+            (self.0 as f32 / 1_000_000_000.0) / (rhs.0 as f32 / 1_000_000_000.0),
+            Dimension::new(0, 0),
+        )
+    }
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Dimension {
+    pub millimeter_exp: i8,
+    pub second_exp: i8,
+}
+impl Dimension {
+    pub fn new(millimeter_exp: i8, second_exp: i8) -> Self {
+        Self {
+            millimeter_exp: millimeter_exp,
+            second_exp: second_exp,
+        }
+    }
+}
+//TODO: Document these really, really well. How they work is confusing.
+impl Add for Dimension {
+    type Output = Self;
+    fn add(self, rhs: Self) -> Self {
+        assert_eq!(self, rhs);
+        self
+    }
+}
+impl Sub for Dimension {
+    type Output = Self;
+    fn sub(self, rhs: Self) -> Self {
+        assert_eq!(self, rhs);
+        self
+    }
+}
+impl Mul for Dimension {
+    type Output = Self;
+    fn mul(self, rhs: Self) -> Self {
+        Self {
+            millimeter_exp: self.millimeter_exp + rhs.millimeter_exp,
+            second_exp: self.second_exp + rhs.second_exp,
+        }
+    }
+}
+impl Div for Dimension {
+    type Output = Self;
+    fn div(self, rhs: Self) -> Self {
+        Self {
+            millimeter_exp: self.millimeter_exp - rhs.millimeter_exp,
+            second_exp: self.second_exp - rhs.second_exp,
+        }
     }
 }
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Quantity {
     pub value: f32,
-    pub millimeter_exp: i8,
-    pub second_exp: i8,
+    pub dimension: Dimension,
 }
 impl Quantity {
-    pub fn new(value: f32, millimeter_exp: i8, second_exp: i8) -> Self {
+    pub fn new(value: f32, dimension: Dimension) -> Self {
         Self {
             value: value,
-            millimeter_exp: millimeter_exp,
-            second_exp: second_exp,
+            dimension: dimension,
         }
     }
 }
@@ -66,24 +116,18 @@ impl From<Quantity> for f32 {
 impl Add for Quantity {
     type Output = Self;
     fn add(self, rhs: Self) -> Self {
-        assert_eq!(self.millimeter_exp, rhs.millimeter_exp);
-        assert_eq!(self.second_exp, rhs.second_exp);
         Self {
             value: self.value + rhs.value,
-            millimeter_exp: self.millimeter_exp,
-            second_exp: self.second_exp,
+            dimension: self.dimension + rhs.dimension,
         }
     }
 }
 impl Sub for Quantity {
     type Output = Self;
     fn sub(self, rhs: Self) -> Self {
-        assert_eq!(self.millimeter_exp, rhs.millimeter_exp);
-        assert_eq!(self.second_exp, rhs.second_exp);
         Self {
             value: self.value - rhs.value,
-            millimeter_exp: self.millimeter_exp,
-            second_exp: self.second_exp,
+            dimension: self.dimension - rhs.dimension,
         }
     }
 }
@@ -92,8 +136,7 @@ impl Mul for Quantity {
     fn mul(self, rhs: Self) -> Self {
         Self {
             value: self.value * rhs.value,
-            millimeter_exp: self.millimeter_exp + rhs.millimeter_exp,
-            second_exp: self.second_exp + rhs.second_exp,
+            dimension: self.dimension * rhs.dimension,
         }
     }
 }
@@ -102,8 +145,7 @@ impl Div for Quantity {
     fn div(self, rhs: Self) -> Self {
         Self {
             value: self.value / rhs.value,
-            millimeter_exp: self.millimeter_exp - rhs.millimeter_exp,
-            second_exp: self.second_exp - rhs.second_exp,
+            dimension: self.dimension / rhs.dimension,
         }
     }
 }
@@ -112,8 +154,7 @@ impl Mul<Time> for Quantity {
     fn mul(self, rhs: Time) -> Self {
         Self {
             value: self.value * rhs.0 as f32,
-            millimeter_exp: self.millimeter_exp,
-            second_exp: self.second_exp + 1,
+            dimension: Dimension::new(self.dimension.millimeter_exp, self.dimension.second_exp + 1),
         }
     }
 }
@@ -122,8 +163,7 @@ impl Div<Time> for Quantity {
     fn div(self, rhs: Time) -> Self {
         Self {
             value: self.value / rhs.0 as f32,
-            millimeter_exp: self.millimeter_exp,
-            second_exp: self.second_exp - 1,
+            dimension: Dimension::new(self.dimension.millimeter_exp, self.dimension.second_exp - 1),
         }
     }
 }
