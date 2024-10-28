@@ -8,7 +8,7 @@
 //!cause floats to lose precision. RRTK should handle the conversion mostly seamlessly for you, but
 //!keep it in mind when thinking about how time-related types should work. The reasoning behind
 //!this unorthodox system using both nanoseconds and seconds becomes more apparent when you know
-//!how floating point numbers work.
+//!how floating point numbers work. Everything in this module is reexported at the crate level.
 use super::*;
 ///A time in nanoseconds.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

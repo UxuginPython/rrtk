@@ -29,6 +29,7 @@ mod datum;
 #[cfg(feature = "devices")]
 pub mod devices;
 pub mod dimensions;
+pub use dimensions::*;
 mod motion_profile;
 pub mod reference;
 mod state;
