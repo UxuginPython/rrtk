@@ -1,10 +1,21 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // Copyright 2024 UxuginPython
+//!This module contains types related to RRTK's dimensional analysis system. RRTK uses nanoseconds
+//!for time because they typically work nicely with computer clocks and are still precise when
+//!stored in an integer, which is important because exponentially losing precision for time is bad,
+//!and float time does that. However, floats are used for other quantities, including quantities
+//!derived from time. These use seconds instead because numbers of the magnitude of nanoseconds
+//!cause floats to lose precision. RRTK should handle the conversion mostly seamlessly for you, but
+//!keep it in mind when thinking about how time-related types should work. The reasoning behind
+//!this unorthodox system using both nanoseconds and seconds becomes more apparent when you know
+//!how floating point numbers work.
 use super::*;
+///A time in nanoseconds.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[repr(transparent)]
 pub struct Time(pub i64);
 impl Time {
+    ///The constructor for `Time`.
     pub fn new(value: i64) -> Self {
         Self(value)
     }
@@ -49,12 +60,18 @@ impl Div for Time {
         )
     }
 }
+///A unit of a quantity, like meters per second. Units can be represented as multiplied powers of
+///the units that they're derived from, so meters per second squared, or m/s^2, can be m^1*s^-2.
+///This struct stores the exponents of each base unit.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Unit {
+    ///Unit exponent for millimeters.
     pub millimeter_exp: i8,
+    ///Unit exponent for seconds.
     pub second_exp: i8,
 }
 impl Unit {
+    ///Constructor for `Unit`.
     pub fn new(millimeter_exp: i8, second_exp: i8) -> Self {
         Self {
             millimeter_exp: millimeter_exp,
@@ -63,6 +80,11 @@ impl Unit {
     }
 }
 //TODO: Document these really, really well. How they work is confusing.
+///The `Add` implementation for `Unit` acts like you are trying to add quantities of the unit, not
+///like you are trying to actually add the exponents. This should be more useful most of the time,
+///but could be somewhat confusing. All this does is `assert_eq!` the `Unit` with the right-hand
+///side and then return it because units should not change when quantities of the same unit are
+///added.
 impl Add for Unit {
     type Output = Self;
     fn add(self, rhs: Self) -> Self {
@@ -70,6 +92,11 @@ impl Add for Unit {
         self
     }
 }
+///The `Sub` implementation for `Unit` acts like you are trying to subtract quantities of the unit,
+///not like you are trying to actually subtract the exponents. This should be more useful most of
+///the time, but it could be somewhat confusing. All this does is `assert_eq!` the `Unit` with the
+///right-hand side and then return it because units should not change when quantities of the same
+///unit are subtracted.
 impl Sub for Unit {
     type Output = Self;
     fn sub(self, rhs: Self) -> Self {
@@ -77,6 +104,11 @@ impl Sub for Unit {
         self
     }
 }
+///The `Mul` implementation for `Unit` acts like you are trying to multiply quantities of the unit,
+///not like you are trying to actually multiply the exponents. This should be more useful most of
+///the time, but it could be somewhat confusing. This adds the exponents of the left-hand and
+///right-hand sides, not multiplies them because that is what should happen when quantities are
+///multiplied, not a multiplication of their unit exponents.
 impl Mul for Unit {
     type Output = Self;
     fn mul(self, rhs: Self) -> Self {
@@ -86,6 +118,11 @@ impl Mul for Unit {
         }
     }
 }
+///The `Div` implementation for `Unit` acts like you are trying to divide quantities of the unit,
+///not like you are trying to actually divide the exponents. This should be more useful most of the
+///time, but it could be somewhat confusing. This subtracts the exponents of the right-hand side
+///from the left-hand side's exponents rather than dividing the exponents because that is what
+///should happen when quantities are divided, not a division of their unit exponents.
 impl Div for Unit {
     type Output = Self;
     fn div(self, rhs: Self) -> Self {
@@ -95,12 +132,16 @@ impl Div for Unit {
         }
     }
 }
+///A quantity with a unit.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Quantity {
+    ///The value.
     pub value: f32,
+    ///The unit.
     pub unit: Unit,
 }
 impl Quantity {
+    ///Constructor for `Quantity`.
     pub fn new(value: f32, unit: Unit) -> Self {
         Self {
             value: value,

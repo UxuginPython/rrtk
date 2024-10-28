@@ -4,7 +4,7 @@
 //!**A set of algorithms and other tools for robotics in Rust.**
 //!
 //!It is almost entirely `no_std` and most things work without `alloc`. It does not currently integrate with any API directly. This may be added in the future, probably through another crate.
-//#![warn(missing_docs)]
+#![warn(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
 #[cfg(feature = "std")]
 use alloc::sync::Arc;
