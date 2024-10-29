@@ -64,6 +64,22 @@ pub enum PositionDerivative {
     ///How fast how fast you're going's changing.
     Acceleration,
 }
+//TODO: figure out for to use the Error enum with this
+impl TryFrom<Unit> for PositionDerivative {
+    type Error = ();
+    fn try_from(was: Unit) -> Result<Self, ()> {
+        if was.millimeter_exp == 1 {
+            Ok(match was.second_exp {
+                0 => PositionDerivative::Position,
+                1 => PositionDerivative::Velocity,
+                2 => PositionDerivative::Acceleration,
+                _ => return Err(()),
+            })
+        } else {
+            Err(())
+        }
+    }
+}
 ///Coefficients for a PID controller.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct PIDKValues {

@@ -78,6 +78,28 @@ impl Unit {
             second_exp: second_exp,
         }
     }
+    ///`foo.const_eq(&bar)` works exactly like `foo == bar` except that it works in a `const`
+    ///context.
+    pub const fn const_eq(&self, rhs: &Self) -> bool {
+        self.millimeter_exp == rhs.millimeter_exp && self.second_exp == rhs.second_exp
+    }
+    ///`foo.const_assert_eq(&bar)` works exactly like `assert_eq!(foo, bar)` except that it works
+    ///in a `const` context.
+    pub const fn const_assert_eq(&self, rhs: &Self) -> () {
+        assert!(self.const_eq(rhs));
+    }
+}
+impl From<PositionDerivative> for Unit {
+    fn from(was: PositionDerivative) -> Self {
+        Self {
+            millimeter_exp: 1,
+            second_exp: match was {
+                PositionDerivative::Position => 0,
+                PositionDerivative::Velocity => 1,
+                PositionDerivative::Acceleration => 2,
+            },
+        }
+    }
 }
 //TODO: Document these really, really well. How they work is confusing.
 ///The `Add` implementation for `Unit` acts like you are trying to add quantities of the unit, not
