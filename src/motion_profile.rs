@@ -114,7 +114,7 @@ impl MotionProfile {
         } else if t < self.t3 {
             return Some(PositionDerivative::Acceleration);
         } else {
-            return Some(self.end_command.position_derivative);
+            return Some(self.end_command.into());
         }
     }
     ///Get the `MotionProfilePiece` at a given time.

@@ -145,13 +145,13 @@ impl<G: Getter<State, E> + ?Sized, E: Copy + Debug> Getter<f32, E> for CommandPI
         match &self.update_state {
             Err(error) => Err(*error),
             Ok(None) => Ok(None),
-            Ok(Some(update_0)) => match self.command.position_derivative {
+            Ok(Some(update_0)) => match self.command.into() {
                 PositionDerivative::Position => {
                     Ok(Some(Datum::new(update_0.time, update_0.output)))
                 }
                 _ => match &update_0.maybe_update_1 {
                     None => Ok(None),
-                    Some(update_1) => match self.command.position_derivative {
+                    Some(update_1) => match self.command.into() {
                         PositionDerivative::Position => unimplemented!(),
                         PositionDerivative::Velocity => {
                             Ok(Some(Datum::new(update_0.time, update_1.output_int)))
@@ -183,15 +183,10 @@ impl<G: Getter<State, E> + ?Sized, E: Copy + Debug> Updatable<E> for CommandPID<
                 return Err(error);
             }
         };
-        let error = self.command.value
-            - datum_state
-                .value
-                .get_value(self.command.position_derivative);
+        let error = f32::from(self.command) - datum_state.value.get_value(self.command.into());
         match &self.update_state {
             Ok(None) | Err(_) => {
-                let output = self
-                    .kvals
-                    .evaluate(self.command.position_derivative, error, 0.0, 0.0);
+                let output = self.kvals.evaluate(self.command.into(), error, 0.0, 0.0);
                 self.update_state = Ok(Some(Update0 {
                     time: datum_state.time,
                     output: output,
@@ -206,7 +201,7 @@ impl<G: Getter<State, E> + ?Sized, E: Copy + Debug> Updatable<E> for CommandPID<
                 match &update_0.maybe_update_1 {
                     None => {
                         let output = self.kvals.evaluate(
-                            self.command.position_derivative,
+                            self.command.into(),
                             error,
                             error_int_addend,
                             error_drv,
@@ -225,12 +220,9 @@ impl<G: Getter<State, E> + ?Sized, E: Copy + Debug> Updatable<E> for CommandPID<
                     }
                     Some(update_1) => {
                         let error_int = update_1.error_int + error_int_addend;
-                        let output = self.kvals.evaluate(
-                            self.command.position_derivative,
-                            error,
-                            error_int,
-                            error_drv,
-                        );
+                        let output =
+                            self.kvals
+                                .evaluate(self.command.into(), error, error_int, error_drv);
                         let output_int =
                             update_1.output_int + (update_0.output + output) / 2.0 * delta_time;
                         let output_int_int_addend =

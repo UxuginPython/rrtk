@@ -80,6 +80,15 @@ impl TryFrom<Unit> for PositionDerivative {
         }
     }
 }
+impl From<Command> for PositionDerivative {
+    fn from(was: Command) -> Self {
+        match was {
+            Command::Position(_) => Self::Position,
+            Command::Velocity(_) => Self::Velocity,
+            Command::Acceleration(_) => Self::Acceleration,
+        }
+    }
+}
 ///Coefficients for a PID controller.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct PIDKValues {
@@ -167,26 +176,29 @@ pub trait History<T, E: Copy + Debug>: Updatable<E> {
 }
 ///A command for a motor to perform: go to a position, run at a velocity, or accelerate at a rate.
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub struct Command {
-    ///Controls whether you go to a position, run at a velocity, or accelerate at a rate.
-    pub position_derivative: PositionDerivative,
-    ///The position, velocity, or acceleration rate.
-    pub value: f32,
+pub enum Command {
+    ///Where you want to be.
+    Position(f32),
+    ///How fast you want to be going.
+    Velocity(f32),
+    ///How fast you want how fast you're going to change.
+    Acceleration(f32),
 }
 impl Command {
     ///Constructor for `Command`.
     pub const fn new(position_derivative: PositionDerivative, value: f32) -> Self {
-        Self {
-            position_derivative: position_derivative,
-            value: value,
+        match position_derivative {
+            PositionDerivative::Position => Self::Position(value),
+            PositionDerivative::Velocity => Self::Velocity(value),
+            PositionDerivative::Acceleration => Self::Acceleration(value),
         }
     }
     ///Get the commanded constant position if there is one. If `position_derivative` is
     ///`PositionDerivative::Velocity` or `PositionDerivative::Acceleration`, this will return
     ///`None` as there is not a constant position.
     pub fn get_position(&self) -> Option<f32> {
-        match self.position_derivative {
-            PositionDerivative::Position => Some(self.value),
+        match self {
+            Self::Position(pos) => Some(*pos),
             _ => None,
         }
     }
@@ -195,18 +207,18 @@ impl Command {
     ///velocity. If `position_derivative` is `PositionDerivative::Position`, this will return 0 as
     ///velocity should be zero with a constant position.
     pub fn get_velocity(&self) -> Option<f32> {
-        match self.position_derivative {
-            PositionDerivative::Position => Some(0.0),
-            PositionDerivative::Velocity => Some(self.value),
-            PositionDerivative::Acceleration => None,
+        match self {
+            Self::Position(_) => Some(0.0),
+            Self::Velocity(vel) => Some(*vel),
+            Self::Acceleration(_) => None,
         }
     }
     ///Get the commanded constant acceleration if there is one. If `position_derivative` is not
     ///`PositionDerivative::Acceleration`, this will return `None` as there is not a constant
     ///acceleration.
     pub fn get_acceleration(&self) -> f32 {
-        match self.position_derivative {
-            PositionDerivative::Acceleration => self.value,
+        match self {
+            Self::Acceleration(acc) => *acc,
             _ => 0.0,
         }
     }
@@ -221,6 +233,26 @@ impl From<State> for Command {
             }
         } else {
             return Command::new(PositionDerivative::Acceleration, state.acceleration);
+        }
+    }
+}
+impl TryFrom<Quantity> for Command {
+    type Error = ();
+    fn try_from(was: Quantity) -> Result<Self, ()> {
+        match was.unit {
+            MILLIMETER => Ok(Self::Position(was.value)),
+            MILLIMETER_PER_SECOND => Ok(Self::Velocity(was.value)),
+            MILLIMETER_PER_SECOND_SQUARED => Ok(Self::Acceleration(was.value)),
+            _ => Err(()),
+        }
+    }
+}
+impl From<Command> for f32 {
+    fn from(was: Command) -> f32 {
+        match was {
+            Command::Position(pos) => pos,
+            Command::Velocity(vel) => vel,
+            Command::Acceleration(acc) => acc,
         }
     }
 }
