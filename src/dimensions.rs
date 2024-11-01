@@ -11,7 +11,7 @@
 //!how floating point numbers work. Everything in this module is reexported at the crate level.
 use super::*;
 ///A time in nanoseconds.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(transparent)]
 pub struct Time(pub i64);
 impl Time {
@@ -257,5 +257,11 @@ impl Div<Time> for Quantity {
             value: self.value / rhs.0 as f32,
             unit: Unit::new(self.unit.millimeter_exp, self.unit.second_exp - 1),
         }
+    }
+}
+impl PartialOrd for Quantity {
+    fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
+        assert_eq!(self.unit, other.unit);
+        self.value.partial_cmp(&other.value)
     }
 }
