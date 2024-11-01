@@ -30,6 +30,22 @@ impl From<Time> for i64 {
         was.0
     }
 }
+//TODO: figure out for to use the Error enum with this
+impl TryFrom<Quantity> for Time {
+    type Error = ();
+    fn try_from(was: Quantity) -> Result<Self, ()> {
+        if was.unit == Unit::new(0, 1) {
+            Ok(Self((was.value * 1_000_000_000.0) as i64))
+        } else {
+            Err(())
+        }
+    }
+}
+impl From<Time> for Quantity {
+    fn from(was: Time) -> Quantity {
+        Quantity::new(was.0 as f32 / 1_000_000_000.0, Unit::new(0, 1))
+    }
+}
 impl Add for Time {
     type Output = Self;
     fn add(self, rhs: Self) -> Self {
