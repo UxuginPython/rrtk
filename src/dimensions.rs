@@ -117,6 +117,14 @@ impl From<PositionDerivative> for Unit {
         }
     }
 }
+impl TryFrom<MotionProfilePiece> for Unit {
+    type Error = ();
+    fn try_from(was: MotionProfilePiece) -> Result<Self, ()> {
+        let pos_der: PositionDerivative = was.try_into()?;
+        let unit: Self = pos_der.into();
+        Ok(unit)
+    }
+}
 //TODO: Document these really, really well. How they work is confusing.
 ///The `Add` implementation for `Unit` acts like you are trying to add quantities of the unit, not
 ///like you are trying to actually add the exponents. This should be more useful most of the time,
@@ -197,6 +205,15 @@ impl Quantity {
         Self {
             value: value,
             unit: unit,
+        }
+    }
+}
+impl From<Command> for Quantity {
+    fn from(was: Command) -> Self {
+        match was {
+            Command::Position(pos) => Self::new(pos, MILLIMETER),
+            Command::Velocity(vel) => Self::new(vel, MILLIMETER_PER_SECOND),
+            Command::Acceleration(acc) => Self::new(acc, MILLIMETER_PER_SECOND_SQUARED),
         }
     }
 }

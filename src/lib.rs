@@ -89,6 +89,18 @@ impl From<Command> for PositionDerivative {
         }
     }
 }
+impl TryFrom<MotionProfilePiece> for PositionDerivative {
+    type Error = ();
+    fn try_from(was: MotionProfilePiece) -> Result<Self, ()> {
+        match was {
+            MotionProfilePiece::BeforeStart | MotionProfilePiece::Complete => Err(()),
+            MotionProfilePiece::InitialAcceleration | MotionProfilePiece::EndAcceleration => {
+                Ok(PositionDerivative::Acceleration)
+            }
+            MotionProfilePiece::ConstantVelocity => Ok(PositionDerivative::Velocity),
+        }
+    }
+}
 ///Coefficients for a PID controller.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct PIDKValues {
