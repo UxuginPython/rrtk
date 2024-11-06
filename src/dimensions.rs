@@ -11,7 +11,7 @@
 //!how floating point numbers work. Everything in this module is reexported at the crate level.
 use super::*;
 ///A time in nanoseconds.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(transparent)]
 pub struct Time(pub i64);
 impl Time {
@@ -76,6 +76,12 @@ impl Div for Time {
         )
     }
 }
+impl Neg for Time {
+    type Output = Self;
+    fn neg(self) -> Self {
+        Self(-self.0)
+    }
+}
 ///A unit of a quantity, like meters per second. Units can be represented as multiplied powers of
 ///the units that they're derived from, so meters per second squared, or m/s^2, can be m^1*s^-2.
 ///This struct stores the exponents of each base unit.
@@ -117,14 +123,14 @@ impl From<PositionDerivative> for Unit {
         }
     }
 }
-impl TryFrom<MotionProfilePiece> for Unit {
+/*impl TryFrom<MotionProfilePiece> for Unit {
     type Error = ();
     fn try_from(was: MotionProfilePiece) -> Result<Self, ()> {
         let pos_der: PositionDerivative = was.try_into()?;
         let unit: Self = pos_der.into();
         Ok(unit)
     }
-}
+}*/
 //TODO: Document these really, really well. How they work is confusing.
 ///The `Add` implementation for `Unit` acts like you are trying to add quantities of the unit, not
 ///like you are trying to actually add the exponents. This should be more useful most of the time,

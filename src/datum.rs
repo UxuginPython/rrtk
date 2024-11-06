@@ -5,13 +5,13 @@ use crate::*;
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct Datum<T> {
     ///Timestamp for the datum. This should probably be absolute.
-    pub time: i64,
+    pub time: Time,
     ///The thing with the timestamp.
     pub value: T,
 }
 impl<T> Datum<T> {
     ///Constructor for Datum type.
-    pub const fn new(time: i64, value: T) -> Datum<T> {
+    pub const fn new(time: Time, value: T) -> Datum<T> {
         Datum {
             time: time,
             value: value,

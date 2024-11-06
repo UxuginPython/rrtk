@@ -30,12 +30,12 @@ mod datum;
 pub mod devices;
 pub mod dimensions;
 pub use dimensions::*;
-mod motion_profile;
+//mod motion_profile;
 pub mod reference;
 mod state;
-pub mod streams;
+//pub mod streams;
 pub use datum::*;
-pub use motion_profile::*;
+//pub use motion_profile::*;
 #[cfg(feature = "alloc")]
 pub use reference::rc_ref_cell_reference;
 pub use reference::Reference;
@@ -89,7 +89,7 @@ impl From<Command> for PositionDerivative {
         }
     }
 }
-impl TryFrom<MotionProfilePiece> for PositionDerivative {
+/*impl TryFrom<MotionProfilePiece> for PositionDerivative {
     type Error = ();
     fn try_from(was: MotionProfilePiece) -> Result<Self, ()> {
         match was {
@@ -100,7 +100,7 @@ impl TryFrom<MotionProfilePiece> for PositionDerivative {
             MotionProfilePiece::ConstantVelocity => Ok(PositionDerivative::Velocity),
         }
     }
-}
+}*/
 ///Coefficients for a PID controller.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct PIDKValues {
@@ -173,7 +173,7 @@ impl PositionDerivativeDependentPIDKValues {
 ///timestamp.
 pub type Output<T, E> = Result<Option<Datum<T>>, Error<E>>;
 ///Returned from `TimeGetter` objects, which may return either a time or an error.
-pub type TimeOutput<E> = Result<i64, Error<E>>;
+pub type TimeOutput<E> = Result<Time, Error<E>>;
 ///Returned when something may return either nothing or an error.
 pub type NothingOrError<E> = Result<(), Error<E>>;
 ///An object for getting the absolute time.
@@ -184,7 +184,7 @@ pub trait TimeGetter<E: Copy + Debug>: Updatable<E> {
 ///An object that can return a value, like a `Getter`, for a given time.
 pub trait History<T, E: Copy + Debug>: Updatable<E> {
     ///Get a value at a time.
-    fn get(&self, time: i64) -> Option<Datum<T>>;
+    fn get(&self, time: Time) -> Option<Datum<T>>;
 }
 ///A command for a motor to perform: go to a position, run at a velocity, or accelerate at a rate.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -360,7 +360,7 @@ pub trait Settable<S: Clone, E: Copy + Debug>: Updatable<E> {
         data.last_request.clone()
     }
 }
-///Because `Stream`s always return a timestamp (as long as they don't return `Err(_)` or
+/*///Because `Stream`s always return a timestamp (as long as they don't return `Err(_)` or
 ///`Ok(None)`), we can use this to treat them like `TimeGetter`s.
 pub struct TimeGetterFromGetter<T: Clone, G: Getter<T, E> + ?Sized, E: Copy + Debug> {
     elevator: streams::converters::NoneToError<T, G, E>,
@@ -388,14 +388,14 @@ impl<T: Clone, G: Getter<T, E> + ?Sized, E: Copy + Debug> Updatable<E>
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
     }
-}
+}*/
 ///As histories return values at times, we can ask them to return values at the time of now or now
 ///with a delta. This makes that much easier and is the recommended way of following
 ///`MotionProfile`s.
 pub struct GetterFromHistory<'a, G, TG: TimeGetter<E>, E: Copy + Debug> {
     history: &'a mut dyn History<G, E>,
     time_getter: Reference<TG>,
-    time_delta: i64,
+    time_delta: Time,
 }
 impl<'a, G, TG: TimeGetter<E>, E: Copy + Debug> GetterFromHistory<'a, G, TG, E> {
     ///Constructor such that the time in the request to the history will be directly that returned
@@ -404,7 +404,7 @@ impl<'a, G, TG: TimeGetter<E>, E: Copy + Debug> GetterFromHistory<'a, G, TG, E> 
         Self {
             history: history,
             time_getter: time_getter,
-            time_delta: 0,
+            time_delta: Time::default(),
         }
     }
     ///Constructor such that the times requested from the `History` will begin at zero where zero
@@ -425,7 +425,7 @@ impl<'a, G, TG: TimeGetter<E>, E: Copy + Debug> GetterFromHistory<'a, G, TG, E> 
     pub fn new_custom_start(
         history: &'a mut impl History<G, E>,
         time_getter: Reference<TG>,
-        start: i64,
+        start: Time,
     ) -> Result<Self, Error<E>> {
         let time_delta = start - time_getter.borrow().get()?;
         Ok(Self {
@@ -438,7 +438,7 @@ impl<'a, G, TG: TimeGetter<E>, E: Copy + Debug> GetterFromHistory<'a, G, TG, E> 
     pub fn new_custom_delta(
         history: &'a mut impl History<G, E>,
         time_getter: Reference<TG>,
-        time_delta: i64,
+        time_delta: Time,
     ) -> Self {
         Self {
             history: history,
@@ -447,12 +447,12 @@ impl<'a, G, TG: TimeGetter<E>, E: Copy + Debug> GetterFromHistory<'a, G, TG, E> 
         }
     }
     ///Set the time delta.
-    pub fn set_delta(&mut self, time_delta: i64) {
+    pub fn set_delta(&mut self, time_delta: Time) {
         self.time_delta = time_delta;
     }
     ///Define now as a given time in the history. Mostly used when construction and use are far
     ///apart in time.
-    pub fn set_time(&mut self, time: i64) -> NothingOrError<E> {
+    pub fn set_time(&mut self, time: Time) -> NothingOrError<E> {
         let time_delta = time - self.time_getter.borrow().get()?;
         self.time_delta = time_delta;
         Ok(())
@@ -540,12 +540,12 @@ impl<E: Copy + Debug> Updatable<E> for NoneGetter {
         Ok(())
     }
 }
-impl<E: Copy + Debug> TimeGetter<E> for i64 {
+impl<E: Copy + Debug> TimeGetter<E> for Time {
     fn get(&self) -> TimeOutput<E> {
         Ok(*self)
     }
 }
-impl<E: Copy + Debug> Updatable<E> for i64 {
+impl<E: Copy + Debug> Updatable<E> for Time {
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
     }
