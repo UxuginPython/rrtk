@@ -213,17 +213,17 @@ mod acceleration_to_state {
         }
     }
 }
-/*pub use velocity_to_state::VelocityToState;
+pub use velocity_to_state::VelocityToState;
 mod velocity_to_state {
     use super::*;
     struct Update0 {
-        last_update_time: i64,
-        vel: f32,
+        last_update_time: Time,
+        vel: Quantity,
         update_1: Option<Update1>,
     }
     struct Update1 {
-        acc: f32,
-        pos: f32,
+        acc: Quantity,
+        pos: Quantity,
     }
     ///A stream that integrates and derivates a velocity getter to construct a full state. Mostly
     ///useful for encoders.
@@ -248,7 +248,11 @@ mod velocity_to_state {
                 Some(update_0) => match &update_0.update_1 {
                     Some(update_1) => Ok(Some(Datum::new(
                         update_0.last_update_time,
-                        State::new(update_1.pos, update_0.vel, update_1.acc),
+                        State::new(
+                            update_1.pos.into(),
+                            update_0.vel.into(),
+                            update_1.acc.into(),
+                        ),
                     ))),
                     None => Ok(None),
                 },
@@ -262,14 +266,15 @@ mod velocity_to_state {
                 Ok(gotten) => match gotten {
                     Some(new_vel_datum) => {
                         let new_time = new_vel_datum.time;
-                        let new_vel = new_vel_datum.value;
+                        let new_vel = Quantity::new(new_vel_datum.value, MILLIMETER_PER_SECOND);
                         match &self.update {
                             Some(update_0) => {
                                 let old_time = update_0.last_update_time;
-                                let delta_time = (new_time - old_time) as f32;
+                                let delta_time = Quantity::from(new_time - old_time);
                                 let old_vel = update_0.vel;
                                 let new_acc = (new_vel - old_vel) / delta_time;
-                                let pos_addend = (old_vel + new_vel) / 2.0 * delta_time;
+                                let pos_addend =
+                                    (old_vel + new_vel) / Quantity::dimensionless(2.0) * delta_time;
                                 match &update_0.update_1 {
                                     Some(update_1) => {
                                         self.update = Some(Update0 {
@@ -313,7 +318,7 @@ mod velocity_to_state {
         }
     }
 }
-pub use position_to_state::PositionToState;
+/*pub use position_to_state::PositionToState;
 mod position_to_state {
     use super::*;
     struct Update0 {
