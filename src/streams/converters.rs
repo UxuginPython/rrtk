@@ -318,17 +318,17 @@ mod velocity_to_state {
         }
     }
 }
-/*pub use position_to_state::PositionToState;
+pub use position_to_state::PositionToState;
 mod position_to_state {
     use super::*;
     struct Update0 {
-        last_update_time: i64,
-        pos: f32,
+        last_update_time: Time,
+        pos: Quantity,
         update_1: Option<Update1>,
     }
     struct Update1 {
-        vel: f32,
-        update_2: Option<f32>, //acceleration
+        vel: Quantity,
+        update_2: Option<Quantity>, //acceleration
     }
     ///A stream that derivates a position getter to construct a full state. Mostly useful for encoders.
     pub struct PositionToState<G: Getter<f32, E> + ?Sized, E: Copy + Debug> {
@@ -353,7 +353,7 @@ mod position_to_state {
                     Some(update_1) => match update_1.update_2 {
                         Some(acc) => Ok(Some(Datum::new(
                             update_0.last_update_time,
-                            State::new(update_0.pos, update_1.vel, acc),
+                            State::new(update_0.pos.into(), update_1.vel.into(), acc.into()),
                         ))),
                         None => Ok(None),
                     },
@@ -369,11 +369,11 @@ mod position_to_state {
                 Ok(gotten) => match gotten {
                     Some(new_pos_datum) => {
                         let new_time = new_pos_datum.time;
-                        let new_pos = new_pos_datum.value;
+                        let new_pos = Quantity::new(new_pos_datum.value, MILLIMETER);
                         match &self.update {
                             Some(update_0) => {
                                 let old_time = update_0.last_update_time;
-                                let delta_time = (new_time - old_time) as f32;
+                                let delta_time = Quantity::from(new_time - old_time);
                                 let old_pos = update_0.pos;
                                 let new_vel = (new_pos - old_pos) / delta_time;
                                 match &update_0.update_1 {
@@ -420,4 +420,4 @@ mod position_to_state {
             Ok(())
         }
     }
-}*/
+}
