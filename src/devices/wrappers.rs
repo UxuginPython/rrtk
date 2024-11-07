@@ -80,15 +80,15 @@ impl<T: Getter<State, E>, E: Copy + Debug> Updatable<E> for GetterStateDeviceWra
         Ok(())
     }
 }
-/*///Connect a `Settable<f32, E>` motor to the device system through a `CommandPID`. See
+///Connect a `Settable<f32, E>` motor to the device system through a `CommandPID`. See
 ///`streams::control::CommandPID` documentation for more information about how this works.
 #[cfg(feature = "alloc")]
 pub struct PIDWrapper<'a, T: Settable<f32, E>, E: Copy + Debug + 'static> {
     terminal: RefCell<Terminal<'a, E>>,
-    time: Reference<i64>,
-    state: Reference<ConstantGetter<State, i64, E>>,
-    command: Reference<ConstantGetter<Command, i64, E>>,
-    pid: Reference<streams::control::CommandPID<ConstantGetter<State, i64, E>, E>>,
+    time: Reference<Time>,
+    state: Reference<ConstantGetter<State, Time, E>>,
+    command: Reference<ConstantGetter<Command, Time, E>>,
+    pid: Reference<streams::control::CommandPID<ConstantGetter<State, Time, E>, E>>,
     inner: T,
 }
 #[cfg(feature = "alloc")]
@@ -96,7 +96,7 @@ impl<'a, T: Settable<f32, E>, E: Copy + Debug + 'static> PIDWrapper<'a, T, E> {
     ///Constructor for `PIDWrapper`.
     pub fn new(
         mut inner: T,
-        initial_time: i64,
+        initial_time: Time,
         initial_state: State,
         initial_command: Command,
         kvalues: PositionDerivativeDependentPIDKValues,
@@ -163,4 +163,4 @@ impl<T: Settable<f32, E>, E: Copy + Debug + 'static> Updatable<E> for PIDWrapper
         self.inner.update()?;
         Ok(())
     }
-}*/
+}
