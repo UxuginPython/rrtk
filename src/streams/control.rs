@@ -78,9 +78,9 @@ impl<G: Getter<f32, E> + ?Sized, E: Copy + Debug> Updatable<E> for PIDController
         Ok(())
     }
 }
-/*#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 struct Update0 {
-    pub time: i64,
+    pub time: Time,
     pub output: f32,
     pub error: f32,
     pub maybe_update_1: Option<Update1>,
@@ -183,7 +183,8 @@ impl<G: Getter<State, E> + ?Sized, E: Copy + Debug> Updatable<E> for CommandPID<
                 return Err(error);
             }
         };
-        let error = f32::from(self.command) - datum_state.value.get_value(self.command.into());
+        let error =
+            f32::from(self.command) - f32::from(datum_state.value.get_value(self.command.into()));
         match &self.update_state {
             Ok(None) | Err(_) => {
                 let output = self.kvals.evaluate(self.command.into(), error, 0.0, 0.0);
@@ -195,7 +196,7 @@ impl<G: Getter<State, E> + ?Sized, E: Copy + Debug> Updatable<E> for CommandPID<
                 }));
             }
             Ok(Some(update_0)) => {
-                let delta_time = (datum_state.time - update_0.time) as f32;
+                let delta_time = f32::from(Quantity::from(datum_state.time - update_0.time));
                 let error_drv = (error - update_0.error) / delta_time;
                 let error_int_addend = (update_0.error + error) / 2.0 * delta_time;
                 match &update_0.maybe_update_1 {
@@ -262,7 +263,7 @@ impl<G: Getter<State, E> + ?Sized, E: Copy + Debug> Updatable<E> for CommandPID<
         Ok(())
     }
 }
-///An Exponentially Weighted Moving Average stream for use with the stream system. See <https://www.itl.nist.gov/div898/handbook/pmc/section3/pmc324.htm> for more information.
+/*///An Exponentially Weighted Moving Average stream for use with the stream system. See <https://www.itl.nist.gov/div898/handbook/pmc/section3/pmc324.htm> for more information.
 pub struct EWMAStream<G: Getter<f32, E> + ?Sized, E: Copy + Debug> {
     input: Reference<G>,
     //As data may not come in at regular intervals as is assumed by a standard EWMA, this value
