@@ -213,6 +213,26 @@ impl Quantity {
             unit: unit,
         }
     }
+    ///Constructor for dimensionless `Quantity` objects that does not require a dimension to be
+    ///provided.
+    pub const fn dimensionless(value: f32) -> Self {
+        Self::new(value, DIMENSIONLESS)
+    }
+    ///Take the absolute value of the quantity.
+    #[inline]
+    pub fn abs(self) -> Self {
+        Self::new(
+            #[cfg(feature = "std")]
+            self.value.abs(),
+            #[cfg(not(feature = "std"))]
+            if self.value >= 0.0 {
+                self.value
+            } else {
+                -self.value
+            },
+            self.unit,
+        )
+    }
 }
 impl From<Command> for Quantity {
     fn from(was: Command) -> Self {
