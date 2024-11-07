@@ -208,9 +208,9 @@ impl Command {
     ///Get the commanded constant position if there is one. If `position_derivative` is
     ///`PositionDerivative::Velocity` or `PositionDerivative::Acceleration`, this will return
     ///`None` as there is not a constant position.
-    pub fn get_position(&self) -> Option<f32> {
+    pub fn get_position(&self) -> Option<Quantity> {
         match self {
-            Self::Position(pos) => Some(*pos),
+            Self::Position(pos) => Some(Quantity::new(*pos, MILLIMETER)),
             _ => None,
         }
     }
@@ -218,21 +218,24 @@ impl Command {
     ///`PositionDerivative::Acceleration`, this will return `None` as there is not a constant
     ///velocity. If `position_derivative` is `PositionDerivative::Position`, this will return 0 as
     ///velocity should be zero with a constant position.
-    pub fn get_velocity(&self) -> Option<f32> {
+    pub fn get_velocity(&self) -> Option<Quantity> {
         match self {
-            Self::Position(_) => Some(0.0),
-            Self::Velocity(vel) => Some(*vel),
+            Self::Position(_) => Some(Quantity::new(0.0, MILLIMETER_PER_SECOND)),
+            Self::Velocity(vel) => Some(Quantity::new(*vel, MILLIMETER_PER_SECOND)),
             Self::Acceleration(_) => None,
         }
     }
     ///Get the commanded constant acceleration if there is one. If `position_derivative` is not
     ///`PositionDerivative::Acceleration`, this will return `None` as there is not a constant
     ///acceleration.
-    pub fn get_acceleration(&self) -> f32 {
-        match self {
-            Self::Acceleration(acc) => *acc,
-            _ => 0.0,
-        }
+    pub fn get_acceleration(&self) -> Quantity {
+        Quantity::new(
+            match self {
+                Self::Acceleration(acc) => *acc,
+                _ => 0.0,
+            },
+            MILLIMETER_PER_SECOND_SQUARED,
+        )
     }
 }
 impl From<State> for Command {
