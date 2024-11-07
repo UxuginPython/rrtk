@@ -5,7 +5,7 @@
 //!Connected terminals hold references to eachother's `RefCell`s. This module holds builtin
 //!devices.
 use crate::*;
-//pub mod wrappers;
+pub mod wrappers;
 ///A device such that positive for one terminal is negative for the other.
 pub struct Invert<'a, E: Copy + Debug> {
     term1: RefCell<Terminal<'a, E>>,
