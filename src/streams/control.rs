@@ -263,14 +263,14 @@ impl<G: Getter<State, E> + ?Sized, E: Copy + Debug> Updatable<E> for CommandPID<
         Ok(())
     }
 }
-/*///An Exponentially Weighted Moving Average stream for use with the stream system. See <https://www.itl.nist.gov/div898/handbook/pmc/section3/pmc324.htm> for more information.
+///An Exponentially Weighted Moving Average stream for use with the stream system. See <https://www.itl.nist.gov/div898/handbook/pmc/section3/pmc324.htm> for more information.
 pub struct EWMAStream<G: Getter<f32, E> + ?Sized, E: Copy + Debug> {
     input: Reference<G>,
     //As data may not come in at regular intervals as is assumed by a standard EWMA, this value
     //will be multiplied by delta time before being used.
     smoothing_constant: f32,
     value: Output<f32, E>,
-    update_time: Option<i64>,
+    update_time: Option<Time>,
 }
 impl<G: Getter<f32, E> + ?Sized, E: Copy + Debug> EWMAStream<G, E> {
     ///Constructor for `EWMAStream`.
@@ -321,7 +321,7 @@ impl<G: Getter<f32, E> + ?Sized, E: Copy + Debug> Updatable<E> for EWMAStream<G,
         let prev_time = self
             .update_time
             .expect("update_time must be Some if value is");
-        let delta_time = (output.time - prev_time) as f32;
+        let delta_time = f32::from(Quantity::from(output.time - prev_time));
         let value = if delta_time * self.smoothing_constant < 1.0 {
             let value = prev_value.value;
             let value = value - (delta_time * self.smoothing_constant) * value;
@@ -335,7 +335,7 @@ impl<G: Getter<f32, E> + ?Sized, E: Copy + Debug> Updatable<E> for EWMAStream<G,
         Ok(())
     }
 }
-///A moving average stream for use with the stream system.
+/*///A moving average stream for use with the stream system.
 #[cfg(feature = "alloc")]
 pub struct MovingAverageStream<G: Getter<f32, E> + ?Sized, E: Copy + Debug> {
     input: Reference<G>,
