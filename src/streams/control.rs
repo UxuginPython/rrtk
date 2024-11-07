@@ -58,7 +58,7 @@ impl<G: Getter<f32, E> + ?Sized, E: Copy + Debug> Updatable<E> for PIDController
         let error = self.setpoint - process.value;
         let [int_error_addend, drv_error] = match &self.prev_error {
             Some(prev_error) => {
-                let delta_time = (process.time - prev_error.time) as f32;
+                let delta_time = f32::from(Quantity::from(process.time - prev_error.time));
                 let drv_error = (error - prev_error.value) / delta_time;
                 //Trapezoidal integral approximation is more precise than rectangular.
                 let int_error_addend = delta_time * (prev_error.value + error) / 2.0;
@@ -78,7 +78,7 @@ impl<G: Getter<f32, E> + ?Sized, E: Copy + Debug> Updatable<E> for PIDController
         Ok(())
     }
 }
-#[derive(Clone, Debug, PartialEq)]
+/*#[derive(Clone, Debug, PartialEq)]
 struct Update0 {
     pub time: i64,
     pub output: f32,
@@ -411,4 +411,4 @@ impl<G: Getter<f32, E> + ?Sized, E: Copy + Debug> Updatable<E> for MovingAverage
         self.value = Ok(Some(Datum::new(output.time, value)));
         Ok(())
     }
-}
+}*/
