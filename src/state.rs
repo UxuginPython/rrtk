@@ -43,13 +43,28 @@ impl State {
         self.velocity = 0.0;
         self.position = position;
     }
+    ///Get the position as a `Quantity`.
+    #[inline]
+    pub const fn get_position(&self) -> Quantity {
+        Quantity::new(self.position, MILLIMETER)
+    }
+    ///Get the velocity as a `Quantity`.
+    #[inline]
+    pub const fn get_velocity(&self) -> Quantity {
+        Quantity::new(self.velocity, MILLIMETER_PER_SECOND)
+    }
+    ///Get the acceleration as a `Quantity`.
+    #[inline]
+    pub const fn get_acceleration(&self) -> Quantity {
+        Quantity::new(self.acceleration, MILLIMETER_PER_SECOND_SQUARED)
+    }
     ///State contains a position, velocity, and acceleration. This gets the respective field of a
     ///given position derivative.
-    pub fn get_value(&self, position_derivative: PositionDerivative) -> f32 {
+    pub fn get_value(&self, position_derivative: PositionDerivative) -> Quantity {
         match position_derivative {
-            PositionDerivative::Position => self.position,
-            PositionDerivative::Velocity => self.velocity,
-            PositionDerivative::Acceleration => self.acceleration,
+            PositionDerivative::Position => self.get_position(),
+            PositionDerivative::Velocity => self.get_velocity(),
+            PositionDerivative::Acceleration => self.get_acceleration(),
         }
     }
 }
