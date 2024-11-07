@@ -334,7 +334,8 @@ impl<G: Getter<f32, E> + ?Sized, E: Copy + Debug> Updatable<E> for DerivativeStr
             }
         }
         let prev_output = self.prev_output.as_ref().unwrap();
-        let value = (output.value - prev_output.value) / ((output.time - prev_output.time) as f32);
+        let value = (output.value - prev_output.value)
+            / f32::from(Quantity::from(output.time - prev_output.time));
         self.value = Ok(Some(Datum::new(output.time, value)));
         self.prev_output = Some(output);
         Ok(())
@@ -398,7 +399,9 @@ impl<G: Getter<f32, E> + ?Sized, E: Copy + Debug> Updatable<E> for IntegralStrea
             Err(_) => 0.0,
         };
         let value = prev_value
-            + ((output.time - prev_output.time) as f32) * (prev_output.value + output.value) / 2.0;
+            + f32::from(Quantity::from(output.time - prev_output.time))
+                * (prev_output.value + output.value)
+                / 2.0;
         self.value = Ok(Some(Datum::new(output.time, value)));
         self.prev_output = Some(output);
         return Ok(());

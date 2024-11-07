@@ -8,7 +8,7 @@ use crate::*;
 pub mod converters;
 //pub mod flow;
 //pub mod logic;
-//pub mod math;
+pub mod math;
 ///Returns the output of whichever input has the latest time.
 pub struct Latest<T, const C: usize, E: Copy + Debug> {
     inputs: [Reference<dyn Getter<T, E>>; C],
