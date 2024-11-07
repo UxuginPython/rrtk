@@ -1,16 +1,6 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // Copyright 2024 UxuginPython
-use crate::{Command, Datum, Debug, History, NothingOrError, PositionDerivative, State, Updatable};
-//abs method of f32 does not exist in no_std
-#[cfg(not(feature = "std"))]
-#[inline]
-fn my_abs_f32(num: f32) -> f32 {
-    if num >= 0.0 {
-        num
-    } else {
-        -num
-    }
-}
+use crate::*;
 ///Where you are in following a motion profile.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum MotionProfilePiece {
@@ -28,16 +18,16 @@ pub enum MotionProfilePiece {
 ///A motion profile for getting from one state to another.
 #[derive(Clone, Debug, PartialEq)]
 pub struct MotionProfile {
-    start_pos: f32,
-    start_vel: f32,
-    t1: i64,
-    t2: i64,
-    t3: i64,
-    max_acc: f32,
+    start_pos: Quantity,
+    start_vel: Quantity,
+    t1: Time,
+    t2: Time,
+    t3: Time,
+    max_acc: Quantity,
     end_command: Command,
 }
 impl<E: Copy + Debug> History<Command, E> for MotionProfile {
-    fn get(&self, time: i64) -> Option<Datum<Command>> {
+    fn get(&self, time: Time) -> Option<Datum<Command>> {
         let mode = match self.get_mode(time) {
             Some(value) => value,
             None => {
@@ -55,7 +45,12 @@ impl<E: Copy + Debug> History<Command, E> for MotionProfile {
                 .get_acceleration(time)
                 .expect("If mode is Acceleration, this should be Some."),
         };
-        Some(Datum::new(time, Command::new(mode, value)))
+        Some(Datum::new(
+            time,
+            Command::try_from(value).expect(
+                "This cannot return anything other than position, velocity, and acceleration.",
+            ),
+        ))
     }
 }
 impl<E: Copy + Debug> Updatable<E> for MotionProfile {
@@ -65,47 +60,56 @@ impl<E: Copy + Debug> Updatable<E> for MotionProfile {
 }
 impl MotionProfile {
     ///Constructor for `MotionProfile` using start and end states.
-    pub fn new(start_state: State, end_state: State, max_vel: f32, max_acc: f32) -> MotionProfile {
-        let sign = if end_state.position < start_state.position {
-            -1.0
-        } else {
-            1.0
-        };
-        #[cfg(not(feature = "std"))]
-        let max_vel = my_abs_f32(max_vel) * sign;
-        #[cfg(not(feature = "std"))]
-        let max_acc = my_abs_f32(max_acc) * sign;
-        #[cfg(feature = "std")]
+    pub fn new(
+        start_state: State,
+        end_state: State,
+        max_vel: Quantity,
+        max_acc: Quantity,
+    ) -> MotionProfile {
+        let sign = Quantity::new(
+            if end_state.position < start_state.position {
+                -1.0
+            } else {
+                1.0
+            },
+            DIMENSIONLESS,
+        );
         let max_vel = max_vel.abs() * sign;
-        #[cfg(feature = "std")]
         let max_acc = max_acc.abs() * sign;
-        let d_t1_vel = max_vel - start_state.velocity;
+        let d_t1_vel = max_vel - start_state.get_velocity();
         let t1 = d_t1_vel / max_acc;
-        assert!(t1 >= 0.0);
-        let d_t1_pos = (start_state.velocity + max_vel) / 2.0 * t1;
-        let d_t3_vel = end_state.velocity - max_vel;
+        assert!(f32::from(t1) >= 0.0);
+        let d_t1_pos = (start_state.get_velocity() + max_vel) / Quantity::dimensionless(2.0) * t1;
+        let d_t3_vel = end_state.get_velocity() - max_vel;
         let d_t3 = d_t3_vel / -max_acc;
-        assert!(d_t3 >= 0.0);
-        let d_t3_pos = (max_vel + end_state.velocity) / 2.0 * d_t3;
-        let d_t2_pos = (end_state.position - start_state.position) - (d_t1_pos + d_t3_pos);
+        assert!(f32::from(d_t3) >= 0.0);
+        let d_t3_pos = (max_vel + end_state.get_velocity()) / Quantity::dimensionless(2.0) * d_t3;
+        let d_t2_pos =
+            (end_state.get_position() - start_state.get_position()) - (d_t1_pos + d_t3_pos);
         let d_t2 = d_t2_pos / max_vel;
-        assert!(d_t2 >= 0.0);
+        assert!(f32::from(d_t2) >= 0.0);
         let t2 = t1 + d_t2;
         let t3 = t2 + d_t3;
         let end_command = Command::from(end_state);
         MotionProfile {
-            start_pos: start_state.position,
-            start_vel: start_state.velocity,
-            t1: t1 as i64,
-            t2: t2 as i64,
-            t3: t3 as i64,
+            start_pos: start_state.get_position(),
+            start_vel: start_state.get_velocity(),
+            t1: Time::try_from(t1).expect(
+                "t1 must always be in seconds in max_vel and max_acc have correct dimensions",
+            ),
+            t2: Time::try_from(t2).expect(
+                "t2 must always be in seconds in max_vel and max_acc have correct dimensions",
+            ),
+            t3: Time::try_from(t3).expect(
+                "t3 must always be in seconds in max_vel and max_acc have correct dimensions",
+            ),
             max_acc: max_acc,
             end_command: end_command,
         }
     }
     ///Get the intended `PositionDerivative` at a given time.
-    pub fn get_mode(&self, t: i64) -> Option<PositionDerivative> {
-        if t < 0 {
+    pub fn get_mode(&self, t: Time) -> Option<PositionDerivative> {
+        if t < Time::default() {
             return None;
         } else if t < self.t1 {
             return Some(PositionDerivative::Acceleration);
@@ -118,8 +122,8 @@ impl MotionProfile {
         }
     }
     ///Get the `MotionProfilePiece` at a given time.
-    pub fn get_piece(&self, t: i64) -> MotionProfilePiece {
-        if t < 0 {
+    pub fn get_piece(&self, t: Time) -> MotionProfilePiece {
+        if t < Time::default() {
             return MotionProfilePiece::BeforeStart;
         } else if t < self.t1 {
             return MotionProfilePiece::InitialAcceleration;
@@ -132,13 +136,13 @@ impl MotionProfile {
         }
     }
     ///Get the intended acceleration at a given time.
-    pub fn get_acceleration(&self, t: i64) -> Option<f32> {
-        if t < 0 {
+    pub fn get_acceleration(&self, t: Time) -> Option<Quantity> {
+        if t < Time::default() {
             return None;
         } else if t < self.t1 {
             return Some(self.max_acc);
         } else if t < self.t2 {
-            return Some(0.0);
+            return Some(Quantity::new(0.0, MILLIMETER_PER_SECOND_SQUARED));
         } else if t < self.t3 {
             return Some(-self.max_acc);
         } else {
@@ -146,37 +150,43 @@ impl MotionProfile {
         }
     }
     ///Get the intended velocity at a given time.
-    pub fn get_velocity(&self, t: i64) -> Option<f32> {
-        if t < 0 {
+    pub fn get_velocity(&self, t: Time) -> Option<Quantity> {
+        if t < Time::default() {
             return None;
         } else if t < self.t1 {
-            return Some(self.max_acc * (t as f32) + self.start_vel);
+            return Some(self.max_acc * Quantity::from(t) + self.start_vel);
         } else if t < self.t2 {
-            return Some(self.max_acc * (self.t1 as f32) + self.start_vel);
+            return Some(self.max_acc * Quantity::from(self.t1) + self.start_vel);
         } else if t < self.t3 {
-            return Some(self.max_acc * ((self.t1 + self.t2 - t) as f32) + self.start_vel);
+            return Some(self.max_acc * Quantity::from(self.t1 + self.t2 - t) + self.start_vel);
         } else {
             return self.end_command.get_velocity();
         }
     }
     ///Get the intended position at a given time.
-    pub fn get_position(&self, t: i64) -> Option<f32> {
-        if t < 0 {
+    pub fn get_position(&self, t: Time) -> Option<Quantity> {
+        if t < Time::default() {
             return None;
         } else if t < self.t1 {
-            let t = t as f32;
-            return Some(0.5 * self.max_acc * t * t + self.start_vel * t + self.start_pos);
+            let t = Quantity::from(t);
+            return Some(
+                Quantity::dimensionless(0.5) * self.max_acc * t * t
+                    + self.start_vel * t
+                    + self.start_pos,
+            );
         } else if t < self.t2 {
             return Some(
-                self.max_acc * ((self.t1 * (-self.t1 / 2 + t)) as f32)
-                    + self.start_vel * (t as f32)
+                self.max_acc * (self.t1 * (-self.t1 / DimensionlessInteger(2) + t))
+                    + self.start_vel * Quantity::from(t)
                     + self.start_pos,
             );
         } else if t < self.t3 {
             return Some(
-                self.max_acc * ((self.t1 * (-self.t1 / 2 + self.t2)) as f32)
-                    - 0.5 * self.max_acc * (((t - self.t2) * (t - 2 * self.t1 - self.t2)) as f32)
-                    + self.start_vel * (t as f32)
+                self.max_acc * (self.t1 * (-self.t1 / DimensionlessInteger(2) + self.t2))
+                    - Quantity::dimensionless(0.5)
+                        * self.max_acc
+                        * ((t - self.t2) * (t - DimensionlessInteger(2) * self.t1 - self.t2))
+                    + self.start_vel * Quantity::from(t)
                     + self.start_pos,
             );
         } else {
@@ -187,13 +197,6 @@ impl MotionProfile {
 #[cfg(test)]
 mod tests {
     use super::*;
-    #[test]
-    #[cfg(not(feature = "std"))]
-    fn my_abs_f32_() {
-        assert_eq!(my_abs_f32(5.0), 5.0);
-        assert_eq!(my_abs_f32(-5.0), 5.0);
-        assert_eq!(my_abs_f32(0.0), 0.0);
-    }
     #[test]
     fn motion_profile_new_1() {
         let motion_profile = MotionProfile::new(

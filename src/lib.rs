@@ -30,12 +30,12 @@ mod datum;
 pub mod devices;
 pub mod dimensions;
 pub use dimensions::*;
-//mod motion_profile;
+mod motion_profile;
 pub mod reference;
 mod state;
 //pub mod streams;
 pub use datum::*;
-//pub use motion_profile::*;
+pub use motion_profile::*;
 #[cfg(feature = "alloc")]
 pub use reference::rc_ref_cell_reference;
 pub use reference::Reference;
