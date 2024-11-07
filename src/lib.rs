@@ -33,7 +33,7 @@ pub use dimensions::*;
 mod motion_profile;
 pub mod reference;
 mod state;
-//pub mod streams;
+pub mod streams;
 pub use datum::*;
 pub use motion_profile::*;
 #[cfg(feature = "alloc")]

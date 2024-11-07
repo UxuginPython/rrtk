@@ -4,11 +4,11 @@
 //!some helpful builtin streams for controlling your robot. See the `pid` example to learn more
 //!about how to use the stream system.
 use crate::*;
-pub mod control;
-pub mod converters;
-pub mod flow;
-pub mod logic;
-pub mod math;
+//pub mod control;
+//pub mod converters;
+//pub mod flow;
+//pub mod logic;
+//pub mod math;
 ///Returns the output of whichever input has the latest time.
 pub struct Latest<T, const C: usize, E: Copy + Debug> {
     inputs: [Reference<dyn Getter<T, E>>; C],
@@ -53,7 +53,7 @@ impl<T, const C: usize, E: Copy + Debug> Updatable<E> for Latest<T, C, E> {
 pub struct Expirer<T, G: Getter<T, E> + ?Sized, TG: TimeGetter<E> + ?Sized, E: Copy + Debug> {
     input: Reference<G>,
     time_getter: Reference<TG>,
-    max_time_delta: i64,
+    max_time_delta: Time,
     phantom_t: PhantomData<T>,
     phantom_e: PhantomData<E>,
 }
@@ -61,7 +61,11 @@ impl<T, G: Getter<T, E> + ?Sized, TG: TimeGetter<E> + ?Sized, E: Copy + Debug>
     Expirer<T, G, TG, E>
 {
     ///Constructor for `Expirer`.
-    pub const fn new(input: Reference<G>, time_getter: Reference<TG>, max_time_delta: i64) -> Self {
+    pub const fn new(
+        input: Reference<G>,
+        time_getter: Reference<TG>,
+        max_time_delta: Time,
+    ) -> Self {
         Self {
             input: input,
             time_getter: time_getter,
