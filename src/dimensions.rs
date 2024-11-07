@@ -34,7 +34,7 @@ impl From<Time> for i64 {
 impl TryFrom<Quantity> for Time {
     type Error = ();
     fn try_from(was: Quantity) -> Result<Self, ()> {
-        if was.unit == Unit::new(0, 1) {
+        if was.unit == SECOND {
             Ok(Self((was.value * 1_000_000_000.0) as i64))
         } else {
             Err(())
@@ -43,7 +43,7 @@ impl TryFrom<Quantity> for Time {
 }
 impl From<Time> for Quantity {
     fn from(was: Time) -> Quantity {
-        Quantity::new(was.0 as f32 / 1_000_000_000.0, Unit::new(0, 1))
+        Quantity::new(was.0 as f32 / 1_000_000_000.0, SECOND)
     }
 }
 impl Add for Time {
@@ -80,6 +80,97 @@ impl Neg for Time {
     type Output = Self;
     fn neg(self) -> Self {
         Self(-self.0)
+    }
+}
+impl Mul<DimensionlessInteger> for Time {
+    type Output = Self;
+    fn mul(self, rhs: DimensionlessInteger) -> Self {
+        Self(self.0 * rhs.0)
+    }
+}
+impl Div<DimensionlessInteger> for Time {
+    type Output = Self;
+    fn div(self, rhs: DimensionlessInteger) -> Self {
+        Self(self.0 / rhs.0)
+    }
+}
+///A dimensionless quantity stored as an integer. Used almost exclusively for when a time, stored
+///as an integer, must be multiplied by a constant factor as in numerical integrals and motion
+///profiles.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord)]
+#[repr(transparent)]
+pub struct DimensionlessInteger(pub i64);
+impl DimensionlessInteger {
+    ///Constructor for `DimensionlessInteger`.
+    pub const fn new(value: i64) -> Self {
+        Self(value)
+    }
+}
+impl From<i64> for DimensionlessInteger {
+    fn from(was: i64) -> Self {
+        Self(was)
+    }
+}
+impl From<DimensionlessInteger> for i64 {
+    fn from(was: DimensionlessInteger) -> Self {
+        was.0
+    }
+}
+impl TryFrom<Quantity> for DimensionlessInteger {
+    type Error = ();
+    fn try_from(was: Quantity) -> Result<Self, ()> {
+        if was.unit == DIMENSIONLESS {
+            Ok(Self(was.value as i64))
+        } else {
+            Err(())
+        }
+    }
+}
+impl From<DimensionlessInteger> for Quantity {
+    fn from(was: DimensionlessInteger) -> Self {
+        Quantity::new(was.0 as f32, DIMENSIONLESS)
+    }
+}
+impl Add for DimensionlessInteger {
+    type Output = Self;
+    fn add(self, rhs: Self) -> Self {
+        Self(self.0 + rhs.0)
+    }
+}
+impl Sub for DimensionlessInteger {
+    type Output = Self;
+    fn sub(self, rhs: Self) -> Self {
+        Self(self.0 - rhs.0)
+    }
+}
+impl Mul for DimensionlessInteger {
+    type Output = Self;
+    fn mul(self, rhs: Self) -> Self {
+        Self(self.0 * rhs.0)
+    }
+}
+impl Div for DimensionlessInteger {
+    type Output = Self;
+    fn div(self, rhs: Self) -> Self {
+        Self(self.0 / rhs.0)
+    }
+}
+impl Neg for DimensionlessInteger {
+    type Output = Self;
+    fn neg(self) -> Self {
+        Self(-self.0)
+    }
+}
+impl Mul<Time> for DimensionlessInteger {
+    type Output = Time;
+    fn mul(self, rhs: Time) -> Time {
+        Time(self.0 * rhs.0)
+    }
+}
+impl Div<Time> for DimensionlessInteger {
+    type Output = Quantity;
+    fn div(self, rhs: Time) -> Quantity {
+        Quantity::from(self) / Quantity::from(rhs)
     }
 }
 ///A unit of a quantity, like meters per second. Units can be represented as multiplied powers of
@@ -193,7 +284,7 @@ pub const MILLIMETER_PER_SECOND: Unit = Unit::new(1, -1);
 ///The `Unit` for an acceleration in millimeters per second squared.
 pub const MILLIMETER_PER_SECOND_SQUARED: Unit = Unit::new(1, -2);
 ///The `Unit` for a time in seconds.
-pub const SECOND: Unit = Unit::new(1, 0);
+pub const SECOND: Unit = Unit::new(0, 1);
 ///The `Unit` for a quantity with units of seconds squared. This is mostly useless but is used for
 ///multiplication of `Time` objects.
 pub const SECOND_SQUARED: Unit = Unit::new(0, 2);
