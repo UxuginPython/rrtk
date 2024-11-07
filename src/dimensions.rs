@@ -375,6 +375,15 @@ impl Div for Quantity {
         }
     }
 }
+impl Neg for Quantity {
+    type Output = Self;
+    fn neg(self) -> Self {
+        Self {
+            value: -self.value,
+            unit: self.unit,
+        }
+    }
+}
 impl Mul<Time> for Quantity {
     type Output = Self;
     fn mul(self, rhs: Time) -> Self {
