@@ -6,7 +6,7 @@
 use crate::*;
 //pub mod control;
 pub mod converters;
-//pub mod flow;
+pub mod flow;
 pub mod logic;
 pub mod math;
 ///Returns the output of whichever input has the latest time.
