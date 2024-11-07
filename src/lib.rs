@@ -723,7 +723,7 @@ pub fn connect<'a, E: Copy + Debug>(
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct TerminalData {
     ///Timestamp.
-    pub time: i64,
+    pub time: Time,
     ///Optional command from the terminal.
     pub command: Option<Command>,
     ///Optional state from the terminal.
