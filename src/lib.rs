@@ -363,7 +363,7 @@ pub trait Settable<S: Clone, E: Copy + Debug>: Updatable<E> {
         data.last_request.clone()
     }
 }
-/*///Because `Stream`s always return a timestamp (as long as they don't return `Err(_)` or
+///Because `Stream`s always return a timestamp (as long as they don't return `Err(_)` or
 ///`Ok(None)`), we can use this to treat them like `TimeGetter`s.
 pub struct TimeGetterFromGetter<T: Clone, G: Getter<T, E> + ?Sized, E: Copy + Debug> {
     elevator: streams::converters::NoneToError<T, G, E>,
@@ -391,7 +391,7 @@ impl<T: Clone, G: Getter<T, E> + ?Sized, E: Copy + Debug> Updatable<E>
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
     }
-}*/
+}
 ///As histories return values at times, we can ask them to return values at the time of now or now
 ///with a delta. This makes that much easier and is the recommended way of following
 ///`MotionProfile`s.
