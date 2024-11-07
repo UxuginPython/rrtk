@@ -93,13 +93,13 @@ pub use acceleration_to_state::AccelerationToState;
 mod acceleration_to_state {
     use super::*;
     struct Update0 {
-        last_update_time: i64,
-        acc: f32,
+        last_update_time: Time,
+        acc: Quantity,
         update_1: Option<Update1>,
     }
     struct Update1 {
-        vel: f32,
-        update_2: Option<f32>, //position
+        vel: Quantity,
+        update_2: Option<Quantity>, //position
     }
     ///A stream that integrates an acceleration getter to construct a full state. Mostly useful for
     ///encoders.
@@ -125,7 +125,7 @@ mod acceleration_to_state {
                     Some(update_1) => match update_1.update_2 {
                         Some(position) => Ok(Some(Datum::new(
                             update_0.last_update_time,
-                            State::new(position, update_1.vel, update_0.acc),
+                            State::new(position.value, update_1.vel.value, update_0.acc.value),
                         ))),
                         None => Ok(None),
                     },
@@ -141,18 +141,22 @@ mod acceleration_to_state {
                 Ok(gotten) => match gotten {
                     Some(new_acc_datum) => {
                         let new_time = new_acc_datum.time;
-                        let new_acc = new_acc_datum.value;
+                        let new_acc =
+                            Quantity::new(new_acc_datum.value, MILLIMETER_PER_SECOND_SQUARED);
                         match &self.update {
                             Some(update_0) => {
                                 let old_time = update_0.last_update_time;
                                 let old_acc = update_0.acc;
-                                let delta_time = (new_time - old_time) as f32;
-                                let vel_addend = (old_acc + new_acc) / 2.0 * delta_time;
+                                let delta_time = Quantity::from(new_time - old_time);
+                                let vel_addend =
+                                    (old_acc + new_acc) / Quantity::dimensionless(2.0) * delta_time;
                                 match &update_0.update_1 {
                                     Some(update_1) => {
                                         let old_vel = update_1.vel;
                                         let new_vel = old_vel + vel_addend;
-                                        let pos_addend = (old_vel + new_vel) / 2.0 * delta_time;
+                                        let pos_addend = (old_vel + new_vel)
+                                            / Quantity::dimensionless(2.0)
+                                            * delta_time;
                                         match &update_1.update_2 {
                                             Some(old_pos) => {
                                                 self.update = Some(Update0 {
@@ -160,7 +164,7 @@ mod acceleration_to_state {
                                                     acc: new_acc,
                                                     update_1: Some(Update1 {
                                                         vel: new_vel,
-                                                        update_2: Some(old_pos + pos_addend),
+                                                        update_2: Some(*old_pos + pos_addend),
                                                     }),
                                                 })
                                             }
@@ -209,7 +213,7 @@ mod acceleration_to_state {
         }
     }
 }
-pub use velocity_to_state::VelocityToState;
+/*pub use velocity_to_state::VelocityToState;
 mod velocity_to_state {
     use super::*;
     struct Update0 {
@@ -411,4 +415,4 @@ mod position_to_state {
             Ok(())
         }
     }
-}
+}*/
