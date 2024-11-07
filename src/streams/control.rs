@@ -335,18 +335,18 @@ impl<G: Getter<f32, E> + ?Sized, E: Copy + Debug> Updatable<E> for EWMAStream<G,
         Ok(())
     }
 }
-/*///A moving average stream for use with the stream system.
+///A moving average stream for use with the stream system.
 #[cfg(feature = "alloc")]
 pub struct MovingAverageStream<G: Getter<f32, E> + ?Sized, E: Copy + Debug> {
     input: Reference<G>,
-    window: i64,
+    window: Time,
     value: Output<f32, E>,
     input_values: VecDeque<Datum<f32>>,
 }
 #[cfg(feature = "alloc")]
 impl<G: Getter<f32, E> + ?Sized, E: Copy + Debug> MovingAverageStream<G, E> {
     ///Constructor for `MovingAverageStream`.
-    pub const fn new(input: Reference<G>, window: i64) -> Self {
+    pub const fn new(input: Reference<G>, window: Time) -> Self {
         Self {
             input: input,
             window: window,
@@ -402,14 +402,14 @@ impl<G: Getter<f32, E> + ?Sized, E: Copy + Debug> Updatable<E> for MovingAverage
         start_times.push_front(output.time - self.window);
         let mut weights = Vec::with_capacity(self.input_values.len());
         for i in 0..self.input_values.len() {
-            weights.push((end_times[i] - start_times[i]) as f32);
+            weights.push(f32::from(Quantity::from(end_times[i] - start_times[i])));
         }
         let mut value = 0.0;
         for i in 0..self.input_values.len() {
-            value += self.input_values[i].value * weights[i] as f32;
+            value += self.input_values[i].value * weights[i];
         }
-        value /= self.window as f32;
+        value /= f32::from(Quantity::from(self.window));
         self.value = Ok(Some(Datum::new(output.time, value)));
         Ok(())
     }
-}*/
+}
