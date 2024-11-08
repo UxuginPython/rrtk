@@ -182,3 +182,5 @@ Add moving average stream.
 - Change macro scoping to allow both `rrtk::reference::to_dyn!` and `rrtk::to_dyn!` as valid paths, and similar scoping for other `Reference`-related macros. See the [documentation](https://docs.rs/rrtk/0.5.0) for more information.
 - Derive `Eq` for `Datum`.
 - Documentation improvements.
+### 0.6.0-alpha.0
+- Begin new dimensional analysis system.
