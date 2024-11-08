@@ -178,7 +178,14 @@ impl Div<Time> for DimensionlessInteger {
 ///A unit of a quantity, like meters per second. Units can be represented as multiplied powers of
 ///the units that they're derived from, so meters per second squared, or m/s^2, can be m^1*s^-2.
 ///This struct stores the exponents of each base unit.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug)]
+#[cfg_attr(
+    any(
+        feature = "dim_check_release",
+        all(debug_assertions, feature = "dim_check_debug")
+    ),
+    derive(PartialEq, Eq)
+)]
 pub struct Unit {
     ///Unit exponent for millimeters.
     #[cfg(any(
@@ -211,7 +218,12 @@ impl Unit {
         }
     }
     ///`foo.const_eq(&bar)` works exactly like `foo == bar` except that it works in a `const`
-    ///context.
+    ///context. Requires dimension checking to be enabled. Use `eq_assume_true` or
+    ///`eq_assume_false` if you need similar functionality without dimension checking.
+    #[cfg(any(
+        feature = "dim_check_release",
+        all(debug_assertions, feature = "dim_check_debug")
+    ))]
     #[allow(unused)]
     pub const fn const_eq(&self, rhs: &Self) -> bool {
         #[cfg(any(
@@ -226,9 +238,54 @@ impl Unit {
         true
     }
     ///`foo.const_assert_eq(&bar)` works exactly like `assert_eq!(foo, bar)` except that it works
-    ///in a `const` context.
-    pub const fn const_assert_eq(&self, rhs: &Self) -> () {
+    ///in a `const` context. Requires dimension checking to be enabled. Use `assert_eq_assume_ok`
+    ///or `assert_eq_assume_not_ok` if you need similar functionality without dimension checking.
+    #[cfg(any(
+        feature = "dim_check_release",
+        all(debug_assertions, feature = "dim_check_debug")
+    ))]
+    pub const fn const_assert_eq(&self, rhs: &Self) {
         assert!(self.const_eq(rhs));
+    }
+    ///With dimension checking on, behaves exactly like `const_eq`. With dimension checking off,
+    ///always returns true.
+    pub const fn eq_assume_true(&self, rhs: &Self) -> bool {
+        #[cfg(any(
+            feature = "dim_check_release",
+            all(debug_assertions, feature = "dim_check_debug")
+        ))]
+        return self.const_eq(rhs);
+        #[cfg(not(any(
+            feature = "dim_check_release",
+            all(debug_assertions, feature = "dim_check_debug")
+        )))]
+        true
+    }
+    ///With dimension checking on, behaves exactly like `const_eq`. With dimension checking off,
+    ///always returns false.
+    pub const fn eq_assume_false(&self, rhs: &Self) -> bool {
+        #[cfg(any(
+            feature = "dim_check_release",
+            all(debug_assertions, feature = "dim_check_debug")
+        ))]
+        return self.const_eq(rhs);
+        #[cfg(not(any(
+            feature = "dim_check_release",
+            all(debug_assertions, feature = "dim_check_debug")
+        )))]
+        false
+    }
+    ///With dimension checking on, `foo.assert_eq_assume_ok(&bar)` behaves like `assert_eq!(foo, bar)`.
+    ///With dimension checking off, it never panics.
+    ///Unlike `assert_eq!`, it works in a `const` context, as does `const_assert_eq`.
+    pub const fn assert_eq_assume_ok(&self, rhs: &Self) {
+        assert!(self.eq_assume_true(rhs))
+    }
+    ///With dimension checking on, `foo.assert_eq_assume_ok(&bar)` behaves like `assert_eq!(foo, bar)`.
+    ///With dimension checking off, it always panics.
+    ///Unlike `assert_eq!`, it works in a `const` context, as does `const_assert_eq`.
+    pub const fn assert_eq_assume_not_ok(&self, rhs: &Self) {
+        assert!(self.eq_assume_false(rhs))
     }
 }
 impl From<PositionDerivative> for Unit {
@@ -456,7 +513,7 @@ impl Div<Time> for Quantity {
 }
 impl PartialOrd for Quantity {
     fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
-        assert_eq!(self.unit, other.unit);
+        self.unit.assert_eq_assume_ok(&other.unit);
         self.value.partial_cmp(&other.value)
     }
 }
