@@ -3,6 +3,7 @@
 # Copyright 2024 UxuginPython
 from itertools import *
 import re
+from os import system
 def powerset(iterable):
     "powerset([1,2,3]) → () (1,) (2,) (3,) (1,2) (1,3) (2,3) (1,2,3)"
     s = list(iterable)
@@ -36,4 +37,13 @@ for i in features:
             if not(i in k[1] and j in k[1]):
                 new_combinations.append(k[1])
         combinations = new_combinations
-print('\n'.join(i.rstrip() for i in f'#!/bin/bash\n#Generated automatically by rrtk {version}\nset -e\n{'\n'.join(f'echo {' '.join(i)}\ncargo test --no-default-features{' --features' if len(i) > 0 else ''} {','.join(i)}' for i in combinations)}'.split('\n')).strip())
+test = '\n'.join(i.rstrip() for i in f'#!/bin/bash\n#Generated automatically by rrtk {version}\nset -e\n{'\n'.join(f'echo {' '.join(i)}\ncargo test --no-default-features{' --features' if len(i) > 0 else ''} {','.join(i)}' for i in combinations)}'.split('\n')).strip()+'\n'
+check = '\n'.join(i.rstrip() for i in f'#!/bin/bash\n#Generated automatically by rrtk {version}\nset -e\n{'\n'.join(f'echo {' '.join(i)}\ncargo check --no-default-features{' --features' if len(i) > 0 else ''} {','.join(i)}' for i in combinations)}'.split('\n')).strip()+'\n'
+file = open('testall.sh', 'w')
+file.write(test)
+file.close()
+system('chmod +x testall.sh')
+file = open('checkall.sh', 'w')
+file.write(check)
+file.close()
+system('chmod +x checkall.sh')
