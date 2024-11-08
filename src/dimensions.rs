@@ -34,7 +34,7 @@ impl From<Time> for i64 {
 impl TryFrom<Quantity> for Time {
     type Error = ();
     fn try_from(was: Quantity) -> Result<Self, ()> {
-        if was.unit == SECOND {
+        if was.unit.eq_assume_false(&SECOND) {
             Ok(Self((was.value * 1_000_000_000.0) as i64))
         } else {
             Err(())
@@ -119,7 +119,7 @@ impl From<DimensionlessInteger> for i64 {
 impl TryFrom<Quantity> for DimensionlessInteger {
     type Error = ();
     fn try_from(was: Quantity) -> Result<Self, ()> {
-        if was.unit == DIMENSIONLESS {
+        if was.unit.eq_assume_true(&DIMENSIONLESS) {
             Ok(Self(was.value as i64))
         } else {
             Err(())
@@ -249,6 +249,7 @@ impl Unit {
     }
     ///With dimension checking on, behaves exactly like `const_eq`. With dimension checking off,
     ///always returns true.
+    #[allow(unused)]
     pub const fn eq_assume_true(&self, rhs: &Self) -> bool {
         #[cfg(any(
             feature = "dim_check_release",
@@ -263,6 +264,7 @@ impl Unit {
     }
     ///With dimension checking on, behaves exactly like `const_eq`. With dimension checking off,
     ///always returns false.
+    #[allow(unused)]
     pub const fn eq_assume_false(&self, rhs: &Self) -> bool {
         #[cfg(any(
             feature = "dim_check_release",
@@ -326,7 +328,7 @@ impl TryFrom<MotionProfilePiece> for Unit {
 impl Add for Unit {
     type Output = Self;
     fn add(self, rhs: Self) -> Self {
-        assert_eq!(self, rhs);
+        self.assert_eq_assume_ok(&rhs);
         self
     }
 }
@@ -338,7 +340,7 @@ impl Add for Unit {
 impl Sub for Unit {
     type Output = Self;
     fn sub(self, rhs: Self) -> Self {
-        assert_eq!(self, rhs);
+        self.assert_eq_assume_ok(&rhs);
         self
     }
 }
@@ -404,7 +406,7 @@ pub const SECOND: Unit = Unit::new(0, 1);
 ///multiplication of `Time` objects.
 pub const SECOND_SQUARED: Unit = Unit::new(0, 2);
 ///A quantity with a unit.
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug)]
 pub struct Quantity {
     ///The value.
     pub value: f32,
@@ -509,6 +511,12 @@ impl Div<Time> for Quantity {
     type Output = Self;
     fn div(self, rhs: Time) -> Self {
         self / Quantity::from(rhs)
+    }
+}
+impl PartialEq for Quantity {
+    fn eq(&self, rhs: &Self) -> bool {
+        self.unit.assert_eq_assume_ok(&rhs.unit);
+        self.value == rhs.value
     }
 }
 impl PartialOrd for Quantity {

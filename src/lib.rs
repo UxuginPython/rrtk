@@ -65,6 +65,10 @@ pub enum PositionDerivative {
     Acceleration,
 }
 //TODO: figure out for to use the Error enum with this
+#[cfg(any(
+    feature = "dim_check_release",
+    all(debug_assertions, feature = "dim_check_debug")
+))]
 impl TryFrom<Unit> for PositionDerivative {
     type Error = ();
     fn try_from(was: Unit) -> Result<Self, ()> {
@@ -247,6 +251,10 @@ impl From<State> for Command {
         }
     }
 }
+#[cfg(any(
+    feature = "dim_check_release",
+    all(debug_assertions, feature = "dim_check_debug")
+))]
 impl TryFrom<Quantity> for Command {
     type Error = ();
     fn try_from(was: Quantity) -> Result<Self, ()> {
