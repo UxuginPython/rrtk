@@ -173,28 +173,55 @@ impl Div<Time> for DimensionlessInteger {
         Quantity::from(self) / Quantity::from(rhs)
     }
 }
+//FIXME: Matching against this without dimension checking on breaks because all `Unit` objects are
+//       considered equal.
 ///A unit of a quantity, like meters per second. Units can be represented as multiplied powers of
 ///the units that they're derived from, so meters per second squared, or m/s^2, can be m^1*s^-2.
 ///This struct stores the exponents of each base unit.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Unit {
     ///Unit exponent for millimeters.
-    pub millimeter_exp: i8,
+    #[cfg(any(
+        feature = "dim_check_release",
+        all(debug_assertions, feature = "dim_check_debug")
+    ))]
+    millimeter_exp: i8,
     ///Unit exponent for seconds.
-    pub second_exp: i8,
+    #[cfg(any(
+        feature = "dim_check_release",
+        all(debug_assertions, feature = "dim_check_debug")
+    ))]
+    second_exp: i8,
 }
 impl Unit {
     ///Constructor for `Unit`.
     pub const fn new(millimeter_exp: i8, second_exp: i8) -> Self {
         Self {
+            #[cfg(any(
+                feature = "dim_check_release",
+                all(debug_assertions, feature = "dim_check_debug")
+            ))]
             millimeter_exp: millimeter_exp,
+            #[cfg(any(
+                feature = "dim_check_release",
+                all(debug_assertions, feature = "dim_check_debug")
+            ))]
             second_exp: second_exp,
         }
     }
     ///`foo.const_eq(&bar)` works exactly like `foo == bar` except that it works in a `const`
     ///context.
     pub const fn const_eq(&self, rhs: &Self) -> bool {
-        self.millimeter_exp == rhs.millimeter_exp && self.second_exp == rhs.second_exp
+        #[cfg(any(
+            feature = "dim_check_release",
+            all(debug_assertions, feature = "dim_check_debug")
+        ))]
+        return self.millimeter_exp == rhs.millimeter_exp && self.second_exp == rhs.second_exp;
+        #[cfg(not(any(
+            feature = "dim_check_release",
+            all(debug_assertions, feature = "dim_check_debug")
+        )))]
+        true
     }
     ///`foo.const_assert_eq(&bar)` works exactly like `assert_eq!(foo, bar)` except that it works
     ///in a `const` context.
@@ -204,14 +231,23 @@ impl Unit {
 }
 impl From<PositionDerivative> for Unit {
     fn from(was: PositionDerivative) -> Self {
-        Self {
+        #[cfg(any(
+            feature = "dim_check_release",
+            all(debug_assertions, feature = "dim_check_debug")
+        ))]
+        return Self {
             millimeter_exp: 1,
             second_exp: match was {
                 PositionDerivative::Position => 0,
                 PositionDerivative::Velocity => 1,
                 PositionDerivative::Acceleration => 2,
             },
-        }
+        };
+        #[cfg(not(any(
+            feature = "dim_check_release",
+            all(debug_assertions, feature = "dim_check_debug")
+        )))]
+        Self {}
     }
 }
 impl TryFrom<MotionProfilePiece> for Unit {
@@ -254,10 +290,19 @@ impl Sub for Unit {
 impl Mul for Unit {
     type Output = Self;
     fn mul(self, rhs: Self) -> Self {
-        Self {
+        #[cfg(any(
+            feature = "dim_check_release",
+            all(debug_assertions, feature = "dim_check_debug")
+        ))]
+        return Self {
             millimeter_exp: self.millimeter_exp + rhs.millimeter_exp,
             second_exp: self.second_exp + rhs.second_exp,
-        }
+        };
+        #[cfg(not(any(
+            feature = "dim_check_release",
+            all(debug_assertions, feature = "dim_check_debug")
+        )))]
+        Self {}
     }
 }
 ///The `Div` implementation for `Unit` acts like you are trying to divide quantities of the unit,
@@ -268,10 +313,19 @@ impl Mul for Unit {
 impl Div for Unit {
     type Output = Self;
     fn div(self, rhs: Self) -> Self {
-        Self {
+        #[cfg(any(
+            feature = "dim_check_release",
+            all(debug_assertions, feature = "dim_check_debug")
+        ))]
+        return Self {
             millimeter_exp: self.millimeter_exp - rhs.millimeter_exp,
             second_exp: self.second_exp - rhs.second_exp,
-        }
+        };
+        #[cfg(not(any(
+            feature = "dim_check_release",
+            all(debug_assertions, feature = "dim_check_debug")
+        )))]
+        Self {}
     }
 }
 ///The `Unit` for a dimensionless quantity.

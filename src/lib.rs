@@ -68,16 +68,12 @@ pub enum PositionDerivative {
 impl TryFrom<Unit> for PositionDerivative {
     type Error = ();
     fn try_from(was: Unit) -> Result<Self, ()> {
-        if was.millimeter_exp == 1 {
-            Ok(match was.second_exp {
-                0 => PositionDerivative::Position,
-                1 => PositionDerivative::Velocity,
-                2 => PositionDerivative::Acceleration,
-                _ => return Err(()),
-            })
-        } else {
-            Err(())
-        }
+        Ok(match was {
+            MILLIMETER => PositionDerivative::Position,
+            MILLIMETER_PER_SECOND => PositionDerivative::Velocity,
+            MILLIMETER_PER_SECOND_SQUARED => PositionDerivative::Acceleration,
+            _ => return Err(()),
+        })
     }
 }
 impl From<Command> for PositionDerivative {
