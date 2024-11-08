@@ -10,6 +10,8 @@
 //!this unorthodox system using both nanoseconds and seconds becomes more apparent when you know
 //!how floating point numbers work. Everything in this module is reexported at the crate level.
 use super::*;
+pub mod constants;
+pub use constants::*;
 ///A time in nanoseconds.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(transparent)]
@@ -274,19 +276,6 @@ impl Div for Unit {
         }
     }
 }
-///The `Unit` for a dimensionless quantity.
-pub const DIMENSIONLESS: Unit = Unit::new(0, 0);
-///The `Unit` for a distance in millimeters.
-pub const MILLIMETER: Unit = Unit::new(1, 0);
-///The `Unit` for a velocity in millimeters per second.
-pub const MILLIMETER_PER_SECOND: Unit = Unit::new(1, -1);
-///The `Unit` for an acceleration in millimeters per second squared.
-pub const MILLIMETER_PER_SECOND_SQUARED: Unit = Unit::new(1, -2);
-///The `Unit` for a time in seconds.
-pub const SECOND: Unit = Unit::new(0, 1);
-///The `Unit` for a quantity with units of seconds squared. This is mostly useless but is used for
-///multiplication of `Time` objects.
-pub const SECOND_SQUARED: Unit = Unit::new(0, 2);
 ///A quantity with a unit.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Quantity {
