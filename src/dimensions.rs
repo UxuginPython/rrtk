@@ -214,15 +214,14 @@ impl From<PositionDerivative> for Unit {
         }
     }
 }
-/*impl TryFrom<MotionProfilePiece> for Unit {
+impl TryFrom<MotionProfilePiece> for Unit {
     type Error = ();
     fn try_from(was: MotionProfilePiece) -> Result<Self, ()> {
         let pos_der: PositionDerivative = was.try_into()?;
         let unit: Self = pos_der.into();
         Ok(unit)
     }
-}*/
-//TODO: Document these really, really well. How they work is confusing.
+}
 ///The `Add` implementation for `Unit` acts like you are trying to add quantities of the unit, not
 ///like you are trying to actually add the exponents. This should be more useful most of the time,
 ///but could be somewhat confusing. All this does is `assert_eq!` the `Unit` with the right-hand
