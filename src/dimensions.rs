@@ -386,19 +386,13 @@ impl Neg for Quantity {
 impl Mul<Time> for Quantity {
     type Output = Self;
     fn mul(self, rhs: Time) -> Self {
-        Self {
-            value: self.value * rhs.0 as f32,
-            unit: Unit::new(self.unit.millimeter_exp, self.unit.second_exp + 1),
-        }
+        self * Quantity::from(rhs)
     }
 }
 impl Div<Time> for Quantity {
     type Output = Self;
     fn div(self, rhs: Time) -> Self {
-        Self {
-            value: self.value / rhs.0 as f32,
-            unit: Unit::new(self.unit.millimeter_exp, self.unit.second_exp - 1),
-        }
+        self / Quantity::from(rhs)
     }
 }
 impl PartialOrd for Quantity {
