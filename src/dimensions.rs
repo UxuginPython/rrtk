@@ -195,6 +195,7 @@ pub struct Unit {
 }
 impl Unit {
     ///Constructor for `Unit`.
+    #[allow(unused)]
     pub const fn new(millimeter_exp: i8, second_exp: i8) -> Self {
         Self {
             #[cfg(any(
@@ -211,6 +212,7 @@ impl Unit {
     }
     ///`foo.const_eq(&bar)` works exactly like `foo == bar` except that it works in a `const`
     ///context.
+    #[allow(unused)]
     pub const fn const_eq(&self, rhs: &Self) -> bool {
         #[cfg(any(
             feature = "dim_check_release",
@@ -230,6 +232,7 @@ impl Unit {
     }
 }
 impl From<PositionDerivative> for Unit {
+    #[allow(unused)]
     fn from(was: PositionDerivative) -> Self {
         #[cfg(any(
             feature = "dim_check_release",
@@ -289,6 +292,7 @@ impl Sub for Unit {
 ///multiplied, not a multiplication of their unit exponents.
 impl Mul for Unit {
     type Output = Self;
+    #[allow(unused)]
     fn mul(self, rhs: Self) -> Self {
         #[cfg(any(
             feature = "dim_check_release",
@@ -312,6 +316,7 @@ impl Mul for Unit {
 ///should happen when quantities are divided, not a division of their unit exponents.
 impl Div for Unit {
     type Output = Self;
+    #[allow(unused)]
     fn div(self, rhs: Self) -> Self {
         #[cfg(any(
             feature = "dim_check_release",
