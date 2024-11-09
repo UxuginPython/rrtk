@@ -392,6 +392,13 @@ impl Div for Unit {
 }
 ///A quantity with a unit.
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(
+    any(
+        feature = "dim_check_release",
+        all(debug_assertions, feature = "dim_check_debug")
+    ),
+    derive(PartialEq)
+)]
 pub struct Quantity {
     ///The value.
     pub value: f32,
@@ -498,6 +505,10 @@ impl Div<Time> for Quantity {
         self / Quantity::from(rhs)
     }
 }
+#[cfg(not(any(
+    feature = "dim_check_release",
+    all(debug_assertions, feature = "dim_check_debug")
+)))]
 impl PartialEq for Quantity {
     fn eq(&self, rhs: &Self) -> bool {
         self.unit.assert_eq_assume_ok(&rhs.unit);
