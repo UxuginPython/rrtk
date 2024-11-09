@@ -175,8 +175,6 @@ impl Div<Time> for DimensionlessInteger {
         Quantity::from(self) / Quantity::from(rhs)
     }
 }
-//FIXME: Matching against this without dimension checking on breaks because all `Unit` objects are
-//       considered equal.
 ///A unit of a quantity, like meters per second. Units can be represented as multiplied powers of
 ///the units that they're derived from, so meters per second squared, or m/s^2, can be m^1*s^-2.
 ///This struct stores the exponents of each base unit.
@@ -249,8 +247,8 @@ impl Unit {
     pub const fn const_assert_eq(&self, rhs: &Self) {
         assert!(self.const_eq(rhs));
     }
-    ///With dimension checking on, behaves exactly like `const_eq`. With dimension checking off,
-    ///always returns true.
+    ///With dimension checking on, behaves exactly like `const_eq`.
+    ///With dimension checking off, always returns true.
     #[allow(unused)]
     pub const fn eq_assume_true(&self, rhs: &Self) -> bool {
         #[cfg(any(
@@ -264,8 +262,8 @@ impl Unit {
         )))]
         true
     }
-    ///With dimension checking on, behaves exactly like `const_eq`. With dimension checking off,
-    ///always returns false.
+    ///With dimension checking on, behaves exactly like `const_eq`.
+    ///With dimension checking off, always returns false.
     #[allow(unused)]
     pub const fn eq_assume_false(&self, rhs: &Self) -> bool {
         #[cfg(any(
@@ -279,15 +277,13 @@ impl Unit {
         )))]
         false
     }
-    ///With dimension checking on, `foo.assert_eq_assume_ok(&bar)` behaves like `assert_eq!(foo, bar)`.
-    ///With dimension checking off, it never panics.
-    ///Unlike `assert_eq!`, it works in a `const` context, as does `const_assert_eq`.
+    ///With dimension checking on, behaves exactly like `const_assert_eq`.
+    ///With dimension checking off, never panics.
     pub const fn assert_eq_assume_ok(&self, rhs: &Self) {
         assert!(self.eq_assume_true(rhs))
     }
-    ///With dimension checking on, `foo.assert_eq_assume_ok(&bar)` behaves like `assert_eq!(foo, bar)`.
-    ///With dimension checking off, it always panics.
-    ///Unlike `assert_eq!`, it works in a `const` context, as does `const_assert_eq`.
+    ///With dimension checking on, behaves exactly like `const_assert_eq`.
+    ///With dimension checking off, always panics.
     pub const fn assert_eq_assume_not_ok(&self, rhs: &Self) {
         assert!(self.eq_assume_false(rhs))
     }
