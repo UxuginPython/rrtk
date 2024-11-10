@@ -184,3 +184,7 @@ Add moving average stream.
 - Documentation improvements.
 ### 0.6.0-alpha.0
 - Begin new dimensional analysis system.
+### 0.6.0-alpha.1
+- Use correct units in `Mul<Time>` and `Div<Time>` implementations for `Quantity`.
+- Move constant `Unit`s to the `dimensions::constants` module, all of the items of which are reexported both to the `dimensions` module and at the crate's top level.
+- Add many new constant units in addition to the original 6.
