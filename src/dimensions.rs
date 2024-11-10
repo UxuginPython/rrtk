@@ -511,8 +511,11 @@ impl Div<Time> for Quantity {
 )))]
 impl PartialEq for Quantity {
     fn eq(&self, rhs: &Self) -> bool {
-        self.unit.assert_eq_assume_ok(&rhs.unit);
-        self.value == rhs.value
+        if self.unit.eq_assume_true(&rhs.unit) {
+            self.value == rhs.value
+        } else {
+            false
+        }
     }
 }
 impl PartialOrd for Quantity {
