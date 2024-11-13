@@ -63,19 +63,13 @@ impl Sub for Time {
 impl Mul for Time {
     type Output = Quantity;
     fn mul(self, rhs: Self) -> Quantity {
-        Quantity::new(
-            (self.0 as f32 / 1_000_000_000.0) * (rhs.0 as f32 / 1_000_000_000.0),
-            SECOND_SQUARED,
-        )
+        Quantity::from(self) * Quantity::from(rhs)
     }
 }
 impl Div for Time {
     type Output = Quantity;
     fn div(self, rhs: Self) -> Quantity {
-        Quantity::new(
-            (self.0 as f32 / 1_000_000_000.0) / (rhs.0 as f32 / 1_000_000_000.0),
-            DIMENSIONLESS,
-        )
+        Quantity::from(self) / Quantity::from(rhs)
     }
 }
 impl Neg for Time {
