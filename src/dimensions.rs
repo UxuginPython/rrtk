@@ -36,7 +36,7 @@ impl From<Time> for i64 {
 impl TryFrom<Quantity> for Time {
     type Error = ();
     fn try_from(was: Quantity) -> Result<Self, ()> {
-        if was.unit.eq_assume_false(&SECOND) {
+        if was.unit.eq_assume_true(&SECOND) {
             Ok(Self((was.value * 1_000_000_000.0) as i64))
         } else {
             Err(())
