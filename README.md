@@ -188,3 +188,6 @@ Add moving average stream.
 - Use correct units in `Mul<Time>` and `Div<Time>` implementations for `Quantity`.
 - Move constant `Unit`s to the `dimensions::constants` module, all of the items of which are reexported both to the `dimensions` module and at the crate's top level.
 - Add many new constant units in addition to the original 6.
+### 0.6.0-beta.0
+- Add `dim_check_debug` and `dim_check_release` features.
+- Document feature flags in crate-level documentation.

@@ -4,6 +4,12 @@
 //!**A set of algorithms and other tools for robotics in Rust.**
 //!
 //!It is almost entirely `no_std` and most things work without `alloc`. It does not currently integrate with any API directly. This may be added in the future, probably through another crate.
+//!## Feature Flags
+//!- `alloc` - Enable items requiring dynamic allocation through Rust's builtin `alloc` crate.
+//!- `std` - Enable items requiring the Rust standard library. Requires `alloc` feature. Enabled by default.
+//!- `devices` - Enable RRTK's graph-based device system.
+//!- `dim_check_debug` - Enable dimension checking in debug mode. Enabled by default.
+//!- `dim_check_release` - Enable dimension checking in both debug mode and release mode. Requires `dim_check_debug` feature.
 #![warn(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
 #[cfg(feature = "std")]
