@@ -195,11 +195,11 @@ pub trait History<T, E: Copy + Debug>: Updatable<E> {
 ///A command for a motor to perform: go to a position, run at a velocity, or accelerate at a rate.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Command {
-    ///Where you want to be.
+    ///Where you want to be. This should be in millimeters.
     Position(f32),
-    ///How fast you want to be going.
+    ///How fast you want to be going. This should be in millimeters per second.
     Velocity(f32),
-    ///How fast you want how fast you're going to change.
+    ///How fast you want how fast you're going to change. This should be in millimeters per second squared.
     Acceleration(f32),
 }
 impl Command {

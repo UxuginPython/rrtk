@@ -317,6 +317,8 @@ impl TryFrom<MotionProfilePiece> for Unit {
 ///but could be somewhat confusing. All this does is `assert_eq!` the `Unit` with the right-hand
 ///side and then return it because units should not change when quantities of the same unit are
 ///added.
+///Performing operations on `Unit`s should behave exactly the same as performing the same
+///operations on `Quantity` objects and taking the unit of the resulting `Quantity`.
 impl Add for Unit {
     type Output = Self;
     fn add(self, rhs: Self) -> Self {
@@ -329,6 +331,8 @@ impl Add for Unit {
 ///the time, but it could be somewhat confusing. All this does is `assert_eq!` the `Unit` with the
 ///right-hand side and then return it because units should not change when quantities of the same
 ///unit are subtracted.
+///Performing operations on `Unit`s should behave exactly the same as performing the same
+///operations on `Quantity` objects and taking the unit of the resulting `Quantity`.
 impl Sub for Unit {
     type Output = Self;
     fn sub(self, rhs: Self) -> Self {
@@ -341,6 +345,8 @@ impl Sub for Unit {
 ///the time, but it could be somewhat confusing. This adds the exponents of the left-hand and
 ///right-hand sides, not multiplies them because that is what should happen when quantities are
 ///multiplied, not a multiplication of their unit exponents.
+///Performing operations on `Unit`s should behave exactly the same as performing the same
+///operations on `Quantity` objects and taking the unit of the resulting `Quantity`.
 impl Mul for Unit {
     type Output = Self;
     #[allow(unused)]
@@ -365,6 +371,8 @@ impl Mul for Unit {
 ///time, but it could be somewhat confusing. This subtracts the exponents of the right-hand side
 ///from the left-hand side's exponents rather than dividing the exponents because that is what
 ///should happen when quantities are divided, not a division of their unit exponents.
+///Performing operations on `Unit`s should behave exactly the same as performing the same
+///operations on `Quantity` objects and taking the unit of the resulting `Quantity`.
 impl Div for Unit {
     type Output = Self;
     #[allow(unused)]
@@ -382,6 +390,18 @@ impl Div for Unit {
             all(debug_assertions, feature = "dim_check_debug")
         )))]
         Self {}
+    }
+}
+///The `Neg` implementation for `Unit` acts like you are trying to negate quantities of the unit,
+///not like you are trying to actually negate the exponents. This should be more useful most of the
+///time, but could be somewhat confusing. This just returns `self` unchanged because a quantity's
+///units don't change when it is negated.
+///Performing operations on `Unit`s should behave exactly the same as performing the same
+///operations on `Quantity` objects and taking the unit of the resulting `Quantity`.
+impl Neg for Unit {
+    type Output = Self;
+    fn neg(self) -> Self {
+        self
     }
 }
 ///A quantity with a unit.

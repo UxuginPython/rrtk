@@ -4,11 +4,11 @@ use crate::*;
 ///A one-dimensional motion state with position, velocity, and acceleration.
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct State {
-    ///Where you are.
+    ///Where you are. This should be in millimeters.
     pub position: f32,
-    ///How fast you're going.
+    ///How fast you're going. This should be in millimeters per second.
     pub velocity: f32,
-    ///How fast how fast you're going's changing.
+    ///How fast how fast you're going's changing. This should be in millimeters per second squared.
     pub acceleration: f32,
 }
 impl State {
@@ -21,12 +21,16 @@ impl State {
         }
     }
     ///Calculate the future state assuming a constant acceleration.
-    pub fn update(&mut self, delta_time: i64) {
-        let delta_time = delta_time as f32;
-        let new_velocity = self.velocity + delta_time * self.acceleration;
-        let new_position = self.position + delta_time * (self.velocity + new_velocity) / 2.0;
-        self.position = new_position;
-        self.velocity = new_velocity;
+    pub fn update(&mut self, delta_time: Time) {
+        let delta_time = Quantity::from(delta_time);
+        let old_acceleration = self.get_acceleration();
+        let old_velocity = self.get_velocity();
+        let old_position = self.get_position();
+        let new_velocity = old_velocity + delta_time * old_acceleration;
+        let new_position = old_position
+            + delta_time * (old_velocity + new_velocity) / Quantity::dimensionless(2.0);
+        self.position = new_position.value;
+        self.velocity = new_velocity.value;
     }
     ///Set the acceleration.
     pub fn set_constant_acceleration(&mut self, acceleration: f32) {
