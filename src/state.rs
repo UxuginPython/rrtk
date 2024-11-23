@@ -36,7 +36,7 @@ impl State {
     ///acceleration and returns `Ok` if the argument's `Unit` is correct, otherwise leaves it
     ///unchanged and returns `Err`. With dimension checking disabled, always sets the acceleration
     ///to the `Quantity`'s value and returns `Ok`, ignoring the `Unit`.
-    pub fn set_constant_acceleration(&mut self, acceleration: Quantity) -> Result<(), ()> {
+    pub const fn set_constant_acceleration(&mut self, acceleration: Quantity) -> Result<(), ()> {
         if acceleration
             .unit
             .eq_assume_true(&MILLIMETER_PER_SECOND_SQUARED)
@@ -48,7 +48,8 @@ impl State {
         }
     }
     ///Set the acceleration with an `f32` of millimeters per second squared.
-    pub fn set_constant_acceleration_raw(&mut self, acceleration: f32) {
+    #[inline]
+    pub const fn set_constant_acceleration_raw(&mut self, acceleration: f32) {
         self.acceleration = acceleration;
     }
     ///Set the velocity to a given value with a `Quantity`, and set acceleration to zero. With
@@ -56,7 +57,7 @@ impl State {
     ///argument's `Unit` is correct, otherwise leaves them unchanged and returns `Err`. With
     ///dimension checking disabled, ignores the `Unit` and always sets velocity and acceleration
     ///and returns `Ok`.
-    pub fn set_constant_velocity(&mut self, velocity: Quantity) -> Result<(), ()> {
+    pub const fn set_constant_velocity(&mut self, velocity: Quantity) -> Result<(), ()> {
         if velocity.unit.eq_assume_true(&MILLIMETER_PER_SECOND) {
             self.acceleration = 0.0;
             self.velocity = velocity.value;
@@ -66,7 +67,8 @@ impl State {
         }
     }
     ///Set the velocity to a given value with an `f32` of millimeters per second, and set acceleration to zero.
-    pub fn set_constant_velocity_raw(&mut self, velocity: f32) {
+    #[inline]
+    pub const fn set_constant_velocity_raw(&mut self, velocity: f32) {
         self.acceleration = 0.0;
         self.velocity = velocity;
     }
@@ -75,7 +77,7 @@ impl State {
     ///returns `Ok` if the argument's `Unit` is correct, otherwise leaves them unchanged and
     ///returns `Err`. With dimension checking disabled, always sets the position, velocity, and
     ///acceleration and returns `Ok`, ignoring the `Unit`.
-    pub fn set_constant_position(&mut self, position: Quantity) -> Result<(), ()> {
+    pub const fn set_constant_position(&mut self, position: Quantity) -> Result<(), ()> {
         if position.unit.eq_assume_true(&MILLIMETER) {
             self.acceleration = 0.0;
             self.velocity = 0.0;
@@ -86,7 +88,8 @@ impl State {
         }
     }
     ///Set the position to a given value with an `f32` of millimeters, and set velocity and acceleration to zero.
-    pub fn set_constant_position_raw(&mut self, position: f32) {
+    #[inline]
+    pub const fn set_constant_position_raw(&mut self, position: f32) {
         self.acceleration = 0.0;
         self.velocity = 0.0;
         self.position = position;
