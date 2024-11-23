@@ -125,7 +125,7 @@ mod acceleration_to_state {
                     Some(update_1) => match update_1.update_2 {
                         Some(position) => Ok(Some(Datum::new(
                             update_0.last_update_time,
-                            State::new(position.value, update_1.vel.value, update_0.acc.value),
+                            State::new(position, update_1.vel, update_0.acc),
                         ))),
                         None => Ok(None),
                     },

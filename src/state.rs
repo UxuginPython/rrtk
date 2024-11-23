@@ -12,8 +12,21 @@ pub struct State {
     pub acceleration: f32,
 }
 impl State {
-    ///Constructor for `State`.
-    pub const fn new(position: f32, velocity: f32, acceleration: f32) -> State {
+    ///Constructor for `State` using `Quantity` objects for position, velocity, and acceleration.
+    pub const fn new(position: Quantity, velocity: Quantity, acceleration: Quantity) -> Self {
+        position.unit.assert_eq_assume_ok(&MILLIMETER);
+        velocity.unit.assert_eq_assume_ok(&MILLIMETER_PER_SECOND);
+        acceleration
+            .unit
+            .assert_eq_assume_ok(&MILLIMETER_PER_SECOND_SQUARED);
+        State {
+            position: position.value,
+            velocity: velocity.value,
+            acceleration: acceleration.value,
+        }
+    }
+    ///Constructor for `State` using raw `f32`s for position, velocity, and acceleration.
+    pub const fn new_raw(position: f32, velocity: f32, acceleration: f32) -> Self {
         State {
             position: position,
             velocity: velocity,
@@ -122,13 +135,13 @@ impl State {
 impl Neg for State {
     type Output = Self;
     fn neg(self) -> Self {
-        State::new(-self.position, -self.velocity, -self.acceleration)
+        State::new_raw(-self.position, -self.velocity, -self.acceleration)
     }
 }
 impl Add for State {
     type Output = Self;
     fn add(self, other: State) -> Self {
-        State::new(
+        State::new_raw(
             self.position + other.position,
             self.velocity + other.velocity,
             self.acceleration + other.acceleration,
@@ -138,7 +151,7 @@ impl Add for State {
 impl Sub for State {
     type Output = Self;
     fn sub(self, other: State) -> Self {
-        State::new(
+        State::new_raw(
             self.position - other.position,
             self.velocity - other.velocity,
             self.acceleration - other.acceleration,
@@ -148,7 +161,7 @@ impl Sub for State {
 impl Mul<f32> for State {
     type Output = Self;
     fn mul(self, coef: f32) -> Self {
-        State::new(
+        State::new_raw(
             self.position * coef,
             self.velocity * coef,
             self.acceleration * coef,
@@ -158,7 +171,7 @@ impl Mul<f32> for State {
 impl Div<f32> for State {
     type Output = Self;
     fn div(self, dvsr: f32) -> Self {
-        State::new(
+        State::new_raw(
             self.position / dvsr,
             self.velocity / dvsr,
             self.acceleration / dvsr,
