@@ -103,12 +103,12 @@ mod acceleration_to_state {
     }
     ///A stream that integrates an acceleration getter to construct a full state. Mostly useful for
     ///encoders.
-    pub struct AccelerationToState<G: Getter<f32, E> + ?Sized, E: Copy + Debug> {
+    pub struct AccelerationToState<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> {
         acc: Reference<G>,
         update: Option<Update0>,
         phantom_e: PhantomData<E>,
     }
-    impl<G: Getter<f32, E> + ?Sized, E: Copy + Debug> AccelerationToState<G, E> {
+    impl<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> AccelerationToState<G, E> {
         ///Constructor for `AccelerationToState`.
         pub const fn new(acc: Reference<G>) -> Self {
             Self {
@@ -118,7 +118,9 @@ mod acceleration_to_state {
             }
         }
     }
-    impl<G: Getter<f32, E> + ?Sized, E: Copy + Debug> Getter<State, E> for AccelerationToState<G, E> {
+    impl<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> Getter<State, E>
+        for AccelerationToState<G, E>
+    {
         fn get(&self) -> Output<State, E> {
             match &self.update {
                 Some(update_0) => match &update_0.update_1 {
@@ -135,14 +137,16 @@ mod acceleration_to_state {
             }
         }
     }
-    impl<G: Getter<f32, E> + ?Sized, E: Copy + Debug> Updatable<E> for AccelerationToState<G, E> {
+    impl<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> Updatable<E> for AccelerationToState<G, E> {
         fn update(&mut self) -> NothingOrError<E> {
             match self.acc.borrow().get() {
                 Ok(gotten) => match gotten {
                     Some(new_acc_datum) => {
                         let new_time = new_acc_datum.time;
-                        let new_acc =
-                            Quantity::new(new_acc_datum.value, MILLIMETER_PER_SECOND_SQUARED);
+                        let new_acc = new_acc_datum.value;
+                        new_acc
+                            .unit
+                            .assert_eq_assume_ok(&MILLIMETER_PER_SECOND_SQUARED);
                         match &self.update {
                             Some(update_0) => {
                                 let old_time = update_0.last_update_time;
@@ -227,12 +231,12 @@ mod velocity_to_state {
     }
     ///A stream that integrates and derivates a velocity getter to construct a full state. Mostly
     ///useful for encoders.
-    pub struct VelocityToState<G: Getter<f32, E> + ?Sized, E: Copy + Debug> {
+    pub struct VelocityToState<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> {
         vel: Reference<G>,
         update: Option<Update0>,
         phantom_e: PhantomData<E>,
     }
-    impl<G: Getter<f32, E> + ?Sized, E: Copy + Debug> VelocityToState<G, E> {
+    impl<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> VelocityToState<G, E> {
         ///Constructor for `VelocityToState`.
         pub const fn new(vel: Reference<G>) -> Self {
             Self {
@@ -242,7 +246,7 @@ mod velocity_to_state {
             }
         }
     }
-    impl<G: Getter<f32, E> + ?Sized, E: Copy + Debug> Getter<State, E> for VelocityToState<G, E> {
+    impl<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> Getter<State, E> for VelocityToState<G, E> {
         fn get(&self) -> Output<State, E> {
             match &self.update {
                 Some(update_0) => match &update_0.update_1 {
@@ -260,13 +264,14 @@ mod velocity_to_state {
             }
         }
     }
-    impl<G: Getter<f32, E> + ?Sized, E: Copy + Debug> Updatable<E> for VelocityToState<G, E> {
+    impl<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> Updatable<E> for VelocityToState<G, E> {
         fn update(&mut self) -> NothingOrError<E> {
             match self.vel.borrow().get() {
                 Ok(gotten) => match gotten {
                     Some(new_vel_datum) => {
                         let new_time = new_vel_datum.time;
-                        let new_vel = Quantity::new(new_vel_datum.value, MILLIMETER_PER_SECOND);
+                        let new_vel = new_vel_datum.value;
+                        new_vel.unit.assert_eq_assume_ok(&MILLIMETER_PER_SECOND);
                         match &self.update {
                             Some(update_0) => {
                                 let old_time = update_0.last_update_time;
@@ -331,12 +336,12 @@ mod position_to_state {
         update_2: Option<Quantity>, //acceleration
     }
     ///A stream that derivates a position getter to construct a full state. Mostly useful for encoders.
-    pub struct PositionToState<G: Getter<f32, E> + ?Sized, E: Copy + Debug> {
+    pub struct PositionToState<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> {
         pos: Reference<G>,
         update: Option<Update0>,
         phantom_e: PhantomData<E>,
     }
-    impl<G: Getter<f32, E> + ?Sized, E: Copy + Debug> PositionToState<G, E> {
+    impl<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> PositionToState<G, E> {
         ///Constructor for `PositionToState`.
         pub const fn new(pos: Reference<G>) -> Self {
             Self {
@@ -346,7 +351,7 @@ mod position_to_state {
             }
         }
     }
-    impl<G: Getter<f32, E> + ?Sized, E: Copy + Debug> Getter<State, E> for PositionToState<G, E> {
+    impl<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> Getter<State, E> for PositionToState<G, E> {
         fn get(&self) -> Output<State, E> {
             match &self.update {
                 Some(update_0) => match &update_0.update_1 {
@@ -363,13 +368,14 @@ mod position_to_state {
             }
         }
     }
-    impl<G: Getter<f32, E> + ?Sized, E: Copy + Debug> Updatable<E> for PositionToState<G, E> {
+    impl<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> Updatable<E> for PositionToState<G, E> {
         fn update(&mut self) -> NothingOrError<E> {
             match self.pos.borrow().get() {
                 Ok(gotten) => match gotten {
                     Some(new_pos_datum) => {
                         let new_time = new_pos_datum.time;
-                        let new_pos = Quantity::new(new_pos_datum.value, MILLIMETER);
+                        let new_pos = new_pos_datum.value;
+                        new_pos.unit.assert_eq_assume_ok(&MILLIMETER);
                         match &self.update {
                             Some(update_0) => {
                                 let old_time = update_0.last_update_time;
@@ -418,6 +424,40 @@ mod position_to_state {
                 }
             }
             Ok(())
+        }
+    }
+}
+///Stream to convert an `f32` to a `Quantity` with a given `Unit`.
+pub struct FloatToQuantity<G: Getter<f32, E>, E: Copy + Debug> {
+    unit: Unit,
+    input: G,
+    value: Output<f32, E>,
+}
+impl<G: Getter<f32, E>, E: Copy + Debug> FloatToQuantity<G, E> {
+    ///Constructor for `FloatToQuantity`.
+    pub fn new(unit: Unit, input: G) -> Self {
+        Self {
+            unit: unit,
+            input: input,
+            value: Ok(None),
+        }
+    }
+}
+impl<G: Getter<f32, E>, E: Copy + Debug> Updatable<E> for FloatToQuantity<G, E> {
+    fn update(&mut self) -> NothingOrError<E> {
+        self.value = self.input.get();
+        Ok(())
+    }
+}
+impl<G: Getter<f32, E>, E: Copy + Debug> Getter<Quantity, E> for FloatToQuantity<G, E> {
+    fn get(&self) -> Output<Quantity, E> {
+        match self.value {
+            Err(err) => Err(err),
+            Ok(None) => Ok(None),
+            Ok(Some(datum)) => Ok(Some(Datum::new(
+                datum.time,
+                Quantity::new(datum.value, self.unit),
+            ))),
         }
     }
 }
