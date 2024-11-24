@@ -54,10 +54,20 @@ impl Add for Time {
         Self(self.0 + rhs.0)
     }
 }
+impl AddAssign for Time {
+    fn add_assign(&mut self, rhs: Self) {
+        self.0 += rhs.0;
+    }
+}
 impl Sub for Time {
     type Output = Self;
     fn sub(self, rhs: Self) -> Self {
         Self(self.0 - rhs.0)
+    }
+}
+impl SubAssign for Time {
+    fn sub_assign(&mut self, rhs: Self) {
+        self.0 -= rhs.0;
     }
 }
 impl Mul for Time {
@@ -84,10 +94,20 @@ impl Mul<DimensionlessInteger> for Time {
         Self(self.0 * rhs.0)
     }
 }
+impl MulAssign<DimensionlessInteger> for Time {
+    fn mul_assign(&mut self, rhs: DimensionlessInteger) {
+        self.0 *= rhs.0;
+    }
+}
 impl Div<DimensionlessInteger> for Time {
     type Output = Self;
     fn div(self, rhs: DimensionlessInteger) -> Self {
         Self(self.0 / rhs.0)
+    }
+}
+impl DivAssign<DimensionlessInteger> for Time {
+    fn div_assign(&mut self, rhs: DimensionlessInteger) {
+        self.0 /= rhs.0;
     }
 }
 ///A dimensionless quantity stored as an integer. Used almost exclusively for when a time, stored
@@ -133,10 +153,20 @@ impl Add for DimensionlessInteger {
         Self(self.0 + rhs.0)
     }
 }
+impl AddAssign for DimensionlessInteger {
+    fn add_assign(&mut self, rhs: Self) {
+        self.0 += rhs.0;
+    }
+}
 impl Sub for DimensionlessInteger {
     type Output = Self;
     fn sub(self, rhs: Self) -> Self {
         Self(self.0 - rhs.0)
+    }
+}
+impl SubAssign for DimensionlessInteger {
+    fn sub_assign(&mut self, rhs: Self) {
+        self.0 -= rhs.0;
     }
 }
 impl Mul for DimensionlessInteger {
@@ -145,10 +175,20 @@ impl Mul for DimensionlessInteger {
         Self(self.0 * rhs.0)
     }
 }
+impl MulAssign for DimensionlessInteger {
+    fn mul_assign(&mut self, rhs: Self) {
+        self.0 *= rhs.0;
+    }
+}
 impl Div for DimensionlessInteger {
     type Output = Self;
     fn div(self, rhs: Self) -> Self {
         Self(self.0 / rhs.0)
+    }
+}
+impl DivAssign for DimensionlessInteger {
+    fn div_assign(&mut self, rhs: Self) {
+        self.0 /= rhs.0;
     }
 }
 impl Neg for DimensionlessInteger {
@@ -326,6 +366,11 @@ impl Add for Unit {
         self
     }
 }
+impl AddAssign for Unit {
+    fn add_assign(&mut self, rhs: Self) {
+        self.assert_eq_assume_ok(&rhs);
+    }
+}
 ///The `Sub` implementation for `Unit` acts like you are trying to subtract quantities of the unit,
 ///not like you are trying to actually subtract the exponents. This should be more useful most of
 ///the time, but it could be somewhat confusing. All this does is `assert_eq!` the `Unit` with the
@@ -338,6 +383,11 @@ impl Sub for Unit {
     fn sub(self, rhs: Self) -> Self {
         self.assert_eq_assume_ok(&rhs);
         self
+    }
+}
+impl SubAssign for Unit {
+    fn sub_assign(&mut self, rhs: Self) {
+        self.assert_eq_assume_ok(&rhs);
     }
 }
 ///The `Mul` implementation for `Unit` acts like you are trying to multiply quantities of the unit,
@@ -366,6 +416,11 @@ impl Mul for Unit {
         Self {}
     }
 }
+impl MulAssign for Unit {
+    fn mul_assign(&mut self, rhs: Self) {
+        *self = *self * rhs;
+    }
+}
 ///The `Div` implementation for `Unit` acts like you are trying to divide quantities of the unit,
 ///not like you are trying to actually divide the exponents. This should be more useful most of the
 ///time, but it could be somewhat confusing. This subtracts the exponents of the right-hand side
@@ -390,6 +445,11 @@ impl Div for Unit {
             all(debug_assertions, feature = "dim_check_debug")
         )))]
         Self {}
+    }
+}
+impl DivAssign for Unit {
+    fn div_assign(&mut self, rhs: Self) {
+        *self = *self / rhs;
     }
 }
 ///The `Neg` implementation for `Unit` acts like you are trying to negate quantities of the unit,
@@ -471,6 +531,11 @@ impl Add for Quantity {
         }
     }
 }
+impl AddAssign for Quantity {
+    fn add_assign(&mut self, rhs: Self) {
+        *self = *self + rhs;
+    }
+}
 impl Sub for Quantity {
     type Output = Self;
     fn sub(self, rhs: Self) -> Self {
@@ -478,6 +543,11 @@ impl Sub for Quantity {
             value: self.value - rhs.value,
             unit: self.unit - rhs.unit,
         }
+    }
+}
+impl SubAssign for Quantity {
+    fn sub_assign(&mut self, rhs: Self) {
+        *self = *self - rhs;
     }
 }
 impl Mul for Quantity {
@@ -489,6 +559,11 @@ impl Mul for Quantity {
         }
     }
 }
+impl MulAssign for Quantity {
+    fn mul_assign(&mut self, rhs: Self) {
+        *self = *self * rhs;
+    }
+}
 impl Div for Quantity {
     type Output = Self;
     fn div(self, rhs: Self) -> Self {
@@ -496,6 +571,11 @@ impl Div for Quantity {
             value: self.value / rhs.value,
             unit: self.unit / rhs.unit,
         }
+    }
+}
+impl DivAssign for Quantity {
+    fn div_assign(&mut self, rhs: Self) {
+        *self = *self / rhs;
     }
 }
 impl Neg for Quantity {
@@ -513,10 +593,20 @@ impl Mul<Time> for Quantity {
         self * Quantity::from(rhs)
     }
 }
+impl MulAssign<Time> for Quantity {
+    fn mul_assign(&mut self, rhs: Time) {
+        *self = *self * rhs;
+    }
+}
 impl Div<Time> for Quantity {
     type Output = Self;
     fn div(self, rhs: Time) -> Self {
         self / Quantity::from(rhs)
+    }
+}
+impl DivAssign<Time> for Quantity {
+    fn div_assign(&mut self, rhs: Time) {
+        *self = *self / rhs;
     }
 }
 #[cfg(not(any(
