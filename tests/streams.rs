@@ -268,24 +268,27 @@ fn none_to_value() {
         }
     }
 }
-/*#[test]
+#[test]
 fn acceleration_to_state() {
     struct AccGetter {
-        time: i64,
+        time: Time,
     }
     impl AccGetter {
         const fn new() -> Self {
-            Self { time: 0 }
+            Self { time: Time(0) }
         }
     }
-    impl Getter<f32, ()> for AccGetter {
-        fn get(&self) -> Output<f32, ()> {
-            Ok(Some(Datum::new(self.time, 1.0)))
+    impl Getter<Quantity, ()> for AccGetter {
+        fn get(&self) -> Output<Quantity, ()> {
+            Ok(Some(Datum::new(
+                self.time,
+                Quantity::new(1.0, MILLIMETER_PER_SECOND_SQUARED),
+            )))
         }
     }
     impl Updatable<()> for AccGetter {
         fn update(&mut self) -> NothingOrError<()> {
-            self.time += 1;
+            self.time += Time(1_000_000_000);
             Ok(())
         }
     }
@@ -308,28 +311,33 @@ fn acceleration_to_state() {
         let output = state_getter.get();
         assert_eq!(
             output.unwrap().unwrap(),
-            Datum::new(3, State::new(1.5, 2.0, 1.0))
+            Datum::new(Time(3_000_000_000), State::new_raw(1.5, 2.0, 1.0))
         );
     }
 }
 #[test]
 fn velocity_to_state() {
     struct VelGetter {
-        time: i64,
+        time: Time,
     }
     impl VelGetter {
         const fn new() -> Self {
-            Self { time: 0 }
+            Self { time: Time(0) }
         }
     }
-    impl Getter<f32, ()> for VelGetter {
-        fn get(&self) -> Output<f32, ()> {
-            Ok(Some(Datum::new(self.time, self.time as f32)))
+    impl Getter<Quantity, ()> for VelGetter {
+        fn get(&self) -> Output<Quantity, ()> {
+            //                            | never do this
+            //                            V
+            Ok(Some(Datum::new(
+                self.time,
+                Quantity::new(f32::from(Quantity::from(self.time)), MILLIMETER_PER_SECOND),
+            )))
         }
     }
     impl Updatable<()> for VelGetter {
         fn update(&mut self) -> NothingOrError<()> {
-            self.time += 1;
+            self.time += Time(1_000_000_000);
             Ok(())
         }
     }
@@ -348,28 +356,33 @@ fn velocity_to_state() {
         let output = state_getter.get();
         assert_eq!(
             output.unwrap().unwrap(),
-            Datum::new(2, State::new(1.5, 2.0, 1.0))
+            Datum::new(Time(2_000_000_000), State::new_raw(1.5, 2.0, 1.0))
         );
     }
 }
 #[test]
 fn position_to_state() {
     struct PosGetter {
-        time: i64,
+        time: Time,
     }
     impl PosGetter {
         const fn new() -> Self {
-            Self { time: 0 }
+            Self { time: Time(0) }
         }
     }
-    impl Getter<f32, ()> for PosGetter {
-        fn get(&self) -> Output<f32, ()> {
-            Ok(Some(Datum::new(self.time, self.time as f32)))
+    impl Getter<Quantity, ()> for PosGetter {
+        fn get(&self) -> Output<Quantity, ()> {
+            //                            | never do this
+            //                            V
+            Ok(Some(Datum::new(
+                self.time,
+                Quantity::new(f32::from(Quantity::from(self.time)), MILLIMETER),
+            )))
         }
     }
     impl Updatable<()> for PosGetter {
         fn update(&mut self) -> NothingOrError<()> {
-            self.time += 1;
+            self.time += Time(1_000_000_000);
             Ok(())
         }
     }
@@ -392,11 +405,11 @@ fn position_to_state() {
         let output = state_getter.get();
         assert_eq!(
             output.unwrap().unwrap(),
-            Datum::new(3, State::new(3.0, 1.0, 0.0))
+            Datum::new(Time(3_000_000_000), State::new_raw(3.0, 1.0, 0.0))
         );
     }
 }
-#[test]
+/*#[test]
 fn sum_stream() {
     #[derive(Clone, Copy, Debug)]
     struct Nothing;
