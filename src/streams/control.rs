@@ -402,14 +402,14 @@ impl<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> Updatable<E> for EWMAStre
 }
 ///A moving average stream for use with the stream system.
 #[cfg(feature = "alloc")]
-pub struct MovingAverageStream<G: Getter<f32, E> + ?Sized, E: Copy + Debug> {
+pub struct MovingAverageStream<T, G: Getter<T, E> + ?Sized, E: Copy + Debug> {
     input: Reference<G>,
     window: Time,
-    value: Output<f32, E>,
-    input_values: VecDeque<Datum<f32>>,
+    value: Output<T, E>,
+    input_values: VecDeque<Datum<T>>,
 }
 #[cfg(feature = "alloc")]
-impl<G: Getter<f32, E> + ?Sized, E: Copy + Debug> MovingAverageStream<G, E> {
+impl<T, G: Getter<T, E> + ?Sized, E: Copy + Debug> MovingAverageStream<T, G, E> {
     ///Constructor for `MovingAverageStream`.
     pub const fn new(input: Reference<G>, window: Time) -> Self {
         Self {
@@ -421,13 +421,23 @@ impl<G: Getter<f32, E> + ?Sized, E: Copy + Debug> MovingAverageStream<G, E> {
     }
 }
 #[cfg(feature = "alloc")]
-impl<G: Getter<f32, E> + ?Sized, E: Copy + Debug> Getter<f32, E> for MovingAverageStream<G, E> {
-    fn get(&self) -> Output<f32, E> {
+impl<
+        T: Clone + Default + AddAssign + Mul<f32, Output = T> + DivAssign<f32>,
+        G: Getter<T, E> + ?Sized,
+        E: Copy + Debug,
+    > Getter<T, E> for MovingAverageStream<T, G, E>
+{
+    fn get(&self) -> Output<T, E> {
         self.value.clone()
     }
 }
 #[cfg(feature = "alloc")]
-impl<G: Getter<f32, E> + ?Sized, E: Copy + Debug> Updatable<E> for MovingAverageStream<G, E> {
+impl<
+        T: Clone + Default + AddAssign + Mul<f32, Output = T> + DivAssign<f32>,
+        G: Getter<T, E> + ?Sized,
+        E: Copy + Debug,
+    > Updatable<E> for MovingAverageStream<T, G, E>
+{
     fn update(&mut self) -> NothingOrError<E> {
         let output = self.input.borrow().get();
         let output = match output {
@@ -469,9 +479,9 @@ impl<G: Getter<f32, E> + ?Sized, E: Copy + Debug> Updatable<E> for MovingAverage
         for i in 0..self.input_values.len() {
             weights.push(f32::from(Quantity::from(end_times[i] - start_times[i])));
         }
-        let mut value = 0.0;
+        let mut value = T::default();
         for i in 0..self.input_values.len() {
-            value += self.input_values[i].value * weights[i];
+            value += self.input_values[i].value.clone() * weights[i];
         }
         value /= f32::from(Quantity::from(self.window));
         self.value = Ok(Some(Datum::new(output.time, value)));
