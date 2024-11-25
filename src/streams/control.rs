@@ -298,7 +298,7 @@ impl<G: Getter<f32, E> + ?Sized, E: Copy + Debug> Getter<f32, E> for EWMAStream<
 impl<G: Getter<f32, E> + ?Sized, E: Copy + Debug> Updatable<E> for EWMAStream<G, E> {
     fn update(&mut self) -> NothingOrError<E> {
         let output = self.input.borrow().get();
-        match output {
+        let output = match output {
             Err(error) => {
                 self.value = Err(error);
                 self.update_time = None;
@@ -314,17 +314,16 @@ impl<G: Getter<f32, E> + ?Sized, E: Copy + Debug> Updatable<E> for EWMAStream<G,
                 }
                 return Ok(());
             }
-            Ok(Some(_)) => {}
-        }
-        let output = output.unwrap().unwrap();
-        match self.value {
-            Ok(Some(_)) => {}
+            Ok(Some(some)) => some,
+        };
+        let prev_value = match self.value {
+            Ok(Some(some)) => some,
             _ => {
                 self.value = Ok(Some(output.clone()));
                 self.update_time = Some(output.time);
+                output.clone()
             }
-        }
-        let prev_value = self.value.as_ref().unwrap().as_ref().unwrap();
+        };
         let prev_time = self
             .update_time
             .expect("update_time must be Some if value is");
