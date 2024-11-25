@@ -488,3 +488,65 @@ impl<
         Ok(())
     }
 }
+#[cfg(feature = "alloc")]
+impl<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> Getter<Quantity, E>
+    for MovingAverageStream<Quantity, G, E>
+{
+    fn get(&self) -> Output<Quantity, E> {
+        self.value.clone()
+    }
+}
+#[cfg(feature = "alloc")]
+impl<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> Updatable<E>
+    for MovingAverageStream<Quantity, G, E>
+{
+    fn update(&mut self) -> NothingOrError<E> {
+        let output = self.input.borrow().get();
+        let output = match output {
+            Ok(Some(thing)) => thing,
+            Ok(None) => {
+                match self.value {
+                    Ok(_) => {}
+                    Err(_) => {
+                        //We got an Ok(None) from input, so there's not a problem anymore, but we
+                        //still don't have a value. Set it to Ok(None) and leave input_values
+                        //empty.
+                        self.value = Ok(None);
+                    }
+                }
+                return Ok(());
+            }
+            Err(error) => {
+                self.value = Err(error);
+                self.input_values.clear();
+                return Err(error);
+            }
+        };
+        self.input_values.push_back(output.clone());
+        if self.input_values.len() == 0 {
+            self.value = Ok(Some(output));
+            return Ok(());
+        }
+        while self.input_values[0].time <= output.time - self.window {
+            self.input_values.pop_front();
+        }
+        let mut end_times = Vec::new();
+        for i in &self.input_values {
+            end_times.push(i.time);
+        }
+        let mut start_times = VecDeque::from(end_times.clone());
+        start_times.pop_back();
+        start_times.push_front(output.time - self.window);
+        let mut weights = Vec::with_capacity(self.input_values.len());
+        for i in 0..self.input_values.len() {
+            weights.push(f32::from(Quantity::from(end_times[i] - start_times[i])));
+        }
+        let mut value = self.input_values[0].value.clone() * Quantity::dimensionless(weights[0]);
+        for i in 1..self.input_values.len() {
+            value += self.input_values[i].value.clone() * Quantity::dimensionless(weights[i]);
+        }
+        value /= Quantity::from(self.window);
+        self.value = Ok(Some(Datum::new(output.time, value)));
+        Ok(())
+    }
+}
