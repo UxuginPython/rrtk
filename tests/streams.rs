@@ -1063,26 +1063,29 @@ fn exponent_stream() {
         }
     }
 }
-/*#[test]
+#[test]
 fn derivative_stream() {
     #[derive(Clone, Copy, Debug)]
     struct DummyError;
     struct DummyStream {
-        time: i64,
+        time: Time,
     }
     impl DummyStream {
         pub const fn new() -> Self {
-            Self { time: 0 }
+            Self { time: Time(0) }
         }
     }
-    impl Getter<f32, DummyError> for DummyStream {
-        fn get(&self) -> Output<f32, DummyError> {
-            Ok(Some(Datum::new(self.time * 2, (self.time * 3) as f32)))
+    impl Getter<Quantity, DummyError> for DummyStream {
+        fn get(&self) -> Output<Quantity, DummyError> {
+            Ok(Some(Datum::new(
+                self.time * DimensionlessInteger(2),
+                Quantity::from(self.time * DimensionlessInteger(3)),
+            )))
         }
     }
     impl Updatable<DummyError> for DummyStream {
         fn update(&mut self) -> NothingOrError<DummyError> {
-            self.time += 2;
+            self.time += Time(2_000_000_000);
             Ok(())
         }
     }
@@ -1094,11 +1097,14 @@ fn derivative_stream() {
         stream.update().unwrap();
         input.borrow_mut().update().unwrap();
         stream.update().unwrap();
-        assert_eq!(stream.get().unwrap().unwrap().time, 8);
-        assert_eq!(stream.get().unwrap().unwrap().value, 1.5);
+        assert_eq!(stream.get().unwrap().unwrap().time, Time(8_000_000_000));
+        assert_eq!(
+            stream.get().unwrap().unwrap().value,
+            Quantity::new(1.5, DIMENSIONLESS) //Derivating time d time returns a dimensionless quantity.
+        );
     }
 }
-#[test]
+/*#[test]
 fn integral_stream() {
     #[derive(Clone, Copy, Debug)]
     struct DummyError;
