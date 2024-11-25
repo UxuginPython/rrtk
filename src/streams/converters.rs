@@ -461,3 +461,33 @@ impl<G: Getter<f32, E>, E: Copy + Debug> Getter<Quantity, E> for FloatToQuantity
         }
     }
 }
+///Stream to convert a `Quantity` to a raw `f32`.
+pub struct QuantityToFloat<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> {
+    input: Reference<G>,
+    value: Output<f32, E>,
+}
+impl<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> QuantityToFloat<G, E> {
+    ///Construcctor for `QuantityToFloat`.
+    pub fn new(input: Reference<G>) -> Self {
+        Self {
+            input: input,
+            value: Ok(None),
+        }
+    }
+}
+impl<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> Getter<f32, E> for QuantityToFloat<G, E> {
+    fn get(&self) -> Output<f32, E> {
+        self.value
+    }
+}
+impl<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> Updatable<E> for QuantityToFloat<G, E> {
+    fn update(&mut self) -> NothingOrError<E> {
+        let gotten = self.input.borrow().get();
+        self.value = match gotten {
+            Err(error) => Err(error),
+            Ok(None) => Ok(None),
+            Ok(Some(datum)) => Ok(Some(Datum::new(datum.time, datum.value.value))),
+        };
+        Ok(())
+    }
+}
