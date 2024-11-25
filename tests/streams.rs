@@ -1145,26 +1145,29 @@ fn integral_stream() {
         );
     }
 }
-/*#[test]
-fn stream_pid() {
+#[test]
+fn pid_controller_stream() {
     #[derive(Clone, Copy, Debug)]
     struct DummyError;
     struct DummyStream {
-        time: i64,
+        time: Time,
     }
     impl DummyStream {
         pub const fn new() -> Self {
-            Self { time: 0 }
+            Self { time: Time(0) }
         }
     }
     impl Getter<f32, DummyError> for DummyStream {
         fn get(&self) -> Output<f32, DummyError> {
-            Ok(Some(Datum::new(self.time, (self.time / 2) as f32)))
+            Ok(Some(Datum::new(
+                self.time,
+                f32::from(Quantity::from(self.time / DimensionlessInteger(2))),
+            )))
         }
     }
     impl Updatable<DummyError> for DummyStream {
         fn update(&mut self) -> NothingOrError<DummyError> {
-            self.time += 2;
+            self.time += Time(2_000_000_000);
             Ok(())
         }
     }
@@ -1174,15 +1177,15 @@ fn stream_pid() {
         let mut stream =
             PIDControllerStream::new(input.clone(), 5.0, PIDKValues::new(1.0, 0.01, 0.1));
         stream.update().unwrap();
-        assert_eq!(stream.get().unwrap().unwrap().time, 0);
+        assert_eq!(stream.get().unwrap().unwrap().time, Time(0));
         assert_eq!(stream.get().unwrap().unwrap().value, 5.0);
         input.borrow_mut().update().unwrap();
         stream.update().unwrap();
-        assert_eq!(stream.get().unwrap().unwrap().time, 2);
+        assert_eq!(stream.get().unwrap().unwrap().time, Time(2_000_000_000));
         assert_eq!(stream.get().unwrap().unwrap().value, 4.04);
     }
 }
-#[test]
+/*#[test]
 fn ewma_stream() {
     #[derive(Clone, Copy, Debug)]
     struct DummyError;
