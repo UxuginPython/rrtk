@@ -1613,7 +1613,7 @@ fn or_stream() {
         and.update().unwrap();
     }
 }
-/*#[test]
+#[test]
 fn not_stream() {
     struct In {
         index: u8,
@@ -1626,9 +1626,9 @@ fn not_stream() {
     impl Getter<bool, ()> for In {
         fn get(&self) -> Output<bool, ()> {
             Ok(match self.index {
-                0 => Some(Datum::new(0, false)),
+                0 => Some(Datum::new(Time(0), false)),
                 1 => None,
-                2 => Some(Datum::new(0, true)),
+                2 => Some(Datum::new(Time(0), true)),
                 _ => unimplemented!(),
             })
         }
@@ -1652,7 +1652,7 @@ fn not_stream() {
         assert_eq!(not.get().unwrap().unwrap().value, false);
     }
 }
-#[test]
+/*#[test]
 fn if_stream() {
     struct Condition {
         index: u8,
