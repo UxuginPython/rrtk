@@ -1842,10 +1842,10 @@ fn freeze_stream() {
         assert_eq!(freeze.get().unwrap().unwrap().value, 9);
     }
 }
-/*#[test]
+#[test]
 fn command_pid() {
     struct Input {
-        time: i64,
+        time: Time,
     }
     impl Getter<State, ()> for Input {
         fn get(&self) -> Output<State, ()> {
@@ -1854,7 +1854,7 @@ fn command_pid() {
     }
     impl Updatable<()> for Input {
         fn update(&mut self) -> NothingOrError<()> {
-            self.time += 1;
+            self.time += Time(1_000_000_000);
             Ok(())
         }
     }
@@ -1865,7 +1865,7 @@ fn command_pid() {
             PIDKValues::new(1.0, 0.01, 0.1),
         );
         {
-            static mut INPUT: Input = Input { time: 0 };
+            static mut INPUT: Input = Input { time: Time(0) };
             let input = Reference::from_ptr(core::ptr::addr_of_mut!(INPUT));
             let mut pid = CommandPID::new(
                 input.clone(),
@@ -1887,7 +1887,7 @@ fn command_pid() {
         }
 
         {
-            static mut INPUT: Input = Input { time: 0 };
+            static mut INPUT: Input = Input { time: Time(0) };
             let input = Reference::from_ptr(core::ptr::addr_of_mut!(INPUT));
             let mut pid = CommandPID::new(
                 input.clone(),
@@ -1909,7 +1909,7 @@ fn command_pid() {
         }
 
         {
-            static mut INPUT: Input = Input { time: 0 };
+            static mut INPUT: Input = Input { time: Time(0) };
             let input = Reference::from_ptr(core::ptr::addr_of_mut!(INPUT));
             let mut pid = CommandPID::new(
                 input.clone(),
@@ -1930,4 +1930,4 @@ fn command_pid() {
             assert_eq!(pid.get().unwrap().unwrap().value, 20.225);
         }
     }
-}*/
+}
