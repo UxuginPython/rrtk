@@ -1759,47 +1759,47 @@ fn if_else_stream() {
         assert_eq!(if_else_stream.get().unwrap().unwrap().value, 1);
     }
 }
-/*#[test]
+#[test]
 fn freeze_stream() {
     struct Condition {
-        time: i64,
+        time: Time,
     }
     impl Getter<bool, ()> for Condition {
         fn get(&self) -> Output<bool, ()> {
-            Ok(match self.time {
-                0..=1 => Some(Datum::new(0, false)),
-                2..=3 => Some(Datum::new(0, true)),
-                4..=5 => Some(Datum::new(0, false)),
+            Ok(match self.time.0 {
+                0..=1 => Some(Datum::new(Time(0), false)),
+                2..=3 => Some(Datum::new(Time(0), true)),
+                4..=5 => Some(Datum::new(Time(0), false)),
                 6..=7 => None,
-                8..=9 => Some(Datum::new(0, false)),
+                8..=9 => Some(Datum::new(Time(0), false)),
                 _ => unimplemented!(),
             })
         }
     }
     impl Updatable<()> for Condition {
         fn update(&mut self) -> NothingOrError<()> {
-            self.time += 1;
+            self.time += Time(1);
             Ok(())
         }
     }
     struct Input {
-        time: i64,
+        time: Time,
     }
     impl Getter<i64, ()> for Input {
         fn get(&self) -> Output<i64, ()> {
-            Ok(Some(Datum::new(0, self.time)))
+            Ok(Some(Datum::new(Time(0), self.time.into())))
         }
     }
     impl Updatable<()> for Input {
         fn update(&mut self) -> NothingOrError<()> {
-            self.time += 1;
+            self.time += Time(1);
             Ok(())
         }
     }
     unsafe {
-        static mut CONDITION: Condition = Condition { time: 0 };
+        static mut CONDITION: Condition = Condition { time: Time(0) };
         let condition = Reference::from_ptr(core::ptr::addr_of_mut!(CONDITION));
-        static mut INPUT: Input = Input { time: 0 };
+        static mut INPUT: Input = Input { time: Time(0) };
         let input = Reference::from_ptr(core::ptr::addr_of_mut!(INPUT));
         let mut freeze = FreezeStream::new(condition.clone(), input.clone());
         freeze.update().unwrap();
@@ -1842,7 +1842,7 @@ fn freeze_stream() {
         assert_eq!(freeze.get().unwrap().unwrap().value, 9);
     }
 }
-#[test]
+/*#[test]
 fn command_pid() {
     struct Input {
         time: i64,
