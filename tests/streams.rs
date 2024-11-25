@@ -1652,7 +1652,7 @@ fn not_stream() {
         assert_eq!(not.get().unwrap().unwrap().value, false);
     }
 }
-/*#[test]
+#[test]
 fn if_stream() {
     struct Condition {
         index: u8,
@@ -1660,9 +1660,9 @@ fn if_stream() {
     impl Getter<bool, ()> for Condition {
         fn get(&self) -> Output<bool, ()> {
             Ok(match self.index {
-                0 => Some(Datum::new(0, false)),
+                0 => Some(Datum::new(Time(0), false)),
                 1 => None,
-                2 => Some(Datum::new(0, true)),
+                2 => Some(Datum::new(Time(0), true)),
                 _ => unimplemented!(),
             })
         }
@@ -1676,7 +1676,7 @@ fn if_stream() {
     struct Input;
     impl Getter<u8, ()> for Input {
         fn get(&self) -> Output<u8, ()> {
-            Ok(Some(Datum::new(0, 0)))
+            Ok(Some(Datum::new(Time(0), 0)))
         }
     }
     impl Updatable<()> for Input {
@@ -1699,7 +1699,7 @@ fn if_stream() {
         assert_eq!(if_stream.get().unwrap().unwrap().value, 0);
     }
 }
-#[test]
+/*#[test]
 fn if_else_stream() {
     struct Condition {
         index: u8,
