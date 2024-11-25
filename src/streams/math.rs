@@ -284,13 +284,13 @@ impl<GB: Getter<f32, E> + ?Sized, GE: Getter<f32, E> + ?Sized, E: Copy + Debug> 
     }
 }
 ///A stream that computes the numerical derivative of its input.
-pub struct DerivativeStream<G: Getter<f32, E> + ?Sized, E: Copy + Debug> {
+pub struct DerivativeStream<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> {
     input: Reference<G>,
-    value: Output<f32, E>,
+    value: Output<Quantity, E>,
     //doesn't matter if this is an Err or Ok(None) - we can't use it either way if it's not Some
-    prev_output: Option<Datum<f32>>,
+    prev_output: Option<Datum<Quantity>>,
 }
-impl<G: Getter<f32, E> + ?Sized, E: Copy + Debug> DerivativeStream<G, E> {
+impl<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> DerivativeStream<G, E> {
     ///Constructor for `DerivativeStream`.
     pub const fn new(input: Reference<G>) -> Self {
         Self {
@@ -300,42 +300,41 @@ impl<G: Getter<f32, E> + ?Sized, E: Copy + Debug> DerivativeStream<G, E> {
         }
     }
 }
-impl<G: Getter<f32, E> + ?Sized, E: Copy + Debug> Getter<f32, E> for DerivativeStream<G, E> {
-    fn get(&self) -> Output<f32, E> {
+impl<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> Getter<Quantity, E>
+    for DerivativeStream<G, E>
+{
+    fn get(&self) -> Output<Quantity, E> {
         self.value.clone()
     }
 }
-impl<G: Getter<f32, E> + ?Sized, E: Copy + Debug> Updatable<E> for DerivativeStream<G, E> {
+impl<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> Updatable<E> for DerivativeStream<G, E> {
     fn update(&mut self) -> NothingOrError<E> {
         let output = self.input.borrow().get();
-        match output {
-            Ok(_) => {}
+        let output = match output {
+            Ok(ok) => ok,
             Err(error) => {
                 self.value = Err(error);
                 self.prev_output = None;
                 return Err(error);
             }
-        }
-        let output = output.unwrap();
-        match output {
-            Some(_) => {}
+        };
+        let output = match output {
+            Some(some) => some,
             None => {
                 self.value = Ok(None);
                 self.prev_output = None;
                 return Ok(());
             }
-        }
-        let output = output.unwrap();
-        match self.prev_output {
-            Some(_) => {}
+        };
+        let prev_output = match self.prev_output {
+            Some(some) => some,
             None => {
                 self.prev_output = Some(output);
                 return Ok(());
             }
-        }
-        let prev_output = self.prev_output.as_ref().unwrap();
-        let value = (output.value - prev_output.value)
-            / f32::from(Quantity::from(output.time - prev_output.time));
+        };
+        let value =
+            (output.value - prev_output.value) / Quantity::from(output.time - prev_output.time);
         self.value = Ok(Some(Datum::new(output.time, value)));
         self.prev_output = Some(output);
         Ok(())
