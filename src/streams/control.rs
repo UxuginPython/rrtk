@@ -78,189 +78,196 @@ impl<G: Getter<f32, E> + ?Sized, E: Copy + Debug> Updatable<E> for PIDController
         Ok(())
     }
 }
-#[derive(Clone, Debug, PartialEq)]
-struct Update0 {
-    pub time: Time,
-    pub output: f32,
-    pub error: f32,
-    pub maybe_update_1: Option<Update1>,
-}
-#[derive(Clone, Debug, PartialEq)]
-struct Update1 {
-    pub output_int: f32,
-    pub error_int: f32,
-    pub output_int_int: Option<f32>,
-}
-///Automatically integrates the command variable of a PID controller based on the position
-///derivative of a `Command`. Designed to make it easier to use a standard DC motor and an encoder
-///as a de facto servo.
-pub struct CommandPID<G: Getter<State, E> + ?Sized, E: Copy + Debug> {
-    settable_data: SettableData<Command, E>,
-    input: Reference<G>,
-    command: Command,
-    kvals: PositionDerivativeDependentPIDKValues,
-    update_state: Result<Option<Update0>, Error<E>>,
-}
-impl<G: Getter<State, E> + ?Sized, E: Copy + Debug> CommandPID<G, E> {
-    ///Constructor for `CommandPID`.
-    pub const fn new(
+pub use command_pid::CommandPID;
+mod command_pid {
+    use super::*;
+    #[derive(Clone, Debug, PartialEq)]
+    struct Update0 {
+        pub time: Time,
+        pub output: f32,
+        pub error: f32,
+        pub maybe_update_1: Option<Update1>,
+    }
+    #[derive(Clone, Debug, PartialEq)]
+    struct Update1 {
+        pub output_int: f32,
+        pub error_int: f32,
+        pub output_int_int: Option<f32>,
+    }
+    ///Automatically integrates the command variable of a PID controller based on the position
+    ///derivative of a `Command`. Designed to make it easier to use a standard DC motor and an encoder
+    ///as a de facto servo.
+    pub struct CommandPID<G: Getter<State, E> + ?Sized, E: Copy + Debug> {
+        settable_data: SettableData<Command, E>,
         input: Reference<G>,
         command: Command,
-        kvalues: PositionDerivativeDependentPIDKValues,
-    ) -> Self {
-        Self {
-            settable_data: SettableData::new(),
-            input: input,
-            command: command,
-            kvals: kvalues,
-            update_state: Ok(None),
+        kvals: PositionDerivativeDependentPIDKValues,
+        update_state: Result<Option<Update0>, Error<E>>,
+    }
+    impl<G: Getter<State, E> + ?Sized, E: Copy + Debug> CommandPID<G, E> {
+        ///Constructor for `CommandPID`.
+        pub const fn new(
+            input: Reference<G>,
+            command: Command,
+            kvalues: PositionDerivativeDependentPIDKValues,
+        ) -> Self {
+            Self {
+                settable_data: SettableData::new(),
+                input: input,
+                command: command,
+                kvals: kvalues,
+                update_state: Ok(None),
+            }
+        }
+        ///Clear cached data for calculating integral and derivative. After this is called, the PID
+        ///controller will use the next few updates to rebuild its cache in the same way as it does
+        ///during the first few updates after initialization. This is called when the command changes
+        ///so as not to cause issues with the integral and derivative.
+        #[inline]
+        pub fn reset(&mut self) {
+            self.update_state = Ok(None);
         }
     }
-    ///Clear cached data for calculating integral and derivative. After this is called, the PID
-    ///controller will use the next few updates to rebuild its cache in the same way as it does
-    ///during the first few updates after initialization. This is called when the command changes
-    ///so as not to cause issues with the integral and derivative.
-    #[inline]
-    pub fn reset(&mut self) {
-        self.update_state = Ok(None);
-    }
-}
-impl<G: Getter<State, E> + ?Sized, E: Copy + Debug> Settable<Command, E> for CommandPID<G, E> {
-    fn get_settable_data_ref(&self) -> &SettableData<Command, E> {
-        &self.settable_data
-    }
-    fn get_settable_data_mut(&mut self) -> &mut SettableData<Command, E> {
-        &mut self.settable_data
-    }
-    fn impl_set(&mut self, command: Command) -> NothingOrError<E> {
-        if command != self.command {
-            self.reset();
-            self.command = command;
+    impl<G: Getter<State, E> + ?Sized, E: Copy + Debug> Settable<Command, E> for CommandPID<G, E> {
+        fn get_settable_data_ref(&self) -> &SettableData<Command, E> {
+            &self.settable_data
         }
-        Ok(())
+        fn get_settable_data_mut(&mut self) -> &mut SettableData<Command, E> {
+            &mut self.settable_data
+        }
+        fn impl_set(&mut self, command: Command) -> NothingOrError<E> {
+            if command != self.command {
+                self.reset();
+                self.command = command;
+            }
+            Ok(())
+        }
     }
-}
-impl<G: Getter<State, E> + ?Sized, E: Copy + Debug> Getter<f32, E> for CommandPID<G, E> {
-    fn get(&self) -> Output<f32, E> {
-        match &self.update_state {
-            Err(error) => Err(*error),
-            Ok(None) => Ok(None),
-            Ok(Some(update_0)) => match self.command.into() {
-                PositionDerivative::Position => {
-                    Ok(Some(Datum::new(update_0.time, update_0.output)))
-                }
-                _ => match &update_0.maybe_update_1 {
-                    None => Ok(None),
-                    Some(update_1) => match self.command.into() {
-                        PositionDerivative::Position => unimplemented!(),
-                        PositionDerivative::Velocity => {
-                            Ok(Some(Datum::new(update_0.time, update_1.output_int)))
-                        }
-                        PositionDerivative::Acceleration => match update_1.output_int_int {
-                            None => Ok(None),
-                            Some(output_int_int) => {
-                                Ok(Some(Datum::new(update_0.time, output_int_int)))
+    impl<G: Getter<State, E> + ?Sized, E: Copy + Debug> Getter<f32, E> for CommandPID<G, E> {
+        fn get(&self) -> Output<f32, E> {
+            match &self.update_state {
+                Err(error) => Err(*error),
+                Ok(None) => Ok(None),
+                Ok(Some(update_0)) => match self.command.into() {
+                    PositionDerivative::Position => {
+                        Ok(Some(Datum::new(update_0.time, update_0.output)))
+                    }
+                    _ => match &update_0.maybe_update_1 {
+                        None => Ok(None),
+                        Some(update_1) => match self.command.into() {
+                            PositionDerivative::Position => unimplemented!(),
+                            PositionDerivative::Velocity => {
+                                Ok(Some(Datum::new(update_0.time, update_1.output_int)))
                             }
+                            PositionDerivative::Acceleration => match update_1.output_int_int {
+                                None => Ok(None),
+                                Some(output_int_int) => {
+                                    Ok(Some(Datum::new(update_0.time, output_int_int)))
+                                }
+                            },
                         },
                     },
                 },
-            },
+            }
         }
     }
-}
-impl<G: Getter<State, E> + ?Sized, E: Copy + Debug> Updatable<E> for CommandPID<G, E> {
-    fn update(&mut self) -> NothingOrError<E> {
-        self.update_following_data()?;
-        let raw_get = self.input.borrow().get();
-        let datum_state = match raw_get {
-            Ok(Some(value)) => value,
-            Ok(None) => {
-                self.reset();
-                return Ok(());
-            }
-            Err(error) => {
-                self.update_state = Err(error);
-                return Err(error);
-            }
-        };
-        let error =
-            f32::from(self.command) - f32::from(datum_state.value.get_value(self.command.into()));
-        match &self.update_state {
-            Ok(None) | Err(_) => {
-                let output = self.kvals.evaluate(self.command.into(), error, 0.0, 0.0);
-                self.update_state = Ok(Some(Update0 {
-                    time: datum_state.time,
-                    output: output,
-                    error: error,
-                    maybe_update_1: None,
-                }));
-            }
-            Ok(Some(update_0)) => {
-                let delta_time = f32::from(Quantity::from(datum_state.time - update_0.time));
-                let error_drv = (error - update_0.error) / delta_time;
-                let error_int_addend = (update_0.error + error) / 2.0 * delta_time;
-                match &update_0.maybe_update_1 {
-                    None => {
-                        let output = self.kvals.evaluate(
-                            self.command.into(),
-                            error,
-                            error_int_addend,
-                            error_drv,
-                        );
-                        let output_int = (update_0.output + output) / 2.0 * delta_time;
-                        self.update_state = Ok(Some(Update0 {
-                            time: datum_state.time,
-                            output: output,
-                            error: error,
-                            maybe_update_1: Some(Update1 {
-                                output_int: output_int,
-                                error_int: error_int_addend,
-                                output_int_int: None,
-                            }),
-                        }));
-                    }
-                    Some(update_1) => {
-                        let error_int = update_1.error_int + error_int_addend;
-                        let output =
-                            self.kvals
-                                .evaluate(self.command.into(), error, error_int, error_drv);
-                        let output_int =
-                            update_1.output_int + (update_0.output + output) / 2.0 * delta_time;
-                        let output_int_int_addend =
-                            (update_1.output_int + output_int) / 2.0 * delta_time;
-                        match &update_1.output_int_int {
-                            None => {
-                                self.update_state = Ok(Some(Update0 {
-                                    time: datum_state.time,
-                                    output: output,
-                                    error: error,
-                                    maybe_update_1: Some(Update1 {
-                                        output_int: output_int,
-                                        error_int: error_int,
-                                        output_int_int: Some(output_int_int_addend),
-                                    }),
-                                }));
-                            }
-                            Some(output_int_int) => {
-                                self.update_state = Ok(Some(Update0 {
-                                    time: datum_state.time,
-                                    output: output,
-                                    error: error,
-                                    maybe_update_1: Some(Update1 {
-                                        output_int: output_int,
-                                        error_int: error_int,
-                                        output_int_int: Some(
-                                            output_int_int + output_int_int_addend,
-                                        ),
-                                    }),
-                                }));
+    impl<G: Getter<State, E> + ?Sized, E: Copy + Debug> Updatable<E> for CommandPID<G, E> {
+        fn update(&mut self) -> NothingOrError<E> {
+            self.update_following_data()?;
+            let raw_get = self.input.borrow().get();
+            let datum_state = match raw_get {
+                Ok(Some(value)) => value,
+                Ok(None) => {
+                    self.reset();
+                    return Ok(());
+                }
+                Err(error) => {
+                    self.update_state = Err(error);
+                    return Err(error);
+                }
+            };
+            let error = f32::from(self.command)
+                - f32::from(datum_state.value.get_value(self.command.into()));
+            match &self.update_state {
+                Ok(None) | Err(_) => {
+                    let output = self.kvals.evaluate(self.command.into(), error, 0.0, 0.0);
+                    self.update_state = Ok(Some(Update0 {
+                        time: datum_state.time,
+                        output: output,
+                        error: error,
+                        maybe_update_1: None,
+                    }));
+                }
+                Ok(Some(update_0)) => {
+                    let delta_time = f32::from(Quantity::from(datum_state.time - update_0.time));
+                    let error_drv = (error - update_0.error) / delta_time;
+                    let error_int_addend = (update_0.error + error) / 2.0 * delta_time;
+                    match &update_0.maybe_update_1 {
+                        None => {
+                            let output = self.kvals.evaluate(
+                                self.command.into(),
+                                error,
+                                error_int_addend,
+                                error_drv,
+                            );
+                            let output_int = (update_0.output + output) / 2.0 * delta_time;
+                            self.update_state = Ok(Some(Update0 {
+                                time: datum_state.time,
+                                output: output,
+                                error: error,
+                                maybe_update_1: Some(Update1 {
+                                    output_int: output_int,
+                                    error_int: error_int_addend,
+                                    output_int_int: None,
+                                }),
+                            }));
+                        }
+                        Some(update_1) => {
+                            let error_int = update_1.error_int + error_int_addend;
+                            let output = self.kvals.evaluate(
+                                self.command.into(),
+                                error,
+                                error_int,
+                                error_drv,
+                            );
+                            let output_int =
+                                update_1.output_int + (update_0.output + output) / 2.0 * delta_time;
+                            let output_int_int_addend =
+                                (update_1.output_int + output_int) / 2.0 * delta_time;
+                            match &update_1.output_int_int {
+                                None => {
+                                    self.update_state = Ok(Some(Update0 {
+                                        time: datum_state.time,
+                                        output: output,
+                                        error: error,
+                                        maybe_update_1: Some(Update1 {
+                                            output_int: output_int,
+                                            error_int: error_int,
+                                            output_int_int: Some(output_int_int_addend),
+                                        }),
+                                    }));
+                                }
+                                Some(output_int_int) => {
+                                    self.update_state = Ok(Some(Update0 {
+                                        time: datum_state.time,
+                                        output: output,
+                                        error: error,
+                                        maybe_update_1: Some(Update1 {
+                                            output_int: output_int,
+                                            error_int: error_int,
+                                            output_int_int: Some(
+                                                output_int_int + output_int_int_addend,
+                                            ),
+                                        }),
+                                    }));
+                                }
                             }
                         }
                     }
                 }
             }
+            Ok(())
         }
-        Ok(())
     }
 }
 ///An Exponentially Weighted Moving Average stream for use with the stream system. See <https://www.itl.nist.gov/div898/handbook/pmc/section3/pmc324.htm> for more information.
