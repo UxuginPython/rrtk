@@ -341,12 +341,12 @@ impl<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> Updatable<E> for Derivati
     }
 }
 ///A stream that computes the trapezoidal numerical integral of its input.
-pub struct IntegralStream<G: Getter<f32, E> + ?Sized, E: Copy + Debug> {
+pub struct IntegralStream<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> {
     input: Reference<G>,
-    value: Output<f32, E>,
-    prev_output: Option<Datum<f32>>,
+    value: Output<Quantity, E>,
+    prev_output: Option<Datum<Quantity>>,
 }
-impl<G: Getter<f32, E> + ?Sized, E: Copy + Debug> IntegralStream<G, E> {
+impl<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> IntegralStream<G, E> {
     ///Constructor for `IntegralStream`.
     pub const fn new(input: Reference<G>) -> Self {
         Self {
@@ -356,51 +356,46 @@ impl<G: Getter<f32, E> + ?Sized, E: Copy + Debug> IntegralStream<G, E> {
         }
     }
 }
-impl<G: Getter<f32, E> + ?Sized, E: Copy + Debug> Getter<f32, E> for IntegralStream<G, E> {
-    fn get(&self) -> Output<f32, E> {
+impl<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> Getter<Quantity, E>
+    for IntegralStream<G, E>
+{
+    fn get(&self) -> Output<Quantity, E> {
         self.value.clone()
     }
 }
-impl<G: Getter<f32, E> + ?Sized, E: Copy + Debug> Updatable<E> for IntegralStream<G, E> {
+impl<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> Updatable<E> for IntegralStream<G, E> {
     fn update(&mut self) -> NothingOrError<E> {
         let output = self.input.borrow().get();
-        match output {
-            Ok(_) => {}
+        let output = match output {
+            Ok(ok) => ok,
             Err(error) => {
                 self.value = Err(error);
                 self.prev_output = None;
                 return Err(error);
             }
-        }
-        let output = output.unwrap();
-        match output {
-            Some(_) => {}
+        };
+        let output = match output {
+            Some(some) => some,
             None => {
                 self.value = Ok(None);
                 self.prev_output = None;
                 return Ok(());
             }
-        }
-        let output = output.unwrap();
-        match self.prev_output {
-            Some(_) => {}
+        };
+        let prev_output = match self.prev_output {
+            Some(some) => some,
             None => {
                 self.prev_output = Some(output);
                 return Ok(());
             }
-        }
-        let prev_output = self.prev_output.as_ref().unwrap();
-        let prev_value = match &self.value {
-            Ok(option_value) => match option_value {
-                Some(real_value) => real_value.value,
-                None => 0.0,
-            },
-            Err(_) => 0.0,
         };
-        let value = prev_value
-            + f32::from(Quantity::from(output.time - prev_output.time))
-                * (prev_output.value + output.value)
-                / 2.0;
+        let value_addend = Quantity::from(output.time - prev_output.time)
+            * (prev_output.value + output.value)
+            / Quantity::dimensionless(2.0);
+        let value = match &self.value {
+            Ok(Some(real_value)) => value_addend + real_value.value,
+            _ => value_addend,
+        };
         self.value = Ok(Some(Datum::new(output.time, value)));
         self.prev_output = Some(output);
         return Ok(());
