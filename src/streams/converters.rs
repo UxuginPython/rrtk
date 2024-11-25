@@ -428,14 +428,14 @@ mod position_to_state {
     }
 }
 ///Stream to convert an `f32` to a `Quantity` with a given `Unit`.
-pub struct FloatToQuantity<G: Getter<f32, E>, E: Copy + Debug> {
+pub struct FloatToQuantity<G: Getter<f32, E> + ?Sized, E: Copy + Debug> {
     unit: Unit,
-    input: G,
+    input: Reference<G>,
     value: Output<f32, E>,
 }
 impl<G: Getter<f32, E>, E: Copy + Debug> FloatToQuantity<G, E> {
     ///Constructor for `FloatToQuantity`.
-    pub fn new(unit: Unit, input: G) -> Self {
+    pub fn new(unit: Unit, input: Reference<G>) -> Self {
         Self {
             unit: unit,
             input: input,
@@ -445,7 +445,7 @@ impl<G: Getter<f32, E>, E: Copy + Debug> FloatToQuantity<G, E> {
 }
 impl<G: Getter<f32, E>, E: Copy + Debug> Updatable<E> for FloatToQuantity<G, E> {
     fn update(&mut self) -> NothingOrError<E> {
-        self.value = self.input.get();
+        self.value = self.input.borrow().get();
         Ok(())
     }
 }
