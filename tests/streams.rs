@@ -1413,7 +1413,7 @@ fn latest() {
 fn empty_latest() {
     let _: Latest<(), 0, ()> = Latest::new([]);
 }
-/*#[test]
+#[test]
 fn and_stream() {
     struct In1 {
         index: u8,
@@ -1426,15 +1426,15 @@ fn and_stream() {
     impl Getter<bool, ()> for In1 {
         fn get(&self) -> Output<bool, ()> {
             Ok(match self.index {
-                0 => Some(Datum::new(0, false)),
+                0 => Some(Datum::new(Time(0), false)),
                 1 => None,
-                2 => Some(Datum::new(0, true)),
-                3 => Some(Datum::new(0, false)),
+                2 => Some(Datum::new(Time(0), true)),
+                3 => Some(Datum::new(Time(0), false)),
                 4 => None,
-                5 => Some(Datum::new(0, true)),
-                6 => Some(Datum::new(0, false)),
+                5 => Some(Datum::new(Time(0), true)),
+                6 => Some(Datum::new(Time(0), false)),
                 7 => None,
-                8 => Some(Datum::new(0, true)),
+                8 => Some(Datum::new(Time(0), true)),
                 _ => unimplemented!(),
             })
         }
@@ -1456,9 +1456,9 @@ fn and_stream() {
     impl Getter<bool, ()> for In2 {
         fn get(&self) -> Output<bool, ()> {
             Ok(match self.index {
-                0..=2 => Some(Datum::new(0, false)),
+                0..=2 => Some(Datum::new(Time(0), false)),
                 3..=5 => None,
-                6..=8 => Some(Datum::new(0, true)),
+                6..=8 => Some(Datum::new(Time(0), true)),
                 _ => unimplemented!(),
             })
         }
@@ -1513,7 +1513,7 @@ fn and_stream() {
         and.update().unwrap();
     }
 }
-#[test]
+/*#[test]
 fn or_stream() {
     struct In1 {
         index: u8,
