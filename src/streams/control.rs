@@ -272,16 +272,25 @@ mod command_pid {
 }
 ///An Exponentially Weighted Moving Average stream for use with the stream system. See <https://www.itl.nist.gov/div898/handbook/pmc/section3/pmc324.htm> for more information. Because a standard EWMA requires that new data always arrive at the same interval, this implementation uses λ=1-(1-`smoothing_constant`)^Δt instead of the usual weighting factor.
 #[cfg(feature = "std")]
-pub struct EWMAStream<G: Getter<f32, E> + ?Sized, E: Copy + Debug> {
+pub struct EWMAStream<
+    T: Clone + Add<Output = T> + Mul<f32, Output = T>,
+    G: Getter<T, E> + ?Sized,
+    E: Copy + Debug,
+> {
     input: Reference<G>,
     //As data may not come in at regular intervals as is assumed by a standard EWMA, this value
     //will be multiplied by delta time before being used.
     smoothing_constant: f32,
-    value: Output<f32, E>,
+    value: Output<T, E>,
     update_time: Option<Time>,
 }
 #[cfg(feature = "std")]
-impl<G: Getter<f32, E> + ?Sized, E: Copy + Debug> EWMAStream<G, E> {
+impl<
+        T: Clone + Add<Output = T> + Mul<f32, Output = T>,
+        G: Getter<T, E> + ?Sized,
+        E: Copy + Debug,
+    > EWMAStream<T, G, E>
+{
     ///Constructor for `EWMAStream`.
     pub const fn new(input: Reference<G>, smoothing_constant: f32) -> Self {
         Self {
@@ -293,13 +302,23 @@ impl<G: Getter<f32, E> + ?Sized, E: Copy + Debug> EWMAStream<G, E> {
     }
 }
 #[cfg(feature = "std")]
-impl<G: Getter<f32, E> + ?Sized, E: Copy + Debug> Getter<f32, E> for EWMAStream<G, E> {
-    fn get(&self) -> Output<f32, E> {
+impl<
+        T: Clone + Add<Output = T> + Mul<f32, Output = T>,
+        G: Getter<T, E> + ?Sized,
+        E: Copy + Debug,
+    > Getter<T, E> for EWMAStream<T, G, E>
+{
+    fn get(&self) -> Output<T, E> {
         self.value.clone()
     }
 }
 #[cfg(feature = "std")]
-impl<G: Getter<f32, E> + ?Sized, E: Copy + Debug> Updatable<E> for EWMAStream<G, E> {
+impl<
+        T: Clone + Add<Output = T> + Mul<f32, Output = T>,
+        G: Getter<T, E> + ?Sized,
+        E: Copy + Debug,
+    > Updatable<E> for EWMAStream<T, G, E>
+{
     fn update(&mut self) -> NothingOrError<E> {
         let output = self.input.borrow().get();
         let output = match output {
@@ -320,8 +339,8 @@ impl<G: Getter<f32, E> + ?Sized, E: Copy + Debug> Updatable<E> for EWMAStream<G,
             }
             Ok(Some(some)) => some,
         };
-        let prev_value = match self.value {
-            Ok(Some(some)) => some,
+        let prev_value = match &self.value {
+            Ok(Some(some)) => some.clone(),
             _ => {
                 self.value = Ok(Some(output.clone()));
                 self.update_time = Some(output.time);
