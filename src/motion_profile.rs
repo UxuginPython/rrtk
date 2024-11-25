@@ -195,92 +195,143 @@ mod tests {
     #[test]
     fn motion_profile_new_1() {
         let motion_profile = MotionProfile::new(
-            State::new(0.0, 0.0, 0.0),
-            State::new(3.0, 0.0, 0.0),
-            0.1,
-            0.01,
+            State::new_raw(0.0, 0.0, 0.0),
+            State::new_raw(3.0, 0.0, 0.0),
+            Quantity::new(0.1, MILLIMETER_PER_SECOND),
+            Quantity::new(0.01, MILLIMETER_PER_SECOND_SQUARED),
         );
-        assert_eq!(motion_profile.t1, 10);
-        assert_eq!(motion_profile.t2, 30);
-        assert_eq!(motion_profile.t3, 40);
-        assert_eq!(motion_profile.max_acc, 0.01);
+        assert_eq!(motion_profile.t1, Time(10_000_000_000));
+        assert_eq!(
+            motion_profile.t2 / DimensionlessInteger(1_000_000),
+            Time(30_000_000_000) / DimensionlessInteger(1_000_000)
+        );
+        assert_eq!(motion_profile.t3, Time(40_000_000_000));
+        assert_eq!(
+            motion_profile.max_acc,
+            Quantity::new(0.01, MILLIMETER_PER_SECOND_SQUARED)
+        );
     }
     #[test]
     fn motion_profile_new_2() {
         let motion_profile = MotionProfile::new(
-            State::new(1.0, 0.0, 0.0),
-            State::new(3.0, 0.0, 0.0),
-            0.1,
-            0.01,
+            State::new_raw(1.0, 0.0, 0.0),
+            State::new_raw(3.0, 0.0, 0.0),
+            Quantity::new(0.1, MILLIMETER_PER_SECOND),
+            Quantity::new(0.01, MILLIMETER_PER_SECOND_SQUARED),
         );
-        assert_eq!(motion_profile.t1, 10);
-        assert_eq!(motion_profile.t2, 20);
-        assert_eq!(motion_profile.t3, 30);
-        assert_eq!(motion_profile.max_acc, 0.01);
+        assert_eq!(motion_profile.t1, Time(10_000_000_000));
+        assert_eq!(motion_profile.t2, Time(20_000_000_000));
+        assert_eq!(
+            motion_profile.t3 / DimensionlessInteger(1_000_000),
+            Time(30_000_000_000) / DimensionlessInteger(1_000_000)
+        );
+        assert_eq!(
+            motion_profile.max_acc,
+            Quantity::new(0.01, MILLIMETER_PER_SECOND_SQUARED)
+        );
     }
     #[test]
     fn motion_profile_new_3() {
         let motion_profile = MotionProfile::new(
-            State::new(0.0, 0.1, 0.0),
-            State::new(3.0, 0.0, 0.0),
-            0.1,
-            0.01,
+            State::new_raw(0.0, 0.1, 0.0),
+            State::new_raw(3.0, 0.0, 0.0),
+            Quantity::new(0.1, MILLIMETER_PER_SECOND),
+            Quantity::new(0.01, MILLIMETER_PER_SECOND_SQUARED),
         );
-        assert_eq!(motion_profile.t1, 0);
-        assert_eq!(motion_profile.t2, 25);
-        assert_eq!(motion_profile.t3, 35);
-        assert_eq!(motion_profile.max_acc, 0.01);
+        assert_eq!(motion_profile.t1, Time(0));
+        assert_eq!(
+            (motion_profile.t2 + Time(1000)) / DimensionlessInteger(1_000_000),
+            Time(25_000_000_000) / DimensionlessInteger(1_000_000)
+        );
+        assert_eq!(
+            motion_profile.t3 / DimensionlessInteger(1_000_000),
+            Time(35_000_000_000) / DimensionlessInteger(1_000_000)
+        );
+        assert_eq!(
+            motion_profile.max_acc,
+            Quantity::new(0.01, MILLIMETER_PER_SECOND_SQUARED)
+        );
     }
     #[test]
     fn motion_profile_new_4() {
         let motion_profile = MotionProfile::new(
-            State::new(0.0, 0.0, 0.01),
-            State::new(3.0, 0.0, 0.0),
-            0.1,
-            0.01,
+            State::new_raw(0.0, 0.0, 0.01),
+            State::new_raw(3.0, 0.0, 0.0),
+            Quantity::new(0.1, MILLIMETER_PER_SECOND),
+            Quantity::new(0.01, MILLIMETER_PER_SECOND_SQUARED),
         );
-        assert_eq!(motion_profile.t1, 10);
-        assert_eq!(motion_profile.t2, 30);
-        assert_eq!(motion_profile.t3, 40);
-        assert_eq!(motion_profile.max_acc, 0.01);
+        assert_eq!(motion_profile.t1, Time(10_000_000_000));
+        assert_eq!(
+            motion_profile.t2 / DimensionlessInteger(1_000_000),
+            Time(30_000_000_000) / DimensionlessInteger(1_000_000)
+        );
+        assert_eq!(motion_profile.t3, Time(40_000_000_000));
+        assert_eq!(
+            motion_profile.max_acc,
+            Quantity::new(0.01, MILLIMETER_PER_SECOND_SQUARED)
+        );
     }
     #[test]
     fn motion_profile_new_5() {
         let motion_profile = MotionProfile::new(
-            State::new(0.0, 0.0, 0.0),
-            State::new(6.0, 0.0, 0.0),
-            0.2,
-            0.01,
+            State::new_raw(0.0, 0.0, 0.0),
+            State::new_raw(6.0, 0.0, 0.0),
+            Quantity::new(0.2, MILLIMETER_PER_SECOND),
+            Quantity::new(0.01, MILLIMETER_PER_SECOND_SQUARED),
         );
-        assert_eq!(motion_profile.t1, 20);
-        assert_eq!(motion_profile.t2, 30);
-        assert_eq!(motion_profile.t3, 50);
-        assert_eq!(motion_profile.max_acc, 0.01);
+        assert_eq!(motion_profile.t1, Time(20_000_000_000));
+        assert_eq!(
+            motion_profile.t2 / DimensionlessInteger(1_000_000),
+            Time(30_000_000_000) / DimensionlessInteger(1_000_000)
+        );
+        assert_eq!(
+            (motion_profile.t3 + Time(10000)) / DimensionlessInteger(1_000_000),
+            Time(50_000_000_000) / DimensionlessInteger(1_000_000)
+        );
+        assert_eq!(
+            motion_profile.max_acc,
+            Quantity::new(0.01, MILLIMETER_PER_SECOND_SQUARED)
+        );
     }
     #[test]
     fn motion_profile_new_6() {
         let motion_profile = MotionProfile::new(
-            State::new(0.0, 0.0, 0.0),
-            State::new(3.0, 0.0, 0.0),
-            0.1,
-            0.02,
+            State::new_raw(0.0, 0.0, 0.0),
+            State::new_raw(3.0, 0.0, 0.0),
+            Quantity::new(0.1, MILLIMETER_PER_SECOND),
+            Quantity::new(0.02, MILLIMETER_PER_SECOND_SQUARED),
         );
-        assert_eq!(motion_profile.t1, 5);
-        assert_eq!(motion_profile.t2, 30);
-        assert_eq!(motion_profile.t3, 35);
-        assert_eq!(motion_profile.max_acc, 0.02);
+        assert_eq!(motion_profile.t1, Time(5_000_000_000));
+        assert_eq!(
+            motion_profile.t2 / DimensionlessInteger(1_000_000),
+            Time(30_000_000_000) / DimensionlessInteger(1_000_000)
+        );
+        assert_eq!(
+            motion_profile.t3 / DimensionlessInteger(1_000_000),
+            Time(35_000_000_000) / DimensionlessInteger(1_000_000)
+        );
+        assert_eq!(
+            motion_profile.max_acc,
+            Quantity::new(0.02, MILLIMETER_PER_SECOND_SQUARED)
+        );
     }
     #[test]
     fn motion_profile_new_7() {
         let motion_profile = MotionProfile::new(
-            State::new(0.0, 0.0, 0.0),
-            State::new(-3.0, 0.0, 0.0),
-            0.1,
-            0.01,
+            State::new_raw(0.0, 0.0, 0.0),
+            State::new_raw(-3.0, 0.0, 0.0),
+            Quantity::new(0.1, MILLIMETER_PER_SECOND),
+            Quantity::new(0.01, MILLIMETER_PER_SECOND_SQUARED),
         );
-        assert_eq!(motion_profile.t1, 10);
-        assert_eq!(motion_profile.t2, 30);
-        assert_eq!(motion_profile.t3, 40);
-        assert_eq!(motion_profile.max_acc, -0.01);
+        assert_eq!(motion_profile.t1, Time(10_000_000_000));
+        assert_eq!(
+            motion_profile.t2 / DimensionlessInteger(1_000_000),
+            Time(30_000_000_000) / DimensionlessInteger(1_000_000)
+        );
+        assert_eq!(motion_profile.t3, Time(40_000_000_000));
+        assert_eq!(
+            motion_profile.max_acc,
+            Quantity::new(-0.01, MILLIMETER_PER_SECOND_SQUARED)
+        );
     }
 }
