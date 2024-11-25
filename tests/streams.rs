@@ -1185,29 +1185,29 @@ fn pid_controller_stream() {
         assert_eq!(stream.get().unwrap().unwrap().value, 4.04);
     }
 }
-/*#[test]
+#[test]
 fn ewma_stream() {
     #[derive(Clone, Copy, Debug)]
     struct DummyError;
     struct DummyStream {
-        time: i64,
+        time: Time,
     }
     impl DummyStream {
         pub const fn new() -> Self {
-            Self { time: 0 }
+            Self { time: Time(0) }
         }
     }
     impl Getter<f32, DummyError> for DummyStream {
         fn get(&self) -> Output<f32, DummyError> {
             let value = match self.time {
-                2 => 110.0,
-                4 => 111.0,
-                6 => 116.0,
-                8 => 97.0,
-                10 => 102.0,
-                12 => 111.0,
-                14 => 111.0,
-                16 => 100.0,
+                Time(2_000_000_000) => 110.0,
+                Time(4_000_000_000) => 111.0,
+                Time(6_000_000_000) => 116.0,
+                Time(8_000_000_000) => 97.0,
+                Time(10_000_000_000) => 102.0,
+                Time(12_000_000_000) => 111.0,
+                Time(14_000_000_000) => 111.0,
+                Time(16_000_000_000) => 100.0,
                 _ => 0.0,
             };
             Ok(Some(Datum::new(self.time, value)))
@@ -1215,7 +1215,7 @@ fn ewma_stream() {
     }
     impl Updatable<DummyError> for DummyStream {
         fn update(&mut self) -> NothingOrError<DummyError> {
-            self.time += 2;
+            self.time += Time(2_000_000_000);
             Ok(())
         }
     }
@@ -1251,7 +1251,7 @@ fn ewma_stream() {
         assert_eq!(stream.get().unwrap().unwrap().value, 104.5703125);
     }
 }
-#[test]
+/*#[test]
 #[cfg(feature = "alloc")]
 fn moving_average_stream() {
     #[derive(Clone, Copy, Debug)]
