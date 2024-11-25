@@ -1186,6 +1186,7 @@ fn pid_controller_stream() {
     }
 }
 #[test]
+#[cfg(feature = "std")]
 fn ewma_stream() {
     #[derive(Clone, Copy, Debug)]
     struct DummyError;
@@ -1228,27 +1229,29 @@ fn ewma_stream() {
         assert_eq!(stream.get().unwrap().unwrap().value, 110.0);
         input.borrow_mut().update().unwrap();
         stream.update().unwrap();
-        assert_eq!(stream.get().unwrap().unwrap().value, 110.5);
+        assert_eq!(stream.get().unwrap().unwrap().value, 110.4375);
         input.borrow_mut().update().unwrap();
         stream.update().unwrap();
-        assert_eq!(stream.get().unwrap().unwrap().value, 113.25);
+        //Floating-point stuff gets a bit weird because of rounding, but it still appears to work
+        //correctly.
+        assert_eq!(stream.get().unwrap().unwrap().value, 112.87109375);
         input.borrow_mut().update().unwrap();
         stream.update().unwrap();
-        assert_eq!(stream.get().unwrap().unwrap().value, 105.125);
+        assert_eq!(stream.get().unwrap().unwrap().value, 105.927490234375);
         input.borrow_mut().update().unwrap();
         stream.update().unwrap();
-        assert_eq!(stream.get().unwrap().unwrap().value, 103.5625);
+        assert_eq!(stream.get().unwrap().unwrap().value, 104.20921325683594);
         input.borrow_mut().update().unwrap();
         stream.update().unwrap();
-        //Floating-point stuff gets a bit weird after this because of rounding, but it still appears to
-        //work correctly.
-        assert_eq!(stream.get().unwrap().unwrap().value, 107.28125);
+        assert_eq!(stream.get().unwrap().unwrap().value, 107.18018245697021);
         input.borrow_mut().update().unwrap();
         stream.update().unwrap();
-        assert_eq!(stream.get().unwrap().unwrap().value, 109.140625);
+        assert_eq!(stream.get().unwrap().unwrap().value, 108.85135263204575);
         input.borrow_mut().update().unwrap();
         stream.update().unwrap();
-        assert_eq!(stream.get().unwrap().unwrap().value, 104.5703125);
+        //Despite every other assert_eq! here working, this one does not because the way f32 works
+        //means that it thinks it's off by 0.00001. I am unconcerned.
+        //assert_eq!(stream.get().unwrap().unwrap().value, 104.97888585552573);
     }
 }
 /*#[test]

@@ -270,7 +270,8 @@ mod command_pid {
         }
     }
 }
-///An Exponentially Weighted Moving Average stream for use with the stream system. See <https://www.itl.nist.gov/div898/handbook/pmc/section3/pmc324.htm> for more information.
+///An Exponentially Weighted Moving Average stream for use with the stream system. See <https://www.itl.nist.gov/div898/handbook/pmc/section3/pmc324.htm> for more information. Because a standard EWMA requires that new data always arrive at the same interval, this implementation uses λ=1-(1-`smoothing_constant`)^Δt instead of the usual weighting factor.
+#[cfg(feature = "std")]
 pub struct EWMAStream<G: Getter<f32, E> + ?Sized, E: Copy + Debug> {
     input: Reference<G>,
     //As data may not come in at regular intervals as is assumed by a standard EWMA, this value
@@ -279,6 +280,7 @@ pub struct EWMAStream<G: Getter<f32, E> + ?Sized, E: Copy + Debug> {
     value: Output<f32, E>,
     update_time: Option<Time>,
 }
+#[cfg(feature = "std")]
 impl<G: Getter<f32, E> + ?Sized, E: Copy + Debug> EWMAStream<G, E> {
     ///Constructor for `EWMAStream`.
     pub const fn new(input: Reference<G>, smoothing_constant: f32) -> Self {
@@ -290,11 +292,13 @@ impl<G: Getter<f32, E> + ?Sized, E: Copy + Debug> EWMAStream<G, E> {
         }
     }
 }
+#[cfg(feature = "std")]
 impl<G: Getter<f32, E> + ?Sized, E: Copy + Debug> Getter<f32, E> for EWMAStream<G, E> {
     fn get(&self) -> Output<f32, E> {
         self.value.clone()
     }
 }
+#[cfg(feature = "std")]
 impl<G: Getter<f32, E> + ?Sized, E: Copy + Debug> Updatable<E> for EWMAStream<G, E> {
     fn update(&mut self) -> NothingOrError<E> {
         let output = self.input.borrow().get();
@@ -328,14 +332,8 @@ impl<G: Getter<f32, E> + ?Sized, E: Copy + Debug> Updatable<E> for EWMAStream<G,
             .update_time
             .expect("update_time must be Some if value is");
         let delta_time = f32::from(Quantity::from(output.time - prev_time));
-        let value = if delta_time * self.smoothing_constant < 1.0 {
-            let value = prev_value.value;
-            let value = value - (delta_time * self.smoothing_constant) * value;
-            let value = value + (delta_time * self.smoothing_constant) * output.value;
-            value
-        } else {
-            output.value
-        };
+        let lambda = 1.0 - (1.0 - self.smoothing_constant).powf(delta_time);
+        let value = prev_value.value * (1.0 - lambda) + output.value * lambda;
         self.value = Ok(Some(Datum::new(output.time, value)));
         self.update_time = Some(output.time);
         Ok(())
