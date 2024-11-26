@@ -3,7 +3,7 @@
 #[cfg(all(feature = "devices", feature = "alloc"))]
 const COMMAND: Command = Command::new(PositionDerivative::Position, 5.0);
 #[cfg(all(feature = "devices", feature = "alloc"))]
-const STATE: State = State::new(0.0, 0.0, 0.0);
+const STATE: State = State::new_raw(0.0, 0.0, 0.0);
 #[cfg(all(feature = "devices", feature = "alloc"))]
 const K_VALUES: PositionDerivativeDependentPIDKValues = PositionDerivativeDependentPIDKValues::new(
     PIDKValues::new(1.0, 0.01, 0.1),
@@ -47,7 +47,7 @@ impl Updatable<()> for Motor {
 #[cfg(all(feature = "devices", feature = "alloc"))]
 #[derive(Default)]
 struct Encoder {
-    time: i64,
+    time: Time,
 }
 #[cfg(all(feature = "devices", feature = "alloc"))]
 impl Getter<State, ()> for Encoder {
@@ -59,7 +59,7 @@ impl Getter<State, ()> for Encoder {
 #[cfg(all(feature = "devices", feature = "alloc"))]
 impl Updatable<()> for Encoder {
     fn update(&mut self) -> NothingOrError<()> {
-        self.time += 1;
+        self.time += Time(1_000_000_000);
         Ok(())
     }
 }
@@ -68,10 +68,11 @@ fn main() {
     println!("Commanding Motor to {:?}", COMMAND);
     println!(
         "K values are {:?}",
-        K_VALUES.get_k_values(COMMAND.position_derivative)
+        K_VALUES.get_k_values(PositionDerivative::from(COMMAND))
     );
     let motor = Motor::new();
-    let mut motor_wrapper = devices::wrappers::PIDWrapper::new(motor, 0, STATE, COMMAND, K_VALUES);
+    let mut motor_wrapper =
+        devices::wrappers::PIDWrapper::new(motor, Time(0), STATE, COMMAND, K_VALUES);
     let encoder = Encoder::default();
     let mut encoder_wrapper = devices::wrappers::GetterStateDeviceWrapper::new(encoder);
     connect(motor_wrapper.get_terminal(), encoder_wrapper.get_terminal());
