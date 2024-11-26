@@ -13,30 +13,30 @@ fn terminal() {
     );
     term1
         .borrow_mut()
-        .set(Datum::new(0, State::new(1.0, 2.0, 3.0)))
+        .set(Datum::new(Time(0), State::new_raw(1.0, 2.0, 3.0)))
         .unwrap();
     assert_eq!(
         term1.borrow().get(),
-        Ok(Some(Datum::new(0, State::new(1.0, 2.0, 3.0))))
+        Ok(Some(Datum::new(Time(0), State::new_raw(1.0, 2.0, 3.0))))
     );
     let term2 = Terminal::<()>::new();
     connect(&term1, &term2);
     assert_eq!(
         term2.borrow().get(),
-        Ok(Some(Datum::new(0, State::new(1.0, 2.0, 3.0))))
+        Ok(Some(Datum::new(Time(0), State::new_raw(1.0, 2.0, 3.0))))
     );
     term2
         .borrow_mut()
-        .set(Datum::new(0, State::new(4.0, 5.0, 6.0)))
+        .set(Datum::new(Time(0), State::new_raw(4.0, 5.0, 6.0)))
         .unwrap();
     assert_eq!(
         term1.borrow().get(),
-        Ok(Some(Datum::new(0, State::new(2.5, 3.5, 4.5))))
+        Ok(Some(Datum::new(Time(0), State::new_raw(2.5, 3.5, 4.5))))
     );
     term1
         .borrow_mut()
         .set(Datum::new(
-            0,
+            Time(0),
             Command::new(PositionDerivative::Position, 1.0),
         ))
         .unwrap(); //The stuff from `Settable` should take care of everything.
@@ -49,7 +49,7 @@ fn invert() {
     let terminal2 = Terminal::<()>::new();
     terminal1
         .borrow_mut()
-        .set(Datum::new(0, State::new(1.0, 2.0, 3.0)))
+        .set(Datum::new(Time(0), State::new_raw(1.0, 2.0, 3.0)))
         .unwrap();
     connect(invert.get_terminal_1(), &terminal1);
     connect(invert.get_terminal_2(), &terminal2);
@@ -59,14 +59,14 @@ fn invert() {
             .unwrap()
             .unwrap()
             .value,
-        State::new(1.0, 2.0, 3.0)
+        State::new_raw(1.0, 2.0, 3.0)
     );
     assert_eq!(
         <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal2.borrow())
             .unwrap()
             .unwrap()
             .value,
-        State::new(-1.0, -2.0, -3.0)
+        State::new_raw(-1.0, -2.0, -3.0)
     );
 
     let mut invert = Invert::new();
@@ -74,7 +74,7 @@ fn invert() {
     let terminal2 = Terminal::<()>::new();
     terminal2
         .borrow_mut()
-        .set(Datum::new(0, State::new(-1.0, -2.0, -3.0)))
+        .set(Datum::new(Time(0), State::new_raw(-1.0, -2.0, -3.0)))
         .unwrap();
     connect(invert.get_terminal_1(), &terminal1);
     connect(invert.get_terminal_2(), &terminal2);
@@ -84,14 +84,14 @@ fn invert() {
             .unwrap()
             .unwrap()
             .value,
-        State::new(1.0, 2.0, 3.0)
+        State::new_raw(1.0, 2.0, 3.0)
     );
     assert_eq!(
         <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal2.borrow())
             .unwrap()
             .unwrap()
             .value,
-        State::new(-1.0, -2.0, -3.0)
+        State::new_raw(-1.0, -2.0, -3.0)
     );
 
     let mut invert = Invert::new();
@@ -99,11 +99,11 @@ fn invert() {
     let terminal2 = Terminal::<()>::new();
     terminal1
         .borrow_mut()
-        .set(Datum::new(0, State::new(1.0, 2.0, 3.0)))
+        .set(Datum::new(Time(0), State::new_raw(1.0, 2.0, 3.0)))
         .unwrap();
     terminal2
         .borrow_mut()
-        .set(Datum::new(0, State::new(-4.0, -5.0, -6.0)))
+        .set(Datum::new(Time(0), State::new_raw(-4.0, -5.0, -6.0)))
         .unwrap();
     connect(invert.get_terminal_1(), &terminal1);
     connect(invert.get_terminal_2(), &terminal2);
@@ -113,7 +113,7 @@ fn invert() {
             .unwrap()
             .unwrap()
             .value,
-        State::new(
+        State::new_raw(
             (((1.0 + 4.0) / 2.0) + 1.0) / 2.0,
             ((2.0 + 5.0) / 2.0 + 2.0) / 2.0,
             ((3.0 + 6.0) / 2.0 + 3.0) / 2.0
@@ -124,7 +124,7 @@ fn invert() {
             .unwrap()
             .unwrap()
             .value,
-        State::new(
+        State::new_raw(
             -(((1.0 + 4.0) / 2.0) + 4.0) / 2.0,
             -((2.0 + 5.0) / 2.0 + 5.0) / 2.0,
             -((3.0 + 6.0) / 2.0 + 6.0) / 2.0
@@ -139,11 +139,11 @@ fn axle() {
     let terminal3 = Terminal::new();
     terminal1
         .borrow_mut()
-        .set(Datum::new(0, State::new(1.0, 2.0, 3.0)))
+        .set(Datum::new(Time(0), State::new_raw(1.0, 2.0, 3.0)))
         .unwrap();
     terminal2
         .borrow_mut()
-        .set(Datum::new(0, State::new(4.0, 5.0, 6.0)))
+        .set(Datum::new(Time(0), State::new_raw(4.0, 5.0, 6.0)))
         .unwrap();
     connect(axle.get_terminal(0), &terminal1);
     connect(axle.get_terminal(1), &terminal2);
@@ -154,7 +154,7 @@ fn axle() {
             .unwrap()
             .unwrap()
             .value,
-        State::new(
+        State::new_raw(
             ((1.0 + 4.0) / 2.0 + 1.0) / 2.0,
             ((2.0 + 5.0) / 2.0 + 2.0) / 2.0,
             ((3.0 + 6.0) / 2.0 + 3.0) / 2.0
@@ -165,7 +165,7 @@ fn axle() {
             .unwrap()
             .unwrap()
             .value,
-        State::new(
+        State::new_raw(
             ((1.0 + 4.0) / 2.0 + 4.0) / 2.0,
             ((2.0 + 5.0) / 2.0 + 5.0) / 2.0,
             ((3.0 + 6.0) / 2.0 + 6.0) / 2.0
@@ -176,7 +176,7 @@ fn axle() {
             .unwrap()
             .unwrap()
             .value,
-        State::new(2.5, 3.5, 4.5)
+        State::new_raw(2.5, 3.5, 4.5)
     );
 }
 #[test]
@@ -187,15 +187,15 @@ fn differential() {
     let terminal_sum = Terminal::new();
     terminal1
         .borrow_mut()
-        .set(Datum::new(0, State::new(2.0, 2.0, 2.0)))
+        .set(Datum::new(Time(0), State::new_raw(2.0, 2.0, 2.0)))
         .unwrap();
     terminal2
         .borrow_mut()
-        .set(Datum::new(0, State::new(3.0, 3.0, 3.0)))
+        .set(Datum::new(Time(0), State::new_raw(3.0, 3.0, 3.0)))
         .unwrap();
     terminal_sum
         .borrow_mut()
-        .set(Datum::new(0, State::new(4.0, 4.0, 4.0)))
+        .set(Datum::new(Time(0), State::new_raw(4.0, 4.0, 4.0)))
         .unwrap();
     connect(differential.get_side_1(), &terminal1);
     connect(differential.get_side_2(), &terminal2);
@@ -213,21 +213,21 @@ fn differential() {
             .unwrap()
             .unwrap()
             .value,
-        State::new(TERM_1, TERM_1, TERM_1)
+        State::new_raw(TERM_1, TERM_1, TERM_1)
     );
     assert_eq!(
         <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal2.borrow())
             .unwrap()
             .unwrap()
             .value,
-        State::new(TERM_2, TERM_2, TERM_2)
+        State::new_raw(TERM_2, TERM_2, TERM_2)
     );
     assert_eq!(
         <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal_sum.borrow())
             .unwrap()
             .unwrap()
             .value,
-        State::new(TERM_SUM, TERM_SUM, TERM_SUM)
+        State::new_raw(TERM_SUM, TERM_SUM, TERM_SUM)
     );
 }
 #[test]
@@ -238,15 +238,15 @@ fn differential_distrust_side_1() {
     let terminal_sum = Terminal::new();
     terminal1
         .borrow_mut()
-        .set(Datum::new(0, State::new(2.0, 2.0, 2.0)))
+        .set(Datum::new(Time(0), State::new_raw(2.0, 2.0, 2.0)))
         .unwrap();
     terminal2
         .borrow_mut()
-        .set(Datum::new(0, State::new(3.0, 3.0, 3.0)))
+        .set(Datum::new(Time(0), State::new_raw(3.0, 3.0, 3.0)))
         .unwrap();
     terminal_sum
         .borrow_mut()
-        .set(Datum::new(0, State::new(4.0, 4.0, 4.0)))
+        .set(Datum::new(Time(0), State::new_raw(4.0, 4.0, 4.0)))
         .unwrap();
     connect(differential.get_side_1(), &terminal1);
     connect(differential.get_side_2(), &terminal2);
@@ -264,21 +264,21 @@ fn differential_distrust_side_1() {
             .unwrap()
             .unwrap()
             .value,
-        State::new(TERM_1, TERM_1, TERM_1)
+        State::new_raw(TERM_1, TERM_1, TERM_1)
     );
     assert_eq!(
         <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal2.borrow())
             .unwrap()
             .unwrap()
             .value,
-        State::new(TERM_2, TERM_2, TERM_2)
+        State::new_raw(TERM_2, TERM_2, TERM_2)
     );
     assert_eq!(
         <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal_sum.borrow())
             .unwrap()
             .unwrap()
             .value,
-        State::new(TERM_SUM, TERM_SUM, TERM_SUM)
+        State::new_raw(TERM_SUM, TERM_SUM, TERM_SUM)
     );
 }
 #[test]
@@ -289,15 +289,15 @@ fn differential_distrust_side_2() {
     let terminal_sum = Terminal::new();
     terminal1
         .borrow_mut()
-        .set(Datum::new(0, State::new(2.0, 2.0, 2.0)))
+        .set(Datum::new(Time(0), State::new_raw(2.0, 2.0, 2.0)))
         .unwrap();
     terminal2
         .borrow_mut()
-        .set(Datum::new(0, State::new(3.0, 3.0, 3.0)))
+        .set(Datum::new(Time(0), State::new_raw(3.0, 3.0, 3.0)))
         .unwrap();
     terminal_sum
         .borrow_mut()
-        .set(Datum::new(0, State::new(4.0, 4.0, 4.0)))
+        .set(Datum::new(Time(0), State::new_raw(4.0, 4.0, 4.0)))
         .unwrap();
     connect(differential.get_side_1(), &terminal1);
     connect(differential.get_side_2(), &terminal2);
@@ -315,21 +315,21 @@ fn differential_distrust_side_2() {
             .unwrap()
             .unwrap()
             .value,
-        State::new(TERM_1, TERM_1, TERM_1)
+        State::new_raw(TERM_1, TERM_1, TERM_1)
     );
     assert_eq!(
         <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal2.borrow())
             .unwrap()
             .unwrap()
             .value,
-        State::new(TERM_2, TERM_2, TERM_2)
+        State::new_raw(TERM_2, TERM_2, TERM_2)
     );
     assert_eq!(
         <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal_sum.borrow())
             .unwrap()
             .unwrap()
             .value,
-        State::new(TERM_SUM, TERM_SUM, TERM_SUM)
+        State::new_raw(TERM_SUM, TERM_SUM, TERM_SUM)
     );
 }
 #[test]
@@ -340,15 +340,15 @@ fn differential_distrust_sum() {
     let terminal_sum = Terminal::new();
     terminal1
         .borrow_mut()
-        .set(Datum::new(0, State::new(2.0, 2.0, 2.0)))
+        .set(Datum::new(Time(0), State::new_raw(2.0, 2.0, 2.0)))
         .unwrap();
     terminal2
         .borrow_mut()
-        .set(Datum::new(0, State::new(3.0, 3.0, 3.0)))
+        .set(Datum::new(Time(0), State::new_raw(3.0, 3.0, 3.0)))
         .unwrap();
     terminal_sum
         .borrow_mut()
-        .set(Datum::new(0, State::new(4.0, 4.0, 4.0)))
+        .set(Datum::new(Time(0), State::new_raw(4.0, 4.0, 4.0)))
         .unwrap();
     connect(differential.get_side_1(), &terminal1);
     connect(differential.get_side_2(), &terminal2);
@@ -366,21 +366,21 @@ fn differential_distrust_sum() {
             .unwrap()
             .unwrap()
             .value,
-        State::new(TERM_1, TERM_1, TERM_1)
+        State::new_raw(TERM_1, TERM_1, TERM_1)
     );
     assert_eq!(
         <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal2.borrow())
             .unwrap()
             .unwrap()
             .value,
-        State::new(TERM_2, TERM_2, TERM_2)
+        State::new_raw(TERM_2, TERM_2, TERM_2)
     );
     assert_eq!(
         <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal_sum.borrow())
             .unwrap()
             .unwrap()
             .value,
-        State::new(TERM_SUM, TERM_SUM, TERM_SUM)
+        State::new_raw(TERM_SUM, TERM_SUM, TERM_SUM)
     );
 }
 //TODO: make this test more thorough with the different combinations of Some/None command and
@@ -413,9 +413,9 @@ fn actuator_wrapper() {
             assert_eq!(
                 self.get_last_request().unwrap(),
                 TerminalData {
-                    time: 2,
+                    time: Time(2),
                     command: Some(Command::new(PositionDerivative::Position, 5.0)),
-                    state: Some(State::new(1.0, 2.0, 3.0)),
+                    state: Some(State::new_raw(1.0, 2.0, 3.0)),
                 }
             );
             unsafe {
@@ -431,13 +431,13 @@ fn actuator_wrapper() {
     terminal
         .borrow_mut()
         .set(Datum::new(
-            1,
+            Time(1),
             Command::new(PositionDerivative::Position, 5.0),
         ))
         .unwrap();
     terminal
         .borrow_mut()
-        .set(Datum::new(2, State::new(1.0, 2.0, 3.0)))
+        .set(Datum::new(Time(2), State::new_raw(1.0, 2.0, 3.0)))
         .unwrap();
     wrapper.update().unwrap();
     unsafe {
@@ -449,7 +449,7 @@ fn getter_state_device_wrapper() {
     struct GetterState;
     impl Getter<State, ()> for GetterState {
         fn get(&self) -> Output<State, ()> {
-            Ok(Some(Datum::new(0, State::new(1.0, 2.0, 3.0))))
+            Ok(Some(Datum::new(Time(0), State::new_raw(1.0, 2.0, 3.0))))
         }
     }
     impl Updatable<()> for GetterState {
@@ -466,7 +466,7 @@ fn getter_state_device_wrapper() {
             .unwrap()
             .unwrap()
             .value,
-        State::new(1.0, 2.0, 3.0)
+        State::new_raw(1.0, 2.0, 3.0)
     );
 }
 #[test]
@@ -474,7 +474,7 @@ fn getter_state_device_wrapper() {
 fn pid_wrapper() {
     static mut ASSERTS: u8 = 0;
     const COMMAND: Command = Command::new(PositionDerivative::Position, 5.0);
-    const STATE: State = State::new(0.0, 0.0, 0.0);
+    const STATE: State = State::new_raw(0.0, 0.0, 0.0);
     const K_VALUES: PositionDerivativeDependentPIDKValues =
         PositionDerivativeDependentPIDKValues::new(
             PIDKValues::new(1.0, 0.01, 0.1),
@@ -484,13 +484,13 @@ fn pid_wrapper() {
     use rrtk::*;
     struct Motor {
         settable_data: SettableData<f32, ()>,
-        time: i64,
+        time: Time,
     }
     impl Motor {
         fn new() -> Self {
             Self {
                 settable_data: SettableData::new(),
-                time: 0,
+                time: Time(0),
             }
         }
     }
@@ -499,10 +499,10 @@ fn pid_wrapper() {
             assert_eq!(
                 value,
                 match self.time {
-                    1 => 5.0,
-                    2 => 5.05,
-                    3 => 5.1,
-                    4 => 5.15,
+                    Time(1_000_000_000) => 5.0,
+                    Time(2_000_000_000) => 5.05,
+                    Time(3_000_000_000) => 5.1,
+                    Time(4_000_000_000) => 5.15,
                     _ => unimplemented!(),
                 }
             );
@@ -521,13 +521,13 @@ fn pid_wrapper() {
     impl Updatable<()> for Motor {
         fn update(&mut self) -> NothingOrError<()> {
             self.update_following_data().unwrap();
-            self.time += 1;
+            self.time += Time(1_000_000_000);
             Ok(())
         }
     }
     #[derive(Default)]
     struct Encoder {
-        time: i64,
+        time: Time,
     }
     impl Getter<State, ()> for Encoder {
         fn get(&self) -> Output<State, ()> {
@@ -536,12 +536,13 @@ fn pid_wrapper() {
     }
     impl Updatable<()> for Encoder {
         fn update(&mut self) -> NothingOrError<()> {
-            self.time += 1;
+            self.time += Time(1_000_000_000);
             Ok(())
         }
     }
     let motor = Motor::new();
-    let mut motor_wrapper = devices::wrappers::PIDWrapper::new(motor, 0, STATE, COMMAND, K_VALUES);
+    let mut motor_wrapper =
+        devices::wrappers::PIDWrapper::new(motor, Time(0), STATE, COMMAND, K_VALUES);
     let encoder = Encoder::default();
     let mut encoder_wrapper = devices::wrappers::GetterStateDeviceWrapper::new(encoder);
     connect(motor_wrapper.get_terminal(), encoder_wrapper.get_terminal());
