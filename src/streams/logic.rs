@@ -21,19 +21,17 @@ impl AndState {
 ///Performs an and operation on two boolean getters. This will return `None` if it can't verify
 ///that the result should be `true` or `false`. This is caused by inputs returning `None`. It's a
 ///bit difficult to state exactly how this is determined, so here's a truth table:
-///```text
-///Input 1 | Input 2 | AndStream
-///--------+---------+----------
-///false   | false   | false
-///None    | false   | false
-///true    | false   | false
-///false   | None    | false
-///None    | None    | None
-///true    | None    | None
-///false   | true    | false
-///None    | true    | None
-///true    | true    | true
-///```
+///| Input 1         | Input 2         | `AndStream`   |
+///|-----------------|-----------------|---------------|
+///| `Some(false)`   | `Some(false)`   | `Some(false)` |
+///| `None`          | `Some(false)`   | `Some(false)` |
+///| `Some(true)`    | `Some(false)`   | `Some(false)` |
+///| `Some(false)`   | `None`          | `Some(false)` |
+///| `None`          | `None`          | `None`        |
+///| `Some(true)`    | `None`          | `None`        |
+///| `Some(false)`   | `Some(true)`    | `Some(false)` |
+///| `None`          | `Some(true)`    | `None`        |
+///| `Some(true)`    | `Some(true)`    | `Some(true)`  |
 pub struct AndStream<G1: Getter<bool, E> + ?Sized, G2: Getter<bool, E> + ?Sized, E: Copy + Debug> {
     input1: Reference<G1>,
     input2: Reference<G2>,
@@ -127,19 +125,17 @@ impl OrState {
 }
 ///Performs an or operation on two boolean getters. This will return `None` if it can't verify that
 ///the result should be `true` or `false`.
-///```text
-///Input 1 | Input 2 | OrStream
-///--------+---------+---------
-///false   | false   | false
-///None    | false   | None
-///true    | false   | true
-///false   | None    | None
-///None    | None    | None
-///true    | None    | true
-///false   | true    | true
-///None    | true    | true
-///true    | true    | true
-///```
+///| Input 1       | Input 2       | `OrStream`    |
+///|---------------|---------------|---------------|
+///| `Some(false)` | `Some(false)` | `Some(false)` |
+///| `None`        | `Some(false)` | `None`        |
+///| `Some(true)`  | `Some(false)` | `Some(true)`  |
+///| `Some(false)` | `None`        | `None`        |
+///| `None`        | `None`        | `None`        |
+///| `Some(true)`  | `None`        | `Some(true)`  |
+///| `Some(false)` | `Some(true)`  | `Some(true)`  |
+///| `None`        | `Some(true)`  | `Some(true)`  |
+///| `Some(true)`  | `Some(true)`  | `Some(true)`  |
 pub struct OrStream<G1: Getter<bool, E> + ?Sized, G2: Getter<bool, E> + ?Sized, E: Copy + Debug> {
     input1: Reference<G1>,
     input2: Reference<G2>,
