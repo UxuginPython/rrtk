@@ -333,8 +333,8 @@ impl From<PositionDerivative> for Unit {
             millimeter_exp: 1,
             second_exp: match was {
                 PositionDerivative::Position => 0,
-                PositionDerivative::Velocity => 1,
-                PositionDerivative::Acceleration => 2,
+                PositionDerivative::Velocity => -1,
+                PositionDerivative::Acceleration => -2,
             },
         };
         #[cfg(not(any(
