@@ -110,6 +110,75 @@ impl DivAssign<DimensionlessInteger> for Time {
         self.0 /= rhs.0;
     }
 }
+///`Mul<Time> for Quantity` is commutative with `Mul<Quantity> for Time` in type, value, and unit.
+///```
+///# use rrtk::*;
+///let x = Time(2_000_000_000);
+///let y = Quantity::new(3.0, MILLIMETER_PER_SECOND);
+///assert_eq!(x * y, y * x);
+///```
+///This is why it is possible to implement `MulAssign<Time> for Quantity` but not
+///`MulAssign<Quantity> for Time`. This operation must return `Quantity`, which is fine for
+///`MulAssign<Time> for Quantity` but not for `MulAssign<Quantity> for Time` since `MulAssign` does
+///not allow the type to change.
+///```
+///# use rrtk::*;
+///let mut x = Quantity::new(3.0, MILLIMETER_PER_SECOND);
+///let y = Time(2_000_000_000);
+///x *= y;
+///```
+///```compile_fail
+///# use rrtk::*;
+///let mut x = Time(2_000_000_000);
+///let y = Quantity::new(3.0, MILLIMETER_PER_SECOND);
+///x *= y;
+///```
+///This still applies when the `Quantity` is dimensionless since there is no type-level distinction
+///between dimensionless and dimensional quantities.
+///```compile_fail
+///# use rrtk::*;
+///let mut x = Time(2_000_000_000);
+///let y = Quantity::dimensionless(3.0);
+///x *= y;
+///```
+///If you need to multiply a [`Time`] by a dimensionless factor and not change its type, use
+///[`DimensionlessInteger`].
+impl Mul<Quantity> for Time {
+    type Output = Quantity;
+    fn mul(self, rhs: Quantity) -> Quantity {
+        rhs * self
+    }
+}
+///A `Time` divided by a `Quantity` must return another `Quantity`.
+///```
+///# use rrtk::*;
+///let x = Time(4_000_000_000);
+///let y = Quantity::new(2.0, MILLIMETER);
+///assert_eq!(x / y, Quantity::new(2.0, SECOND_PER_MILLIMETER));
+///```
+///This makes implementing `DivAssign<Quantity> for Time` impossible since it does not allow the
+///type to change.
+///```compile_fail
+///# use rrtk::*;
+///let mut x = Time(4_000_000_000);
+///let y = Quantity::new(2.0, MILLIMETER);
+///x /= y;
+///```
+///However, a `Quantity` divided by a `Time` also returns a `Quantity`. Therefore, it *is* possible
+///to implement `DivAssign<Time> for Quantity`.
+///```
+///# use rrtk::*;
+///let mut x = Quantity::new(4.0, MILLIMETER);
+///let y = Time(2_000_000_000);
+///x /= y;
+///assert_eq!(x, Quantity::new(2.0, MILLIMETER_PER_SECOND));
+///```
+impl Div<Quantity> for Time {
+    type Output = Quantity;
+    fn div(self, rhs: Quantity) -> Quantity {
+        Quantity::from(self) / rhs
+    }
+}
 ///A dimensionless quantity stored as an integer. Used almost exclusively for when a time, stored
 ///as an integer, must be multiplied by a constant factor as in numerical integrals and motion
 ///profiles.
@@ -593,6 +662,39 @@ impl Mul<Time> for Quantity {
         self * Quantity::from(rhs)
     }
 }
+///`Mul<Time> for Quantity` is commutative with `Mul<Quantity> for Time` in type, value, and unit.
+///```
+///# use rrtk::*;
+///let x = Time(2_000_000_000);
+///let y = Quantity::new(3.0, MILLIMETER_PER_SECOND);
+///assert_eq!(x * y, y * x);
+///```
+///This is why it is possible to implement `MulAssign<Time> for Quantity` but not
+///`MulAssign<Quantity> for Time`. This operation must return `Quantity`, which is fine for
+///`MulAssign<Time> for Quantity` but not for `MulAssign<Quantity> for Time` since `MulAssign` does
+///not allow the type to change.
+///```
+///# use rrtk::*;
+///let mut x = Quantity::new(3.0, MILLIMETER_PER_SECOND);
+///let y = Time(2_000_000_000);
+///x *= y;
+///```
+///```compile_fail
+///# use rrtk::*;
+///let mut x = Time(2_000_000_000);
+///let y = Quantity::new(3.0, MILLIMETER_PER_SECOND);
+///x *= y;
+///```
+///This still applies when the `Quantity` is dimensionless since there is no type-level distinction
+///between dimensionless and dimensional quantities.
+///```compile_fail
+///# use rrtk::*;
+///let mut x = Time(2_000_000_000);
+///let y = Quantity::dimensionless(3.0);
+///x *= y;
+///```
+///If you need to multiply a [`Time`] by a dimensionless factor and not change its type, use
+///[`DimensionlessInteger`].
 impl MulAssign<Time> for Quantity {
     fn mul_assign(&mut self, rhs: Time) {
         *self = *self * rhs;
@@ -604,6 +706,30 @@ impl Div<Time> for Quantity {
         self / Quantity::from(rhs)
     }
 }
+///A `Time` divided by a `Quantity` must return another `Quantity`.
+///```
+///# use rrtk::*;
+///let x = Time(4_000_000_000);
+///let y = Quantity::new(2.0, MILLIMETER);
+///assert_eq!(x / y, Quantity::new(2.0, SECOND_PER_MILLIMETER));
+///```
+///This makes implementing `DivAssign<Quantity> for Time` impossible since it does not allow the
+///type to change.
+///```compile_fail
+///# use rrtk::*;
+///let mut x = Time(4_000_000_000);
+///let y = Quantity::new(2.0, MILLIMETER);
+///x /= y;
+///```
+///However, a `Quantity` divided by a `Time` also returns a `Quantity`. Therefore, it *is* possible
+///to implement `DivAssign<Time> for Quantity`.
+///```
+///# use rrtk::*;
+///let mut x = Quantity::new(4.0, MILLIMETER);
+///let y = Time(2_000_000_000);
+///x /= y;
+///assert_eq!(x, Quantity::new(2.0, MILLIMETER_PER_SECOND));
+///```
 impl DivAssign<Time> for Quantity {
     fn div_assign(&mut self, rhs: Time) {
         *self = *self / rhs;
