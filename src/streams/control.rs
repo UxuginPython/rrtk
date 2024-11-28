@@ -95,7 +95,7 @@ mod command_pid {
         pub output_int_int: Option<f32>,
     }
     ///Automatically integrates the command variable of a PID controller based on the position
-    ///derivative of a `Command`. Designed to make it easier to use a standard DC motor and an encoder
+    ///derivative of a [`Command`]. Designed to make it easier to use a standard DC motor and an encoder
     ///as a de facto servo.
     pub struct CommandPID<G: Getter<State, E> + ?Sized, E: Copy + Debug> {
         settable_data: SettableData<Command, E>,
@@ -282,7 +282,7 @@ pub struct EWMAStream<T: Clone + Add<Output = T>, G: Getter<T, E> + ?Sized, E: C
 }
 #[cfg(feature = "std")]
 impl<T: Clone + Add<Output = T>, G: Getter<T, E> + ?Sized, E: Copy + Debug> EWMAStream<T, G, E> {
-    ///Constructor for `EWMAStream`.
+    ///Constructor for [`EWMAStream`].
     pub const fn new(input: Reference<G>, smoothing_constant: f32) -> Self {
         Self {
             input: input,
@@ -410,7 +410,7 @@ pub struct MovingAverageStream<T, G: Getter<T, E> + ?Sized, E: Copy + Debug> {
 }
 #[cfg(feature = "alloc")]
 impl<T, G: Getter<T, E> + ?Sized, E: Copy + Debug> MovingAverageStream<T, G, E> {
-    ///Constructor for `MovingAverageStream`.
+    ///Constructor for [`MovingAverageStream`].
     pub const fn new(input: Reference<G>, window: Time) -> Self {
         Self {
             input: input,

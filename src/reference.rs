@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // Copyright 2024 UxuginPython
-//!`Reference` is a container holding an enum with variants containing different kinds of
-//!references, the availability of some of which depends on crate features. `Reference` is borrowed like
-//!a `RefCell`. This module contains it and its related types. `Reference` is also reexported at
+//![`Reference`] is a container holding an enum with variants containing different kinds of
+//!references, the availability of some of which depends on crate features. [`Reference`] is borrowed like
+//!a [`RefCell`]. This module contains it and its related types. [`Reference`] is also reexported at
 //!the crate level.
 use crate::*;
 #[cfg(feature = "alloc")]
 use core::cell::{Ref, RefMut};
 #[cfg(feature = "std")]
 use std::sync::{MutexGuard, RwLockReadGuard, RwLockWriteGuard};
-///An immutable borrow of an RRTK `Reference`, similar to `Ref` for a `RefCell`.
+///An immutable borrow of an RRTK [`Reference`], similar to [`Ref`] for a [`RefCell`].
 ///
 ///This is marked as non-exhaustive because some variants are only available with some features.
 ///This means that if you write a `match` without all the features enabled, it won't cover all the
@@ -22,10 +22,10 @@ pub enum Borrow<'a, T: ?Sized> {
     ///An immutable borrow of an `Rc<RefCell<T>>`.
     #[cfg(feature = "alloc")]
     RefCellRef(Ref<'a, T>),
-    ///An `RwLockReadGuard`.
+    ///An [`RwLockReadGuard`].
     #[cfg(feature = "std")]
     RwLockReadGuard(RwLockReadGuard<'a, T>),
-    ///A `MutexGuard`.
+    ///A [`MutexGuard`].
     #[cfg(feature = "std")]
     MutexGuard(MutexGuard<'a, T>),
 }
@@ -43,7 +43,7 @@ impl<T: ?Sized> Deref for Borrow<'_, T> {
         }
     }
 }
-///A mutable borrow of an RRTK `Reference`, similar to `RefMut` for a `RefCell`.
+///A mutable borrow of an RRTK [`Reference`], similar to [`RefMut`] for a [`RefCell`].
 ///
 ///This is marked as non-exhaustive because some variants are only available with some features.
 ///This means that if you write a `match` without all the features enabled, it won't cover all the
@@ -56,10 +56,10 @@ pub enum BorrowMut<'a, T: ?Sized> {
     ///A mutable borrow of an `Rc<RefCell<T>>`.
     #[cfg(feature = "alloc")]
     RefCellRefMut(RefMut<'a, T>),
-    ///An `RwLockWriteGuard`.
+    ///An [`RwLockWriteGuard`].
     #[cfg(feature = "std")]
     RwLockWriteGuard(RwLockWriteGuard<'a, T>),
-    ///A `MutexGuard`.
+    ///A [`MutexGuard`].
     #[cfg(feature = "std")]
     MutexGuard(MutexGuard<'a, T>),
 }
@@ -92,8 +92,8 @@ impl<T: ?Sized> DerefMut for BorrowMut<'_, T> {
 }
 ///A special enum with variants for different kinds of references depending on your platform and
 ///code structure. (Some variants are alloc- or std-only.) It is usually contained in a
-///`Reference`, which is a safe wrapper. You should generally use `Reference` over
-///`ReferenceUnsafe` unless you specifically need to match against it, probably for some form of
+///[`Reference`], which is a safe wrapper. You should generally use [`Reference`] over
+///[`ReferenceUnsafe`] unless you specifically need to match against it, probably for some form of
 ///type conversion.
 ///
 ///This is marked as non-exhaustive because some variants are only available with some features.
@@ -108,10 +108,10 @@ pub enum ReferenceUnsafe<T: ?Sized> {
     ///An `Rc<RefCell<T>>`.
     #[cfg(feature = "alloc")]
     RcRefCell(Rc<RefCell<T>>),
-    ///A raw immutable pointer to an `RwLock<T>`. Making the `RwLock` itself static is recommended.
+    ///A raw immutable pointer to an [`RwLock<T>`]. Making the [`RwLock`] itself static is recommended.
     #[cfg(feature = "std")]
     PtrRwLock(*const RwLock<T>),
-    ///A raw pointer to a `Mutex<T>`. Making the `Mutex` itself static is recommended.
+    ///A raw pointer to a [`Mutex<T>`]. Making the [`Mutex`] itself static is recommended.
     #[cfg(feature = "std")]
     PtrMutex(*const Mutex<T>),
     ///An `Arc<RwLock<T>>`.
@@ -122,40 +122,40 @@ pub enum ReferenceUnsafe<T: ?Sized> {
     ArcMutex(Arc<Mutex<T>>),
 }
 impl<T: ?Sized> ReferenceUnsafe<T> {
-    ///Create a `ReferenceUnsafe` from a raw mutable pointer. This is useful if you are not
+    ///Create a [`ReferenceUnsafe`] from a raw mutable pointer. This is useful if you are not
     ///multithreading and you want to avoid dynamic allocation. Making the target static is
     ///recommended.
     pub const unsafe fn from_ptr(ptr: *mut T) -> Self {
         Self::Ptr(ptr)
     }
-    ///Create a `ReferenceUnsafe` from an `Rc<RefCell<T>>`.
+    ///Create a [`ReferenceUnsafe`] from an `Rc<RefCell<T>>`.
     #[cfg(feature = "alloc")]
     pub const fn from_rc_ref_cell(rc_ref_cell: Rc<RefCell<T>>) -> Self {
         Self::RcRefCell(rc_ref_cell)
     }
-    ///Create a `ReferenceUnsafe` from a `*const RwLock<T>`. Making the `RwLock` itself static is
+    ///Create a [`ReferenceUnsafe`] from a `*const RwLock<T>`. Making the [`RwLock`] itself static is
     ///recommended.
     #[cfg(feature = "std")]
     pub const unsafe fn from_ptr_rw_lock(ptr_rw_lock: *const RwLock<T>) -> Self {
         Self::PtrRwLock(ptr_rw_lock)
     }
-    ///Create a `ReferenceUnsafe` from a `*const Mutex<T>`. Making the `Mutex` itself static is
+    ///Create a [`ReferenceUnsafe`] from a `*const Mutex<T>`. Making the [`Mutex`] itself static is
     ///recommended.
     #[cfg(feature = "std")]
     pub const unsafe fn from_ptr_mutex(ptr_mutex: *const Mutex<T>) -> Self {
         Self::PtrMutex(ptr_mutex)
     }
-    ///Create a new `ReferenceUnsafe` from an `Arc<RwLock<T>>`.
+    ///Create a new [`ReferenceUnsafe`] from an `Arc<RwLock<T>>`.
     #[cfg(feature = "std")]
     pub const fn from_arc_rw_lock(arc_rw_lock: Arc<RwLock<T>>) -> Self {
         Self::ArcRwLock(arc_rw_lock)
     }
-    ///Create a `ReferenceUnsafe` from an `Arc<Mutex<T>>`.
+    ///Create a [`ReferenceUnsafe`] from an `Arc<Mutex<T>>`.
     #[cfg(feature = "std")]
     pub const fn from_arc_mutex(arc_mutex: Arc<Mutex<T>>) -> Self {
         Self::ArcMutex(arc_mutex)
     }
-    ///Immutably borrow the `ReferenceUnsafe` like a `RefCell`. This is unsafe because of the
+    ///Immutably borrow the [`ReferenceUnsafe`] like a [`RefCell`]. This is unsafe because of the
     ///potential for a dereference of the borrow to dereference a null or freed raw pointer.
     pub unsafe fn borrow(&self) -> Borrow<'_, T> {
         match self {
@@ -192,7 +192,7 @@ impl<T: ?Sized> ReferenceUnsafe<T> {
             ),
         }
     }
-    ///Mutably borrow the `ReferenceUnsafe` like a `RefCell`. Thus is unsafe because of the
+    ///Mutably borrow the [`ReferenceUnsafe`] like a [`RefCell`]. Thus is unsafe because of the
     ///potential for a dereference of the borrow to dereference a null or freed raw pointer.
     pub unsafe fn borrow_mut(&self) -> BorrowMut<'_, T> {
         match self {
@@ -253,63 +253,63 @@ impl<T: ?Sized> From<Reference<T>> for ReferenceUnsafe<T> {
     }
 }
 ///A container privately holding an enum with variants containing different kinds of references,
-///the availability of some of which depends on crate features. `Reference` is borrowed like a `RefCell`.
+///the availability of some of which depends on crate features. [`Reference`] is borrowed like a [`RefCell`].
 ///It is also reexported at the crate level.
 #[repr(transparent)]
 pub struct Reference<T: ?Sized>(ReferenceUnsafe<T>);
 impl<T: ?Sized> Reference<T> {
-    ///Create a `Reference` from a raw mutable pointer. This is useful if you are not
+    ///Create a [`Reference`] from a raw mutable pointer. This is useful if you are not
     ///multithreading and you want to avoid dynamic allocation. Making the target static is
-    ///recommended. The `static_reference!` macro is a convenient way of making an object
+    ///recommended. The [`static_reference!`] macro is a convenient way of making an object
     ///static and getting a `Reference` of the raw pointer variant to it. Because the object is
     ///guaranteed to be static, it can be called without an unsafe block.
     pub const unsafe fn from_ptr(ptr: *mut T) -> Self {
         Self(ReferenceUnsafe::from_ptr(ptr))
     }
-    ///Create a `Reference` from an `Rc<RefCell<T>>`. The `rc_ref_cell_reference` function is a
-    ///convenient way of putting an object in an `Rc<RefCell<T>>` and getting a `Reference` of this
+    ///Create a [`Reference`] from an `Rc<RefCell<T>>`. The [`rc_ref_cell_reference`] function is a
+    ///convenient way of putting an object in an `Rc<RefCell<T>>` and getting a [`Reference`] of this
     ///variant to it.
     #[cfg(feature = "alloc")]
     pub const fn from_rc_ref_cell(rc_ref_cell: Rc<RefCell<T>>) -> Self {
         Self(ReferenceUnsafe::from_rc_ref_cell(rc_ref_cell))
     }
-    ///Create a `Reference` from a `*const RwLock<T>`. Making the `RwLock` itself static is
-    ///recommended. The `static_rw_lock_reference!` macro is a convenient way of putting
-    ///an object in a static `RwLock` and getting a `Reference` of this variant to it.
+    ///Create a [`Reference`] from a `*const RwLock<T>`. Making the [`RwLock`] itself static is
+    ///recommended. The [`static_rw_lock_reference!`] macro is a convenient way of putting
+    ///an object in a static [`RwLock`] and getting a `Reference` of this variant to it.
     #[cfg(feature = "std")]
     pub const unsafe fn from_ptr_rw_lock(ptr_rw_lock: *const RwLock<T>) -> Self {
         Self(ReferenceUnsafe::from_ptr_rw_lock(ptr_rw_lock))
     }
-    ///Create a `Reference` from a `*const Mutex<T>`. Making the `Mutex` itself static is
-    ///recommended. The `static_mutex_reference!` macro is a convenient way of putting an object in
-    ///a static `Mutex` and getting a `Reference` of this variant to it.
+    ///Create a [`Reference`] from a `*const Mutex<T>`. Making the [`Mutex`] itself static is
+    ///recommended. The [`static_mutex_reference!`] macro is a convenient way of putting an object in
+    ///a static [`Mutex`] and getting a [`Reference`] of this variant to it.
     #[cfg(feature = "std")]
     pub const unsafe fn from_ptr_mutex(ptr_mutex: *const Mutex<T>) -> Self {
         Self(ReferenceUnsafe::from_ptr_mutex(ptr_mutex))
     }
-    ///Create a `Reference` from an `Arc<RwLock<T>>`. The `arc_rw_lock_reference` function is a
-    ///convenient way of putting an object in an `Arc<RwLock>` and getting a `Reference` of this
+    ///Create a [`Reference`] from an `Arc<RwLock<T>>`. The [`arc_rw_lock_reference`] function is a
+    ///convenient way of putting an object in an [`Arc<RwLock>`] and getting a [`Reference`] of this
     ///variant to it.
     #[cfg(feature = "std")]
     pub const fn from_arc_rw_lock(arc_rw_lock: Arc<RwLock<T>>) -> Self {
         Self(ReferenceUnsafe::from_arc_rw_lock(arc_rw_lock))
     }
-    ///Create a `Reference` from an `Arc<Mutex<T>>`. The `arc_mutex_reference` function is a
-    ///convenient way of putting an object in an `Arc<Mutex>` and getting a `Reference` of this
+    ///Create a [`Reference`] from an `Arc<Mutex<T>>`. The [`arc_mutex_reference`] function is a
+    ///convenient way of putting an object in an `Arc<Mutex>` and getting a [`Reference`] of this
     ///variant to it.
     #[cfg(feature = "std")]
     pub const fn from_arc_mutex(arc_mutex: Arc<Mutex<T>>) -> Self {
         Self(ReferenceUnsafe::from_arc_mutex(arc_mutex))
     }
-    ///Get the inner `ReferenceUnsafe`.
+    ///Get the inner [`ReferenceUnsafe`].
     pub fn into_inner(self) -> ReferenceUnsafe<T> {
         self.0
     }
-    ///Immutably borrow the `Reference` like a `RefCell`.
+    ///Immutably borrow the [`Reference`] like a [`RefCell`].
     pub fn borrow(&self) -> Borrow<'_, T> {
         unsafe { self.0.borrow() }
     }
-    ///Mutably borrow the `Reference` like a `RefCell`.
+    ///Mutably borrow the [`Reference`] like a [`RefCell`].
     pub fn borrow_mut(&self) -> BorrowMut<'_, T> {
         unsafe { self.0.borrow_mut() }
     }
@@ -365,14 +365,14 @@ macro_rules! to_dyn {
     }};
 }
 pub use to_dyn;
-///Create a new `Rc<RefCell>` of something and return a `Reference` to it. Because of how `Rc`
+///Create a new `Rc<RefCell>` of something and return a [`Reference`] to it. Because of how [`Rc`]
 ///works, it won't be dropped until the last clone of the `Reference` is. This is reexported at the
 ///crate level.
 #[cfg(feature = "alloc")]
 pub fn rc_ref_cell_reference<T>(was: T) -> Reference<T> {
     Reference::from_rc_ref_cell(Rc::new(RefCell::new(was)))
 }
-///Create a static of something and return a `Ptr`-variant `Reference` to it. This contains a raw
+///Create a static of something and return a `Ptr`-variant [`Reference`] to it. This contains a raw
 ///mutable pointer. It will never use-after-free because its target is static, but be careful if
 ///you're doing multiprocessing where multiple things could mutate it at once.
 ///
@@ -388,7 +388,7 @@ macro_rules! static_reference {
     }};
 }
 pub use static_reference;
-///Create a static `RwLock` of something and return a `PtrRwLock`-variant `Reference` to it.
+///Create a static [`RwLock`] of something and return a `PtrRwLock`-variant [`Reference`] to it.
 ///
 ///The documentation shows `rrtk::static_rw_lock_reference` and `rrtk::reference::static_rw_lock_reference` separately. These are the
 ///same macro exported in two different places. These paths point to the same code in RRTK. Rust's
@@ -404,7 +404,7 @@ macro_rules! static_rw_lock_reference {
 }
 #[cfg(feature = "std")]
 pub use static_rw_lock_reference;
-///Create a new static `Mutex` of something and return a `PtrMutex`-variant `Reference` to it.
+///Create a new static [`Mutex`] of something and return a `PtrMutex`-variant [`Reference`] to it.
 ///
 ///The documentation shows `rrtk::static_mutex_reference` and `rrtk::reference::static_mutex_reference` separately. These are the
 ///same macro exported in two different places. These paths point to the same code in RRTK. Rust's
@@ -418,18 +418,18 @@ macro_rules! static_mutex_reference {
         unsafe { Reference::from_ptr_mutex(core::ptr::addr_of!(WAS)) }
     }};
 }
-///Create a new `Arc<RwLock>` of something and return a `Reference` to it. Because of how `Arc` and
-///`Rc`, its single-threaded counterpart, work, it won't be dropped until the last clone of the
-///`Reference` is. This is reexported at the crate level.
+///Create a new `Arc<RwLock>` of something and return a [`Reference`] to it. Because of how [`Arc`] and
+///[`Rc`], its single-threaded counterpart, work, it won't be dropped until the last clone of the
+///[`Reference`] is. This is reexported at the crate level.
 #[cfg(feature = "std")]
 pub fn arc_rw_lock_reference<T>(was: T) -> Reference<T> {
     Reference::from_arc_rw_lock(Arc::new(RwLock::new(was)))
 }
 #[cfg(feature = "std")]
 pub use static_mutex_reference;
-///Create a new `Arc<Mutex>` of something and return a `Reference` to it. Because of how `Arc` and
-///`Rc`, its single-threaded counterpart, work, it won't be dropped until the last clone of the
-///`Reference` is. This is reexported at the crate level.
+///Create a new `Arc<Mutex>` of something and return a [`Reference`] to it. Because of how [`Arc`] and
+///[`Rc`], its single-threaded counterpart, work, it won't be dropped until the last clone of the
+///[`Reference`] is. This is reexported at the crate level.
 #[cfg(feature = "std")]
 pub fn arc_mutex_reference<T>(was: T) -> Reference<T> {
     Reference::from_arc_mutex(Arc::new(Mutex::new(was)))

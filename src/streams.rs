@@ -14,7 +14,7 @@ pub struct Latest<T, const C: usize, E: Copy + Debug> {
     inputs: [Reference<dyn Getter<T, E>>; C],
 }
 impl<T, const C: usize, E: Copy + Debug> Latest<T, C, E> {
-    ///Constructor for `Latest`.
+    ///Constructor for [`Latest`].
     pub const fn new(inputs: [Reference<dyn Getter<T, E>>; C]) -> Self {
         if C < 1 {
             panic!("rrtk::streams::Latest C must be at least 1.");
@@ -60,7 +60,7 @@ pub struct Expirer<T, G: Getter<T, E> + ?Sized, TG: TimeGetter<E> + ?Sized, E: C
 impl<T, G: Getter<T, E> + ?Sized, TG: TimeGetter<E> + ?Sized, E: Copy + Debug>
     Expirer<T, G, TG, E>
 {
-    ///Constructor for `Expirer`.
+    ///Constructor for [`Expirer`].
     pub const fn new(
         input: Reference<G>,
         time_getter: Reference<TG>,

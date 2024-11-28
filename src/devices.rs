@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // Copyright 2024 UxuginPython
 //!RRTK's device system works through a graph-like structure where each device holds objects called
-//!terminals in `RefCell`s. Terminals represent anywhere that a device can connect to another.
-//!Connected terminals hold references to eachother's `RefCell`s. This module holds builtin
+//!terminals in [`RefCell`]s. Terminals represent anywhere that a device can connect to another.
+//!Connected terminals hold references to eachother's [`RefCell`]s. This module holds builtin
 //!devices.
 use crate::*;
 pub mod wrappers;
@@ -12,7 +12,7 @@ pub struct Invert<'a, E: Copy + Debug> {
     term2: RefCell<Terminal<'a, E>>,
 }
 impl<'a, E: Copy + Debug> Invert<'a, E> {
-    ///Constructor for `Invert`.
+    ///Constructor for [`Invert`].
     pub const fn new() -> Self {
         Self {
             term1: Terminal::new(),
@@ -87,7 +87,7 @@ impl<E: Copy + Debug> Device<E> for Invert<'_, E> {
 ///terminals are connected. Code-wise, this is almost exactly the same as directly connecting two
 ///terminals, but this type can connect more than two terminals. There is some freedom in exactly
 ///what you do with each of these ways of connecting terminals and what they represent physically,
-///but the intention is that `connect` is for only two and `Axle` is for more. Using an `Axle` for
+///but the intention is that [`connect`] is for only two and [`Axle`] is for more. Using an [`Axle`] for
 ///only two terminals is possible but may have a slight performance cost. (The type even
 ///technically allows for only one or even zero connected terminals, but there is almost certainly
 ///no legitimate use for this.)
@@ -95,7 +95,7 @@ pub struct Axle<'a, const N: usize, E: Copy + Debug> {
     inputs: [RefCell<Terminal<'a, E>>; N],
 }
 impl<'a, const N: usize, E: Copy + Debug> Axle<'a, N, E> {
-    ///Constructor for `Axle`.
+    ///Constructor for [`Axle`].
     pub fn new() -> Self {
         //FIXME: Although this does work, it is still technically undefined behavior.
         let mut inputs: [RefCell<Terminal<'a, E>>; N] =
@@ -142,16 +142,17 @@ impl<const N: usize, E: Copy + Debug> Device<E> for Axle<'_, N, E> {
     }
 }
 ///Since each branch of a differential is dependent on the other two, we can calculate each with
-///only the others. This allows you to select a branch to completely calculate and not call `get`
+///only the others. This allows you to select a branch to completely calculate and not call
+///[`get`](Terminal::get)
 ///on. For example, if you have encoders on two branches, you would probably want to calculate the
 ///third from their readings. If you have encoders on all three branches, you can also choose to
-///use all three values from them with the `Equal` variant.
+///use all three values from them with the [`Equal`](DifferentialDistrust::Equal) variant.
 pub enum DifferentialDistrust {
-    ///Calculate the state of side 1 from sum and side 2 and do not call `get` on it.
+    ///Calculate the state of side 1 from sum and side 2 and do not call [`get`](Terminal::get) on it.
     Side1,
-    ///Calculate the state of side 2 from sum and side 1 and do not call `get` on it.
+    ///Calculate the state of side 2 from sum and side 1 and do not call [`get`](Terminal::get) on it.
     Side2,
-    ///Calculate the state of sum from side 1 and side 2 and do not call `get` on it.
+    ///Calculate the state of sum from side 1 and side 2 and do not call [`get`](Terminal::get) on it.
     Sum,
     ///Trust all branches equally in the calculation. Note that this is a bit slower.
     Equal,
@@ -164,7 +165,7 @@ pub struct Differential<'a, E: Copy + Debug> {
     distrust: DifferentialDistrust,
 }
 impl<'a, E: Copy + Debug> Differential<'a, E> {
-    ///Constructor for `Differential`. Trusts all branches equally.
+    ///Constructor for [`Differential`]. Trusts all branches equally.
     pub const fn new() -> Self {
         Self {
             side1: Terminal::new(),
@@ -173,7 +174,7 @@ impl<'a, E: Copy + Debug> Differential<'a, E> {
             distrust: DifferentialDistrust::Equal,
         }
     }
-    ///Constructor for `Differential` where you choose what to distrust.
+    ///Constructor for [`Differential`] where you choose what to distrust.
     pub fn with_distrust(distrust: DifferentialDistrust) -> Self {
         Self {
             side1: Terminal::new(),

@@ -54,7 +54,7 @@ impl<E: Copy + Debug> Updatable<E> for MotionProfile {
     }
 }
 impl MotionProfile {
-    ///Constructor for `MotionProfile` using start and end states.
+    ///Constructor for [`MotionProfile`] using start and end states.
     pub fn new(
         start_state: State,
         end_state: State,
@@ -102,7 +102,7 @@ impl MotionProfile {
             end_command: end_command,
         }
     }
-    ///Get the intended `PositionDerivative` at a given time.
+    ///Get the intended [`PositionDerivative`] at a given time.
     pub fn get_mode(&self, t: Time) -> Option<PositionDerivative> {
         if t < Time::default() {
             return None;
@@ -116,7 +116,7 @@ impl MotionProfile {
             return Some(self.end_command.into());
         }
     }
-    ///Get the `MotionProfilePiece` at a given time.
+    ///Get the [`MotionProfilePiece`] at a given time.
     pub fn get_piece(&self, t: Time) -> MotionProfilePiece {
         if t < Time::default() {
             return MotionProfilePiece::BeforeStart;

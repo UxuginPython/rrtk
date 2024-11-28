@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // Copyright 2024 UxuginPython
 //!Streams that convert from one type to another. Some of these also do keep the same type and are
-//!for convenience in certain situations, for example when you do not want to handle a `None`
+//!for convenience in certain situations, for example when you do not want to handle a [`None`]
 //!variant yourself.
 use crate::streams::*;
 ///A stream converting all `Ok(None)` values from its input to `Err(_)` variants.
@@ -11,7 +11,7 @@ pub struct NoneToError<T: Clone, G: Getter<T, E> + ?Sized, E: Copy + Debug> {
     phantom_e: PhantomData<E>,
 }
 impl<T: Clone, G: Getter<T, E> + ?Sized, E: Copy + Debug> NoneToError<T, G, E> {
-    ///Constructor for `NoneToError`.
+    ///Constructor for [`NoneToError`].
     pub const fn new(input: Reference<G>) -> Self {
         Self {
             input: input,
@@ -54,7 +54,7 @@ pub struct NoneToValue<
 impl<T: Clone, G: Getter<T, E> + ?Sized, TG: TimeGetter<E> + ?Sized, E: Copy + Debug>
     NoneToValue<T, G, TG, E>
 {
-    ///Constructor for `NoneToValue`.
+    ///Constructor for [`NoneToValue`].
     pub const fn new(input: Reference<G>, time_getter: Reference<TG>, none_value: T) -> Self {
         Self {
             input: input,
@@ -109,7 +109,7 @@ mod acceleration_to_state {
         phantom_e: PhantomData<E>,
     }
     impl<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> AccelerationToState<G, E> {
-        ///Constructor for `AccelerationToState`.
+        ///Constructor for [`AccelerationToState`].
         pub const fn new(acc: Reference<G>) -> Self {
             Self {
                 acc: acc,
@@ -237,7 +237,7 @@ mod velocity_to_state {
         phantom_e: PhantomData<E>,
     }
     impl<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> VelocityToState<G, E> {
-        ///Constructor for `VelocityToState`.
+        ///Constructor for [`VelocityToState`].
         pub const fn new(vel: Reference<G>) -> Self {
             Self {
                 vel: vel,
@@ -342,7 +342,7 @@ mod position_to_state {
         phantom_e: PhantomData<E>,
     }
     impl<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> PositionToState<G, E> {
-        ///Constructor for `PositionToState`.
+        ///Constructor for [`PositionToState`].
         pub const fn new(pos: Reference<G>) -> Self {
             Self {
                 pos: pos,
@@ -427,14 +427,14 @@ mod position_to_state {
         }
     }
 }
-///Stream to convert an `f32` to a `Quantity` with a given `Unit`.
+///Stream to convert an [`f32`] to a [`Quantity`] with a given [`Unit`].
 pub struct FloatToQuantity<G: Getter<f32, E> + ?Sized, E: Copy + Debug> {
     unit: Unit,
     input: Reference<G>,
     value: Output<f32, E>,
 }
 impl<G: Getter<f32, E>, E: Copy + Debug> FloatToQuantity<G, E> {
-    ///Constructor for `FloatToQuantity`.
+    ///Constructor for [`FloatToQuantity`].
     pub fn new(unit: Unit, input: Reference<G>) -> Self {
         Self {
             unit: unit,
@@ -461,13 +461,13 @@ impl<G: Getter<f32, E>, E: Copy + Debug> Getter<Quantity, E> for FloatToQuantity
         }
     }
 }
-///Stream to convert a `Quantity` to a raw `f32`.
+///Stream to convert a [`Quantity`] to a raw [`f32`].
 pub struct QuantityToFloat<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> {
     input: Reference<G>,
     value: Output<f32, E>,
 }
 impl<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> QuantityToFloat<G, E> {
-    ///Construcctor for `QuantityToFloat`.
+    ///Constructor for [`QuantityToFloat`].
     pub fn new(input: Reference<G>) -> Self {
         Self {
             input: input,

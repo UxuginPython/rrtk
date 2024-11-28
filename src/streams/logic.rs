@@ -18,20 +18,20 @@ impl AndState {
         }
     }
 }
-///Performs an and operation on two boolean getters. This will return `None` if it can't verify
-///that the result should be `true` or `false`. This is caused by inputs returning `None`. It's a
+///Performs an and operation on two boolean getters. This will return [`None`] if it can't verify
+///that the result should be [`true`] or [`false`]. This is caused by inputs returning [`None`]. It's a
 ///bit difficult to state exactly how this is determined, so here's a truth table:
-///| Input 1         | Input 2         | `AndStream`   |
-///|-----------------|-----------------|---------------|
-///| `Some(false)`   | `Some(false)`   | `Some(false)` |
-///| `None`          | `Some(false)`   | `Some(false)` |
-///| `Some(true)`    | `Some(false)`   | `Some(false)` |
-///| `Some(false)`   | `None`          | `Some(false)` |
-///| `None`          | `None`          | `None`        |
-///| `Some(true)`    | `None`          | `None`        |
-///| `Some(false)`   | `Some(true)`    | `Some(false)` |
-///| `None`          | `Some(true)`    | `None`        |
-///| `Some(true)`    | `Some(true)`    | `Some(true)`  |
+///| Input 1         | Input 2         | [`AndStream`]   |
+///|-----------------|-----------------|-----------------|
+///| [`Some(false)`] | [`Some(false)`] | [`Some(false)`] |
+///| [`None`]        | [`Some(false)`] | [`Some(false)`] |
+///| [`Some(true)`]  | [`Some(false)`] | [`Some(false)`] |
+///| [`Some(false)`] | [`None`]        | [`Some(false)`] |
+///| [`None`]        | [`None`]        | [`None`]        |
+///| [`Some(true)`]  | [`None`]        | [`None`]        |
+///| [`Some(false)`] | [`Some(true)`]  | [`Some(false)`] |
+///| [`None`]        | [`Some(true)`]  | [`None`]        |
+///| [`Some(true)`]  | [`Some(true)`]  | [`Some(true)`]  |
 pub struct AndStream<G1: Getter<bool, E> + ?Sized, G2: Getter<bool, E> + ?Sized, E: Copy + Debug> {
     input1: Reference<G1>,
     input2: Reference<G2>,
@@ -40,7 +40,7 @@ pub struct AndStream<G1: Getter<bool, E> + ?Sized, G2: Getter<bool, E> + ?Sized,
 impl<G1: Getter<bool, E> + ?Sized, G2: Getter<bool, E> + ?Sized, E: Copy + Debug>
     AndStream<G1, G2, E>
 {
-    ///Constructor for `AndStream`.
+    ///Constructor for [`AndStream`].
     pub const fn new(input1: Reference<G1>, input2: Reference<G2>) -> Self {
         Self {
             input1: input1,
@@ -123,19 +123,19 @@ impl OrState {
         }
     }
 }
-///Performs an or operation on two boolean getters. This will return `None` if it can't verify that
-///the result should be `true` or `false`.
-///| Input 1       | Input 2       | `OrStream`    |
-///|---------------|---------------|---------------|
-///| `Some(false)` | `Some(false)` | `Some(false)` |
-///| `None`        | `Some(false)` | `None`        |
-///| `Some(true)`  | `Some(false)` | `Some(true)`  |
-///| `Some(false)` | `None`        | `None`        |
-///| `None`        | `None`        | `None`        |
-///| `Some(true)`  | `None`        | `Some(true)`  |
-///| `Some(false)` | `Some(true)`  | `Some(true)`  |
-///| `None`        | `Some(true)`  | `Some(true)`  |
-///| `Some(true)`  | `Some(true)`  | `Some(true)`  |
+///Performs an or operation on two boolean getters. This will return [`None`] if it can't verify that
+///the result should be [`true`] or [`false`].
+///| Input 1         | Input 2       | [`OrStream`]      |
+///|-----------------|---------------|-------------------|
+///| [`Some(false)`] | [`Some(false)`] | [`Some(false)`] |
+///| [`None`]        | [`Some(false)`] | [`None`]        |
+///| [`Some(true)`]  | [`Some(false)`] | [`Some(true)`]  |
+///| [`Some(false)`] | [`None`]        | [`None`]        |
+///| [`None`]        | [`None`]        | [`None`]        |
+///| [`Some(true)`]  | [`None`]        | [`Some(true)`]  |
+///| [`Some(false)`] | [`Some(true)`]  | [`Some(true)`]  |
+///| [`None`]        | [`Some(true)`]  | [`Some(true)`]  |
+///| [`Some(true)`]  | [`Some(true)`]  | [`Some(true)`]  |
 pub struct OrStream<G1: Getter<bool, E> + ?Sized, G2: Getter<bool, E> + ?Sized, E: Copy + Debug> {
     input1: Reference<G1>,
     input2: Reference<G2>,
@@ -144,7 +144,7 @@ pub struct OrStream<G1: Getter<bool, E> + ?Sized, G2: Getter<bool, E> + ?Sized, 
 impl<G1: Getter<bool, E> + ?Sized, G2: Getter<bool, E> + ?Sized, E: Copy + Debug>
     OrStream<G1, G2, E>
 {
-    ///Constructor for `OrStream`.
+    ///Constructor for [`OrStream`].
     pub const fn new(input1: Reference<G1>, input2: Reference<G2>) -> Self {
         Self {
             input1: input1,
@@ -214,7 +214,7 @@ pub struct NotStream<G: Getter<bool, E> + ?Sized, E: Copy + Debug> {
     phantom_e: PhantomData<E>,
 }
 impl<G: Getter<bool, E> + ?Sized, E: Copy + Debug> NotStream<G, E> {
-    ///Constructor for `NotStream`.
+    ///Constructor for [`NotStream`].
     pub const fn new(input: Reference<G>) -> Self {
         Self {
             input: input,

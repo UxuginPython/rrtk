@@ -54,7 +54,8 @@ pub use state::*;
 #[derive(Clone, Copy, Debug, PartialEq)]
 #[non_exhaustive]
 pub enum Error<O: Copy + Debug> {
-    ///Returned when a `None` is elevated to an error by a `NoneToError`.
+    ///Returned when a `None` is elevated to an error by a
+    ///[`NoneToError`](streams::converters::NoneToError).
     FromNone,
     ///A custom error of a user-defined type. Not created by any RRTK type but can be propagated by
     ///them.
@@ -118,7 +119,7 @@ pub struct PIDKValues {
     pub kd: f32,
 }
 impl PIDKValues {
-    ///Constructor for `PIDKValues`.
+    ///Constructor for [`PIDKValues`].
     pub const fn new(kp: f32, ki: f32, kd: f32) -> Self {
         Self {
             kp: kp,
@@ -144,7 +145,7 @@ pub struct PositionDerivativeDependentPIDKValues {
     pub acceleration: PIDKValues,
 }
 impl PositionDerivativeDependentPIDKValues {
-    ///Constructor for `PositionDerivativeDependentPIDKValues`.
+    ///Constructor for [`PositionDerivativeDependentPIDKValues`].
     pub const fn new(position: PIDKValues, velocity: PIDKValues, acceleration: PIDKValues) -> Self {
         Self {
             position: position,
@@ -178,7 +179,7 @@ impl PositionDerivativeDependentPIDKValues {
 ///A generic output type when something may return an error, nothing, or something with a
 ///timestamp.
 pub type Output<T, E> = Result<Option<Datum<T>>, Error<E>>;
-///Returned from `TimeGetter` objects, which may return either a time or an error.
+///Returned from [`TimeGetter`] objects, which may return either a time or an error.
 pub type TimeOutput<E> = Result<Time, Error<E>>;
 ///Returned when something may return either nothing or an error.
 pub type NothingOrError<E> = Result<(), Error<E>>;
@@ -187,7 +188,7 @@ pub trait TimeGetter<E: Copy + Debug>: Updatable<E> {
     ///Get the time.
     fn get(&self) -> TimeOutput<E>;
 }
-///An object that can return a value, like a `Getter`, for a given time.
+///An object that can return a value, like a [`Getter`], for a given time.
 pub trait History<T, E: Copy + Debug>: Updatable<E> {
     ///Get a value at a time.
     fn get(&self, time: Time) -> Option<Datum<T>>;
@@ -203,7 +204,7 @@ pub enum Command {
     Acceleration(f32),
 }
 impl Command {
-    ///Constructor for `Command`.
+    ///Constructor for [`Command`].
     pub const fn new(position_derivative: PositionDerivative, value: f32) -> Self {
         match position_derivative {
             PositionDerivative::Position => Self::Position(value),
@@ -211,18 +212,17 @@ impl Command {
             PositionDerivative::Acceleration => Self::Acceleration(value),
         }
     }
-    ///Get the commanded constant position if there is one. If `position_derivative` is
-    ///`PositionDerivative::Velocity` or `PositionDerivative::Acceleration`, this will return
-    ///`None` as there is not a constant position.
+    ///Get the commanded constant position if there is one. If the position derivative is
+    ///velocity or acceleration, this will return `None` as there is not a constant position.
     pub fn get_position(&self) -> Option<Quantity> {
         match self {
             Self::Position(pos) => Some(Quantity::new(*pos, MILLIMETER)),
             _ => None,
         }
     }
-    ///Get the commanded constant velocity if there is one. If `position_derivative` is
-    ///`PositionDerivative::Acceleration`, this will return `None` as there is not a constant
-    ///velocity. If `position_derivative` is `PositionDerivative::Position`, this will return 0 as
+    ///Get the commanded constant velocity if there is one. If the position derivative is
+    ///acceleration, this will return `None` as there is not a constant
+    ///velocity. If the position derivative is position, this will return 0 as
     ///velocity should be zero with a constant position.
     pub fn get_velocity(&self) -> Option<Quantity> {
         match self {
@@ -231,9 +231,9 @@ impl Command {
             Self::Acceleration(_) => None,
         }
     }
-    ///Get the commanded constant acceleration if there is one. If `position_derivative` is not
-    ///`PositionDerivative::Acceleration`, this will return `None` as there is not a constant
-    ///acceleration.
+    ///Get the commanded constant acceleration. If the position derivative is not
+    ///acceleration, this will return 0 as acceleration should be zero with a constant velocity or
+    ///position.
     pub fn get_acceleration(&self) -> Quantity {
         Quantity::new(
             match self {
@@ -281,13 +281,13 @@ impl From<Command> for f32 {
         }
     }
 }
-///Something with an `update` method. Mostly for subtraiting.
+///Something with an [`update`](Updatable::update) method. Mostly for subtraiting.
 pub trait Updatable<E: Copy + Debug> {
     ///As this trait is very generic, exactly what this does will be very dependent on the
     ///implementor.
     fn update(&mut self) -> NothingOrError<E>;
 }
-///Something with a `get` method. Structs implementing this will often be chained for easier data
+///Something with a [`get`](Getter::get) method. Structs implementing this will often be chained for easier data
 ///processing, with a struct having other implementors in fields which will have some operation
 ///performed on their output before it being passed on. Data processing Getters with other Getters
 ///as fields can be referred to as streams, though this is only in naming and trait-wise there is
@@ -297,13 +297,13 @@ pub trait Getter<G, E: Copy + Debug>: Updatable<E> {
     ///Get something.
     fn get(&self) -> Output<G, E>;
 }
-///Internal data needed for following a `Getter` with a `Settable`.
+///Internal data needed for following a [`Getter`] with a [`Settable`].
 pub struct SettableData<S, E: Copy + Debug> {
     following: Option<Reference<dyn Getter<S, E>>>,
     last_request: Option<S>,
 }
 impl<S, E: Copy + Debug> SettableData<S, E> {
-    ///Constructor for SettableData.
+    ///Constructor for [`SettableData`].
     pub const fn new() -> Self {
         Self {
             following: None,
@@ -311,15 +311,15 @@ impl<S, E: Copy + Debug> SettableData<S, E> {
         }
     }
 }
-///Something with a `set` method. Usually used for motors and other mechanical components and
+///Something with a [`set`](Settable::set) method. Usually used for motors and other mechanical components and
 ///systems. This trait too is fairly broad.
 pub trait Settable<S: Clone, E: Copy + Debug>: Updatable<E> {
-    ///Set something, not updating the internal `SettableData`. Due to current limitations of the
-    ///language, you must implement this but call `set`. Do not call this directly as it will make
-    ///`get_last_request` work incorrectly.
+    ///Set something, not updating the internal [`SettableData`]. Due to current limitations of the
+    ///language, you must implement this but call [`set`](Settable::set). Do not call this directly as it will make
+    ///[`get_last_request`](Settable::get_last_request) work incorrectly.
     fn impl_set(&mut self, value: S) -> NothingOrError<E>;
     ///Set something to a value. For example, this could set a motor to a voltage. You should call
-    ///this and not `direct_set`.
+    ///this and not [`impl_set`](Settable::impl_set).
     fn set(&mut self, value: S) -> NothingOrError<E> {
         self.impl_set(value.clone())?;
         let data = self.get_settable_data_mut();
@@ -327,27 +327,30 @@ pub trait Settable<S: Clone, E: Copy + Debug>: Updatable<E> {
         Ok(())
     }
     ///As traits cannot have fields, get functions and separate types are required. All you have to
-    ///do is make a field for a corresponding `SettableData` and make this return an immutable
-    ///reference to it.
+    ///do is make a field for a corresponding [`SettableData`], make this return an immutable
+    ///reference to it, and make [`get_settable_data_mut`](Settable::get_settable_data_mut)
+    ///return a mutable reference to it.
     fn get_settable_data_ref(&self) -> &SettableData<S, E>;
     ///As traits cannot have fields, get functions and separate types are required. All you have to
-    ///do is make a field for a corresponding `SettableData` and make this return a mutable
-    ///reference to it.
+    ///do is make a field for a corresponding [`SettableData`], make this return a mutable
+    ///reference to it, and make [`get_settable_data_ref`](Settable::get_settable_data_ref)
+    ///return an immutable reference to it.
     fn get_settable_data_mut(&mut self) -> &mut SettableData<S, E>;
-    ///Begin following a `Getter` of the same type. For this to work, you must have
-    ///`update_following_data` in your `Updatable` implementation.
+    ///Begin following a [`Getter`] of the same type. For this to work, you must have
+    ///[`update_following_data`](Settable::update_following_data) in your [`Updatable`] implementation.
     fn follow(&mut self, getter: Reference<dyn Getter<S, E>>) {
         let data = self.get_settable_data_mut();
         data.following = Some(getter);
     }
-    ///Stop following the `Getter`.
+    ///Stop following the [`Getter`].
     fn stop_following(&mut self) {
         let data = self.get_settable_data_mut();
         data.following = None;
     }
-    ///Get a new value from the `Getter` we're following, if there is one, and call `set`
-    ///accordingly. You must add this to your `Updatable` implementation if you are following
-    ///`Getter`s. This is a current limitation of the Rust language. If specialization is ever
+    ///Get a new value from the [`Getter`] we're following, if there is one, and call
+    ///[`set`](Settable::set)
+    ///accordingly. You must add this to your [`Updatable`] implementation if you are following
+    ///[`Getter`]s. This is a current limitation of the Rust language. If specialization is ever
     ///stabilized, this will hopefully be done in a better way.
     fn update_following_data(&mut self) -> NothingOrError<E> {
         let data = self.get_settable_data_ref();
@@ -367,19 +370,19 @@ pub trait Settable<S: Clone, E: Copy + Debug>: Updatable<E> {
         }
         Ok(())
     }
-    ///Get the argument from the last time `set` was called.
+    ///Get the argument from the last time [`set`](Settable::set) was called.
     fn get_last_request(&self) -> Option<S> {
         let data = self.get_settable_data_ref();
         data.last_request.clone()
     }
 }
-///Because `Stream`s always return a timestamp (as long as they don't return `Err(_)` or
-///`Ok(None)`), we can use this to treat them like `TimeGetter`s.
+///Because [`Getter`]s always return a timestamp (as long as they don't return `Err(_)` or
+///`Ok(None)`), we can use this to treat them like [`TimeGetter`]s.
 pub struct TimeGetterFromGetter<T: Clone, G: Getter<T, E> + ?Sized, E: Copy + Debug> {
     elevator: streams::converters::NoneToError<T, G, E>,
 }
 impl<T: Clone, G: Getter<T, E> + ?Sized, E: Copy + Debug> TimeGetterFromGetter<T, G, E> {
-    ///Constructor for `TimeGetterFromGetter`.
+    ///Constructor for [`TimeGetterFromGetter`].
     pub const fn new(stream: Reference<G>) -> Self {
         Self {
             elevator: streams::converters::NoneToError::new(stream),
@@ -404,7 +407,7 @@ impl<T: Clone, G: Getter<T, E> + ?Sized, E: Copy + Debug> Updatable<E>
 }
 ///As histories return values at times, we can ask them to return values at the time of now or now
 ///with a delta. This makes that much easier and is the recommended way of following
-///`MotionProfile`s.
+///[`MotionProfile`]s.
 pub struct GetterFromHistory<'a, G, TG: TimeGetter<E>, E: Copy + Debug> {
     history: &'a mut dyn History<G, E>,
     time_getter: Reference<TG>,
@@ -412,7 +415,7 @@ pub struct GetterFromHistory<'a, G, TG: TimeGetter<E>, E: Copy + Debug> {
 }
 impl<'a, G, TG: TimeGetter<E>, E: Copy + Debug> GetterFromHistory<'a, G, TG, E> {
     ///Constructor such that the time in the request to the history will be directly that returned
-    ///from the `TimeGetter` with no delta.
+    ///from the [`TimeGetter`] with no delta.
     pub fn new_no_delta(history: &'a mut impl History<G, E>, time_getter: Reference<TG>) -> Self {
         Self {
             history: history,
@@ -420,7 +423,7 @@ impl<'a, G, TG: TimeGetter<E>, E: Copy + Debug> GetterFromHistory<'a, G, TG, E> 
             time_delta: Time::default(),
         }
     }
-    ///Constructor such that the times requested from the `History` will begin at zero where zero
+    ///Constructor such that the times requested from the [`History`] will begin at zero where zero
     ///is the moment this constructor is called.
     pub fn new_start_at_zero(
         history: &'a mut impl History<G, E>,
@@ -433,7 +436,7 @@ impl<'a, G, TG: TimeGetter<E>, E: Copy + Debug> GetterFromHistory<'a, G, TG, E> 
             time_delta: time_delta,
         })
     }
-    ///Constructor such that the times requested from the `History` will start at a given time with
+    ///Constructor such that the times requested from the [`History`] will start at a given time with
     ///that time defined as the moment of construction.
     pub fn new_custom_start(
         history: &'a mut impl History<G, E>,
@@ -494,7 +497,7 @@ pub struct ConstantGetter<T: Clone, TG: TimeGetter<E> + ?Sized, E: Copy + Debug>
     value: T,
 }
 impl<T: Clone, TG: TimeGetter<E> + ?Sized, E: Copy + Debug> ConstantGetter<T, TG, E> {
-    ///Constructor for `ConstantGetter`.
+    ///Constructor for [`ConstantGetter`].
     pub const fn new(time_getter: Reference<TG>, value: T) -> Self {
         Self {
             settable_data: SettableData::new(),
@@ -537,7 +540,7 @@ impl<T: Clone, TG: TimeGetter<E> + ?Sized, E: Copy + Debug> Updatable<E>
 ///Getter always returning `Ok(None)`.
 pub struct NoneGetter;
 impl NoneGetter {
-    ///Constructor for `NoneGetter`. Since `NoneGetter` is a unit struct, you can use this or just
+    ///Constructor for [`NoneGetter`]. Since [`NoneGetter`] is a unit struct, you can use this or just
     ///the struct's name.
     pub const fn new() -> Self {
         Self
@@ -573,8 +576,8 @@ pub struct Terminal<'a, E: Copy + Debug> {
 }
 #[cfg(feature = "devices")]
 impl<E: Copy + Debug> Terminal<'_, E> {
-    ///Direct constructor for a `Terminal`. You almost always actually want `RefCell<Terminal>`
-    ///however, in which case you should call `new`, which returns `RefCell<Terminal>`.
+    ///Direct constructor for a [`Terminal`]. You almost always actually want [`RefCell<Terminal>`]
+    ///however, in which case you should call [`new`](Terminal::new), which returns [`RefCell<Terminal>`].
     pub const fn new_raw() -> Self {
         Self {
             settable_data_state: SettableData::new(),
@@ -583,13 +586,14 @@ impl<E: Copy + Debug> Terminal<'_, E> {
             no_recurse_set_command: false,
         }
     }
-    ///This constructs a `RefCell<Terminal>`. This is almost always what you want, and what is
-    ///needed for connecting terminals. If you do just want a `Terminal`, use `raw_get` instead.
+    ///This constructs a [`RefCell<Terminal>`]. This is almost always what you want, and what is
+    ///needed for connecting terminals. If you do just want a [`Terminal`], use
+    ///[`new_raw`](Terminal::new_raw) instead.
     pub const fn new() -> RefCell<Self> {
         RefCell::new(Self::new_raw())
     }
     ///Disconnect this terminal and the one that it is connected to. You can connect terminals by
-    ///calling the `rrtk::connect` function.
+    ///calling the [`rrtk::connect`](connect) function.
     pub fn disconnect(&mut self) {
         debug_assert!(!self.no_recurse_set_command);
         match self.other {
@@ -714,8 +718,8 @@ impl<E: Copy + Debug> Updatable<E> for Terminal<'_, E> {
 }
 ///Connect two terminals. Connected terminals should represent a physical connection between
 ///mechanical devices. This function will automatically disconnect the specified terminals if they
-///are connected. You can manually disconnect terminals by calling the `disconnect` method on
-///either of them.
+///are connected. You can manually disconnect terminals by calling the
+///[`disconnect`](Terminal::disconnect) method on either of them.
 #[cfg(feature = "devices")]
 pub fn connect<'a, E: Copy + Debug>(
     term1: &'a RefCell<Terminal<'a, E>>,
@@ -762,7 +766,15 @@ impl TryFrom<TerminalData> for Datum<State> {
 ///A mechanical device.
 #[cfg(feature = "devices")]
 pub trait Device<E: Copy + Debug>: Updatable<E> {
-    ///Call only the `update` methods of owned terminals and do not update anything else with the
+    ///Call only the [`update`](Terminal::update) methods of owned terminals and do not update anything else with the
     ///device.
     fn update_terminals(&mut self) -> NothingOrError<E>;
+}
+///Get the newer of two [`Datum`] objects.
+pub fn latest<T>(dat1: Datum<T>, dat2: Datum<T>) -> Datum<T> {
+    if dat1.time >= dat2.time {
+        dat1
+    } else {
+        dat2
+    }
 }

@@ -8,7 +8,7 @@ pub struct SumStream<T: AddAssign + Copy, const N: usize, E> {
     addends: [Reference<dyn Getter<T, E>>; N],
 }
 impl<T: AddAssign + Copy, const N: usize, E> SumStream<T, N, E> {
-    ///Constructor for `SumStream`.
+    ///Constructor for [`SumStream`].
     pub const fn new(addends: [Reference<dyn Getter<T, E>>; N]) -> Self {
         if N < 1 {
             panic!("rrtk::streams::SumStream must have at least one input stream");
@@ -68,7 +68,7 @@ pub struct DifferenceStream<
 impl<T: Sub<Output = T>, GM: Getter<T, E> + ?Sized, GS: Getter<T, E> + ?Sized, E: Copy + Debug>
     DifferenceStream<T, GM, GS, E>
 {
-    ///Constructor for `DifferenceStream`.
+    ///Constructor for [`DifferenceStream`].
     pub const fn new(minuend: Reference<GM>, subtrahend: Reference<GS>) -> Self {
         Self {
             minuend: minuend,
@@ -116,13 +116,13 @@ impl<T: Sub<Output = T>, GM: Getter<T, E> + ?Sized, GS: Getter<T, E> + ?Sized, E
 }
 ///A stream that multiplies its inputs. If an input returns `Ok(None)`, it is excluded from the
 ///calculation, effectively treating it as though it had returned 1. If this is not the desired
-///behavior, use `rrtk::streams::converters::NoneToValue` or
-///`rrtk::streams::converters::NoneToError`.
+///behavior, use [`rrtk::streams::converters::NoneToValue`](streams::converters::NoneToValue) or
+///[`rrtk::streams::converters::NoneToError`](streams::converters::NoneToError).
 pub struct ProductStream<T: MulAssign + Copy, const N: usize, E> {
     factors: [Reference<dyn Getter<T, E>>; N],
 }
 impl<T: MulAssign + Copy, const N: usize, E> ProductStream<T, N, E> {
-    ///Constructor for `ProductStream`.
+    ///Constructor for [`ProductStream`].
     pub const fn new(factors: [Reference<dyn Getter<T, E>>; N]) -> Self {
         if N < 1 {
             panic!("rrtk::streams::ProductStream must have at least one input stream");
@@ -177,7 +177,7 @@ pub struct QuotientStream<
 impl<T: Div<Output = T>, GD: Getter<T, E> + ?Sized, GS: Getter<T, E> + ?Sized, E: Copy + Debug>
     QuotientStream<T, GD, GS, E>
 {
-    ///Constructor for `QuotientStream`.
+    ///Constructor for [`QuotientStream`].
     pub const fn new(dividend: Reference<GD>, divisor: Reference<GS>) -> Self {
         Self {
             dividend: dividend,
@@ -236,7 +236,7 @@ pub struct ExponentStream<GB: Getter<f32, E> + ?Sized, GE: Getter<f32, E> + ?Siz
 impl<GB: Getter<f32, E> + ?Sized, GE: Getter<f32, E> + ?Sized, E: Copy + Debug>
     ExponentStream<GB, GE, E>
 {
-    ///Constructor for `ExponentStream`.
+    ///Constructor for [`ExponentStream`].
     pub const fn new(base: Reference<GB>, exponent: Reference<GE>) -> Self {
         Self {
             base: base,
@@ -291,7 +291,7 @@ pub struct DerivativeStream<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> {
     prev_output: Option<Datum<Quantity>>,
 }
 impl<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> DerivativeStream<G, E> {
-    ///Constructor for `DerivativeStream`.
+    ///Constructor for [`DerivativeStream`].
     pub const fn new(input: Reference<G>) -> Self {
         Self {
             input: input,
@@ -347,7 +347,7 @@ pub struct IntegralStream<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> {
     prev_output: Option<Datum<Quantity>>,
 }
 impl<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> IntegralStream<G, E> {
-    ///Constructor for `IntegralStream`.
+    ///Constructor for [`IntegralStream`].
     pub const fn new(input: Reference<G>) -> Self {
         Self {
             input: input,

@@ -12,7 +12,7 @@ pub struct State {
     pub acceleration: f32,
 }
 impl State {
-    ///Constructor for `State` using `Quantity` objects for position, velocity, and acceleration.
+    ///Constructor for [`State`] using [`Quantity`] objects for position, velocity, and acceleration.
     pub const fn new(position: Quantity, velocity: Quantity, acceleration: Quantity) -> Self {
         position.unit.assert_eq_assume_ok(&MILLIMETER);
         velocity.unit.assert_eq_assume_ok(&MILLIMETER_PER_SECOND);
@@ -25,7 +25,7 @@ impl State {
             acceleration: acceleration.value,
         }
     }
-    ///Constructor for `State` using raw `f32`s for position, velocity, and acceleration.
+    ///Constructor for [`State`] using raw [`f32`]s for position, velocity, and acceleration.
     pub const fn new_raw(position: f32, velocity: f32, acceleration: f32) -> Self {
         State {
             position: position,
@@ -45,10 +45,10 @@ impl State {
         self.position = new_position.value;
         self.velocity = new_velocity.value;
     }
-    ///Set the acceleration with a `Quantity`. With dimension checking enabled, sets the
-    ///acceleration and returns `Ok` if the argument's `Unit` is correct, otherwise leaves it
-    ///unchanged and returns `Err`. With dimension checking disabled, always sets the acceleration
-    ///to the `Quantity`'s value and returns `Ok`, ignoring the `Unit`.
+    ///Set the acceleration with a [`Quantity`]. With dimension checking enabled, sets the
+    ///acceleration and returns [`Ok`] if the argument's [`Unit`] is correct, otherwise leaves it
+    ///unchanged and returns [`Err`]. With dimension checking disabled, always sets the acceleration
+    ///to the [`Quantity`]'s value and returns [`Ok`], ignoring the [`Unit`].
     pub const fn set_constant_acceleration(&mut self, acceleration: Quantity) -> Result<(), ()> {
         if acceleration
             .unit
@@ -60,16 +60,16 @@ impl State {
             Err(())
         }
     }
-    ///Set the acceleration with an `f32` of millimeters per second squared.
+    ///Set the acceleration with an [`f32`] of millimeters per second squared.
     #[inline]
     pub const fn set_constant_acceleration_raw(&mut self, acceleration: f32) {
         self.acceleration = acceleration;
     }
-    ///Set the velocity to a given value with a `Quantity`, and set acceleration to zero. With
-    ///dimension checking enabled, sets the velocity and acceleration and returns `Ok` if the
-    ///argument's `Unit` is correct, otherwise leaves them unchanged and returns `Err`. With
-    ///dimension checking disabled, ignores the `Unit` and always sets velocity and acceleration
-    ///and returns `Ok`.
+    ///Set the velocity to a given value with a [`Quantity`], and set acceleration to zero. With
+    ///dimension checking enabled, sets the velocity and acceleration and returns [`Ok`] if the
+    ///argument's [`Unit`] is correct, otherwise leaves them unchanged and returns [`Err`]. With
+    ///dimension checking disabled, ignores the [`Unit`] and always sets velocity and acceleration
+    ///and returns [`Ok`].
     pub const fn set_constant_velocity(&mut self, velocity: Quantity) -> Result<(), ()> {
         if velocity.unit.eq_assume_true(&MILLIMETER_PER_SECOND) {
             self.acceleration = 0.0;
@@ -79,17 +79,17 @@ impl State {
             Err(())
         }
     }
-    ///Set the velocity to a given value with an `f32` of millimeters per second, and set acceleration to zero.
+    ///Set the velocity to a given value with an [`f32`] of millimeters per second, and set acceleration to zero.
     #[inline]
     pub const fn set_constant_velocity_raw(&mut self, velocity: f32) {
         self.acceleration = 0.0;
         self.velocity = velocity;
     }
-    ///Set the position to a given value with a `Quantity`, and set velocity and acceleration to
+    ///Set the position to a given value with a [`Quantity`], and set velocity and acceleration to
     ///zero. With dimension checking enabled, sets the position, velocity, and acceleration and
-    ///returns `Ok` if the argument's `Unit` is correct, otherwise leaves them unchanged and
-    ///returns `Err`. With dimension checking disabled, always sets the position, velocity, and
-    ///acceleration and returns `Ok`, ignoring the `Unit`.
+    ///returns [`Ok`] if the argument's [`Unit`] is correct, otherwise leaves them unchanged and
+    ///returns [`Err`]. With dimension checking disabled, always sets the position, velocity, and
+    ///acceleration and returns [`Ok`], ignoring the [`Unit`].
     pub const fn set_constant_position(&mut self, position: Quantity) -> Result<(), ()> {
         if position.unit.eq_assume_true(&MILLIMETER) {
             self.acceleration = 0.0;
@@ -100,24 +100,24 @@ impl State {
             Err(())
         }
     }
-    ///Set the position to a given value with an `f32` of millimeters, and set velocity and acceleration to zero.
+    ///Set the position to a given value with an [`f32`] of millimeters, and set velocity and acceleration to zero.
     #[inline]
     pub const fn set_constant_position_raw(&mut self, position: f32) {
         self.acceleration = 0.0;
         self.velocity = 0.0;
         self.position = position;
     }
-    ///Get the position as a `Quantity`.
+    ///Get the position as a [`Quantity`].
     #[inline]
     pub const fn get_position(&self) -> Quantity {
         Quantity::new(self.position, MILLIMETER)
     }
-    ///Get the velocity as a `Quantity`.
+    ///Get the velocity as a [`Quantity`].
     #[inline]
     pub const fn get_velocity(&self) -> Quantity {
         Quantity::new(self.velocity, MILLIMETER_PER_SECOND)
     }
-    ///Get the acceleration as a `Quantity`.
+    ///Get the acceleration as a [`Quantity`].
     #[inline]
     pub const fn get_acceleration(&self) -> Quantity {
         Quantity::new(self.acceleration, MILLIMETER_PER_SECOND_SQUARED)
@@ -196,13 +196,5 @@ impl MulAssign<f32> for State {
 impl DivAssign<f32> for State {
     fn div_assign(&mut self, dvsr: f32) {
         *self = *self / dvsr;
-    }
-}
-///Get the newer of two `Datum` objects.
-pub fn latest<T>(dat1: Datum<T>, dat2: Datum<T>) -> Datum<T> {
-    if dat1.time >= dat2.time {
-        dat1
-    } else {
-        dat2
     }
 }

@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // Copyright 2024 UxuginPython
-//!Provided `Device` implementors that allow a raw `Getter` or `Settable` to work with the device
+//!Provided [`Device`] implementors that allow a raw [`Getter`] or [`Settable`] to work with the device
 //!system.
 use crate::*;
-///Connect a `Settable<Command, E>` to a `Terminal<E>` for use as a servo motor in the device
+///Connect a [`Settable<Command, E>`] to a [`Terminal<E>`] for use as a servo motor in the device
 ///system.
 pub struct ActuatorWrapper<'a, T: Settable<TerminalData, E>, E: Copy + Debug> {
     inner: T,
     terminal: RefCell<Terminal<'a, E>>,
 }
 impl<'a, T: Settable<TerminalData, E>, E: Copy + Debug> ActuatorWrapper<'a, T, E> {
-    ///Constructor for `SettableCommandDeviceWrapper`.
+    ///Constructor for [`ActuatorWrapper`].
     pub const fn new(inner: T) -> Self {
         Self {
             inner: inner,
@@ -44,13 +44,13 @@ impl<T: Settable<TerminalData, E>, E: Copy + Debug> Updatable<E> for ActuatorWra
         Ok(())
     }
 }
-///Connect a `Getter<State, E>` to a `Terminal<E>` for use as an encoder in the device system.
+///Connect a [`Getter<State, E>`] to a [`Terminal<E>`] for use as an encoder in the device system.
 pub struct GetterStateDeviceWrapper<'a, T: Getter<State, E>, E: Copy + Debug> {
     inner: T,
     terminal: RefCell<Terminal<'a, E>>,
 }
 impl<'a, T: Getter<State, E>, E: Copy + Debug> GetterStateDeviceWrapper<'a, T, E> {
-    ///Constructor for `GetterStateDeviceWrapper`.
+    ///Constructor for [`GetterStateDeviceWrapper`].
     pub const fn new(inner: T) -> Self {
         Self {
             inner: inner,
@@ -80,8 +80,9 @@ impl<T: Getter<State, E>, E: Copy + Debug> Updatable<E> for GetterStateDeviceWra
         Ok(())
     }
 }
-///Connect a `Settable<f32, E>` motor to the device system through a `CommandPID`. See
-///`streams::control::CommandPID` documentation for more information about how this works.
+///Connect a [`Settable<f32, E>`] motor to the device system through a
+///[`CommandPID`](streams::control::CommandPID). See
+///[`streams::control::CommandPID`] documentation for more information about how this works.
 #[cfg(feature = "alloc")]
 pub struct PIDWrapper<'a, T: Settable<f32, E>, E: Copy + Debug + 'static> {
     terminal: RefCell<Terminal<'a, E>>,
@@ -93,7 +94,7 @@ pub struct PIDWrapper<'a, T: Settable<f32, E>, E: Copy + Debug + 'static> {
 }
 #[cfg(feature = "alloc")]
 impl<'a, T: Settable<f32, E>, E: Copy + Debug + 'static> PIDWrapper<'a, T, E> {
-    ///Constructor for `PIDWrapper`.
+    ///Constructor for [`PIDWrapper`].
     pub fn new(
         mut inner: T,
         initial_time: Time,

@@ -11,14 +11,14 @@
 //!how floating point numbers work. Everything in this module is reexported at the crate level.
 //!
 //!### Multiplication and Division Implementation Table
-//!| A right; B down            | `Quantity`        | `DimensionlessInteger` | `Time`            |
-//!|----------------------------|-------------------|------------------------|-------------------|
-//!| **`Quantity`**             | `*` `/` `*=` `/=` | `*` `/`                | `*` `/`           |
-//!| **`DimensionlessInteger`** | `*` `/` `*=` `/=` | `*` `/` `*=` `/=`      | `*` `/` `*=` `/=` |
-//!| **`Time`**                 | `*` `/` `*=` `/=` | `*` `/`                | `*` `/`           |
+//!| A right; B down              | [`Quantity`]      | [`DimensionlessInteger`] | [`Time`]          |
+//!|------------------------------|-------------------|--------------------------|-------------------|
+//!| **[`Quantity`]**             | `*` `/` `*=` `/=` | `*` `/`                  | `*` `/`           |
+//!| **[`DimensionlessInteger`]** | `*` `/` `*=` `/=` | `*` `/` `*=` `/=`        | `*` `/` `*=` `/=` |
+//!| **[`Time`]**                 | `*` `/` `*=` `/=` | `*` `/`                  | `*` `/`           |
 //!
 //!`A <operation> B` compiles for any operation in the square of A and B. E.g., `*` is in the
-//!square in the `Quantity` column and the `DimensionlessInteger` row, so the following works:
+//!square in the [`Quantity`] column and the [`DimensionlessInteger`] row, so the following works:
 //!```
 //!# use rrtk::*;
 //!let x = Quantity::new(3.0, MILLIMETER);
@@ -33,7 +33,7 @@
 //!x *= y;
 //!```
 //!Whenever `*` and `/` are in a square but `*=` and `/=` are not, `A * B` and `A / B`
-//!return a type other than A. Since `MulAssign` and `DivAssign` require that A not change type in
+//!return a type other than A. Since [`MulAssign`] and `DivAssign` require that A not change type in
 //!`A *= B` and `A /= B`, it is not possible to implement them.
 //!```
 //!# use rrtk::*;
@@ -57,11 +57,11 @@
 //!assert_eq!(x, Quantity::new(6.0, MILLIMETER));
 //!```
 //!### Addition and Subtraction Implementation Table
-//!| A right; B down            | `Quantity`               | `DimensionlessInteger`   | `Time`                   |
-//!|----------------------------|--------------------------|--------------------------|--------------------------|
-//!| **`Quantity`**             | **P:** `+` `-` `+=` `-=` | **P:** `+` `-`           | **P:** `+` `-`           |
-//!| **`DimensionlessInteger`** | **P:** `+` `-` `+=` `-=` | **G:** `+` `-` `+=` `-=` |                          |
-//!| **`Time`**                 | **P:** `+` `-` `+=` `-=` |                          | **G:** `+` `-` `+=` `-=` |
+//!| A right; B down              | [`Quantity`]             | [`DimensionlessInteger`] | [`Time`]                 |
+//!|------------------------------|--------------------------|--------------------------|--------------------------|
+//!| **[`Quantity`]**             | **P:** `+` `-` `+=` `-=` | **P:** `+` `-`           | **P:** `+` `-`           |
+//!| **[`DimensionlessInteger`]** | **P:** `+` `-` `+=` `-=` | **G:** `+` `-` `+=` `-=` |                          |
+//!| **[`Time`]**                 | **P:** `+` `-` `+=` `-=` |                          | **G:** `+` `-` `+=` `-=` |
 //!
 //!Addition and subtraction are a bit different because they can sometimes panic on a unit
 //!mismatch. This table works the same way as the one above it except for the following:
@@ -76,32 +76,31 @@
 //!
 //!All operations in the multiplication and division table can be considered "Guaranteed."
 //!### Conversion Implementation Table
-//!| A right; B down            | `Quantity` | `DimensionlessInteger` | `Time`    | `i64`   | `f32`   |
-//!|----------------------------|------------|------------------------|-----------|---------|---------|
-//!| **`Quantity`**             | *is*       | `TryFrom`              | `TryFrom` |         | `From`  |
-//!| **`DimensionlessInteger`** | `From`     | *is*                   |           | `From`  |         |
-//!| **`Time`**                 | `From`     |                        | *is*      | `From`  |         |
-//!| **`i64`**                  |            | `From`                 | `From`    | *is*    | [^lang] |
-//!| **`f32`**                  | [^new]     |                        |           | [^lang] | *is*    |
+//!| A right; B down              | [`Quantity`] | [`DimensionlessInteger`] | [`Time`]  | [`i64`] | [`f32`] |
+//!|------------------------------|--------------|--------------------------|-----------|---------|---------|
+//!| **[`Quantity`]**             | *is*         | `TryFrom`                | `TryFrom` |         | `From`  |
+//!| **[`DimensionlessInteger`]** | `From`       | *is*                     |           | `From`  |         |
+//!| **[`Time`]**                 | `From`       |                          | *is*      | `From`  |         |
+//!| **[`i64`]**                  |              | `From`                   | `From`    | *is*    | [^lang] |
+//!| **[`f32`]**                  | [^new]       |                          |           | [^lang] | *is*    |
 //!
 //![^lang]: See Rust language documentation.
 //!
-//![^new]: `Quantity` can be constructed from `f32` through `Quantity::new` by supplying a `Unit`.
-//!However, `f32` cannot be directly converted to `Quantity`.
+//![^new]: [`Quantity`] can be constructed from [`f32`] through [`Quantity::new`] by supplying a [`Unit`].
+//!However, [`f32`] cannot be directly converted to [`Quantity`].
 //!
 //!This table is very similar: `A::<from/try_from>(B)` compiles for either `from`
 //!or `try_from` depending on which is in the square of A and B, and you cannot convert between
-//!types with nothing in their square. A `From` B implies B `Into` A and similarly for
-//!`TryFrom`/`TryInto` as is the case for
-//![all `From` implementations](https://doc.rust-lang.org/stable/core/convert/trait.From.html).
+//!types with nothing in their square. A [`From`] B implies B [`Into`] A and similarly for
+//![`TryFrom`]/[`TryInto`] as is the case for all [`From`] implementations.
 //!
-//!`From` is in the `Quantity` column and the `DimensionlessInteger` row, so the following works:
+//![`From`] is in the [`Quantity`] column and the [`DimensionlessInteger`] row, so the following works:
 //!```
 //!# use rrtk::*;
 //!let x = DimensionlessInteger(3);
 //!let y = Quantity::from(x);
 //!```
-//!And with `Into`:
+//!And with [`Into`]:
 //!```
 //!# use rrtk::*;
 //!let x = DimensionlessInteger(3);
@@ -115,7 +114,7 @@ pub use constants::*;
 #[repr(transparent)]
 pub struct Time(pub i64);
 impl Time {
-    ///The constructor for `Time`.
+    ///The constructor for [`Time`].
     pub const fn new(value: i64) -> Self {
         Self(value)
     }
@@ -239,7 +238,7 @@ impl Div<Quantity> for Time {
 #[repr(transparent)]
 pub struct DimensionlessInteger(pub i64);
 impl DimensionlessInteger {
-    ///Constructor for `DimensionlessInteger`.
+    ///Constructor for [`DimensionlessInteger`].
     pub const fn new(value: i64) -> Self {
         Self(value)
     }
@@ -398,8 +397,8 @@ impl Unit {
         }
     }
     ///`foo.const_eq(&bar)` works exactly like `foo == bar` except that it works in a `const`
-    ///context. Requires dimension checking to be enabled. Use `eq_assume_true` or
-    ///`eq_assume_false` if you need similar functionality without dimension checking.
+    ///context. Requires dimension checking to be enabled. Use [`eq_assume_true`](Unit::eq_assume_true) or
+    ///[`eq_assume_false`](Unit::eq_assume_false) if you need similar functionality without dimension checking.
     #[cfg(any(
         feature = "dim_check_release",
         all(debug_assertions, feature = "dim_check_debug")
@@ -418,8 +417,10 @@ impl Unit {
         true
     }
     ///`foo.const_assert_eq(&bar)` works exactly like `assert_eq!(foo, bar)` except that it works
-    ///in a `const` context. Requires dimension checking to be enabled. Use `assert_eq_assume_ok`
-    ///or `assert_eq_assume_not_ok` if you need similar functionality without dimension checking.
+    ///in a `const` context. Requires dimension checking to be enabled. Use
+    ///[`assert_eq_assume_ok`](Unit::assert_eq_assume_ok)
+    ///or [`assert_eq_assume_not_ok`](Unit::assert_eq_assume_not_ok) if you need similar functionality without
+    ///dimension checking.
     #[cfg(any(
         feature = "dim_check_release",
         all(debug_assertions, feature = "dim_check_debug")
@@ -427,7 +428,7 @@ impl Unit {
     pub const fn const_assert_eq(&self, rhs: &Self) {
         assert!(self.const_eq(rhs));
     }
-    ///With dimension checking on, behaves exactly like `const_eq`.
+    ///With dimension checking on, behaves exactly like [`const_eq`](Unit::const_eq).
     ///With dimension checking off, always returns true.
     #[allow(unused)]
     pub const fn eq_assume_true(&self, rhs: &Self) -> bool {
@@ -442,7 +443,7 @@ impl Unit {
         )))]
         true
     }
-    ///With dimension checking on, behaves exactly like `const_eq`.
+    ///With dimension checking on, behaves exactly like [`const_eq`](Unit::const_eq).
     ///With dimension checking off, always returns false.
     #[allow(unused)]
     pub const fn eq_assume_false(&self, rhs: &Self) -> bool {
@@ -457,12 +458,12 @@ impl Unit {
         )))]
         false
     }
-    ///With dimension checking on, behaves exactly like `const_assert_eq`.
+    ///With dimension checking on, behaves exactly like [`const_assert_eq`](Unit::const_assert_eq).
     ///With dimension checking off, never panics.
     pub const fn assert_eq_assume_ok(&self, rhs: &Self) {
         assert!(self.eq_assume_true(rhs))
     }
-    ///With dimension checking on, behaves exactly like `const_assert_eq`.
+    ///With dimension checking on, behaves exactly like [`const_assert_eq`](Unit::const_assert_eq).
     ///With dimension checking off, always panics.
     pub const fn assert_eq_assume_not_ok(&self, rhs: &Self) {
         assert!(self.eq_assume_false(rhs))
@@ -498,13 +499,13 @@ impl TryFrom<MotionProfilePiece> for Unit {
         Ok(unit)
     }
 }
-///The `Add` implementation for `Unit` acts like you are trying to add quantities of the unit, not
+///The [`Add`] implementation for [`Unit`] acts like you are trying to add quantities of the unit, not
 ///like you are trying to actually add the exponents. This should be more useful most of the time,
-///but could be somewhat confusing. All this does is `assert_eq!` the `Unit` with the right-hand
+///but could be somewhat confusing. All this does is [`assert_eq!`] the [`Unit`] with the right-hand
 ///side and then return it because units should not change when quantities of the same unit are
 ///added.
-///Performing operations on `Unit`s should behave exactly the same as performing the same
-///operations on `Quantity` objects and taking the unit of the resulting `Quantity`.
+///Performing operations on [`Unit`]s should behave exactly the same as performing the same
+///operations on [`Quantity`] objects and taking the unit of the resulting [`Quantity`].
 impl Add for Unit {
     type Output = Self;
     fn add(self, rhs: Self) -> Self {
@@ -517,13 +518,13 @@ impl AddAssign for Unit {
         self.assert_eq_assume_ok(&rhs);
     }
 }
-///The `Sub` implementation for `Unit` acts like you are trying to subtract quantities of the unit,
+///The [`Sub`] implementation for [`Unit`] acts like you are trying to subtract quantities of the unit,
 ///not like you are trying to actually subtract the exponents. This should be more useful most of
-///the time, but it could be somewhat confusing. All this does is `assert_eq!` the `Unit` with the
+///the time, but it could be somewhat confusing. All this does is [`assert_eq!`] the [`Unit`] with the
 ///right-hand side and then return it because units should not change when quantities of the same
 ///unit are subtracted.
-///Performing operations on `Unit`s should behave exactly the same as performing the same
-///operations on `Quantity` objects and taking the unit of the resulting `Quantity`.
+///Performing operations on [`Unit`]s should behave exactly the same as performing the same
+///operations on [`Quantity`] objects and taking the unit of the resulting [`Quantity`].
 impl Sub for Unit {
     type Output = Self;
     fn sub(self, rhs: Self) -> Self {
@@ -536,13 +537,13 @@ impl SubAssign for Unit {
         self.assert_eq_assume_ok(&rhs);
     }
 }
-///The `Mul` implementation for `Unit` acts like you are trying to multiply quantities of the unit,
+///The [`Mul`] implementation for [`Unit`] acts like you are trying to multiply quantities of the unit,
 ///not like you are trying to actually multiply the exponents. This should be more useful most of
 ///the time, but it could be somewhat confusing. This adds the exponents of the left-hand and
 ///right-hand sides, not multiplies them because that is what should happen when quantities are
 ///multiplied, not a multiplication of their unit exponents.
-///Performing operations on `Unit`s should behave exactly the same as performing the same
-///operations on `Quantity` objects and taking the unit of the resulting `Quantity`.
+///Performing operations on [`Unit`]s should behave exactly the same as performing the same
+///operations on [`Quantity`] objects and taking the unit of the resulting [`Quantity`].
 impl Mul for Unit {
     type Output = Self;
     #[allow(unused)]
@@ -567,13 +568,13 @@ impl MulAssign for Unit {
         *self = *self * rhs;
     }
 }
-///The `Div` implementation for `Unit` acts like you are trying to divide quantities of the unit,
+///The [`Div`] implementation for [`Unit`] acts like you are trying to divide quantities of the unit,
 ///not like you are trying to actually divide the exponents. This should be more useful most of the
 ///time, but it could be somewhat confusing. This subtracts the exponents of the right-hand side
 ///from the left-hand side's exponents rather than dividing the exponents because that is what
 ///should happen when quantities are divided, not a division of their unit exponents.
-///Performing operations on `Unit`s should behave exactly the same as performing the same
-///operations on `Quantity` objects and taking the unit of the resulting `Quantity`.
+///Performing operations on [`Unit`]s should behave exactly the same as performing the same
+///operations on [`Quantity`] objects and taking the unit of the resulting [`Quantity`].
 impl Div for Unit {
     type Output = Self;
     #[allow(unused)]
@@ -598,12 +599,12 @@ impl DivAssign for Unit {
         *self = *self / rhs;
     }
 }
-///The `Neg` implementation for `Unit` acts like you are trying to negate quantities of the unit,
+///The [`Neg`] implementation for [`Unit`] acts like you are trying to negate quantities of the unit,
 ///not like you are trying to actually negate the exponents. This should be more useful most of the
 ///time, but could be somewhat confusing. This just returns `self` unchanged because a quantity's
 ///units don't change when it is negated.
-///Performing operations on `Unit`s should behave exactly the same as performing the same
-///operations on `Quantity` objects and taking the unit of the resulting `Quantity`.
+///Performing operations on [`Unit`]s should behave exactly the same as performing the same
+///operations on [`Quantity`] objects and taking the unit of the resulting [`Quantity`].
 impl Neg for Unit {
     type Output = Self;
     fn neg(self) -> Self {
@@ -626,14 +627,14 @@ pub struct Quantity {
     pub unit: Unit,
 }
 impl Quantity {
-    ///Constructor for `Quantity`.
+    ///Constructor for [`Quantity`].
     pub const fn new(value: f32, unit: Unit) -> Self {
         Self {
             value: value,
             unit: unit,
         }
     }
-    ///Constructor for dimensionless `Quantity` objects that does not require a dimension to be
+    ///Constructor for dimensionless [`Quantity`] objects that does not require a dimension to be
     ///provided.
     pub const fn dimensionless(value: f32) -> Self {
         Self::new(value, DIMENSIONLESS)
