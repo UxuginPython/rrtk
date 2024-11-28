@@ -9,6 +9,104 @@
 //!keep it in mind when thinking about how time-related types should work. The reasoning behind
 //!this unorthodox system using both nanoseconds and seconds becomes more apparent when you know
 //!how floating point numbers work. Everything in this module is reexported at the crate level.
+//!
+//!### Multiplication and Division Implementation Table
+//!| A right; B down            | `Quantity`        | `DimensionlessInteger` | `Time`            |
+//!|----------------------------|-------------------|------------------------|-------------------|
+//!| **`Quantity`**             | `*` `/` `*=` `/=` | `*` `/`                | `*` `/`           |
+//!| **`DimensionlessInteger`** | `*` `/` `*=` `/=` | `*` `/` `*=` `/=`      | `*` `/` `*=` `/=` |
+//!| **`Time`**                 | `*` `/` `*=` `/=` | `*` `/`                | `*` `/`           |
+//!
+//!`A <operation> B` compiles for any operation in the square of A and B. E.g., `*` is in the
+//!square in the `Quantity` column and the `DimensionlessInteger` row, so the following works:
+//!```
+//!# use rrtk::*;
+//!let x = Quantity::new(3.0, MILLIMETER);
+//!let y = DimensionlessInteger(2);
+//!let z = x * y;
+//!```
+//!A similar example for `*=`:
+//!```
+//!# use rrtk::*;
+//!let mut x = Quantity::new(3.0, MILLIMETER);
+//!let y = DimensionlessInteger(2);
+//!x *= y;
+//!```
+//!Whenever `*` and `/` are in a square but `*=` and `/=` are not, `A * B` and `A / B`
+//!return a type other than A. Since `MulAssign` and `DivAssign` require that A not change type in
+//!`A *= B` and `A /= B`, it is not possible to implement them.
+//!```
+//!# use rrtk::*;
+//!let x = Time(2_000_000_000);
+//!let y = Quantity::new(3.0, MILLIMETER_PER_SECOND);
+//!let z = x * y;
+//!assert_eq!(z, Quantity::new(6.0, MILLIMETER));
+//!```
+//!```compile_fail
+//!# use rrtk::*;
+//!let mut x = Time(2_000_000_000);
+//!let y = Quantity::new(3.0, MILLIMETER_PER_SECOND);
+//!x *= y;
+//!```
+//!Note that this disparity is not necessarily symmetrical between types:
+//!```
+//!# use rrtk::*;
+//!let mut x = Quantity::new(3.0, MILLIMETER_PER_SECOND);
+//!let y = Time(2_000_000_000);
+//!x *= y;
+//!assert_eq!(x, Quantity::new(6.0, MILLIMETER));
+//!```
+//!### Addition and Subtraction Implementation Table
+//!| A right; B down            | `Quantity`               | `DimensionlessInteger`   | `Time`                   |
+//!|----------------------------|--------------------------|--------------------------|--------------------------|
+//!| **`Quantity`**             | **P:** `+` `-` `+=` `-=` | **P:** `+` `-`           | **P:** `+` `-`           |
+//!| **`DimensionlessInteger`** | **P:** `+` `-` `+=` `-=` | **G:** `+` `-` `+=` `-=` |                          |
+//!| **`Time`**                 | **P:** `+` `-` `+=` `-=` |                          | **G:** `+` `-` `+=` `-=` |
+//!
+//!Addition and subtraction are a bit different because they can sometimes panic on a unit
+//!mismatch. This table works the same way as the one above it except for the following:
+//!- **P(anicking):** This operation may panic on a unit mismatch.
+//!```should_panic
+//!# use rrtk::*;
+//!let x = Quantity::new(2.0, MILLIMETER);
+//!let y = Quantity::new(3.0, SECOND);
+//!let z = x + y;
+//!```
+//!- **G(uaranteed):** Correct units are guaranteed by the types involved. This operation cannot panic.
+//!
+//!All operations in the multiplication and division table can be considered "Guaranteed."
+//!### Conversion Implementation Table
+//!| A right; B down            | `Quantity` | `DimensionlessInteger` | `Time`    | `i64`   | `f32`   |
+//!|----------------------------|------------|------------------------|-----------|---------|---------|
+//!| **`Quantity`**             | *is*       | `TryFrom`              | `TryFrom` |         | `From`  |
+//!| **`DimensionlessInteger`** | `From`     | *is*                   |           | `From`  |         |
+//!| **`Time`**                 | `From`     |                        | *is*      | `From`  |         |
+//!| **`i64`**                  |            | `From`                 | `From`    | *is*    | [^lang] |
+//!| **`f32`**                  | [^new]     |                        |           | [^lang] | *is*    |
+//!
+//![^lang]: See Rust language documentation.
+//!
+//![^new]: `Quantity` can be constructed from `f32` through `Quantity::new` by supplying a `Unit`.
+//!However, `f32` cannot be directly converted to `Quantity`.
+//!
+//!This table is very similar: `A::<from/try_from>(B)` compiles for either `from`
+//!or `try_from` depending on which is in the square of A and B, and you cannot convert between
+//!types with nothing in their square. A `From` B implies B `Into` A and similarly for
+//!`TryFrom`/`TryInto` as is the case for
+//![all `From` implementations](https://doc.rust-lang.org/stable/core/convert/trait.From.html).
+//!
+//!`From` is in the `Quantity` column and the `DimensionlessInteger` row, so the following works:
+//!```
+//!# use rrtk::*;
+//!let x = DimensionlessInteger(3);
+//!let y = Quantity::from(x);
+//!```
+//!And with `Into`:
+//!```
+//!# use rrtk::*;
+//!let x = DimensionlessInteger(3);
+//!let y: Quantity = x.into();
+//!```
 use super::*;
 pub mod constants;
 pub use constants::*;
@@ -110,69 +208,24 @@ impl DivAssign<DimensionlessInteger> for Time {
         self.0 /= rhs.0;
     }
 }
-///`Mul<Time> for Quantity` is commutative with `Mul<Quantity> for Time` in type, value, and unit.
-///```
-///# use rrtk::*;
-///let x = Time(2_000_000_000);
-///let y = Quantity::new(3.0, MILLIMETER_PER_SECOND);
-///assert_eq!(x * y, y * x);
-///```
-///This is why it is possible to implement `MulAssign<Time> for Quantity` but not
-///`MulAssign<Quantity> for Time`. This operation must return `Quantity`, which is fine for
-///`MulAssign<Time> for Quantity` but not for `MulAssign<Quantity> for Time` since `MulAssign` does
-///not allow the type to change.
-///```
-///# use rrtk::*;
-///let mut x = Quantity::new(3.0, MILLIMETER_PER_SECOND);
-///let y = Time(2_000_000_000);
-///x *= y;
-///```
-///```compile_fail
-///# use rrtk::*;
-///let mut x = Time(2_000_000_000);
-///let y = Quantity::new(3.0, MILLIMETER_PER_SECOND);
-///x *= y;
-///```
-///This still applies when the `Quantity` is dimensionless since there is no type-level distinction
-///between dimensionless and dimensional quantities.
-///```compile_fail
-///# use rrtk::*;
-///let mut x = Time(2_000_000_000);
-///let y = Quantity::dimensionless(3.0);
-///x *= y;
-///```
-///If you need to multiply a [`Time`] by a dimensionless factor and not change its type, use
-///[`DimensionlessInteger`].
+impl Add<Quantity> for Time {
+    type Output = Quantity;
+    fn add(self, rhs: Quantity) -> Quantity {
+        Quantity::from(self) + rhs
+    }
+}
+impl Sub<Quantity> for Time {
+    type Output = Quantity;
+    fn sub(self, rhs: Quantity) -> Quantity {
+        Quantity::from(self) - rhs
+    }
+}
 impl Mul<Quantity> for Time {
     type Output = Quantity;
     fn mul(self, rhs: Quantity) -> Quantity {
         rhs * self
     }
 }
-///A `Time` divided by a `Quantity` must return another `Quantity`.
-///```
-///# use rrtk::*;
-///let x = Time(4_000_000_000);
-///let y = Quantity::new(2.0, MILLIMETER);
-///assert_eq!(x / y, Quantity::new(2.0, SECOND_PER_MILLIMETER));
-///```
-///This makes implementing `DivAssign<Quantity> for Time` impossible since it does not allow the
-///type to change.
-///```compile_fail
-///# use rrtk::*;
-///let mut x = Time(4_000_000_000);
-///let y = Quantity::new(2.0, MILLIMETER);
-///x /= y;
-///```
-///However, a `Quantity` divided by a `Time` also returns a `Quantity`. Therefore, it *is* possible
-///to implement `DivAssign<Time> for Quantity`.
-///```
-///# use rrtk::*;
-///let mut x = Quantity::new(4.0, MILLIMETER);
-///let y = Time(2_000_000_000);
-///x /= y;
-///assert_eq!(x, Quantity::new(2.0, MILLIMETER_PER_SECOND));
-///```
 impl Div<Quantity> for Time {
     type Output = Quantity;
     fn div(self, rhs: Quantity) -> Quantity {
@@ -275,6 +328,30 @@ impl Mul<Time> for DimensionlessInteger {
 impl Div<Time> for DimensionlessInteger {
     type Output = Quantity;
     fn div(self, rhs: Time) -> Quantity {
+        Quantity::from(self) / Quantity::from(rhs)
+    }
+}
+impl Add<Quantity> for DimensionlessInteger {
+    type Output = Quantity;
+    fn add(self, rhs: Quantity) -> Quantity {
+        Quantity::from(self) + rhs
+    }
+}
+impl Sub<Quantity> for DimensionlessInteger {
+    type Output = Quantity;
+    fn sub(self, rhs: Quantity) -> Quantity {
+        Quantity::from(self) - rhs
+    }
+}
+impl Mul<Quantity> for DimensionlessInteger {
+    type Output = Quantity;
+    fn mul(self, rhs: Quantity) -> Quantity {
+        rhs * self
+    }
+}
+impl Div<Quantity> for DimensionlessInteger {
+    type Output = Quantity;
+    fn div(self, rhs: Quantity) -> Quantity {
         Quantity::from(self) / Quantity::from(rhs)
     }
 }
@@ -656,45 +733,56 @@ impl Neg for Quantity {
         }
     }
 }
+impl Add<Time> for Quantity {
+    type Output = Self;
+    fn add(self, rhs: Time) -> Self {
+        self + Self::from(rhs)
+    }
+}
+impl AddAssign<Time> for Quantity {
+    fn add_assign(&mut self, rhs: Time) {
+        *self = *self + rhs;
+    }
+}
+impl Sub<Time> for Quantity {
+    type Output = Self;
+    fn sub(self, rhs: Time) -> Self {
+        self - Self::from(rhs)
+    }
+}
+impl SubAssign<Time> for Quantity {
+    fn sub_assign(&mut self, rhs: Time) {
+        *self = *self - rhs;
+    }
+}
+impl Add<DimensionlessInteger> for Quantity {
+    type Output = Self;
+    fn add(self, rhs: DimensionlessInteger) -> Self {
+        self + Self::from(rhs)
+    }
+}
+impl AddAssign<DimensionlessInteger> for Quantity {
+    fn add_assign(&mut self, rhs: DimensionlessInteger) {
+        *self = *self + rhs;
+    }
+}
+impl Sub<DimensionlessInteger> for Quantity {
+    type Output = Self;
+    fn sub(self, rhs: DimensionlessInteger) -> Self {
+        self - Self::from(rhs)
+    }
+}
+impl SubAssign<DimensionlessInteger> for Quantity {
+    fn sub_assign(&mut self, rhs: DimensionlessInteger) {
+        *self = *self - rhs;
+    }
+}
 impl Mul<Time> for Quantity {
     type Output = Self;
     fn mul(self, rhs: Time) -> Self {
         self * Quantity::from(rhs)
     }
 }
-///`Mul<Time> for Quantity` is commutative with `Mul<Quantity> for Time` in type, value, and unit.
-///```
-///# use rrtk::*;
-///let x = Time(2_000_000_000);
-///let y = Quantity::new(3.0, MILLIMETER_PER_SECOND);
-///assert_eq!(x * y, y * x);
-///```
-///This is why it is possible to implement `MulAssign<Time> for Quantity` but not
-///`MulAssign<Quantity> for Time`. This operation must return `Quantity`, which is fine for
-///`MulAssign<Time> for Quantity` but not for `MulAssign<Quantity> for Time` since `MulAssign` does
-///not allow the type to change.
-///```
-///# use rrtk::*;
-///let mut x = Quantity::new(3.0, MILLIMETER_PER_SECOND);
-///let y = Time(2_000_000_000);
-///x *= y;
-///```
-///```compile_fail
-///# use rrtk::*;
-///let mut x = Time(2_000_000_000);
-///let y = Quantity::new(3.0, MILLIMETER_PER_SECOND);
-///x *= y;
-///```
-///This still applies when the `Quantity` is dimensionless since there is no type-level distinction
-///between dimensionless and dimensional quantities.
-///```compile_fail
-///# use rrtk::*;
-///let mut x = Time(2_000_000_000);
-///let y = Quantity::dimensionless(3.0);
-///x *= y;
-///```
-///If you need to multiply a [`Time`] by a dimensionless factor and not change its type, use
-///[`DimensionlessInteger`].
 impl MulAssign<Time> for Quantity {
     fn mul_assign(&mut self, rhs: Time) {
         *self = *self * rhs;
@@ -706,33 +794,31 @@ impl Div<Time> for Quantity {
         self / Quantity::from(rhs)
     }
 }
-///A `Time` divided by a `Quantity` must return another `Quantity`.
-///```
-///# use rrtk::*;
-///let x = Time(4_000_000_000);
-///let y = Quantity::new(2.0, MILLIMETER);
-///assert_eq!(x / y, Quantity::new(2.0, SECOND_PER_MILLIMETER));
-///```
-///This makes implementing `DivAssign<Quantity> for Time` impossible since it does not allow the
-///type to change.
-///```compile_fail
-///# use rrtk::*;
-///let mut x = Time(4_000_000_000);
-///let y = Quantity::new(2.0, MILLIMETER);
-///x /= y;
-///```
-///However, a `Quantity` divided by a `Time` also returns a `Quantity`. Therefore, it *is* possible
-///to implement `DivAssign<Time> for Quantity`.
-///```
-///# use rrtk::*;
-///let mut x = Quantity::new(4.0, MILLIMETER);
-///let y = Time(2_000_000_000);
-///x /= y;
-///assert_eq!(x, Quantity::new(2.0, MILLIMETER_PER_SECOND));
-///```
 impl DivAssign<Time> for Quantity {
     fn div_assign(&mut self, rhs: Time) {
         *self = *self / rhs;
+    }
+}
+impl Mul<DimensionlessInteger> for Quantity {
+    type Output = Self;
+    fn mul(self, rhs: DimensionlessInteger) -> Self {
+        self * Quantity::from(rhs)
+    }
+}
+impl MulAssign<DimensionlessInteger> for Quantity {
+    fn mul_assign(&mut self, rhs: DimensionlessInteger) {
+        *self = *self * rhs
+    }
+}
+impl Div<DimensionlessInteger> for Quantity {
+    type Output = Self;
+    fn div(self, rhs: DimensionlessInteger) -> Self {
+        self / Quantity::from(rhs)
+    }
+}
+impl DivAssign<DimensionlessInteger> for Quantity {
+    fn div_assign(&mut self, rhs: DimensionlessInteger) {
+        *self = *self / rhs
     }
 }
 #[cfg(not(any(
