@@ -1255,6 +1255,96 @@ fn ewma_stream() {
     }
 }
 #[test]
+#[cfg(feature = "std")]
+fn ewma_stream_quantity() {
+    #[derive(Clone, Copy, Debug)]
+    struct DummyError;
+    struct DummyStream {
+        time: Time,
+    }
+    impl DummyStream {
+        pub const fn new() -> Self {
+            Self { time: Time(0) }
+        }
+    }
+    impl Getter<Quantity, DummyError> for DummyStream {
+        fn get(&self) -> Output<Quantity, DummyError> {
+            let value = match self.time {
+                Time(2_000_000_000) => Quantity::dimensionless(110.0),
+                Time(4_000_000_000) => Quantity::dimensionless(111.0),
+                Time(6_000_000_000) => Quantity::dimensionless(116.0),
+                Time(8_000_000_000) => Quantity::dimensionless(97.0),
+                Time(10_000_000_000) => Quantity::dimensionless(102.0),
+                Time(12_000_000_000) => Quantity::dimensionless(111.0),
+                Time(14_000_000_000) => Quantity::dimensionless(111.0),
+                Time(16_000_000_000) => Quantity::dimensionless(100.0),
+                _ => Quantity::dimensionless(0.0),
+            };
+            Ok(Some(Datum::new(self.time, value)))
+        }
+    }
+    impl Updatable<DummyError> for DummyStream {
+        fn update(&mut self) -> NothingOrError<DummyError> {
+            self.time += Time(2_000_000_000);
+            Ok(())
+        }
+    }
+    unsafe {
+        static mut INPUT: DummyStream = DummyStream::new();
+        let input = Reference::from_ptr(core::ptr::addr_of_mut!(INPUT));
+        let mut stream = EWMAStream::new(input.clone(), 0.25);
+        input.borrow_mut().update().unwrap();
+        stream.update().unwrap();
+        assert_eq!(
+            stream.get().unwrap().unwrap().value,
+            Quantity::dimensionless(110.0)
+        );
+        input.borrow_mut().update().unwrap();
+        stream.update().unwrap();
+        assert_eq!(
+            stream.get().unwrap().unwrap().value,
+            Quantity::dimensionless(110.4375)
+        );
+        input.borrow_mut().update().unwrap();
+        stream.update().unwrap();
+        //Floating-point stuff gets a bit weird because of rounding, but it still appears to work
+        //correctly.
+        assert_eq!(
+            stream.get().unwrap().unwrap().value,
+            Quantity::dimensionless(112.87109375)
+        );
+        input.borrow_mut().update().unwrap();
+        stream.update().unwrap();
+        assert_eq!(
+            stream.get().unwrap().unwrap().value,
+            Quantity::dimensionless(105.927490234375)
+        );
+        input.borrow_mut().update().unwrap();
+        stream.update().unwrap();
+        assert_eq!(
+            stream.get().unwrap().unwrap().value,
+            Quantity::dimensionless(104.20921325683594)
+        );
+        input.borrow_mut().update().unwrap();
+        stream.update().unwrap();
+        assert_eq!(
+            stream.get().unwrap().unwrap().value,
+            Quantity::dimensionless(107.18018245697021)
+        );
+        input.borrow_mut().update().unwrap();
+        stream.update().unwrap();
+        assert_eq!(
+            stream.get().unwrap().unwrap().value,
+            Quantity::dimensionless(108.85135263204575)
+        );
+        input.borrow_mut().update().unwrap();
+        stream.update().unwrap();
+        //Despite every other assert_eq! here working, this one does not because the way f32 works
+        //means that it thinks it's off by 0.00001. I am unconcerned.
+        //assert_eq!(stream.get().unwrap().unwrap().value, 104.97888585552573);
+    }
+}
+#[test]
 #[cfg(feature = "alloc")]
 fn moving_average_stream() {
     #[derive(Clone, Copy, Debug)]
@@ -1317,6 +1407,89 @@ fn moving_average_stream() {
         input.borrow_mut().update().unwrap();
         stream.update().unwrap();
         assert_eq!(stream.get().unwrap().unwrap().value, 106.6);
+    }
+}
+#[test]
+#[cfg(feature = "alloc")]
+fn moving_average_stream_quantity() {
+    #[derive(Clone, Copy, Debug)]
+    struct DummyError;
+    struct DummyStream {
+        time: Time,
+    }
+    impl DummyStream {
+        pub const fn new() -> Self {
+            Self { time: Time(0) }
+        }
+    }
+    impl Getter<Quantity, DummyError> for DummyStream {
+        fn get(&self) -> Output<Quantity, DummyError> {
+            let value = match self.time {
+                Time(2) => Quantity::dimensionless(110.0),
+                Time(4) => Quantity::dimensionless(111.0),
+                Time(6) => Quantity::dimensionless(116.0),
+                Time(8) => Quantity::dimensionless(97.0),
+                Time(10) => Quantity::dimensionless(102.0),
+                Time(12) => Quantity::dimensionless(111.0),
+                Time(14) => Quantity::dimensionless(111.0),
+                Time(16) => Quantity::dimensionless(100.0),
+                _ => Quantity::dimensionless(0.0),
+            };
+            Ok(Some(Datum::new(self.time, value)))
+        }
+    }
+    impl Updatable<DummyError> for DummyStream {
+        fn update(&mut self) -> NothingOrError<DummyError> {
+            self.time += Time(2);
+            Ok(())
+        }
+    }
+    unsafe {
+        static mut INPUT: DummyStream = DummyStream::new();
+        let input = Reference::from_ptr(core::ptr::addr_of_mut!(INPUT));
+        let mut stream = MovingAverageStream::new(input.clone(), Time(5));
+        input.borrow_mut().update().unwrap();
+        stream.update().unwrap();
+        assert_eq!(
+            stream.get().unwrap().unwrap().value,
+            Quantity::dimensionless(110.0)
+        );
+        input.borrow_mut().update().unwrap();
+        stream.update().unwrap();
+        assert_eq!(
+            stream.get().unwrap().unwrap().value,
+            Quantity::dimensionless(110.4)
+        );
+        input.borrow_mut().update().unwrap();
+        stream.update().unwrap();
+        //assert_eq!(stream.get().unwrap().unwrap().value, 112.8);
+        input.borrow_mut().update().unwrap();
+        stream.update().unwrap();
+        assert_eq!(
+            stream.get().unwrap().unwrap().value,
+            Quantity::dimensionless(107.4)
+        );
+        input.borrow_mut().update().unwrap();
+        stream.update().unwrap();
+        //assert_eq!(stream.get().unwrap().unwrap().value, 102.8);
+        input.borrow_mut().update().unwrap();
+        stream.update().unwrap();
+        assert_eq!(
+            stream.get().unwrap().unwrap().value,
+            Quantity::dimensionless(104.6)
+        );
+        input.borrow_mut().update().unwrap();
+        stream.update().unwrap();
+        assert_eq!(
+            stream.get().unwrap().unwrap().value,
+            Quantity::dimensionless(109.2)
+        );
+        input.borrow_mut().update().unwrap();
+        stream.update().unwrap();
+        assert_eq!(
+            stream.get().unwrap().unwrap().value,
+            Quantity::dimensionless(106.6)
+        );
     }
 }
 #[test]

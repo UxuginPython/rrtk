@@ -539,11 +539,11 @@ impl<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> Updatable<E>
         start_times.push_front(output.time - self.window);
         let mut weights = Vec::with_capacity(self.input_values.len());
         for i in 0..self.input_values.len() {
-            weights.push(f32::from(Quantity::from(end_times[i] - start_times[i])));
+            weights.push(Quantity::from(end_times[i] - start_times[i]));
         }
-        let mut value = self.input_values[0].value.clone() * Quantity::dimensionless(weights[0]);
+        let mut value = self.input_values[0].value.clone() * weights[0];
         for i in 1..self.input_values.len() {
-            value += self.input_values[i].value.clone() * Quantity::dimensionless(weights[i]);
+            value += self.input_values[i].value.clone() * weights[i];
         }
         value /= Quantity::from(self.window);
         self.value = Ok(Some(Datum::new(output.time, value)));
