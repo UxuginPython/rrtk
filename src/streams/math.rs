@@ -3,6 +3,9 @@
 //!Streams that perform mathematical operations.
 use crate::streams::*;
 use core::mem::MaybeUninit;
+//TODO: The behavior of SumStream and friends in relation to Ok(None) is maximally unhelpful for
+//everyone. Either require Default and return that when all inputs return Ok(None) or return
+//Ok(None) when any input returns Ok(None). This is the worst possible combination.
 ///A stream that adds all its inputs. If one input returns `Ok(None)`, it is excluded. If all inputs
 ///return `Ok(None)`, returns `Ok(None)`. If this is not the desired behavior, use [`NoneToValue`]
 ///or [`NoneToError`].
@@ -90,12 +93,12 @@ impl<T: Add<Output = T>, G1: Getter<T, E> + ?Sized, G2: Getter<T, E> + ?Sized, E
         let x = self.addend1.borrow().get()?;
         let x = match x {
             Some(x) => x,
-            None => return Ok(None),
+            None => return self.addend2.borrow().get(),
         };
         let y = self.addend2.borrow().get()?;
         let y = match y {
             Some(y) => y,
-            None => return Ok(None),
+            None => return Ok(Some(x)),
         };
         Ok(Some(x + y))
     }
@@ -252,12 +255,12 @@ impl<T: Mul<Output = T>, G1: Getter<T, E> + ?Sized, G2: Getter<T, E> + ?Sized, E
         let x = self.addend1.borrow().get()?;
         let x = match x {
             Some(x) => x,
-            None => return Ok(None),
+            None => return self.addend2.borrow().get(),
         };
         let y = self.addend2.borrow().get()?;
         let y = match y {
             Some(y) => y,
-            None => return Ok(None),
+            None => return Ok(Some(x)),
         };
         Ok(Some(x * y))
     }

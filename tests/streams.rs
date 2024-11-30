@@ -501,6 +501,72 @@ fn empty_sum_stream() {
     let _: SumStream<f32, 0, ()> = SumStream::new([]);
 }
 #[test]
+fn sum2() {
+    #[derive(Clone, Copy, Debug)]
+    struct Nothing;
+    struct ErroringStream {
+        index: u8,
+    }
+    impl ErroringStream {
+        pub const fn new() -> Self {
+            Self { index: 0 }
+        }
+    }
+    impl Getter<f32, Nothing> for ErroringStream {
+        fn get(&self) -> Output<f32, Nothing> {
+            if self.index == 0 {
+                return Err(Error::Other(Nothing));
+            } else if self.index == 1 {
+                return Ok(None);
+            } else {
+                return Ok(Some(Datum::new(Time(2), 1.0)));
+            }
+        }
+    }
+    impl Updatable<Nothing> for ErroringStream {
+        fn update(&mut self) -> NothingOrError<Nothing> {
+            self.index += 1;
+            Ok(())
+        }
+    }
+    struct NormalStream;
+    impl NormalStream {
+        pub const fn new() -> Self {
+            Self {}
+        }
+    }
+    impl Getter<f32, Nothing> for NormalStream {
+        fn get(&self) -> Output<f32, Nothing> {
+            Ok(Some(Datum::new(Time(1), 1.0)))
+        }
+    }
+    impl Updatable<Nothing> for NormalStream {
+        fn update(&mut self) -> NothingOrError<Nothing> {
+            Ok(())
+        }
+    }
+    unsafe {
+        static mut ERRORING: ErroringStream = ErroringStream::new();
+        let erroring = Reference::from_ptr(core::ptr::addr_of_mut!(ERRORING));
+        static mut NORMAL: NormalStream = NormalStream::new();
+        let normal = Reference::from_ptr(core::ptr::addr_of_mut!(NORMAL));
+        let stream = Sum2::new(erroring.clone(), normal.clone());
+        match stream.get() {
+            Ok(_) => {
+                panic!("error not propagated")
+            }
+            Err(_) => {}
+        }
+        //normal does not need update
+        erroring.borrow_mut().update().unwrap();
+        assert_eq!(stream.get().unwrap().unwrap().time, Time(1));
+        assert_eq!(stream.get().unwrap().unwrap().value, 1.0);
+        erroring.borrow_mut().update().unwrap();
+        assert_eq!(stream.get().unwrap().unwrap().time, Time(2));
+        assert_eq!(stream.get().unwrap().unwrap().value, 2.0);
+    }
+}
+#[test]
 fn difference_stream() {
     #[derive(Clone, Copy, Debug)]
     struct DummyError;
@@ -747,6 +813,72 @@ fn product_stream_all_none() {
 #[should_panic]
 fn empty_product_stream() {
     let _: ProductStream<f32, 0, ()> = ProductStream::new([]);
+}
+#[test]
+fn product2() {
+    #[derive(Clone, Copy, Debug)]
+    struct Nothing;
+    struct ErroringStream {
+        index: u8,
+    }
+    impl ErroringStream {
+        pub const fn new() -> Self {
+            Self { index: 0 }
+        }
+    }
+    impl Getter<f32, Nothing> for ErroringStream {
+        fn get(&self) -> Output<f32, Nothing> {
+            if self.index == 0 {
+                return Err(Error::Other(Nothing));
+            } else if self.index == 1 {
+                return Ok(None);
+            } else {
+                return Ok(Some(Datum::new(Time(2), 3.0)));
+            }
+        }
+    }
+    impl Updatable<Nothing> for ErroringStream {
+        fn update(&mut self) -> NothingOrError<Nothing> {
+            self.index += 1;
+            Ok(())
+        }
+    }
+    struct NormalStream;
+    impl NormalStream {
+        pub const fn new() -> Self {
+            Self {}
+        }
+    }
+    impl Getter<f32, Nothing> for NormalStream {
+        fn get(&self) -> Output<f32, Nothing> {
+            Ok(Some(Datum::new(Time(1), 5.0)))
+        }
+    }
+    impl Updatable<Nothing> for NormalStream {
+        fn update(&mut self) -> NothingOrError<Nothing> {
+            Ok(())
+        }
+    }
+    unsafe {
+        static mut ERRORING: ErroringStream = ErroringStream::new();
+        let erroring = Reference::from_ptr(core::ptr::addr_of_mut!(ERRORING));
+        static mut NORMAL: NormalStream = NormalStream::new();
+        let normal = Reference::from_ptr(core::ptr::addr_of_mut!(NORMAL));
+        let stream = Product2::new(erroring.clone(), normal.clone());
+        match stream.get() {
+            Ok(_) => {
+                panic!("error not propagated")
+            }
+            Err(_) => {}
+        }
+        //normal does not need update
+        erroring.borrow_mut().update().unwrap();
+        assert_eq!(stream.get().unwrap().unwrap().time, Time(1));
+        assert_eq!(stream.get().unwrap().unwrap().value, 5.0);
+        erroring.borrow_mut().update().unwrap();
+        assert_eq!(stream.get().unwrap().unwrap().time, Time(2));
+        assert_eq!(stream.get().unwrap().unwrap().value, 15.0);
+    }
 }
 #[test]
 fn quotient_stream() {
