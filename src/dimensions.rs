@@ -66,11 +66,18 @@
 //!Addition and subtraction are a bit different because they can sometimes panic on a unit
 //!mismatch. This table works the same way as the one above it except for the following:
 //!- **P(anicking):** This operation may panic on a unit mismatch.
+//The panic!() at the end of this example is so that it panics even when dimension checking is off.
+//Cargo runs this with the other tests and, since it it marked should_panic, fails if it does not
+//panic. This is a problem because it cannot panic with dimension checking off. A panic!() call at
+//the end is the simplest way to ensure that this is not an issue, although it does eliminate the
+//usefulness of this as a test. It is tested elsewhere, however; use quantity_add_failure in
+//tests/dimensions.rs to test the panicking functionality.
 //!```should_panic
 //!# use rrtk::*;
 //!let x = Quantity::new(2.0, MILLIMETER);
 //!let y = Quantity::new(3.0, SECOND);
 //!let z = x + y;
+//!# panic!();
 //!```
 //!- **G(uaranteed):** Correct units are guaranteed by the types involved. This operation cannot panic.
 //!
