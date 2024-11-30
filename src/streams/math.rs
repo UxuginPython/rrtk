@@ -3,7 +3,10 @@
 //!Streams that perform mathematical operations.
 use crate::streams::*;
 use core::mem::MaybeUninit;
-///A stream that adds all its inputs. If an input returns `Ok(None)`, it is excluded.
+///A stream that adds all its inputs. If one input returns `Ok(None)`, it is excluded. If all inputs
+///return `Ok(None)`, returns `Ok(None)`. If this is not the desired behavior, use [`NoneToValue`]
+///or [`NoneToError`].
+///[`Sum2`] may also be a bit faster if you are only adding the outputs of two streams.
 pub struct SumStream<T: AddAssign + Copy, const N: usize, E> {
     addends: [Reference<dyn Getter<T, E>>; N],
 }
@@ -52,6 +55,10 @@ impl<T: AddAssign + Copy, const N: usize, E: Copy + Debug> Updatable<E> for SumS
         Ok(())
     }
 }
+///A stream that adds two inputs. This should be a bit faster than [`SumStream`], which adds any
+///number of inputs. If one inputs returns `Ok(None)`, the other input's output is returned. If
+///both inputs return `Ok(None)`, returns `Ok(None)`. If this is not the desired behavior, use
+///[`NoneToValue`] or [`NoneToError`].
 pub struct Sum2<
     T: Add<Output = T>,
     G1: Getter<T, E> + ?Sized,
@@ -66,6 +73,7 @@ pub struct Sum2<
 impl<T: Add<Output = T>, G1: Getter<T, E> + ?Sized, G2: Getter<T, E> + ?Sized, E: Copy + Debug>
     Sum2<T, G1, G2, E>
 {
+    ///Constructor for [`Sum2`].
     pub const fn new(addend1: Reference<G1>, addend2: Reference<G2>) -> Self {
         Self {
             addend1: addend1,
@@ -164,7 +172,8 @@ impl<T: Sub<Output = T>, GM: Getter<T, E> + ?Sized, GS: Getter<T, E> + ?Sized, E
 ///A stream that multiplies its inputs. If an input returns `Ok(None)`, it is excluded from the
 ///calculation, effectively treating it as though it had returned 1. If this is not the desired
 ///behavior, use [`rrtk::streams::converters::NoneToValue`](streams::converters::NoneToValue) or
-///[`rrtk::streams::converters::NoneToError`](streams::converters::NoneToError).
+///[`rrtk::streams::converters::NoneToError`](streams::converters::NoneToError). [`Product2`] may
+///also be a bit faster if you are only multiplying the outputs of two streams.
 pub struct ProductStream<T: MulAssign + Copy, const N: usize, E> {
     factors: [Reference<dyn Getter<T, E>>; N],
 }
@@ -208,6 +217,10 @@ impl<T: MulAssign + Copy, const N: usize, E: Copy + Debug> Updatable<E> for Prod
         Ok(())
     }
 }
+///A stream that multiplies two inputs. It should be a bit faster than [`ProductStream`], which
+///adds any number of inputs. If one input returns `Ok(None)`, returns the other input's output. If
+///both inputs return `Ok(None)`, returns `Ok(None)`. If this is not the desired behavior, use
+///[`NoneToValue`] or [`NoneToError`].
 pub struct Product2<
     T: Mul<Output = T>,
     G1: Getter<T, E> + ?Sized,
@@ -222,6 +235,7 @@ pub struct Product2<
 impl<T: Mul<Output = T>, G1: Getter<T, E> + ?Sized, G2: Getter<T, E> + ?Sized, E: Copy + Debug>
     Product2<T, G1, G2, E>
 {
+    ///Constructor for [`Product2`].
     pub const fn new(addend1: Reference<G1>, addend2: Reference<G2>) -> Self {
         Self {
             addend1: addend1,
