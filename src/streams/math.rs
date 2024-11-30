@@ -52,6 +52,53 @@ impl<T: AddAssign + Copy, const N: usize, E: Copy + Debug> Updatable<E> for SumS
         Ok(())
     }
 }
+pub struct Sum2<
+    T: Add<Output = T>,
+    G1: Getter<T, E> + ?Sized,
+    G2: Getter<T, E> + ?Sized,
+    E: Copy + Debug,
+> {
+    addend1: Reference<G1>,
+    addend2: Reference<G2>,
+    phantom_t: PhantomData<T>,
+    phantom_e: PhantomData<E>,
+}
+impl<T: Add<Output = T>, G1: Getter<T, E> + ?Sized, G2: Getter<T, E> + ?Sized, E: Copy + Debug>
+    Sum2<T, G1, G2, E>
+{
+    pub const fn new(addend1: Reference<G1>, addend2: Reference<G2>) -> Self {
+        Self {
+            addend1: addend1,
+            addend2: addend2,
+            phantom_t: PhantomData,
+            phantom_e: PhantomData,
+        }
+    }
+}
+impl<T: Add<Output = T>, G1: Getter<T, E> + ?Sized, G2: Getter<T, E> + ?Sized, E: Copy + Debug>
+    Getter<T, E> for Sum2<T, G1, G2, E>
+{
+    fn get(&self) -> Output<T, E> {
+        let x = self.addend1.borrow().get()?;
+        let x = match x {
+            Some(x) => x,
+            None => return Ok(None),
+        };
+        let y = self.addend2.borrow().get()?;
+        let y = match y {
+            Some(y) => y,
+            None => return Ok(None),
+        };
+        Ok(Some(x + y))
+    }
+}
+impl<T: Add<Output = T>, G1: Getter<T, E> + ?Sized, G2: Getter<T, E> + ?Sized, E: Copy + Debug>
+    Updatable<E> for Sum2<T, G1, G2, E>
+{
+    fn update(&mut self) -> NothingOrError<E> {
+        Ok(())
+    }
+}
 ///A stream that subtracts one of its inputs from the other. If the subtrahend stream returns
 ///`Ok(None)`, the minuend's value will be returned directly.
 pub struct DifferenceStream<
@@ -157,6 +204,53 @@ impl<T: MulAssign + Copy, const N: usize, E: Copy + Debug> Getter<T, E> for Prod
     }
 }
 impl<T: MulAssign + Copy, const N: usize, E: Copy + Debug> Updatable<E> for ProductStream<T, N, E> {
+    fn update(&mut self) -> NothingOrError<E> {
+        Ok(())
+    }
+}
+pub struct Product2<
+    T: Mul<Output = T>,
+    G1: Getter<T, E> + ?Sized,
+    G2: Getter<T, E> + ?Sized,
+    E: Copy + Debug,
+> {
+    addend1: Reference<G1>,
+    addend2: Reference<G2>,
+    phantom_t: PhantomData<T>,
+    phantom_e: PhantomData<E>,
+}
+impl<T: Mul<Output = T>, G1: Getter<T, E> + ?Sized, G2: Getter<T, E> + ?Sized, E: Copy + Debug>
+    Product2<T, G1, G2, E>
+{
+    pub const fn new(addend1: Reference<G1>, addend2: Reference<G2>) -> Self {
+        Self {
+            addend1: addend1,
+            addend2: addend2,
+            phantom_t: PhantomData,
+            phantom_e: PhantomData,
+        }
+    }
+}
+impl<T: Mul<Output = T>, G1: Getter<T, E> + ?Sized, G2: Getter<T, E> + ?Sized, E: Copy + Debug>
+    Getter<T, E> for Product2<T, G1, G2, E>
+{
+    fn get(&self) -> Output<T, E> {
+        let x = self.addend1.borrow().get()?;
+        let x = match x {
+            Some(x) => x,
+            None => return Ok(None),
+        };
+        let y = self.addend2.borrow().get()?;
+        let y = match y {
+            Some(y) => y,
+            None => return Ok(None),
+        };
+        Ok(Some(x * y))
+    }
+}
+impl<T: Mul<Output = T>, G1: Getter<T, E> + ?Sized, G2: Getter<T, E> + ?Sized, E: Copy + Debug>
+    Updatable<E> for Product2<T, G1, G2, E>
+{
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
     }

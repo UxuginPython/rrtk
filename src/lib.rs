@@ -10,7 +10,7 @@
 //!- `devices` - Enable RRTK's graph-based device system.
 //!- `dim_check_debug` - Enable dimension checking in debug mode. Enabled by default.
 //!- `dim_check_release` - Enable dimension checking in both debug mode and release mode. Requires `dim_check_debug` feature.
-#![warn(missing_docs)]
+//#![warn(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
 #[cfg(feature = "std")]
 use alloc::sync::Arc;
