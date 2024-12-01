@@ -23,7 +23,10 @@ This basically means that you can do whatever you want as long as you give me at
     - Easily connect streams to the device system through wrappers
 - Trapezoidal motion profile following
 
-[RRTK Stream Builder](https://crates.io/crates/rrtk_stream_builder) now available: Code generation from visual nodes for the stream system.
+## Related Crates
+[RRTK Stream Builder](https://crates.io/crates/rrtk_stream_builder): Code generation from visual nodes for the stream system.
+
+[RRTK Procedural Macros](https://crates.io/crates/rrtk_proc) [HIGHLY EXPERIMENTAL]: Procedural `math!` macro making the stream system easier to use.
 
 ## Changes
 ### 0.1.0
@@ -191,3 +194,61 @@ Add moving average stream.
 ### 0.6.0-beta.0
 - Add `dim_check_debug` and `dim_check_release` features.
 - Document feature flags in crate-level documentation.
+### 0.6.0
+- Add `FloatToQuantity` and `QuantityToFloat` streams.
+- Add `Sum2` and `Product2` streams, which are optimized for adding or multiplying two inputs faster than `SumStream` and `ProductStream`, which take any number of inputs.
+- Implement:
+  - `AddAssign` for `Time`
+  - `SubAssign` for `Time`
+  - `MulAssign<DimensionlessInteger>` for `Time`
+  - `DivAssign<DimensionlessInteger>` for `Time`
+  - `Add<Quantity>` for `Time`
+  - `Sub<Quantity>` for `Time`
+  - `Mul<Quantity>` for `Time`
+  - `Div<Quantity>` for `Time`
+  - `AddAssign` for `DimensionlessInteger`
+  - `SubAssign` for `DimensionlessInteger`
+  - `MulAssign` for `DimensionlessInteger`
+  - `DivAssign` for `DimensionlessInteger`
+  - `Add<Quantity>` for `DimensionlessInteger`
+  - `Sub<Quantity>` for `DimensionlessInteger`
+  - `Mul<Quantity>` for `DimensionlessInteger`
+  - `Div<Quantity>` for `DimensionlessInteger`
+  - `AddAssign` for `Quantity`
+  - `SubAssign` for `Quantity`
+  - `MulAssign` for `Quantity`
+  - `DivAssign` for `Quantity`
+  - `Add<Time>` for `Quantity`
+  - `Sub<Time>` for `Quantity`
+  - `AddAssign<Time>` for `Quantity`
+  - `SubAssign<Time>` for `Quantity`
+  - `MulAssign<Time>` for `Quantity`
+  - `DivAssign<Time>` for `Quantity`
+  - `Add<DimensionlessInteger>` for `Quantity`
+  - `Sub<DimensionlessInteger>` for `Quantity`
+  - `Mul<DimensionlessInteger>` for `Quantity`
+  - `Div<DimensionlessInteger>` for `Quantity`
+  - `AddAssign<DimensionlessInteger>` for `Quantity`
+  - `SubAssign<DimensionlessInteger>` for `Quantity`
+  - `MulAssign<DimensionlessInteger>` for `Quantity`
+  - `DivAssign<DimensionlessInteger>` for `Quantity`
+  - `AddAssign` for `Unit`
+  - `SubAssign` for `Unit`
+  - `MulAssign` for `Unit`
+  - `DivAssign` for `Unit`
+  - `Neg` for `Unit`
+- Make `State::update` take `Time`.
+- Make `State::set_constant_(position|velocity|acceleration)` take `Quantity`.
+- Add `State::set_constant_(position|velocity|acceleration)_raw` functions to still allow setting each position derivative with `f32`.
+- Make `State::new` take `Quantity` for position, velocity, and acceleration.
+- Add `State::new_raw` to still allow constructing `State` with `f32` values.
+- Make `(Position|Velocity|Acceleration)ToState` take `Quantity`.
+- Make `IntegralStream` and `DerivativeStream` take `Quantity`.
+- Make `EWMAStream` more generic, allowing it to take both `f32` and `Quantity`.
+- Make `MovingAverageStream` more generic, allowing it to take both `f32` and `Quantity`.
+- Mark `State::set_constant_(position|velocity|acceleration)` and their "raw" equivalents as const fn.
+- Fix bug where the implementation of `From<PositionDerivative> for Unit` would return an incorrect second exponent.
+- Fix unit issue in `MovingAverageStream`.
+- Example improvements.
+- Unit testing improvements.
+- Documentation improvements.

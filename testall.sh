@@ -1,5 +1,5 @@
 #!/bin/bash
-#Generated automatically by rrtk 0.6.0-beta.0
+#Generated automatically by rrtk 0.6.0
 set -e
 echo
 cargo test --no-default-features
