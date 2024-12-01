@@ -9,6 +9,8 @@ pub mod converters;
 pub mod flow;
 pub mod logic;
 pub mod math;
+#[cfg(all(feature = "libm", not(feature = "std")))]
+use libm::powf;
 ///Returns the output of whichever input has the latest time.
 pub struct Latest<T, const C: usize, E: Copy + Debug> {
     inputs: [Reference<dyn Getter<T, E>>; C],

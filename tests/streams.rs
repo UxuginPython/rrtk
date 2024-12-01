@@ -1038,7 +1038,7 @@ fn quotient_stream() {
     }
 }
 #[test]
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "libm"))]
 fn exponent_stream() {
     #[derive(Clone, Copy, Debug)]
     struct DummyError;
@@ -1318,7 +1318,7 @@ fn pid_controller_stream() {
     }
 }
 #[test]
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "libm"))]
 fn ewma_stream() {
     #[derive(Clone, Copy, Debug)]
     struct DummyError;
@@ -1387,7 +1387,7 @@ fn ewma_stream() {
     }
 }
 #[test]
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "libm"))]
 fn ewma_stream_quantity() {
     #[derive(Clone, Copy, Debug)]
     struct DummyError;

@@ -16,12 +16,14 @@ exclude = ["generatetestall.py", "testall.sh", "checkall.sh"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+libm = { version = "0.2.11", optional = true }
 [features]
 alloc = []
 std = ["alloc"]
 devices = []
 dim_check_debug = []
 dim_check_release = ["dim_check_debug"]
+libm = ["dep:libm"]
 default = ["std", "dim_check_debug"]
 [package.metadata.docs.rs]
 all-features = true
