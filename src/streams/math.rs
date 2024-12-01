@@ -7,8 +7,8 @@ use core::mem::MaybeUninit;
 //everyone. Either require Default and return that when all inputs return Ok(None) or return
 //Ok(None) when any input returns Ok(None). This is the worst possible combination.
 ///A stream that adds all its inputs. If one input returns `Ok(None)`, it is excluded. If all inputs
-///return `Ok(None)`, returns `Ok(None)`. If this is not the desired behavior, use [`NoneToValue`]
-///or [`NoneToError`].
+///return `Ok(None)`, returns `Ok(None)`. If this is not the desired behavior, use
+///[`NoneToValue`](converters::NoneToValue) or [`NoneToError`](converters::NoneToError).
 ///[`Sum2`] may also be a bit faster if you are only adding the outputs of two streams.
 pub struct SumStream<T: AddAssign + Copy, const N: usize, E> {
     addends: [Reference<dyn Getter<T, E>>; N],
@@ -61,7 +61,7 @@ impl<T: AddAssign + Copy, const N: usize, E: Copy + Debug> Updatable<E> for SumS
 ///A stream that adds two inputs. This should be a bit faster than [`SumStream`], which adds any
 ///number of inputs. If one inputs returns `Ok(None)`, the other input's output is returned. If
 ///both inputs return `Ok(None)`, returns `Ok(None)`. If this is not the desired behavior, use
-///[`NoneToValue`] or [`NoneToError`].
+///[`NoneToValue`](converters::NoneToValue) or [`NoneToError`](converters::NoneToError).
 pub struct Sum2<
     T: Add<Output = T>,
     G1: Getter<T, E> + ?Sized,
@@ -223,7 +223,7 @@ impl<T: MulAssign + Copy, const N: usize, E: Copy + Debug> Updatable<E> for Prod
 ///A stream that multiplies two inputs. It should be a bit faster than [`ProductStream`], which
 ///adds any number of inputs. If one input returns `Ok(None)`, returns the other input's output. If
 ///both inputs return `Ok(None)`, returns `Ok(None)`. If this is not the desired behavior, use
-///[`NoneToValue`] or [`NoneToError`].
+///[`NoneToValue`](converters::NoneToValue) or [`NoneToError`](converters::NoneToError).
 pub struct Product2<
     T: Mul<Output = T>,
     G1: Getter<T, E> + ?Sized,
