@@ -16,7 +16,7 @@ exclude = ["generatetestall.py", "testall.sh", "checkall.sh"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-libm = { version = "0.2.11", optional = true }
+libm = { version = "0.2.11", optional = true, default-features = false }
 [features]
 alloc = []
 std = ["alloc"]
