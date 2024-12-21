@@ -97,12 +97,18 @@ pub struct Axle<'a, const N: usize, E: Copy + Debug> {
 impl<'a, const N: usize, E: Copy + Debug> Axle<'a, N, E> {
     ///Constructor for [`Axle`].
     pub fn new() -> Self {
-        //FIXME: Although this does work, it is still technically undefined behavior.
-        let mut inputs: [RefCell<Terminal<'a, E>>; N] =
-            unsafe { core::mem::MaybeUninit::uninit().assume_init() };
+        let mut inputs: [core::mem::MaybeUninit<RefCell<Terminal<'a, E>>>; N] =
+            [const { core::mem::MaybeUninit::uninit() }; N];
         for i in &mut inputs {
-            *i = Terminal::new();
+            i.write(Terminal::new());
         }
+        //transmute doesn't work well with generics, so this does the same thing through pointers instead.
+        let inputs: [RefCell<Terminal<'a, E>>; N] = unsafe {
+            inputs
+                .as_ptr()
+                .cast::<[RefCell<Terminal<'a, E>>; N]>()
+                .read()
+        };
         Self { inputs: inputs }
     }
     ///Get a reference to one of the axle's terminals.
