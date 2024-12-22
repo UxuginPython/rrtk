@@ -136,6 +136,30 @@ impl<const N: usize, E: Copy + Debug> Updatable<E> for Axle<'_, N, E> {
                 i.borrow_mut().set(datum.clone())?;
             }
         }
+        let mut maybe_datum: Option<Datum<Command>> = None;
+        for i in &self.inputs {
+            match <Terminal<'_, E> as Getter<TerminalData, E>>::get(&i.borrow())? {
+                Some(gotten_datum) => match Datum::<Command>::try_from(gotten_datum.value) {
+                    Ok(gotten_datum) => match maybe_datum {
+                        Some(datum_some) => {
+                            if gotten_datum.time > datum_some.time {
+                                maybe_datum = Some(gotten_datum);
+                            }
+                        }
+                        None => {
+                            maybe_datum = Some(gotten_datum);
+                        }
+                    },
+                    Err(_) => (),
+                },
+                None => (),
+            }
+        }
+        if let Some(datum) = maybe_datum {
+            for i in &self.inputs {
+                i.borrow_mut().set(datum.clone())?;
+            }
+        }
         Ok(())
     }
 }
