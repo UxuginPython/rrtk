@@ -572,7 +572,6 @@ pub struct Terminal<'a, E: Copy + Debug> {
     settable_data_state: SettableData<Datum<State>, E>,
     settable_data_command: SettableData<Datum<Command>, E>,
     other: Option<&'a RefCell<Terminal<'a, E>>>,
-    no_recurse_set_command: bool,
 }
 #[cfg(feature = "devices")]
 impl<E: Copy + Debug> Terminal<'_, E> {
@@ -583,7 +582,6 @@ impl<E: Copy + Debug> Terminal<'_, E> {
             settable_data_state: SettableData::new(),
             settable_data_command: SettableData::new(),
             other: None,
-            no_recurse_set_command: false,
         }
     }
     ///This constructs a [`RefCell<Terminal>`]. This is almost always what you want, and what is
@@ -595,7 +593,6 @@ impl<E: Copy + Debug> Terminal<'_, E> {
     ///Disconnect this terminal and the one that it is connected to. You can connect terminals by
     ///calling the [`rrtk::connect`](connect) function.
     pub fn disconnect(&mut self) {
-        debug_assert!(!self.no_recurse_set_command);
         match self.other {
             Some(other) => {
                 let mut other = other.borrow_mut();
@@ -627,18 +624,7 @@ impl<E: Copy + Debug> Settable<Datum<Command>, E> for Terminal<'_, E> {
     fn get_settable_data_mut(&mut self) -> &mut SettableData<Datum<Command>, E> {
         &mut self.settable_data_command
     }
-    fn impl_set(&mut self, command: Datum<Command>) -> NothingOrError<E> {
-        match self.other {
-            Some(other) => {
-                if !self.no_recurse_set_command {
-                    let mut other_borrow = other.borrow_mut();
-                    other_borrow.no_recurse_set_command = true;
-                    other_borrow.set(command)?;
-                    other_borrow.no_recurse_set_command = false;
-                }
-            }
-            None => {}
-        }
+    fn impl_set(&mut self, _command: Datum<Command>) -> NothingOrError<E> {
         Ok(())
     }
 }
@@ -680,9 +666,36 @@ impl<E: Copy + Debug> Getter<State, E> for Terminal<'_, E> {
     }
 }
 #[cfg(feature = "devices")]
+impl<E: Copy + Debug> Getter<Command, E> for Terminal<'_, E> {
+    fn get(&self) -> Output<Command, E> {
+        let mut maybe_command: Option<Datum<Command>> = None;
+        match self.get_last_request() {
+            Some(command) => {
+                maybe_command = Some(command);
+            }
+            None => {}
+        }
+        match self.other {
+            Some(other) => match <Terminal<'_, E> as Settable<Datum<Command>, E>>::get_last_request(&other.borrow()) {
+                Some(gotten_command) => {
+                    match maybe_command {
+                        Some(command_some) => if gotten_command.time > command_some.time {
+                            maybe_command = Some(gotten_command);
+                        }
+                        None => { maybe_command = Some(gotten_command); }
+                    }
+                }
+                None => (),
+            },
+            None => (),
+        }
+        Ok(maybe_command)
+    }
+}
+#[cfg(feature = "devices")]
 impl<E: Copy + Debug> Getter<TerminalData, E> for Terminal<'_, E> {
     fn get(&self) -> Output<TerminalData, E> {
-        let command: Option<Datum<Command>> = self.get_last_request();
+        let command = self.get().expect("Terminal get cannot return Err");
         let state = self.get().expect("Terminal get cannot return Err");
         let (mut time, command) = match command {
             Some(datum_command) => (Some(datum_command.time), Some(datum_command.value)),
