@@ -97,12 +97,18 @@ pub struct Axle<'a, const N: usize, E: Copy + Debug> {
 impl<'a, const N: usize, E: Copy + Debug> Axle<'a, N, E> {
     ///Constructor for [`Axle`].
     pub fn new() -> Self {
-        //FIXME: Although this does work, it is still technically undefined behavior.
-        let mut inputs: [RefCell<Terminal<'a, E>>; N] =
-            unsafe { core::mem::MaybeUninit::uninit().assume_init() };
+        let mut inputs: [core::mem::MaybeUninit<RefCell<Terminal<'a, E>>>; N] =
+            [const { core::mem::MaybeUninit::uninit() }; N];
         for i in &mut inputs {
-            *i = Terminal::new();
+            i.write(Terminal::new());
         }
+        //transmute doesn't work well with generics, so this does the same thing through pointers instead.
+        let inputs: [RefCell<Terminal<'a, E>>; N] = unsafe {
+            inputs
+                .as_ptr()
+                .cast::<[RefCell<Terminal<'a, E>>; N]>()
+                .read()
+        };
         Self { inputs: inputs }
     }
     ///Get a reference to one of the axle's terminals.
@@ -126,6 +132,30 @@ impl<const N: usize, E: Copy + Debug> Updatable<E> for Axle<'_, N, E> {
         }
         if count >= 1 {
             datum /= count as f32;
+            for i in &self.inputs {
+                i.borrow_mut().set(datum.clone())?;
+            }
+        }
+        let mut maybe_datum: Option<Datum<Command>> = None;
+        for i in &self.inputs {
+            match <Terminal<'_, E> as Getter<TerminalData, E>>::get(&i.borrow())? {
+                Some(gotten_datum) => match Datum::<Command>::try_from(gotten_datum.value) {
+                    Ok(gotten_datum) => match maybe_datum {
+                        Some(datum_some) => {
+                            if gotten_datum.time > datum_some.time {
+                                maybe_datum = Some(gotten_datum);
+                            }
+                        }
+                        None => {
+                            maybe_datum = Some(gotten_datum);
+                        }
+                    },
+                    Err(_) => (),
+                },
+                None => (),
+            }
+        }
+        if let Some(datum) = maybe_datum {
             for i in &self.inputs {
                 i.borrow_mut().set(datum.clone())?;
             }
