@@ -83,12 +83,14 @@ impl<E: Copy + Debug> Device<E> for Invert<'_, E> {
         Ok(())
     }
 }
+///A gear train, a mechanism consisting of a two or more gears meshed together.
 pub struct GearTrain<'a, E: Copy + Debug> {
     term1: RefCell<Terminal<'a, E>>,
     term2: RefCell<Terminal<'a, E>>,
     ratio: f32,
 }
 impl<'a, E: Copy + Debug> GearTrain<'a, E> {
+    ///Construct a [`GearTrain`] with the ratio as an `f32`.
     pub const fn with_ratio_raw(ratio: f32) -> Self {
         Self {
             term1: Terminal::new(),
@@ -96,10 +98,12 @@ impl<'a, E: Copy + Debug> GearTrain<'a, E> {
             ratio: ratio,
         }
     }
+    ///Construct a [`GearTrain`] with the ratio as a dimensionless [`Quantity`].
     pub const fn with_ratio(ratio: Quantity) -> Self {
         ratio.unit.assert_eq_assume_ok(&DIMENSIONLESS);
         Self::with_ratio_raw(ratio.value)
     }
+    ///Construct a [`GearTrain`] from an array of the numbers of teeth on each gear in the train.
     pub const fn new<const N: usize>(teeth: [f32; N]) -> Self {
         if N < 2 {
             panic!("rrtk::devices::GearTrain::new must be provided with at least two gear tooth counts.");
@@ -107,9 +111,11 @@ impl<'a, E: Copy + Debug> GearTrain<'a, E> {
         let ratio = teeth[0] / teeth[teeth.len() - 1] * if N % 2 == 0 { -1.0 } else { 1.0 };
         Self::with_ratio_raw(ratio)
     }
+    ///Get a reference to the side 1 terminal of the device where (side 1) * ratio = (side 2).
     pub fn get_terminal_1(&self) -> &'a RefCell<Terminal<'a, E>> {
         unsafe { &*(&self.term1 as *const RefCell<Terminal<'a, E>>) }
     }
+    ///Get a reference to the side 2 terminal of the device where (side 1) * ratio = (side 2).
     pub fn get_terminal_2(&self) -> &'a RefCell<Terminal<'a, E>> {
         unsafe { &*(&self.term2 as *const RefCell<Terminal<'a, E>>) }
     }
