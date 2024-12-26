@@ -83,6 +83,88 @@ impl<E: Copy + Debug> Device<E> for Invert<'_, E> {
         Ok(())
     }
 }
+pub struct GearTrain<'a, E: Copy + Debug> {
+    term1: RefCell<Terminal<'a, E>>,
+    term2: RefCell<Terminal<'a, E>>,
+    ratio: f32,
+}
+impl<'a, E: Copy + Debug> GearTrain<'a, E> {
+    pub const fn with_ratio_raw(ratio: f32) -> Self {
+        Self {
+            term1: Terminal::new(),
+            term2: Terminal::new(),
+            ratio: ratio,
+        }
+    }
+    pub const fn with_ratio(ratio: Quantity) -> Self {
+        ratio.unit.assert_eq_assume_ok(&DIMENSIONLESS);
+        Self::with_ratio_raw(ratio.value)
+    }
+    pub const fn new<const N: usize>(teeth: [f32; N]) -> Self {
+        if N < 2 {
+            panic!("rrtk::devices::GearTrain::new must be provided with at least two gear tooth counts.");
+        }
+        let ratio = teeth[0] / teeth[teeth.len() - 1] * if N % 2 == 0 { -1.0 } else { 1.0 };
+        Self::with_ratio_raw(ratio)
+    }
+    pub fn get_terminal_1(&self) -> &'a RefCell<Terminal<'a, E>> {
+        unsafe { &*(&self.term1 as *const RefCell<Terminal<'a, E>>) }
+    }
+    pub fn get_terminal_2(&self) -> &'a RefCell<Terminal<'a, E>> {
+        unsafe { &*(&self.term2 as *const RefCell<Terminal<'a, E>>) }
+    }
+}
+impl<E: Copy + Debug> Updatable<E> for GearTrain<'_, E> {
+    fn update(&mut self) -> NothingOrError<E> {
+        self.update_terminals()?;
+        let get1: Option<Datum<State>> = self
+            .term1
+            .borrow()
+            .get()
+            .expect("Terminal get will always return Ok");
+        let get2: Option<Datum<State>> = self
+            .term2
+            .borrow()
+            .get()
+            .expect("Terminal get will always return Ok");
+        match get1 {
+            Some(datum1) => match get2 {
+                Some(datum2) => {
+                    let state1 = datum1.value;
+                    let state2 = datum2.value;
+                    let time = if datum1.time >= datum2.time {
+                        datum1.time
+                    } else {
+                        datum2.time
+                    };
+                    let newstate1 = (state1 + state2 / self.ratio) / 2.0;
+                    let newstate2 = (state2 + state1 * self.ratio) / 2.0;
+                    self.term1.borrow_mut().set(Datum::new(time, newstate1))?;
+                    self.term2.borrow_mut().set(Datum::new(time, newstate2))?;
+                }
+                None => {
+                    let newdatum2 = datum1 * self.ratio;
+                    self.term2.borrow_mut().set(newdatum2)?;
+                }
+            },
+            None => match get2 {
+                Some(datum2) => {
+                    let newdatum1 = datum2 / self.ratio;
+                    self.term1.borrow_mut().set(newdatum1)?;
+                }
+                None => {}
+            },
+        }
+        Ok(())
+    }
+}
+impl<E: Copy + Debug> Device<E> for GearTrain<'_, E> {
+    fn update_terminals(&mut self) -> NothingOrError<E> {
+        self.term1.borrow_mut().update()?;
+        self.term2.borrow_mut().update()?;
+        Ok(())
+    }
+}
 ///A connection between terminals that are not directly connected, such as when three or more
 ///terminals are connected. Code-wise, this is almost exactly the same as directly connecting two
 ///terminals, but this type can connect more than two terminals. There is some freedom in exactly

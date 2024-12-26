@@ -10,7 +10,7 @@
 //!- `devices` - Enable RRTK's graph-based device system.
 //!- `dim_check_debug` - Enable dimension checking in debug mode. Enabled by default.
 //!- `dim_check_release` - Enable dimension checking in both debug mode and release mode. Requires `dim_check_debug` feature.
-#![warn(missing_docs)]
+//#![warn(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
 #[cfg(feature = "std")]
 use alloc::sync::Arc;
@@ -676,17 +676,23 @@ impl<E: Copy + Debug> Getter<Command, E> for Terminal<'_, E> {
             None => {}
         }
         match self.other {
-            Some(other) => match <Terminal<'_, E> as Settable<Datum<Command>, E>>::get_last_request(&other.borrow()) {
-                Some(gotten_command) => {
-                    match maybe_command {
-                        Some(command_some) => if gotten_command.time > command_some.time {
+            Some(other) => {
+                match <Terminal<'_, E> as Settable<Datum<Command>, E>>::get_last_request(
+                    &other.borrow(),
+                ) {
+                    Some(gotten_command) => match maybe_command {
+                        Some(command_some) => {
+                            if gotten_command.time > command_some.time {
+                                maybe_command = Some(gotten_command);
+                            }
+                        }
+                        None => {
                             maybe_command = Some(gotten_command);
                         }
-                        None => { maybe_command = Some(gotten_command); }
-                    }
+                    },
+                    None => (),
                 }
-                None => (),
-            },
+            }
             None => (),
         }
         Ok(maybe_command)
