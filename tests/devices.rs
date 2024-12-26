@@ -132,6 +132,88 @@ fn invert() {
     );
 }
 #[test]
+#[should_panic]
+fn gear_train_1() {
+    let _ = GearTrain::<'_, ()>::new([28.0]);
+}
+#[test]
+fn gear_train_2() {
+    let mut gear_train = GearTrain::<'_, ()>::new([12.0, 36.0]);
+    let terminal1 = Terminal::<()>::new();
+    let terminal2 = Terminal::<()>::new();
+    connect(gear_train.get_terminal_1(), &terminal1);
+    connect(gear_train.get_terminal_2(), &terminal2);
+    assert_eq!(terminal2.borrow_mut().get(), Ok(None::<Datum<State>>));
+    terminal1
+        .borrow_mut()
+        .set(Datum::new(Time(0), State::new_raw(3.0, 6.0, 9.0)))
+        .unwrap();
+    gear_train.update().unwrap();
+    assert_eq!(
+        terminal2.borrow_mut().get(),
+        Ok(Some(Datum::new(Time(0), State::new_raw(-1.0, -2.0, -3.0))))
+    );
+}
+#[test]
+fn gear_train_odd() {
+    let mut gear_train = GearTrain::<'_, ()>::new([36.0, 12.0, 24.0]);
+    let terminal1 = Terminal::<()>::new();
+    let terminal2 = Terminal::<()>::new();
+    connect(gear_train.get_terminal_1(), &terminal1);
+    connect(gear_train.get_terminal_2(), &terminal2);
+    assert_eq!(terminal2.borrow_mut().get(), Ok(None::<Datum<State>>));
+    terminal1
+        .borrow_mut()
+        .set(Datum::new(Time(0), State::new_raw(2.0, 4.0, 6.0)))
+        .unwrap();
+    gear_train.update().unwrap();
+    assert_eq!(
+        terminal2.borrow_mut().get(),
+        Ok(Some(Datum::new(Time(0), State::new_raw(3.0, 6.0, 9.0))))
+    );
+}
+#[test]
+fn gear_train_even() {
+    let mut gear_train = GearTrain::<'_, ()>::new([36.0, 12.0, 12.0, 24.0]);
+    let terminal1 = Terminal::<()>::new();
+    let terminal2 = Terminal::<()>::new();
+    connect(gear_train.get_terminal_1(), &terminal1);
+    connect(gear_train.get_terminal_2(), &terminal2);
+    assert_eq!(terminal2.borrow_mut().get(), Ok(None::<Datum<State>>));
+    terminal1
+        .borrow_mut()
+        .set(Datum::new(Time(0), State::new_raw(2.0, 4.0, 6.0)))
+        .unwrap();
+    gear_train.update().unwrap();
+    assert_eq!(
+        terminal2.borrow_mut().get(),
+        Ok(Some(Datum::new(Time(0), State::new_raw(-3.0, -6.0, -9.0))))
+    );
+}
+#[test]
+fn gear_train_multiple_inputs() {
+    let mut gear_train = GearTrain::<'_, ()>::new([12.0, 24.0]);
+    gear_train
+        .get_terminal_1()
+        .borrow_mut()
+        .set(Datum::new(Time(3), State::new_raw(2.0, 4.0, 6.0)))
+        .unwrap();
+    gear_train
+        .get_terminal_2()
+        .borrow_mut()
+        .set(Datum::new(Time(2), State::new_raw(-2.0, -4.0, -6.0)))
+        .unwrap();
+    gear_train.update().unwrap();
+    assert_eq!(
+        gear_train.get_terminal_1().borrow().get(),
+        Ok(Some(Datum::new(Time(3), State::new_raw(2.4, 4.8, 7.2))))
+    );
+    assert_eq!(
+        gear_train.get_terminal_2().borrow().get(),
+        Ok(Some(Datum::new(Time(3), State::new_raw(-1.2, -2.4, -3.6))))
+    );
+}
+#[test]
 fn axle() {
     let mut axle = Axle::<3, ()>::new();
     let terminal1 = Terminal::new();

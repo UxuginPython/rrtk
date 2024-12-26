@@ -677,17 +677,23 @@ impl<E: Copy + Debug> Getter<Command, E> for Terminal<'_, E> {
             None => {}
         }
         match self.other {
-            Some(other) => match <Terminal<'_, E> as Settable<Datum<Command>, E>>::get_last_request(&other.borrow()) {
-                Some(gotten_command) => {
-                    match maybe_command {
-                        Some(command_some) => if gotten_command.time > command_some.time {
+            Some(other) => {
+                match <Terminal<'_, E> as Settable<Datum<Command>, E>>::get_last_request(
+                    &other.borrow(),
+                ) {
+                    Some(gotten_command) => match maybe_command {
+                        Some(command_some) => {
+                            if gotten_command.time > command_some.time {
+                                maybe_command = Some(gotten_command);
+                            }
+                        }
+                        None => {
                             maybe_command = Some(gotten_command);
                         }
-                        None => { maybe_command = Some(gotten_command); }
-                    }
+                    },
+                    None => (),
                 }
-                None => (),
-            },
+            }
             None => (),
         }
         Ok(maybe_command)
