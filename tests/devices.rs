@@ -193,33 +193,24 @@ fn gear_train_even() {
 #[test]
 fn gear_train_multiple_inputs() {
     let mut gear_train = GearTrain::<'_, ()>::new([12.0, 24.0]);
-    let terminal1 = Terminal::<()>::new();
-    let terminal2 = Terminal::<()>::new();
-    connect(gear_train.get_terminal_1(), &terminal1);
-    connect(gear_train.get_terminal_2(), &terminal2);
-    terminal1
+    gear_train
+        .get_terminal_1()
         .borrow_mut()
         .set(Datum::new(Time(3), State::new_raw(2.0, 4.0, 6.0)))
         .unwrap();
-    terminal2
+    gear_train
+        .get_terminal_2()
         .borrow_mut()
         .set(Datum::new(Time(2), State::new_raw(-2.0, -4.0, -6.0)))
         .unwrap();
     gear_train.update().unwrap();
-    //Terminals return the average of the states of the terminal they're connected to and the state
-    //they were last set to themselves, so when the GearTrain sets terminal1's connected terminal
-    //to (3.0, 6.0, 9.0) and terminal1 itself was set to (2.0, 4.0, 6.0), it returns this.
     assert_eq!(
-        terminal1.borrow().get(),
-        Ok(Some(Datum::new(Time(3), State::new_raw(2.5, 5.0, 7.5))))
+        gear_train.get_terminal_1().borrow().get(),
+        Ok(Some(Datum::new(Time(3), State::new_raw(2.4, 4.8, 7.2))))
     );
-    //Average of (-1.5, -3.0, -4.5) and (-2.0, -4.0, -6.0)
     assert_eq!(
-        terminal2.borrow().get(),
-        Ok(Some(Datum::new(
-            Time(3),
-            State::new_raw(-1.75, -3.5, -5.25)
-        )))
+        gear_train.get_terminal_2().borrow().get(),
+        Ok(Some(Datum::new(Time(3), State::new_raw(-1.2, -2.4, -3.6))))
     );
 }
 #[test]
