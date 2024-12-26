@@ -144,10 +144,10 @@ impl<E: Copy + Debug> Updatable<E> for GearTrain<'_, E> {
                         datum2.time
                     };
                     //https://www.desmos.com/3d/gvwbqszr5e
-                    let newstate1 =
-                        (state1 + state2 * self.ratio) / (self.ratio * self.ratio + 1.0);
-                    let newstate2 = ((state1 + state2 * self.ratio) * self.ratio)
-                        / (self.ratio * self.ratio + 1.0);
+                    let r_squared_plus_1 = self.ratio * self.ratio + 1.0;
+                    let x_plus_r_y = state1 + state2 * self.ratio;
+                    let newstate1 = x_plus_r_y / r_squared_plus_1;
+                    let newstate2 = (x_plus_r_y * self.ratio) / r_squared_plus_1;
                     self.term1.borrow_mut().set(Datum::new(time, newstate1))?;
                     self.term2.borrow_mut().set(Datum::new(time, newstate2))?;
                 }
