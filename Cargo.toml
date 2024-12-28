@@ -16,7 +16,8 @@ exclude = ["generatetestall.py", "testall.sh", "checkall.sh"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-libm = { version = "0.2.11", optional = true, default-features = false }
+libm = { version = "0.2.11", default-features = false, optional = true }
+micromath = { version = "2.1.0", default-features = false, optional = true }
 [features]
 alloc = []
 std = ["alloc"]
@@ -24,6 +25,7 @@ devices = []
 dim_check_debug = []
 dim_check_release = ["dim_check_debug"]
 libm = ["dep:libm"]
+micromath = ["dep:micromath"]
 default = ["std", "dim_check_debug"]
 [package.metadata.docs.rs]
 all-features = true

@@ -9,13 +9,18 @@ pub mod converters;
 pub mod flow;
 pub mod logic;
 pub mod math;
-#[cfg(feature = "std")]
+//micromath's F32Ext is drop-in compatible with std floating point operations. However, we prefer
+//libm over micromath and std over libm, so this function definition is enabled if either std is
+//available or both micromath is available and libm is not.
+#[cfg(any(feature = "std", all(feature = "micromath", not(feature = "libm"))))]
 #[inline]
 fn powf(x: f32, y: f32) -> f32 {
     x.powf(y)
 }
 #[cfg(all(feature = "libm", not(feature = "std")))]
 use libm::powf;
+#[cfg(all(feature = "micromath", not(feature = "std"), not(feature = "libm")))]
+use micromath::F32Ext;
 ///Returns the output of whichever input has the latest time.
 pub struct Latest<T, const C: usize, E: Copy + Debug> {
     inputs: [Reference<dyn Getter<T, E>>; C],

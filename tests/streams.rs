@@ -1037,6 +1037,10 @@ fn quotient_stream() {
         }
     }
 }
+//micromath's implementations are not as precise as std's and libm's, making them cause this test
+//to fail even if the calculation is correct. Testing the accuracy of the other two and compiling
+//with micromath, although not testing its implementation, is considered sufficient. The same
+//applies to the ewma_stream and ewma_stream_quantity tests.
 #[test]
 #[cfg(any(feature = "std", feature = "libm"))]
 fn exponent_stream() {
@@ -1317,6 +1321,7 @@ fn pid_controller_stream() {
         assert_eq!(stream.get().unwrap().unwrap().value, 4.04);
     }
 }
+//See note on exponent_stream test
 #[test]
 #[cfg(any(feature = "std", feature = "libm"))]
 fn ewma_stream() {
@@ -1386,6 +1391,7 @@ fn ewma_stream() {
         //assert_eq!(stream.get().unwrap().unwrap().value, 104.97888585552573);
     }
 }
+//See note on exponent_stream test
 #[test]
 #[cfg(any(feature = "std", feature = "libm"))]
 fn ewma_stream_quantity() {
