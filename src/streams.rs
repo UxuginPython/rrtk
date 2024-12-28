@@ -9,6 +9,11 @@ pub mod converters;
 pub mod flow;
 pub mod logic;
 pub mod math;
+#[cfg(feature = "std")]
+#[inline]
+fn powf(x: f32, y: f32) -> f32 {
+    x.powf(y)
+}
 #[cfg(all(feature = "libm", not(feature = "std")))]
 use libm::powf;
 ///Returns the output of whichever input has the latest time.

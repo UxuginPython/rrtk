@@ -377,9 +377,6 @@ impl<GB: Getter<f32, E> + ?Sized, GE: Getter<f32, E> + ?Sized, E: Copy + Debug> 
             }
         }
         let exponent_output = exponent_output.unwrap();
-        #[cfg(feature = "std")]
-        let value = base_output.value.powf(exponent_output.value);
-        #[cfg(all(feature = "libm", not(feature = "std")))]
         let value = powf(base_output.value, exponent_output.value);
         let time = if base_output.time > exponent_output.time {
             base_output.time

@@ -350,9 +350,6 @@ impl<
             .update_time
             .expect("update_time must be Some if value is");
         let delta_time = f32::from(Quantity::from(output.time - prev_time));
-        #[cfg(feature = "std")]
-        let lambda = 1.0 - (1.0 - self.smoothing_constant).powf(delta_time);
-        #[cfg(all(feature = "libm", not(feature = "std")))]
         let lambda = 1.0 - powf(1.0 - self.smoothing_constant, delta_time);
         let value = prev_value.value * (1.0 - lambda) + output.value * lambda;
         self.value = Ok(Some(Datum::new(output.time, value)));
@@ -394,10 +391,6 @@ impl<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> Updatable<E> for EWMAStre
             .update_time
             .expect("update_time must be Some if value is");
         let delta_time = f32::from(Quantity::from(output.time - prev_time));
-        #[cfg(feature = "std")]
-        let lambda =
-            Quantity::dimensionless(1.0 - (1.0 - self.smoothing_constant).powf(delta_time));
-        #[cfg(all(feature = "libm", not(feature = "std")))]
         let lambda = Quantity::dimensionless(1.0 - powf(1.0 - self.smoothing_constant, delta_time));
         let value =
             prev_value.value * (Quantity::dimensionless(1.0) - lambda) + output.value * lambda;
