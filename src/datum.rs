@@ -25,18 +25,17 @@ impl<T> Datum<T> {
         false
     }
 }
-pub fn replace_if_older_or_none<T>(to_maybe_replace: &mut Option<Datum<T>>, maybe_replace_with: Datum<T>) -> bool {
-    match to_maybe_replace {
-        Some(self_datum) => if maybe_replace_with.time > self_datum.time {
-            *to_maybe_replace = Some(maybe_replace_with);
-            return true;
-        }
-        None => {
-            *to_maybe_replace = Some(maybe_replace_with);
-            return true;
+pub fn replace_if_older_or_none<T>(
+    to_maybe_replace: &mut Option<Datum<T>>,
+    maybe_replace_with: Datum<T>,
+) -> bool {
+    if let Some(to_maybe_replace_datum) = to_maybe_replace {
+        if to_maybe_replace_datum.time >= maybe_replace_with.time {
+            return false;
         }
     }
-    false
+    *to_maybe_replace = Some(maybe_replace_with);
+    true
 }
 //Unfortunately implementing the ops traits is really awkward here and has unnecessary restrictions
 //because of needing to provide implementations for T and Datum<T>. If we ever get negative trait
