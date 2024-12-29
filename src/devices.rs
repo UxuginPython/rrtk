@@ -231,16 +231,10 @@ impl<const N: usize, E: Copy + Debug> Updatable<E> for Axle<'_, N, E> {
         for i in &self.inputs {
             match <Terminal<'_, E> as Getter<TerminalData, E>>::get(&i.borrow())? {
                 Some(gotten_datum) => match Datum::<Command>::try_from(gotten_datum.value) {
-                    Ok(gotten_datum) => match maybe_datum {
-                        Some(datum_some) => {
-                            if gotten_datum.time > datum_some.time {
-                                maybe_datum = Some(gotten_datum);
-                            }
-                        }
-                        None => {
-                            maybe_datum = Some(gotten_datum);
-                        }
-                    },
+                    Ok(gotten_datum) => {
+                        //It needs to be in a block to throw out the return value.
+                        maybe_datum.replace_if_none_or_older_than(gotten_datum);
+                    }
                     Err(_) => (),
                 },
                 None => (),
