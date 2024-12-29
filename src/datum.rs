@@ -26,10 +26,11 @@ impl<T> Datum<T> {
     }
 }
 pub trait OptionDatumExt<T> {
-    fn replace_if_older_or_none(&mut self, maybe_replace_with: Datum<T>) -> bool;
+    fn replace_if_none_or_older_than(&mut self, maybe_replace_with: Datum<T>) -> bool;
+    fn replace_if_none_or_older_than_option(&mut self, maybe_replace_with: Self) -> bool;
 }
 impl<T> OptionDatumExt<T> for Option<Datum<T>> {
-    fn replace_if_older_or_none(&mut self, maybe_replace_with: Datum<T>) -> bool {
+    fn replace_if_none_or_older_than(&mut self, maybe_replace_with: Datum<T>) -> bool {
         if let Some(self_datum) = self {
             if self_datum.time >= maybe_replace_with.time {
                 return false;
@@ -37,6 +38,13 @@ impl<T> OptionDatumExt<T> for Option<Datum<T>> {
         }
         *self = Some(maybe_replace_with);
         true
+    }
+    fn replace_if_none_or_older_than_option(&mut self, maybe_replace_with: Self) -> bool {
+        let maybe_replace_with = match maybe_replace_with {
+            Some(x) => x,
+            None => return false,
+        };
+        self.replace_if_none_or_older_than(maybe_replace_with)
     }
 }
 //Unfortunately implementing the ops traits is really awkward here and has unnecessary restrictions
