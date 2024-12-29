@@ -17,7 +17,9 @@ impl<T> Datum<T> {
             value: value,
         }
     }
-    pub fn replace_if_older(&mut self, maybe_replace_with: Self) -> bool {
+    ///Replaces `self` with `maybe_replace_with` if `maybe_replace_with`'s timestamp is newer than
+    ///`self`'s. Returns true if `self` was replaced and false otherwise.
+    pub fn replace_if_older_than(&mut self, maybe_replace_with: Self) -> bool {
         if maybe_replace_with.time > self.time {
             *self = maybe_replace_with;
             return true;
@@ -25,8 +27,14 @@ impl<T> Datum<T> {
         false
     }
 }
+///Extension trait for `Option<Datum<T>>`.
 pub trait OptionDatumExt<T> {
+    ///If `self` is `None`, replaces it with `Some(maybe_replace_with)`. If `self` is `Some`,
+    ///replaces it with `Some(maybe_replace_with)` if `maybe_replace_with`'s timestamp is newer
+    ///than its. Returns true if `self` was replaced and false otherwise.
     fn replace_if_none_or_older_than(&mut self, maybe_replace_with: Datum<T>) -> bool;
+    ///If `maybe_replace_with` is `Some`, calls `replace_if_none_or_older_than`. If it is `None`,
+    ///returns false immediately.
     fn replace_if_none_or_older_than_option(&mut self, maybe_replace_with: Self) -> bool;
 }
 impl<T> OptionDatumExt<T> for Option<Datum<T>> {
