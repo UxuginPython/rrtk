@@ -19,7 +19,13 @@ fn powf(x: f32, y: f32) -> f32 {
 }
 #[cfg(all(feature = "libm", not(feature = "std")))]
 use libm::powf;
+//There is a strange behavior where without F32Ext, the compiler, of course, errors with only the
+//micromath feature enabled. However, with F32Ext, testing with the same configuration yields an
+//unused import warning although the trait does seem to be necessary. Interestingly, this behavior
+//only occurs when testing and not with building normally. The cfg_attr is a workaround to prevent
+//the warning.
 #[cfg(all(feature = "micromath", not(feature = "std"), not(feature = "libm")))]
+#[cfg_attr(test, allow(unused_imports))]
 use micromath::F32Ext;
 ///Returns the output of whichever input has the latest time.
 pub struct Latest<T, const C: usize, E: Copy + Debug> {
