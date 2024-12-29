@@ -73,6 +73,31 @@ impl<E: Copy + Debug> Updatable<E> for Invert<'_, E> {
                 }
             },
         }
+        let get1: Option<Datum<Command>> = self
+            .term1
+            .borrow()
+            .get()
+            .expect("Terminal get will always return Ok");
+        let get2: Option<Datum<Command>> = self
+            .term2
+            .borrow()
+            .get()
+            .expect("Terminal get will always return Ok");
+        let mut maybe_datum: Option<Datum<Command>> = None;
+        maybe_datum.replace_if_none_or_older_than_option(get1);
+        match get2 {
+            Some(x) => {
+                maybe_datum.replace_if_none_or_older_than(-x);
+            }
+            None => {}
+        }
+        match maybe_datum {
+            Some(datum_command) => {
+                self.term1.borrow_mut().set(datum_command)?;
+                self.term2.borrow_mut().set(-datum_command)?;
+            }
+            None => {}
+        }
         Ok(())
     }
 }

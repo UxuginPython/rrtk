@@ -281,6 +281,16 @@ impl From<Command> for f32 {
         }
     }
 }
+impl Neg for Command {
+    type Output = Self;
+    fn neg(self) -> Self {
+        match self {
+            Self::Position(pos) => Self::Position(-pos),
+            Self::Velocity(vel) => Self::Velocity(-vel),
+            Self::Acceleration(acc) => Self::Acceleration(-acc),
+        }
+    }
+}
 ///Something with an [`update`](Updatable::update) method. Mostly for subtraiting.
 pub trait Updatable<E: Copy + Debug> {
     ///As this trait is very generic, exactly what this does will be very dependent on the
