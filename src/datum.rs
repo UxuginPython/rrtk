@@ -26,16 +26,16 @@ impl<T> Datum<T> {
     }
 }
 pub trait OptionDatumExt<T> {
-    fn replace_if_older_or_none(to_maybe_replace: &mut Self, maybe_replace_with: Datum<T>) -> bool;
+    fn replace_if_older_or_none(&mut self, maybe_replace_with: Datum<T>) -> bool;
 }
 impl<T> OptionDatumExt<T> for Option<Datum<T>> {
-    fn replace_if_older_or_none(to_maybe_replace: &mut Self, maybe_replace_with: Datum<T>) -> bool {
-        if let Some(to_maybe_replace_datum) = to_maybe_replace {
-            if to_maybe_replace_datum.time >= maybe_replace_with.time {
+    fn replace_if_older_or_none(&mut self, maybe_replace_with: Datum<T>) -> bool {
+        if let Some(self_datum) = self {
+            if self_datum.time >= maybe_replace_with.time {
                 return false;
             }
         }
-        *to_maybe_replace = Some(maybe_replace_with);
+        *self = Some(maybe_replace_with);
         true
     }
 }
