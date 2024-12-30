@@ -7,6 +7,8 @@
 use crate::*;
 pub mod wrappers;
 ///A device such that positive for one terminal is negative for the other.
+///As this device has only one degree of freedom, it propagates [`Command`]s given to its terminals
+///as well as [`State`]s.
 pub struct Invert<'a, E: Copy + Debug> {
     term1: RefCell<Terminal<'a, E>>,
     term2: RefCell<Terminal<'a, E>>,
@@ -109,6 +111,8 @@ impl<E: Copy + Debug> Device<E> for Invert<'_, E> {
     }
 }
 ///A gear train, a mechanism consisting of a two or more gears meshed together.
+///As this device has only one degree of freedom, it propagates [`Command`]s given to its terminals
+///as well as [`State`]s.
 pub struct GearTrain<'a, E: Copy + Debug> {
     term1: RefCell<Terminal<'a, E>>,
     term2: RefCell<Terminal<'a, E>>,
@@ -241,6 +245,8 @@ impl<E: Copy + Debug> Device<E> for GearTrain<'_, E> {
 ///only two terminals is possible but may have a slight performance cost. (The type even
 ///technically allows for only one or even zero connected terminals, but there is almost certainly
 ///no legitimate use for this.)
+///As this device has only one degree of freedom, it propagates [`Command`]s given to its terminals
+///as well as [`State`]s.
 pub struct Axle<'a, const N: usize, E: Copy + Debug> {
     inputs: [RefCell<Terminal<'a, E>>; N],
 }
@@ -323,6 +329,8 @@ pub enum DifferentialDistrust {
     Equal,
 }
 ///A mechanical differential mechanism.
+///As this device has two degrees of freedom, it is not able to propagate [`Command`]s given to its
+///terminals as it does with [`State`]s.
 pub struct Differential<'a, E: Copy + Debug> {
     side1: RefCell<Terminal<'a, E>>,
     side2: RefCell<Terminal<'a, E>>,
