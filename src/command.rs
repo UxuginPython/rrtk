@@ -89,6 +89,38 @@ impl From<Command> for f32 {
         }
     }
 }
+impl Add for Command {
+    type Output = Self;
+    fn add(self, rhs: Self) -> Self {
+        let self_pos_der = PositionDerivative::from(self);
+        assert_eq!(self_pos_der, PositionDerivative::from(rhs));
+        Self::new(self_pos_der, f32::from(self) + f32::from(rhs))
+    }
+}
+impl Sub for Command {
+    type Output = Self;
+    fn sub(self, rhs: Self) -> Self {
+        let self_pos_der = PositionDerivative::from(self);
+        assert_eq!(self_pos_der, PositionDerivative::from(rhs));
+        Self::new(self_pos_der, f32::from(self) - f32::from(rhs))
+    }
+}
+impl Mul<f32> for Command {
+    type Output = Self;
+    fn mul(self, rhs: f32) -> Self {
+        let self_pos_der = PositionDerivative::from(self);
+        let value = f32::from(self) * rhs;
+        Self::new(self_pos_der, value)
+    }
+}
+impl Div<f32> for Command {
+    type Output = Self;
+    fn div(self, rhs: f32) -> Self {
+        let self_pos_der = PositionDerivative::from(self);
+        let value = f32::from(self) / rhs;
+        Self::new(self_pos_der, value)
+    }
+}
 impl Neg for Command {
     type Output = Self;
     fn neg(self) -> Self {
@@ -97,5 +129,25 @@ impl Neg for Command {
             Self::Velocity(vel) => Self::Velocity(-vel),
             Self::Acceleration(acc) => Self::Acceleration(-acc),
         }
+    }
+}
+impl AddAssign for Command {
+    fn add_assign(&mut self, rhs: Self) {
+        *self = *self + rhs;
+    }
+}
+impl SubAssign for Command {
+    fn sub_assign(&mut self, rhs: Self) {
+        *self = *self - rhs;
+    }
+}
+impl MulAssign<f32> for Command {
+    fn mul_assign(&mut self, rhs: f32) {
+        *self = *self * rhs;
+    }
+}
+impl DivAssign<f32> for Command {
+    fn div_assign(&mut self, rhs: f32) {
+        *self = *self / rhs;
     }
 }
