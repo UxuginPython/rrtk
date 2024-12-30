@@ -189,6 +189,40 @@ impl<E: Copy + Debug> Updatable<E> for GearTrain<'_, E> {
                 None => {}
             },
         }
+        let get1: Option<Datum<Command>> = self
+            .term1
+            .borrow()
+            .get()
+            .expect("Terminal get will always return Ok");
+        let get2: Option<Datum<Command>> = self
+            .term2
+            .borrow()
+            .get()
+            .expect("Terminal get will always return Ok");
+        match get1 {
+            Some(datum1) => match get2 {
+                Some(datum2) => {
+                    if datum1.time >= datum2.time {
+                        let newdatum2 = datum1 * self.ratio;
+                        self.term2.borrow_mut().set(newdatum2)?;
+                    } else {
+                        let newdatum1 = datum2 / self.ratio;
+                        self.term1.borrow_mut().set(newdatum1)?;
+                    }
+                }
+                None => {
+                    let newdatum2 = datum1 * self.ratio;
+                    self.term2.borrow_mut().set(newdatum2)?;
+                }
+            },
+            None => match get2 {
+                Some(datum2) => {
+                    let newdatum1 = datum2 / self.ratio;
+                    self.term1.borrow_mut().set(newdatum1)?;
+                }
+                None => {}
+            },
+        }
         Ok(())
     }
 }
