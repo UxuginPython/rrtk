@@ -60,7 +60,7 @@ impl<T> OptionDatumExt<T> for Option<Datum<T>> {
 //bounds, it will be possible to provide a much better generic implementation for cases where the
 //type of other is not necessarily the same as T. Additionally, I may just be doing it wrong.
 //Regardless, for now, these are only implemented where other is T or Datum<T> and not a more
-//generic type. A special case for State is provided due to its Mul<f32> and Div<f32>
+//generic type. Special cases for State and Command are provided due to their Mul<f32> and Div<f32>
 //implementations.
 impl<T: Not<Output = O>, O> Not for Datum<T> {
     type Output = Datum<O>;
@@ -274,6 +274,74 @@ impl Div<f32> for Datum<State> {
     }
 }
 impl DivAssign<f32> for Datum<State> {
+    fn div_assign(&mut self, other: f32) {
+        self.value /= other;
+    }
+}
+impl Mul<Datum<f32>> for Datum<Command> {
+    type Output = Self;
+    fn mul(self, other: Datum<f32>) -> Self {
+        let output_value = self.value * other.value;
+        let output_time = if self.time >= other.time {
+            self.time
+        } else {
+            other.time
+        };
+        Datum::new(output_time, output_value)
+    }
+}
+impl MulAssign<Datum<f32>> for Datum<Command> {
+    fn mul_assign(&mut self, other: Datum<f32>) {
+        self.value *= other.value;
+        self.time = if self.time >= other.time {
+            self.time
+        } else {
+            other.time
+        };
+    }
+}
+impl Mul<f32> for Datum<Command> {
+    type Output = Self;
+    fn mul(self, other: f32) -> Self {
+        let output_value = self.value * other;
+        Datum::new(self.time, output_value)
+    }
+}
+impl MulAssign<f32> for Datum<Command> {
+    fn mul_assign(&mut self, other: f32) {
+        self.value *= other;
+    }
+}
+impl Div<Datum<f32>> for Datum<Command> {
+    type Output = Self;
+    fn div(self, other: Datum<f32>) -> Self {
+        let output_value = self.value / other.value;
+        let output_time = if self.time >= other.time {
+            self.time
+        } else {
+            other.time
+        };
+        Datum::new(output_time, output_value)
+    }
+}
+impl DivAssign<Datum<f32>> for Datum<Command> {
+    fn div_assign(&mut self, other: Datum<f32>) {
+        self.value /= other.value;
+        self.time = if self.time >= other.time {
+            self.time
+        } else {
+            other.time
+        };
+    }
+}
+impl Div<f32> for Datum<Command> {
+    type Output = Self;
+    fn div(self, other: f32) -> Self {
+        let output_value = self.value / other;
+        Datum::new(self.time, output_value)
+    }
+}
+impl DivAssign<f32> for Datum<Command> {
     fn div_assign(&mut self, other: f32) {
         self.value /= other;
     }
