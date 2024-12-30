@@ -104,6 +104,45 @@ fn latest_datum() {
     );
 }
 #[test]
+fn datum_replace_if_older_than() {
+    let mut x = Datum::new(Time(2_000_000_000), 2);
+    let y = Datum::new(Time(1_000_000_000), 3);
+    assert!(!x.replace_if_older_than(y));
+    assert_eq!(x, Datum::new(Time(2_000_000_000), 2));
+    let y = Datum::new(Time(2_000_000_000), 3);
+    assert!(!x.replace_if_older_than(y));
+    assert_eq!(x, Datum::new(Time(2_000_000_000), 2));
+    let y = Datum::new(Time(3_000_000_000), 3);
+    assert!(x.replace_if_older_than(y));
+    assert_eq!(x, y);
+}
+#[test]
+fn datum_replace_if_none_or_older_than() {
+    let mut x = None;
+    let y = Datum::new(Time(2_000_000_000), 2);
+    assert!(x.replace_if_none_or_older_than(y));
+    assert_eq!(x, Some(y));
+    let y = Datum::new(Time(1_000_000_000), 3);
+    assert!(!x.replace_if_none_or_older_than(y));
+    assert_eq!(x, Some(Datum::new(Time(2_000_000_000), 2)));
+    let y = Datum::new(Time(2_000_000_000), 3);
+    assert!(!x.replace_if_none_or_older_than(y));
+    assert_eq!(x, Some(Datum::new(Time(2_000_000_000), 2)));
+    let y = Datum::new(Time(3_000_000_000), 3);
+    assert!(x.replace_if_none_or_older_than(y));
+    assert_eq!(x, Some(y));
+}
+#[test]
+fn datum_replace_if_none_or_older_than_option() {
+    let mut x = None;
+    let y = None;
+    assert!(!x.replace_if_none_or_older_than_option(y));
+    assert_eq!(x, None);
+    let y = Some(Datum::new(Time(2_000_000_000), 2));
+    assert!(x.replace_if_none_or_older_than_option(y));
+    assert_eq!(x, y);
+}
+#[test]
 fn datum_not() {
     assert_eq!(!Datum::new(Time(0), false), Datum::new(Time(0), true));
 }
