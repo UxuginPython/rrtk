@@ -51,30 +51,9 @@ fn invert() {
         .borrow_mut()
         .set(Datum::new(Time(0), State::new_raw(1.0, 2.0, 3.0)))
         .unwrap();
-    connect(invert.get_terminal_1(), &terminal1);
-    connect(invert.get_terminal_2(), &terminal2);
-    invert.update().unwrap();
-    assert_eq!(
-        <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal1.borrow())
-            .unwrap()
-            .unwrap()
-            .value,
-        State::new_raw(1.0, 2.0, 3.0)
-    );
-    assert_eq!(
-        <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal2.borrow())
-            .unwrap()
-            .unwrap()
-            .value,
-        State::new_raw(-1.0, -2.0, -3.0)
-    );
-
-    let mut invert = Invert::new();
-    let terminal1 = Terminal::<()>::new();
-    let terminal2 = Terminal::<()>::new();
-    terminal2
+    terminal1
         .borrow_mut()
-        .set(Datum::new(Time(0), State::new_raw(-1.0, -2.0, -3.0)))
+        .set(Datum::new(Time(0), Command::Position(1.0)))
         .unwrap();
     connect(invert.get_terminal_1(), &terminal1);
     connect(invert.get_terminal_2(), &terminal2);
@@ -87,11 +66,68 @@ fn invert() {
         State::new_raw(1.0, 2.0, 3.0)
     );
     assert_eq!(
+        <rrtk::Terminal<'_, ()> as rrtk::Getter<Command, ()>>::get(&terminal1.borrow())
+            .unwrap()
+            .unwrap()
+            .value,
+        Command::Position(1.0)
+    );
+    assert_eq!(
         <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal2.borrow())
             .unwrap()
             .unwrap()
             .value,
         State::new_raw(-1.0, -2.0, -3.0)
+    );
+    assert_eq!(
+        <rrtk::Terminal<'_, ()> as rrtk::Getter<Command, ()>>::get(&terminal2.borrow())
+            .unwrap()
+            .unwrap()
+            .value,
+        Command::Position(-1.0)
+    );
+
+    let mut invert = Invert::new();
+    let terminal1 = Terminal::<()>::new();
+    let terminal2 = Terminal::<()>::new();
+    terminal2
+        .borrow_mut()
+        .set(Datum::new(Time(0), State::new_raw(-1.0, -2.0, -3.0)))
+        .unwrap();
+    terminal2
+        .borrow_mut()
+        .set(Datum::new(Time(0), Command::Position(-1.0)))
+        .unwrap();
+    connect(invert.get_terminal_1(), &terminal1);
+    connect(invert.get_terminal_2(), &terminal2);
+    invert.update().unwrap();
+    assert_eq!(
+        <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal1.borrow())
+            .unwrap()
+            .unwrap()
+            .value,
+        State::new_raw(1.0, 2.0, 3.0)
+    );
+    assert_eq!(
+        <rrtk::Terminal<'_, ()> as rrtk::Getter<Command, ()>>::get(&terminal1.borrow())
+            .unwrap()
+            .unwrap()
+            .value,
+        Command::Position(1.0)
+    );
+    assert_eq!(
+        <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal2.borrow())
+            .unwrap()
+            .unwrap()
+            .value,
+        State::new_raw(-1.0, -2.0, -3.0)
+    );
+    assert_eq!(
+        <rrtk::Terminal<'_, ()> as rrtk::Getter<Command, ()>>::get(&terminal2.borrow())
+            .unwrap()
+            .unwrap()
+            .value,
+        Command::Position(-1.0)
     );
 
     let mut invert = Invert::new();
@@ -144,14 +180,23 @@ fn gear_train_2() {
     connect(gear_train.get_terminal_1(), &terminal1);
     connect(gear_train.get_terminal_2(), &terminal2);
     assert_eq!(terminal2.borrow_mut().get(), Ok(None::<Datum<State>>));
+    assert_eq!(terminal2.borrow_mut().get(), Ok(None::<Datum<Command>>));
     terminal1
         .borrow_mut()
         .set(Datum::new(Time(0), State::new_raw(3.0, 6.0, 9.0)))
+        .unwrap();
+    terminal1
+        .borrow_mut()
+        .set(Datum::new(Time(0), Command::Position(3.0)))
         .unwrap();
     gear_train.update().unwrap();
     assert_eq!(
         terminal2.borrow_mut().get(),
         Ok(Some(Datum::new(Time(0), State::new_raw(-1.0, -2.0, -3.0))))
+    );
+    assert_eq!(
+        terminal2.borrow_mut().get(),
+        Ok(Some(Datum::new(Time(0), Command::Position(-1.0))))
     );
 }
 #[test]
@@ -162,14 +207,23 @@ fn gear_train_odd() {
     connect(gear_train.get_terminal_1(), &terminal1);
     connect(gear_train.get_terminal_2(), &terminal2);
     assert_eq!(terminal2.borrow_mut().get(), Ok(None::<Datum<State>>));
+    assert_eq!(terminal2.borrow_mut().get(), Ok(None::<Datum<Command>>));
     terminal1
         .borrow_mut()
         .set(Datum::new(Time(0), State::new_raw(2.0, 4.0, 6.0)))
+        .unwrap();
+    terminal1
+        .borrow_mut()
+        .set(Datum::new(Time(0), Command::Position(2.0)))
         .unwrap();
     gear_train.update().unwrap();
     assert_eq!(
         terminal2.borrow_mut().get(),
         Ok(Some(Datum::new(Time(0), State::new_raw(3.0, 6.0, 9.0))))
+    );
+    assert_eq!(
+        terminal2.borrow_mut().get(),
+        Ok(Some(Datum::new(Time(0), Command::Position(3.0))))
     );
 }
 #[test]
@@ -180,14 +234,23 @@ fn gear_train_even() {
     connect(gear_train.get_terminal_1(), &terminal1);
     connect(gear_train.get_terminal_2(), &terminal2);
     assert_eq!(terminal2.borrow_mut().get(), Ok(None::<Datum<State>>));
+    assert_eq!(terminal2.borrow_mut().get(), Ok(None::<Datum<Command>>));
     terminal1
         .borrow_mut()
         .set(Datum::new(Time(0), State::new_raw(2.0, 4.0, 6.0)))
+        .unwrap();
+    terminal1
+        .borrow_mut()
+        .set(Datum::new(Time(0), Command::Position(2.0)))
         .unwrap();
     gear_train.update().unwrap();
     assert_eq!(
         terminal2.borrow_mut().get(),
         Ok(Some(Datum::new(Time(0), State::new_raw(-3.0, -6.0, -9.0))))
+    );
+    assert_eq!(
+        terminal2.borrow_mut().get(),
+        Ok(Some(Datum::new(Time(0), Command::Position(-3.0))))
     );
 }
 #[test]
@@ -199,9 +262,19 @@ fn gear_train_multiple_inputs() {
         .set(Datum::new(Time(3), State::new_raw(2.0, 4.0, 6.0)))
         .unwrap();
     gear_train
+        .get_terminal_1()
+        .borrow_mut()
+        .set(Datum::new(Time(3), Command::Position(2.0)))
+        .unwrap();
+    gear_train
         .get_terminal_2()
         .borrow_mut()
         .set(Datum::new(Time(2), State::new_raw(-2.0, -4.0, -6.0)))
+        .unwrap();
+    gear_train
+        .get_terminal_2()
+        .borrow_mut()
+        .set(Datum::new(Time(2), Command::Position(-2.0)))
         .unwrap();
     gear_train.update().unwrap();
     assert_eq!(
@@ -209,8 +282,16 @@ fn gear_train_multiple_inputs() {
         Ok(Some(Datum::new(Time(3), State::new_raw(2.4, 4.8, 7.2))))
     );
     assert_eq!(
+        gear_train.get_terminal_1().borrow().get(),
+        Ok(Some(Datum::new(Time(3), Command::Position(2.0))))
+    );
+    assert_eq!(
         gear_train.get_terminal_2().borrow().get(),
         Ok(Some(Datum::new(Time(3), State::new_raw(-1.2, -2.4, -3.6))))
+    );
+    assert_eq!(
+        gear_train.get_terminal_2().borrow().get(),
+        Ok(Some(Datum::new(Time(3), Command::Position(-1.0))))
     );
 }
 #[test]
@@ -226,6 +307,10 @@ fn axle() {
     terminal2
         .borrow_mut()
         .set(Datum::new(Time(0), State::new_raw(4.0, 5.0, 6.0)))
+        .unwrap();
+    terminal1
+        .borrow_mut()
+        .set(Datum::new(Time(0), Command::Position(1.0)))
         .unwrap();
     connect(axle.get_terminal(0), &terminal1);
     connect(axle.get_terminal(1), &terminal2);
@@ -243,6 +328,13 @@ fn axle() {
         )
     );
     assert_eq!(
+        <rrtk::Terminal<'_, ()> as rrtk::Getter<Command, ()>>::get(&terminal1.borrow())
+            .unwrap()
+            .unwrap()
+            .value,
+        Command::Position(1.0)
+    );
+    assert_eq!(
         <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal2.borrow())
             .unwrap()
             .unwrap()
@@ -254,11 +346,25 @@ fn axle() {
         )
     );
     assert_eq!(
+        <rrtk::Terminal<'_, ()> as rrtk::Getter<Command, ()>>::get(&terminal2.borrow())
+            .unwrap()
+            .unwrap()
+            .value,
+        Command::Position(1.0)
+    );
+    assert_eq!(
         <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal3.borrow())
             .unwrap()
             .unwrap()
             .value,
         State::new_raw(2.5, 3.5, 4.5)
+    );
+    assert_eq!(
+        <rrtk::Terminal<'_, ()> as rrtk::Getter<Command, ()>>::get(&terminal3.borrow())
+            .unwrap()
+            .unwrap()
+            .value,
+        Command::Position(1.0)
     );
 }
 #[test]
