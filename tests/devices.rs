@@ -308,6 +308,10 @@ fn axle() {
         .borrow_mut()
         .set(Datum::new(Time(0), State::new_raw(4.0, 5.0, 6.0)))
         .unwrap();
+    terminal1
+        .borrow_mut()
+        .set(Datum::new(Time(0), Command::Position(1.0)))
+        .unwrap();
     connect(axle.get_terminal(0), &terminal1);
     connect(axle.get_terminal(1), &terminal2);
     connect(axle.get_terminal(2), &terminal3);
@@ -324,6 +328,13 @@ fn axle() {
         )
     );
     assert_eq!(
+        <rrtk::Terminal<'_, ()> as rrtk::Getter<Command, ()>>::get(&terminal1.borrow())
+            .unwrap()
+            .unwrap()
+            .value,
+        Command::Position(1.0)
+    );
+    assert_eq!(
         <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal2.borrow())
             .unwrap()
             .unwrap()
@@ -335,11 +346,25 @@ fn axle() {
         )
     );
     assert_eq!(
+        <rrtk::Terminal<'_, ()> as rrtk::Getter<Command, ()>>::get(&terminal2.borrow())
+            .unwrap()
+            .unwrap()
+            .value,
+        Command::Position(1.0)
+    );
+    assert_eq!(
         <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal3.borrow())
             .unwrap()
             .unwrap()
             .value,
         State::new_raw(2.5, 3.5, 4.5)
+    );
+    assert_eq!(
+        <rrtk::Terminal<'_, ()> as rrtk::Getter<Command, ()>>::get(&terminal3.borrow())
+            .unwrap()
+            .unwrap()
+            .value,
+        Command::Position(1.0)
     );
 }
 #[test]
