@@ -654,6 +654,36 @@ fn command_from_state() {
     assert_eq!(command, Command::new(PositionDerivative::Position, 1.0));
 }
 #[test]
+fn command_ops() {
+    assert_eq!(-Command::Position(1.0), Command::Position(-1.0));
+    assert_eq!(
+        Command::Position(2.0) + Command::Position(3.0),
+        Command::Position(5.0)
+    );
+    assert_eq!(
+        Command::Position(3.0) - Command::Position(2.0),
+        Command::Position(1.0)
+    );
+    assert_eq!(Command::Position(3.0) * 2.0, Command::Position(6.0),);
+    assert_eq!(Command::Position(4.0) / 2.0, Command::Position(2.0));
+    let mut x = Command::Position(2.0);
+    let y = Command::Position(3.0);
+    x += y;
+    assert_eq!(x, Command::Position(5.0));
+    let mut x = Command::Position(3.0);
+    let y = Command::Position(2.0);
+    x -= y;
+    assert_eq!(x, Command::Position(1.0));
+    let mut x = Command::Position(3.0);
+    let y = 2.0;
+    x *= y;
+    assert_eq!(x, Command::Position(6.0));
+    let mut x = Command::Position(4.0);
+    let y = 2.0;
+    x /= y;
+    assert_eq!(x, Command::Position(2.0));
+}
+#[test]
 fn time_getter_from_stream() {
     struct Stream {
         time: Time,
