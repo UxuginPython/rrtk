@@ -252,3 +252,13 @@ Add moving average stream.
 - Example improvements.
 - Unit testing improvements.
 - Documentation improvements.
+### 0.6.1
+- Add optional support for [`libm`](https://crates.io/crates/libm) and [`micromath`](https://crates.io/crates/micromath) for `no_std` float computation. Both are disabled by default.
+- Propagate commands from terminals in `Axle` and `Invert` devices. (It is not possible in `Differential`).
+- Add `GearTrain` device which also propagates commands.
+- Add `replace_if_older_than` method to `Datum`.
+- Add `OptionDatumExt` trait used for adding `replace_if_none_or_older_than` and `replace_if_none_or_older_than_option` methods to `Option<Datum<T>>`.
+- Implement `Neg` for `Command`.
+- Implement `Add`, `Sub`, `Mul<f32>`, and `Div<f32>` and their respective `*Assign` traits for `Command`.
+- Implement `Getter<Command, E>` for `Terminal`.
+- Minor documentation fixes.
