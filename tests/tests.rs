@@ -104,6 +104,45 @@ fn latest_datum() {
     );
 }
 #[test]
+fn datum_replace_if_older_than() {
+    let mut x = Datum::new(Time(2_000_000_000), 2);
+    let y = Datum::new(Time(1_000_000_000), 3);
+    assert!(!x.replace_if_older_than(y));
+    assert_eq!(x, Datum::new(Time(2_000_000_000), 2));
+    let y = Datum::new(Time(2_000_000_000), 3);
+    assert!(!x.replace_if_older_than(y));
+    assert_eq!(x, Datum::new(Time(2_000_000_000), 2));
+    let y = Datum::new(Time(3_000_000_000), 3);
+    assert!(x.replace_if_older_than(y));
+    assert_eq!(x, y);
+}
+#[test]
+fn datum_replace_if_none_or_older_than() {
+    let mut x = None;
+    let y = Datum::new(Time(2_000_000_000), 2);
+    assert!(x.replace_if_none_or_older_than(y));
+    assert_eq!(x, Some(y));
+    let y = Datum::new(Time(1_000_000_000), 3);
+    assert!(!x.replace_if_none_or_older_than(y));
+    assert_eq!(x, Some(Datum::new(Time(2_000_000_000), 2)));
+    let y = Datum::new(Time(2_000_000_000), 3);
+    assert!(!x.replace_if_none_or_older_than(y));
+    assert_eq!(x, Some(Datum::new(Time(2_000_000_000), 2)));
+    let y = Datum::new(Time(3_000_000_000), 3);
+    assert!(x.replace_if_none_or_older_than(y));
+    assert_eq!(x, Some(y));
+}
+#[test]
+fn datum_replace_if_none_or_older_than_option() {
+    let mut x = None;
+    let y = None;
+    assert!(!x.replace_if_none_or_older_than_option(y));
+    assert_eq!(x, None);
+    let y = Some(Datum::new(Time(2_000_000_000), 2));
+    assert!(x.replace_if_none_or_older_than_option(y));
+    assert_eq!(x, y);
+}
+#[test]
 fn datum_not() {
     assert_eq!(!Datum::new(Time(0), false), Datum::new(Time(0), true));
 }
@@ -613,6 +652,36 @@ fn command_from_state() {
     assert_eq!(command, Command::new(PositionDerivative::Velocity, 2.0));
     let command = Command::from(State::new_raw(1.0, 0.0, 0.0));
     assert_eq!(command, Command::new(PositionDerivative::Position, 1.0));
+}
+#[test]
+fn command_ops() {
+    assert_eq!(-Command::Position(1.0), Command::Position(-1.0));
+    assert_eq!(
+        Command::Position(2.0) + Command::Position(3.0),
+        Command::Position(5.0)
+    );
+    assert_eq!(
+        Command::Position(3.0) - Command::Position(2.0),
+        Command::Position(1.0)
+    );
+    assert_eq!(Command::Position(3.0) * 2.0, Command::Position(6.0),);
+    assert_eq!(Command::Position(4.0) / 2.0, Command::Position(2.0));
+    let mut x = Command::Position(2.0);
+    let y = Command::Position(3.0);
+    x += y;
+    assert_eq!(x, Command::Position(5.0));
+    let mut x = Command::Position(3.0);
+    let y = Command::Position(2.0);
+    x -= y;
+    assert_eq!(x, Command::Position(1.0));
+    let mut x = Command::Position(3.0);
+    let y = 2.0;
+    x *= y;
+    assert_eq!(x, Command::Position(6.0));
+    let mut x = Command::Position(4.0);
+    let y = 2.0;
+    x /= y;
+    assert_eq!(x, Command::Position(2.0));
 }
 #[test]
 fn time_getter_from_stream() {
