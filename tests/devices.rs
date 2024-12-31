@@ -51,30 +51,9 @@ fn invert() {
         .borrow_mut()
         .set(Datum::new(Time(0), State::new_raw(1.0, 2.0, 3.0)))
         .unwrap();
-    connect(invert.get_terminal_1(), &terminal1);
-    connect(invert.get_terminal_2(), &terminal2);
-    invert.update().unwrap();
-    assert_eq!(
-        <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal1.borrow())
-            .unwrap()
-            .unwrap()
-            .value,
-        State::new_raw(1.0, 2.0, 3.0)
-    );
-    assert_eq!(
-        <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal2.borrow())
-            .unwrap()
-            .unwrap()
-            .value,
-        State::new_raw(-1.0, -2.0, -3.0)
-    );
-
-    let mut invert = Invert::new();
-    let terminal1 = Terminal::<()>::new();
-    let terminal2 = Terminal::<()>::new();
-    terminal2
+    terminal1
         .borrow_mut()
-        .set(Datum::new(Time(0), State::new_raw(-1.0, -2.0, -3.0)))
+        .set(Datum::new(Time(0), Command::Position(1.0)))
         .unwrap();
     connect(invert.get_terminal_1(), &terminal1);
     connect(invert.get_terminal_2(), &terminal2);
@@ -87,11 +66,68 @@ fn invert() {
         State::new_raw(1.0, 2.0, 3.0)
     );
     assert_eq!(
+        <rrtk::Terminal<'_, ()> as rrtk::Getter<Command, ()>>::get(&terminal1.borrow())
+            .unwrap()
+            .unwrap()
+            .value,
+        Command::Position(1.0)
+    );
+    assert_eq!(
         <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal2.borrow())
             .unwrap()
             .unwrap()
             .value,
         State::new_raw(-1.0, -2.0, -3.0)
+    );
+    assert_eq!(
+        <rrtk::Terminal<'_, ()> as rrtk::Getter<Command, ()>>::get(&terminal2.borrow())
+            .unwrap()
+            .unwrap()
+            .value,
+        Command::Position(-1.0)
+    );
+
+    let mut invert = Invert::new();
+    let terminal1 = Terminal::<()>::new();
+    let terminal2 = Terminal::<()>::new();
+    terminal2
+        .borrow_mut()
+        .set(Datum::new(Time(0), State::new_raw(-1.0, -2.0, -3.0)))
+        .unwrap();
+    terminal2
+        .borrow_mut()
+        .set(Datum::new(Time(0), Command::Position(-1.0)))
+        .unwrap();
+    connect(invert.get_terminal_1(), &terminal1);
+    connect(invert.get_terminal_2(), &terminal2);
+    invert.update().unwrap();
+    assert_eq!(
+        <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal1.borrow())
+            .unwrap()
+            .unwrap()
+            .value,
+        State::new_raw(1.0, 2.0, 3.0)
+    );
+    assert_eq!(
+        <rrtk::Terminal<'_, ()> as rrtk::Getter<Command, ()>>::get(&terminal1.borrow())
+            .unwrap()
+            .unwrap()
+            .value,
+        Command::Position(1.0)
+    );
+    assert_eq!(
+        <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal2.borrow())
+            .unwrap()
+            .unwrap()
+            .value,
+        State::new_raw(-1.0, -2.0, -3.0)
+    );
+    assert_eq!(
+        <rrtk::Terminal<'_, ()> as rrtk::Getter<Command, ()>>::get(&terminal2.borrow())
+            .unwrap()
+            .unwrap()
+            .value,
+        Command::Position(-1.0)
     );
 
     let mut invert = Invert::new();
