@@ -18,6 +18,13 @@
 //!available.
 #![warn(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
+#[cfg(all(
+    feature = "internal_enhanced_float",
+    not(feature = "std"),
+    not(feature = "libm"),
+    not(feature = "micromath")
+))]
+compile_error!("internal_enhanced_float must only be enabled by another feature.");
 #[cfg(feature = "std")]
 use alloc::sync::Arc;
 #[cfg(feature = "std")]
