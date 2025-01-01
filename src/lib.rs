@@ -13,11 +13,19 @@
 //!- `libm` - Use [`libm`](https://crates.io/crates/libm) for float exponentiation when `std` is not available.
 //!- `micromath` - Use [`micromath`](https://crates.io/crates/micromath) for float exponentiation
 //!when `std` and `libm` are unavailable.
+//!- `internal_enhanced_float` - Do not enable this yourself.
 //!
 //!RRTK prefers **`std`** over **`libm`** and `libm` over **`micromath`** when multiple are
 //!available.
 //#![warn(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
+#[cfg(all(
+    feature = "internal_enhanced_float",
+    not(feature = "std"),
+    not(feature = "libm"),
+    not(feature = "micromath")
+))]
+compile_error!("internal_enhanced_float must only be enabled by another feature.");
 #[cfg(feature = "std")]
 use alloc::sync::Arc;
 #[cfg(feature = "std")]

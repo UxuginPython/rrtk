@@ -271,7 +271,7 @@ mod command_pid {
     }
 }
 ///An Exponentially Weighted Moving Average stream for use with the stream system. See <https://www.itl.nist.gov/div898/handbook/pmc/section3/pmc324.htm> for more information. Because a standard EWMA requires that new data always arrive at the same interval, this implementation uses λ=1-(1-`smoothing_constant`)^Δt instead of the usual weighting factor.
-#[cfg(any(feature = "std", feature = "libm", feature = "micromath"))]
+#[cfg(feature = "internal_enhanced_float")]
 pub struct EWMAStream<T: Clone + Add<Output = T>, G: Getter<T, E> + ?Sized, E: Copy + Debug> {
     input: Reference<G>,
     //As data may not come in at regular intervals as is assumed by a standard EWMA, this value
@@ -280,7 +280,7 @@ pub struct EWMAStream<T: Clone + Add<Output = T>, G: Getter<T, E> + ?Sized, E: C
     value: Output<T, E>,
     update_time: Option<Time>,
 }
-#[cfg(any(feature = "std", feature = "libm", feature = "micromath"))]
+#[cfg(feature = "internal_enhanced_float")]
 impl<T: Clone + Add<Output = T>, G: Getter<T, E> + ?Sized, E: Copy + Debug> EWMAStream<T, G, E> {
     ///Constructor for [`EWMAStream`].
     pub const fn new(input: Reference<G>, smoothing_constant: f32) -> Self {
@@ -292,7 +292,7 @@ impl<T: Clone + Add<Output = T>, G: Getter<T, E> + ?Sized, E: Copy + Debug> EWMA
         }
     }
 }
-#[cfg(any(feature = "std", feature = "libm", feature = "micromath"))]
+#[cfg(feature = "internal_enhanced_float")]
 impl<
         T: Clone + Add<Output = T> + Mul<f32, Output = T>,
         G: Getter<T, E> + ?Sized,
@@ -303,7 +303,7 @@ impl<
         self.value.clone()
     }
 }
-#[cfg(any(feature = "std", feature = "libm", feature = "micromath"))]
+#[cfg(feature = "internal_enhanced_float")]
 impl<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> Getter<Quantity, E>
     for EWMAStream<Quantity, G, E>
 {
@@ -311,7 +311,7 @@ impl<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> Getter<Quantity, E>
         self.value.clone()
     }
 }
-#[cfg(any(feature = "std", feature = "libm", feature = "micromath"))]
+#[cfg(feature = "internal_enhanced_float")]
 impl<
         T: Clone + Add<Output = T> + Mul<f32, Output = T>,
         G: Getter<T, E> + ?Sized,
@@ -357,7 +357,7 @@ impl<
         Ok(())
     }
 }
-#[cfg(any(feature = "std", feature = "libm", feature = "micromath"))]
+#[cfg(feature = "internal_enhanced_float")]
 impl<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> Updatable<E> for EWMAStream<Quantity, G, E> {
     fn update(&mut self) -> NothingOrError<E> {
         let output = self.input.borrow().get();

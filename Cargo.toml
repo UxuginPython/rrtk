@@ -20,12 +20,13 @@ libm = { version = "0.2.11", default-features = false, optional = true }
 micromath = { version = "2.1.0", default-features = false, optional = true }
 [features]
 alloc = []
-std = ["alloc"]
+std = ["alloc", "internal_enhanced_float"]
 devices = []
 dim_check_debug = []
 dim_check_release = ["dim_check_debug"]
-libm = ["dep:libm"]
-micromath = ["dep:micromath"]
+libm = ["dep:libm", "internal_enhanced_float"]
+micromath = ["dep:micromath", "internal_enhanced_float"]
+internal_enhanced_float = []
 default = ["std", "dim_check_debug"]
 [package.metadata.docs.rs]
 all-features = true
