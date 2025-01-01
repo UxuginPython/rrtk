@@ -336,14 +336,14 @@ impl<T: Div<Output = T>, GD: Getter<T, E> + ?Sized, GS: Getter<T, E> + ?Sized, E
 }
 ///A stream that exponentiates one of its inputs to the other. If the exponent input returns
 ///`Ok(None)`, the base's value is returned directly. Only available with `std`.
-#[cfg(any(feature = "std", feature = "libm", feature = "micromath"))]
+#[cfg(feature = "internal_enhanced_float")]
 pub struct ExponentStream<GB: Getter<f32, E> + ?Sized, GE: Getter<f32, E> + ?Sized, E: Copy + Debug>
 {
     base: Reference<GB>,
     exponent: Reference<GE>,
     phantom_e: PhantomData<E>,
 }
-#[cfg(any(feature = "std", feature = "libm", feature = "micromath"))]
+#[cfg(feature = "internal_enhanced_float")]
 impl<GB: Getter<f32, E> + ?Sized, GE: Getter<f32, E> + ?Sized, E: Copy + Debug>
     ExponentStream<GB, GE, E>
 {
@@ -356,7 +356,7 @@ impl<GB: Getter<f32, E> + ?Sized, GE: Getter<f32, E> + ?Sized, E: Copy + Debug>
         }
     }
 }
-#[cfg(any(feature = "std", feature = "libm", feature = "micromath"))]
+#[cfg(feature = "internal_enhanced_float")]
 impl<GB: Getter<f32, E> + ?Sized, GE: Getter<f32, E> + ?Sized, E: Copy + Debug> Getter<f32, E>
     for ExponentStream<GB, GE, E>
 {
@@ -386,7 +386,7 @@ impl<GB: Getter<f32, E> + ?Sized, GE: Getter<f32, E> + ?Sized, E: Copy + Debug> 
         Ok(Some(Datum::new(time, value)))
     }
 }
-#[cfg(any(feature = "std", feature = "libm", feature = "micromath"))]
+#[cfg(feature = "internal_enhanced_float")]
 impl<GB: Getter<f32, E> + ?Sized, GE: Getter<f32, E> + ?Sized, E: Copy + Debug> Updatable<E>
     for ExponentStream<GB, GE, E>
 {
