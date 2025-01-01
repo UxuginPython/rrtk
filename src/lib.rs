@@ -50,6 +50,8 @@ mod datum;
 #[cfg(feature = "devices")]
 pub mod devices;
 pub mod dimensions;
+#[cfg(feature = "internal_enhanced_float")]
+mod enhanced_float;
 pub use dimensions::*;
 mod motion_profile;
 pub mod reference;
@@ -57,6 +59,8 @@ mod state;
 pub mod streams;
 pub use command::*;
 pub use datum::*;
+#[cfg(feature = "internal_enhanced_float")]
+use enhanced_float::*;
 pub use motion_profile::*;
 #[cfg(feature = "alloc")]
 pub use reference::rc_ref_cell_reference;
