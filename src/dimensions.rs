@@ -156,6 +156,18 @@ impl Mul for ValueWithError {
         Self::new(value, error)
     }
 }
+#[cfg(feature = "std")]
+impl Div for ValueWithError {
+    type Output = Self;
+    fn mul(self, rhs: Self) -> Self {
+        let value = self.value / rhs.value;
+        let error = value
+            * ((self.error / self.value) * (self.error / self.value)
+                + (rhs.error / rhs.value) * (rhs.error / rhs.value))
+                .sqrt();
+        Self::new(value, error)
+    }
+}
 impl Neg for ValueWithError {
     type Output = Self;
     fn neg(self) -> Self {
