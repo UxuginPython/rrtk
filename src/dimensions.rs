@@ -125,11 +125,13 @@ fn sqrt(x: f32) -> f32 {
 fn sqrt(x: f32) -> f32 {
     libm::sqrtf(x)
 }
+#[cfg(feature = "error_propagation")]
 #[derive(Clone, Copy)]
 pub struct ValueWithError {
     pub value: f32,
     pub error: f32,
 }
+#[cfg(feature = "error_propagation")]
 impl ValueWithError {
     fn new(value: f32, error: f32) -> Self {
         Self {
@@ -138,12 +140,13 @@ impl ValueWithError {
         }
     }
 }
+#[cfg(feature = "error_propagation")]
 impl From<f32> for ValueWithError {
     fn from(was: f32) -> Self {
         Self::new(was, 0.0)
     }
 }
-#[cfg(feature = "internal_enhanced_float")]
+#[cfg(feature = "error_propagation")]
 impl Add for ValueWithError {
     type Output = Self;
     fn add(self, rhs: Self) -> Self {
@@ -152,26 +155,26 @@ impl Add for ValueWithError {
         Self::new(value, error)
     }
 }
-#[cfg(feature = "internal_enhanced_float")]
+#[cfg(feature = "error_propagation")]
 impl AddAssign for ValueWithError {
     fn add_assign(&mut self, rhs: Self) {
         *self = *self + rhs;
     }
 }
-#[cfg(feature = "internal_enhanced_float")]
+#[cfg(feature = "error_propagation")]
 impl Sub for ValueWithError {
     type Output = Self;
     fn sub(self, rhs: Self) -> Self {
         self + -rhs
     }
 }
-#[cfg(feature = "internal_enhanced_float")]
+#[cfg(feature = "error_propagation")]
 impl SubAssign for ValueWithError {
     fn sub_assign(&mut self, rhs: Self) {
         *self = *self - rhs;
     }
 }
-#[cfg(feature = "internal_enhanced_float")]
+#[cfg(feature = "error_propagation")]
 impl Mul for ValueWithError {
     type Output = Self;
     fn mul(self, rhs: Self) -> Self {
@@ -184,13 +187,13 @@ impl Mul for ValueWithError {
         Self::new(value, error)
     }
 }
-#[cfg(feature = "internal_enhanced_float")]
+#[cfg(feature = "error_propagation")]
 impl MulAssign for ValueWithError {
     fn mul_assign(&mut self, rhs: Self) {
         *self = *self * rhs;
     }
 }
-#[cfg(feature = "internal_enhanced_float")]
+#[cfg(feature = "error_propagation")]
 impl Div for ValueWithError {
     type Output = Self;
     fn div(self, rhs: Self) -> Self {
@@ -203,18 +206,20 @@ impl Div for ValueWithError {
         Self::new(value, error)
     }
 }
-#[cfg(feature = "internal_enhanced_float")]
+#[cfg(feature = "error_propagation")]
 impl DivAssign for ValueWithError {
     fn div_assign(&mut self, rhs: Self) {
         *self = *self / rhs;
     }
 }
+#[cfg(feature = "error_propagation")]
 impl Neg for ValueWithError {
     type Output = Self;
     fn neg(self) -> Self {
         Self::new(-self.value, self.error)
     }
 }
+#[cfg(feature = "error_propagation")]
 impl fmt::Display for ValueWithError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{} ± {}", self.value, self.error)
