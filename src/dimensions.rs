@@ -117,6 +117,14 @@ use super::*;
 use core::fmt;
 pub mod constants;
 pub use constants::*;
+#[cfg(any(feature = "std", all(feature = "micromath", not(feature = "libm"))))]
+fn sqrt(x: f32) -> f32 {
+    x.sqrt()
+}
+#[cfg(all(feature = "libm", not(feature = "std")))]
+fn sqrt(x: f32) -> f32 {
+    libm::sqrtf(x)
+}
 #[derive(Clone, Copy)]
 pub struct ValueWithError {
     pub value: f32,
@@ -135,65 +143,67 @@ impl From<f32> for ValueWithError {
         Self::new(was, 0.0)
     }
 }
-#[cfg(feature = "std")]
+#[cfg(feature = "internal_enhanced_float")]
 impl Add for ValueWithError {
     type Output = Self;
     fn add(self, rhs: Self) -> Self {
         let value = self.value + rhs.value;
-        let error = (self.error * self.error + rhs.error * rhs.error).sqrt();
+        let error = sqrt(self.error * self.error + rhs.error * rhs.error);
         Self::new(value, error)
     }
 }
-#[cfg(feature = "std")]
+#[cfg(feature = "internal_enhanced_float")]
 impl AddAssign for ValueWithError {
     fn add_assign(&mut self, rhs: Self) {
         *self = *self + rhs;
     }
 }
-#[cfg(feature = "std")]
+#[cfg(feature = "internal_enhanced_float")]
 impl Sub for ValueWithError {
     type Output = Self;
     fn sub(self, rhs: Self) -> Self {
         self + -rhs
     }
 }
-#[cfg(feature = "std")]
+#[cfg(feature = "internal_enhanced_float")]
 impl SubAssign for ValueWithError {
     fn sub_assign(&mut self, rhs: Self) {
         *self = *self - rhs;
     }
 }
-#[cfg(feature = "std")]
+#[cfg(feature = "internal_enhanced_float")]
 impl Mul for ValueWithError {
     type Output = Self;
     fn mul(self, rhs: Self) -> Self {
         let value = self.value * rhs.value;
         let error = value
-            * ((self.error / self.value) * (self.error / self.value)
-                + (rhs.error / rhs.value) * (rhs.error / rhs.value))
-                .sqrt();
+            * sqrt(
+                (self.error / self.value) * (self.error / self.value)
+                    + (rhs.error / rhs.value) * (rhs.error / rhs.value),
+            );
         Self::new(value, error)
     }
 }
-#[cfg(feature = "std")]
+#[cfg(feature = "internal_enhanced_float")]
 impl MulAssign for ValueWithError {
     fn mul_assign(&mut self, rhs: Self) {
         *self = *self * rhs;
     }
 }
-#[cfg(feature = "std")]
+#[cfg(feature = "internal_enhanced_float")]
 impl Div for ValueWithError {
     type Output = Self;
     fn div(self, rhs: Self) -> Self {
         let value = self.value / rhs.value;
         let error = value
-            * ((self.error / self.value) * (self.error / self.value)
-                + (rhs.error / rhs.value) * (rhs.error / rhs.value))
-                .sqrt();
+            * sqrt(
+                (self.error / self.value) * (self.error / self.value)
+                    + (rhs.error / rhs.value) * (rhs.error / rhs.value),
+            );
         Self::new(value, error)
     }
 }
-#[cfg(feature = "std")]
+#[cfg(feature = "internal_enhanced_float")]
 impl DivAssign for ValueWithError {
     fn div_assign(&mut self, rhs: Self) {
         *self = *self / rhs;

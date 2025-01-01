@@ -24,9 +24,6 @@ use libm::powf;
 //unused import warning although the trait does seem to be necessary. Interestingly, this behavior
 //only occurs when testing and not with building normally. The cfg_attr is a workaround to prevent
 //the warning.
-#[cfg(all(feature = "micromath", not(feature = "std"), not(feature = "libm")))]
-#[cfg_attr(test, allow(unused_imports))]
-use micromath::F32Ext;
 ///Returns the output of whichever input has the latest time.
 pub struct Latest<T, const C: usize, E: Copy + Debug> {
     inputs: [Reference<dyn Getter<T, E>>; C],

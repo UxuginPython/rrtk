@@ -36,6 +36,9 @@ extern crate alloc;
 use alloc::rc::Rc;
 #[cfg(feature = "alloc")]
 use alloc::vec::Vec;
+#[cfg(all(feature = "micromath", not(feature = "std"), not(feature = "libm")))]
+#[cfg_attr(test, allow(unused_imports))]
+use micromath::F32Ext;
 //There is nothing preventing this from being used without any features; we just don't currently,
 //and it makes Cargo show a warning since there's an unused use.
 #[cfg(any(feature = "alloc", feature = "devices"))]
