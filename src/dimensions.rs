@@ -114,6 +114,7 @@
 //!let y: Quantity = x.into();
 //!```
 use super::*;
+use core::fmt;
 pub mod constants;
 pub use constants::*;
 #[derive(Clone, Copy)]
@@ -197,6 +198,11 @@ impl Neg for ValueWithError {
     type Output = Self;
     fn neg(self) -> Self {
         Self::new(-self.value, self.error)
+    }
+}
+impl fmt::Display for ValueWithError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{} ± {}", self.value, self.error)
     }
 }
 ///A time in nanoseconds.
