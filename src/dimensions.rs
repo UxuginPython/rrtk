@@ -116,6 +116,7 @@
 use super::*;
 pub mod constants;
 pub use constants::*;
+#[derive(Clone, Copy)]
 pub struct ValueWithError {
     pub value: f32,
     pub error: f32,
@@ -138,10 +139,22 @@ impl Add for ValueWithError {
     }
 }
 #[cfg(feature = "std")]
+impl AddAssign for ValueWithError {
+    fn add_assign(&mut self, rhs: Self) {
+        *self = *self + rhs;
+    }
+}
+#[cfg(feature = "std")]
 impl Sub for ValueWithError {
     type Output = Self;
     fn sub(self, rhs: Self) -> Self {
         self + -rhs
+    }
+}
+#[cfg(feature = "std")]
+impl SubAssign for ValueWithError {
+    fn sub_assign(&mut self, rhs: Self) {
+        *self = *self - rhs;
     }
 }
 #[cfg(feature = "std")]
@@ -157,15 +170,27 @@ impl Mul for ValueWithError {
     }
 }
 #[cfg(feature = "std")]
+impl MulAssign for ValueWithError {
+    fn mul_assign(&mut self, rhs: Self) {
+        *self = *self * rhs;
+    }
+}
+#[cfg(feature = "std")]
 impl Div for ValueWithError {
     type Output = Self;
-    fn mul(self, rhs: Self) -> Self {
+    fn div(self, rhs: Self) -> Self {
         let value = self.value / rhs.value;
         let error = value
             * ((self.error / self.value) * (self.error / self.value)
                 + (rhs.error / rhs.value) * (rhs.error / rhs.value))
                 .sqrt();
         Self::new(value, error)
+    }
+}
+#[cfg(feature = "std")]
+impl DivAssign for ValueWithError {
+    fn div_assign(&mut self, rhs: Self) {
+        *self = *self / rhs;
     }
 }
 impl Neg for ValueWithError {
