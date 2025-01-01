@@ -130,6 +130,11 @@ impl ValueWithError {
         }
     }
 }
+impl From<f32> for ValueWithError {
+    fn from(was: f32) -> Self {
+        Self::new(was, 0.0)
+    }
+}
 #[cfg(feature = "std")]
 impl Add for ValueWithError {
     type Output = Self;
