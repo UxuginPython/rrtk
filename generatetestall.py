@@ -7,6 +7,11 @@ from os import system
 def powerset(iterable):
     "powerset([1,2,3]) → () (1,) (2,) (3,) (1,2) (1,3) (2,3) (1,2,3)"
     s = list(iterable)
+    new_s = []
+    for i in s:
+        if not i.startswith('internal_'):
+            new_s.append(i)
+    s = new_s
     return chain.from_iterable(combinations(s, r) for r in range(len(s)+1))
 file = open('Cargo.toml')
 cargo = file.read()
