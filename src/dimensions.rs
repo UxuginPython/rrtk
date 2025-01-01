@@ -116,6 +116,52 @@
 use super::*;
 pub mod constants;
 pub use constants::*;
+pub struct ValueWithError {
+    pub value: f32,
+    pub error: f32,
+}
+impl ValueWithError {
+    fn new(value: f32, error: f32) -> Self {
+        Self {
+            value: value,
+            error: error,
+        }
+    }
+}
+#[cfg(feature = "std")]
+impl Add for ValueWithError {
+    type Output = Self;
+    fn add(self, rhs: Self) -> Self {
+        let value = self.value + rhs.value;
+        let error = (self.error * self.error + rhs.error * rhs.error).sqrt();
+        Self::new(value, error)
+    }
+}
+#[cfg(feature = "std")]
+impl Sub for ValueWithError {
+    type Output = Self;
+    fn sub(self, rhs: Self) -> Self {
+        self + -rhs
+    }
+}
+#[cfg(feature = "std")]
+impl Mul for ValueWithError {
+    type Output = Self;
+    fn mul(self, rhs: Self) -> Self {
+        let value = self.value * rhs.value;
+        let error = value
+            * ((self.error / self.value) * (self.error / self.value)
+                + (rhs.error / rhs.value) * (rhs.error / rhs.value))
+                .sqrt();
+        Self::new(value, error)
+    }
+}
+impl Neg for ValueWithError {
+    type Output = Self;
+    fn neg(self) -> Self {
+        Self::new(-self.value, self.error)
+    }
+}
 ///A time in nanoseconds.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(transparent)]
