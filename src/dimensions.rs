@@ -136,3 +136,13 @@ pub enum ValueWithoutUnit {
     #[cfg(feature = "error_propagation")]
     WithError(ValueWithoutUnitWithError),
 }
+impl Add<f32> for ValueWithoutUnit {
+    type Output = Self;
+    fn add(self, rhs: f32) -> Self {
+        match self {
+            Self::WithoutError(x) => Self::WithoutError(x + rhs),
+            #[cfg(feature = "error_propagation")]
+            Self::WithError(x) => Self::WithError(x + rhs),
+        }
+    }
+}
