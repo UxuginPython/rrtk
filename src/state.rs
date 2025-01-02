@@ -20,9 +20,9 @@ impl State {
             .unit
             .assert_eq_assume_ok(&MILLIMETER_PER_SECOND_SQUARED);
         State {
-            position: position.value,
-            velocity: velocity.value,
-            acceleration: acceleration.value,
+            position: position.get_value(),
+            velocity: velocity.get_value(),
+            acceleration: acceleration.get_value(),
         }
     }
     ///Constructor for [`State`] using raw [`f32`]s for position, velocity, and acceleration.
@@ -42,8 +42,8 @@ impl State {
         let new_velocity = old_velocity + delta_time * old_acceleration;
         let new_position = old_position
             + delta_time * (old_velocity + new_velocity) / Quantity::dimensionless(2.0);
-        self.position = new_position.value;
-        self.velocity = new_velocity.value;
+        self.position = new_position.get_value();
+        self.velocity = new_velocity.get_value();
     }
     ///Set the acceleration with a [`Quantity`]. With dimension checking enabled, sets the
     ///acceleration and returns [`Ok`] if the argument's [`Unit`] is correct, otherwise leaves it
@@ -54,7 +54,7 @@ impl State {
             .unit
             .eq_assume_true(&MILLIMETER_PER_SECOND_SQUARED)
         {
-            self.acceleration = acceleration.value;
+            self.acceleration = acceleration.get_value();
             Ok(())
         } else {
             Err(())
@@ -73,7 +73,7 @@ impl State {
     pub const fn set_constant_velocity(&mut self, velocity: Quantity) -> Result<(), ()> {
         if velocity.unit.eq_assume_true(&MILLIMETER_PER_SECOND) {
             self.acceleration = 0.0;
-            self.velocity = velocity.value;
+            self.velocity = velocity.get_value();
             Ok(())
         } else {
             Err(())
@@ -94,7 +94,7 @@ impl State {
         if position.unit.eq_assume_true(&MILLIMETER) {
             self.acceleration = 0.0;
             self.velocity = 0.0;
-            self.position = position.value;
+            self.position = position.get_value();
             Ok(())
         } else {
             Err(())

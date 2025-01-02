@@ -731,7 +731,7 @@ impl Neg for Unit {
 )]
 pub struct Quantity {
     ///The value.
-    pub value: f32,
+    value: f32,
     ///The unit.
     pub unit: Unit,
 }
@@ -747,6 +747,9 @@ impl Quantity {
     ///provided.
     pub const fn dimensionless(value: f32) -> Self {
         Self::new(value, DIMENSIONLESS)
+    }
+    pub const fn get_value(&self) -> f32 {
+        self.value
     }
     ///Take the absolute value of the quantity.
     #[inline]
