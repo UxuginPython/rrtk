@@ -124,6 +124,15 @@ macro_rules! impl_op {
         }
     }
 }
+macro_rules! impl_assign {
+    ($assign_trait: ident, $rhs: ident, $name: ident, $assign_func: ident, $op_symbol: tt) => {
+        impl $assign_trait<$rhs> for $name {
+            fn $assign_func(&mut self, rhs: $rhs) {
+                *self = *self $op_symbol rhs;
+            }
+        }
+    }
+}
 pub mod constants;
 pub use constants::*;
 #[cfg(feature = "error_propagation")]
