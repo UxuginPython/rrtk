@@ -26,6 +26,8 @@ for i in cargo:
     try:
         if i[0] == '[':
             break
+        if i[0] == '#':
+            continue
         if not re.compile('default\\s*=\\s*').match(i):
             new_cargo.append(i)
     except IndexError:

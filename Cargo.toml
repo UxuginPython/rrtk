@@ -26,7 +26,7 @@ dim_check_debug = []
 dim_check_release = ["dim_check_debug"]
 libm = ["dep:libm", "internal_enhanced_float"]
 micromath = ["dep:micromath", "internal_enhanced_float"]
-#requires one of the internal_enhanced_float things
+# requires one of the internal_enhanced_float things
 error_propagation = []
 # enabled by std, libm, micromath
 internal_enhanced_float = []
