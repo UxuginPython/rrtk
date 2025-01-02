@@ -114,17 +114,10 @@
 //!let y: Quantity = x.into();
 //!```
 use super::*;
+#[cfg(feature = "error_propagation")]
 use core::fmt;
 pub mod constants;
 pub use constants::*;
-#[cfg(any(feature = "std", all(feature = "micromath", not(feature = "libm"))))]
-fn sqrt(x: f32) -> f32 {
-    x.sqrt()
-}
-#[cfg(all(feature = "libm", not(feature = "std")))]
-fn sqrt(x: f32) -> f32 {
-    libm::sqrtf(x)
-}
 #[cfg(feature = "error_propagation")]
 #[derive(Clone, Copy)]
 pub struct ValueWithError {
