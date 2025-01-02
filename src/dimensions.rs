@@ -182,23 +182,8 @@ mod dimensionless_integer;
 pub use dimensionless_integer::*;
 mod unit;
 pub use unit::*;
+mod value_without_unit;
+pub use value_without_unit::*;
 mod quantity;
 pub use quantity::*;
 pub type ValueWithoutUnitWithoutError = f32;
-//see reference module for why this is non_exhaustive
-#[non_exhaustive]
-pub enum ValueWithoutUnit {
-    WithoutError(f32),
-    #[cfg(feature = "error_propagation")]
-    WithError(ValueWithoutUnitWithError),
-}
-impl Add<f32> for ValueWithoutUnit {
-    type Output = Self;
-    fn add(self, rhs: f32) -> Self {
-        match self {
-            Self::WithoutError(x) => Self::WithoutError(x + rhs),
-            #[cfg(feature = "error_propagation")]
-            Self::WithError(x) => Self::WithError(x + rhs),
-        }
-    }
-}
