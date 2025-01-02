@@ -114,7 +114,7 @@
 //!let y: Quantity = x.into();
 //!```
 use super::*;
-macro_rules! impl_op {
+macro_rules! impl_op_for_superior {
     ($op_trait: ident, $rhs: ident, $name: ident, $op_func: ident, $op_symbol: tt) => {
         impl $op_trait<$rhs> for $name {
             type Output = Self;
@@ -124,7 +124,7 @@ macro_rules! impl_op {
         }
     }
 }
-macro_rules! impl_assign {
+macro_rules! impl_assign_for_superior {
     ($assign_trait: ident, $rhs: ident, $name: ident, $assign_func: ident, $op_symbol: tt) => {
         impl $assign_trait<$rhs> for $name {
             fn $assign_func(&mut self, rhs: $rhs) {
@@ -133,16 +133,34 @@ macro_rules! impl_assign {
         }
     }
 }
-macro_rules! impl_all_ops_with_assign {
+macro_rules! impl_all_ops_with_assign_for_superior {
     ($name: ident, $rhs: ident) => {
-        impl_op!(Add, $rhs, $name, add, +);
-        impl_assign!(AddAssign, $rhs, $name, add_assign, +);
-        impl_op!(Sub, $rhs, $name, sub, -);
-        impl_assign!(SubAssign, $rhs, $name, sub_assign, -);
-        impl_op!(Mul, $rhs, $name, mul, *);
-        impl_assign!(MulAssign, $rhs, $name, mul_assign, *);
-        impl_op!(Div, $rhs, $name, div, /);
-        impl_assign!(DivAssign, $rhs, $name, div_assign, /);
+        impl_op_for_superior!(Add, $rhs, $name, add, +);
+        impl_assign_for_superior!(AddAssign, $rhs, $name, add_assign, +);
+        impl_op_for_superior!(Sub, $rhs, $name, sub, -);
+        impl_assign_for_superior!(SubAssign, $rhs, $name, sub_assign, -);
+        impl_op_for_superior!(Mul, $rhs, $name, mul, *);
+        impl_assign_for_superior!(MulAssign, $rhs, $name, mul_assign, *);
+        impl_op_for_superior!(Div, $rhs, $name, div, /);
+        impl_assign_for_superior!(DivAssign, $rhs, $name, div_assign, /);
+    }
+}
+macro_rules! impl_op_for_inferior {
+    ($op_trait: ident, $rhs: ident, $name: ident, $op_func: ident, $op_symbol: tt) => {
+        impl $op_trait<$rhs> for $name {
+            type Output = $rhs;
+            fn $op_func(self, rhs: $rhs) -> $rhs {
+                $rhs::from(self) $op_symbol rhs
+            }
+        }
+    }
+}
+macro_rules! impl_all_ops_for_inferior {
+    ($name: ident, $rhs: ident) => {
+        impl_op_for_inferior!(Add, $rhs, $name, add, +);
+        impl_op_for_inferior!(Sub, $rhs, $name, sub, -);
+        impl_op_for_inferior!(Mul, $rhs, $name, mul, *);
+        impl_op_for_inferior!(Div, $rhs, $name, div, /);
     }
 }
 pub mod constants;
@@ -151,6 +169,8 @@ pub use constants::*;
 mod value_without_unit_with_error;
 #[cfg(feature = "error_propagation")]
 pub use value_without_unit_with_error::*;
+mod f32_impls;
+pub use f32_impls::*;
 mod time;
 pub use time::*;
 mod dimensionless_integer;

@@ -83,7 +83,7 @@ impl Neg for ValueWithoutUnitWithError {
         Self::new(-self.value, self.error)
     }
 }
-impl_all_ops_with_assign!(ValueWithoutUnitWithError, f32);
+impl_all_ops_with_assign_for_superior!(ValueWithoutUnitWithError, f32);
 impl fmt::Display for ValueWithoutUnitWithError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{} ± {}", self.value, self.error)
