@@ -736,9 +736,7 @@ impl Neg for Unit {
     derive(PartialEq)
 )]
 pub struct Quantity {
-    #[cfg(feature = "error_propagation")]
-    value: ValueWithError,
-    #[cfg(not(feature = "error_propagation"))]
+    ///The value.
     value: f32,
     ///The unit.
     pub unit: Unit,
@@ -758,14 +756,6 @@ impl Quantity {
     }
     pub const fn get_value_f32(&self) -> f32 {
         self.value
-    }
-    #[cfg(feature = "error_propagation")]
-    pub const fn get_value(&self) -> ValueWithError {
-        self.value
-    }
-    #[cfg(not(feature = "error_propagation"))]
-    pub const fn get_value(&self) -> f32 {
-        self.get_value_f32()
     }
     ///Take the absolute value of the quantity.
     #[inline]
