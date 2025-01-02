@@ -117,9 +117,9 @@ use super::*;
 pub mod constants;
 pub use constants::*;
 #[cfg(feature = "error_propagation")]
-mod value_with_error;
+mod value_without_unit_with_error;
 #[cfg(feature = "error_propagation")]
-pub use value_with_error::*;
+pub use value_without_unit_with_error::*;
 mod time;
 pub use time::*;
 mod dimensionless_integer;
