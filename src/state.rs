@@ -20,9 +20,9 @@ impl State {
             .unit
             .assert_eq_assume_ok(&MILLIMETER_PER_SECOND_SQUARED);
         State {
-            position: position.get_value(),
-            velocity: velocity.get_value(),
-            acceleration: acceleration.get_value(),
+            position: position.get_value_f32(),
+            velocity: velocity.get_value_f32(),
+            acceleration: acceleration.get_value_f32(),
         }
     }
     ///Constructor for [`State`] using raw [`f32`]s for position, velocity, and acceleration.
@@ -42,8 +42,8 @@ impl State {
         let new_velocity = old_velocity + delta_time * old_acceleration;
         let new_position = old_position
             + delta_time * (old_velocity + new_velocity) / Quantity::dimensionless(2.0);
-        self.position = new_position.get_value();
-        self.velocity = new_velocity.get_value();
+        self.position = new_position.get_value_f32();
+        self.velocity = new_velocity.get_value_f32();
     }
     ///Set the acceleration with a [`Quantity`]. With dimension checking enabled, sets the
     ///acceleration and returns [`Ok`] if the argument's [`Unit`] is correct, otherwise leaves it
@@ -54,7 +54,7 @@ impl State {
             .unit
             .eq_assume_true(&MILLIMETER_PER_SECOND_SQUARED)
         {
-            self.acceleration = acceleration.get_value();
+            self.acceleration = acceleration.get_value_f32();
             Ok(())
         } else {
             Err(())
@@ -73,7 +73,7 @@ impl State {
     pub const fn set_constant_velocity(&mut self, velocity: Quantity) -> Result<(), ()> {
         if velocity.unit.eq_assume_true(&MILLIMETER_PER_SECOND) {
             self.acceleration = 0.0;
-            self.velocity = velocity.get_value();
+            self.velocity = velocity.get_value_f32();
             Ok(())
         } else {
             Err(())
@@ -94,7 +94,7 @@ impl State {
         if position.unit.eq_assume_true(&MILLIMETER) {
             self.acceleration = 0.0;
             self.velocity = 0.0;
-            self.position = position.get_value();
+            self.position = position.get_value_f32();
             Ok(())
         } else {
             Err(())

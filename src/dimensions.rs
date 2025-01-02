@@ -754,7 +754,7 @@ impl Quantity {
     pub const fn dimensionless(value: f32) -> Self {
         Self::new(value, DIMENSIONLESS)
     }
-    pub const fn get_value(&self) -> impl Into<f32> {
+    pub const fn get_value_f32(&self) -> f32 {
         self.value
     }
     ///Take the absolute value of the quantity.

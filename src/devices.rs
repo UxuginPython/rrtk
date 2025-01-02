@@ -130,7 +130,7 @@ impl<'a, E: Copy + Debug> GearTrain<'a, E> {
     ///Construct a [`GearTrain`] with the ratio as a dimensionless [`Quantity`].
     pub const fn with_ratio(ratio: Quantity) -> Self {
         ratio.unit.assert_eq_assume_ok(&DIMENSIONLESS);
-        Self::with_ratio_raw(ratio.get_value())
+        Self::with_ratio_raw(ratio.get_value_f32())
     }
     ///Construct a [`GearTrain`] from an array of the numbers of teeth on each gear in the train.
     pub const fn new<const N: usize>(teeth: [f32; N]) -> Self {
