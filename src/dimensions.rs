@@ -128,3 +128,11 @@ mod unit;
 pub use unit::*;
 mod quantity;
 pub use quantity::*;
+pub type ValueWithoutUnitWithoutError = f32;
+//see reference module for why this is non_exhaustive
+#[non_exhaustive]
+pub enum ValueWithoutUnit {
+    WithoutError(f32),
+    #[cfg(feature = "error_propagation")]
+    WithError(ValueWithoutUnitWithError),
+}
