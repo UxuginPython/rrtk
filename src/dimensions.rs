@@ -114,6 +114,16 @@
 //!let y: Quantity = x.into();
 //!```
 use super::*;
+macro_rules! impl_op {
+    ($op_trait: ident, $rhs: ident, $name: ident, $op_func: ident, $op_symbol: tt) => {
+        impl $op_trait<$rhs> for $name {
+            type Output = Self;
+            fn $op_func(self, rhs: $rhs) -> Self {
+                self $op_symbol Self::from(rhs)
+            }
+        }
+    }
+}
 pub mod constants;
 pub use constants::*;
 #[cfg(feature = "error_propagation")]

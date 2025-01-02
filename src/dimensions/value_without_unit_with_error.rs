@@ -32,12 +32,7 @@ impl AddAssign for ValueWithoutUnitWithError {
         *self = *self + rhs;
     }
 }
-impl Add<f32> for ValueWithoutUnitWithError {
-    type Output = Self;
-    fn add(self, rhs: f32) -> Self {
-        self + Self::from(rhs)
-    }
-}
+impl_op!(Add, f32, ValueWithoutUnitWithError, add, +);
 impl AddAssign<f32> for ValueWithoutUnitWithError {
     fn add_assign(&mut self, rhs: f32) {
         *self = *self + rhs;
@@ -54,12 +49,7 @@ impl SubAssign for ValueWithoutUnitWithError {
         *self = *self - rhs;
     }
 }
-impl Sub<f32> for ValueWithoutUnitWithError {
-    type Output = Self;
-    fn sub(self, rhs: f32) -> Self {
-        self - Self::from(rhs)
-    }
-}
+impl_op!(Sub, f32, ValueWithoutUnitWithError, sub, -);
 impl SubAssign<f32> for ValueWithoutUnitWithError {
     fn sub_assign(&mut self, rhs: f32) {
         *self = *self - rhs;
