@@ -760,6 +760,10 @@ impl Quantity {
         self.value
     }
     #[cfg(feature = "error_propagation")]
+    pub const fn get_value_with_error(&self) -> ValueWithError {
+        self.value
+    }
+    #[cfg(feature = "error_propagation")]
     pub const fn get_value(&self) -> ValueWithError {
         self.value
     }
