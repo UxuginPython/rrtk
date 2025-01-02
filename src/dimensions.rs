@@ -224,6 +224,56 @@ impl fmt::Display for ValueWithError {
         write!(f, "{} ± {}", self.value, self.error)
     }
 }
+/*#[cfg(feature = "error_propagation")]
+#[derive(Clone, Copy)]
+struct ValueMaybeWithError(ValueWithError);
+#[cfg(not(feature = "error_propagation"))]
+#[derive(Clone, Copy)]
+struct ValueMaybeWithError(f32);
+impl Add for ValueMaybeWithError {
+    type Output = Self;
+    fn add(self, rhs: Self) -> Self {
+        Self(self.0 + rhs.0)
+    }
+}
+impl AddAssign for ValueMaybeWithError {
+    fn add_assign(&mut self, rhs: Self) {
+        *self = *self + rhs;
+    }
+}
+impl Sub for ValueMaybeWithError {
+    type Output = Self;
+    fn sub(self, rhs: Self) -> Self {
+        Self(self.0 - rhs.0)
+    }
+}
+impl SubAssign for ValueMaybeWithError {
+    fn sub_assign(&mut self, rhs: Self) {
+        *self = *self - rhs;
+    }
+}
+impl Mul for ValueMaybeWithError {
+    type Output = Self;
+    fn mul(self, rhs: Self) -> Self {
+        Self(self.0 * rhs.0)
+    }
+}
+impl MulAssign for ValueMaybeWithError {
+    fn mul_assign(&mut self, rhs: Self) {
+        *self = *self * rhs;
+    }
+}
+impl Div for ValueMaybeWithError {
+    type Output = Self;
+    fn div(self, rhs: Self) -> Self {
+        Self(self.0 / rhs.0)
+    }
+}
+impl DivAssign for ValueMaybeWithError {
+    fn div_assign(&mut self, rhs: Self) {
+        *self = *self / rhs;
+    }
+}*/
 ///A time in nanoseconds.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(transparent)]
