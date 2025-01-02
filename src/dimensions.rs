@@ -133,16 +133,21 @@ macro_rules! impl_assign_for_superior {
         }
     }
 }
+macro_rules! impl_all_assign_for_superior {
+    ($name: ident, $rhs: ident) => {
+        impl_assign_for_superior!(AddAssign, $rhs, $name, add_assign, +);
+        impl_assign_for_superior!(SubAssign, $rhs, $name, sub_assign, -);
+        impl_assign_for_superior!(MulAssign, $rhs, $name, mul_assign, *);
+        impl_assign_for_superior!(DivAssign, $rhs, $name, div_assign, /);
+    }
+}
 macro_rules! impl_all_ops_with_assign_for_superior {
     ($name: ident, $rhs: ident) => {
         impl_op_for_superior!(Add, $rhs, $name, add, +);
-        impl_assign_for_superior!(AddAssign, $rhs, $name, add_assign, +);
         impl_op_for_superior!(Sub, $rhs, $name, sub, -);
-        impl_assign_for_superior!(SubAssign, $rhs, $name, sub_assign, -);
         impl_op_for_superior!(Mul, $rhs, $name, mul, *);
-        impl_assign_for_superior!(MulAssign, $rhs, $name, mul_assign, *);
         impl_op_for_superior!(Div, $rhs, $name, div, /);
-        impl_assign_for_superior!(DivAssign, $rhs, $name, div_assign, /);
+        impl_all_assign_for_superior!($name, $rhs);
     }
 }
 macro_rules! impl_op_for_inferior {

@@ -27,20 +27,10 @@ impl Add for ValueWithoutUnitWithError {
         Self::new(value, error)
     }
 }
-impl AddAssign for ValueWithoutUnitWithError {
-    fn add_assign(&mut self, rhs: Self) {
-        *self = *self + rhs;
-    }
-}
 impl Sub for ValueWithoutUnitWithError {
     type Output = Self;
     fn sub(self, rhs: Self) -> Self {
         self + -rhs
-    }
-}
-impl SubAssign for ValueWithoutUnitWithError {
-    fn sub_assign(&mut self, rhs: Self) {
-        *self = *self - rhs;
     }
 }
 impl Mul for ValueWithoutUnitWithError {
@@ -55,11 +45,6 @@ impl Mul for ValueWithoutUnitWithError {
         Self::new(value, error)
     }
 }
-impl MulAssign for ValueWithoutUnitWithError {
-    fn mul_assign(&mut self, rhs: Self) {
-        *self = *self * rhs;
-    }
-}
 impl Div for ValueWithoutUnitWithError {
     type Output = Self;
     fn div(self, rhs: Self) -> Self {
@@ -72,17 +57,13 @@ impl Div for ValueWithoutUnitWithError {
         Self::new(value, error)
     }
 }
-impl DivAssign for ValueWithoutUnitWithError {
-    fn div_assign(&mut self, rhs: Self) {
-        *self = *self / rhs;
-    }
-}
 impl Neg for ValueWithoutUnitWithError {
     type Output = Self;
     fn neg(self) -> Self {
         Self::new(-self.value, self.error)
     }
 }
+impl_all_assign_for_superior!(ValueWithoutUnitWithError, Self);
 impl_all_ops_with_assign_for_superior!(ValueWithoutUnitWithError, f32);
 impl fmt::Display for ValueWithoutUnitWithError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
