@@ -170,7 +170,7 @@ mod value_without_unit_with_error;
 #[cfg(feature = "error_propagation")]
 pub use value_without_unit_with_error::*;
 mod f32_impls;
-pub use f32_impls::*;
+//pub use f32_impls::*; is not needed because there are only implementations there and not items.
 mod time;
 pub use time::*;
 mod dimensionless_integer;
