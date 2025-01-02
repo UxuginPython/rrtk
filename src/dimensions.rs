@@ -133,6 +133,18 @@ macro_rules! impl_assign {
         }
     }
 }
+macro_rules! impl_all_ops_with_assign {
+    ($name: ident, $rhs: ident) => {
+        impl_op!(Add, $rhs, $name, add, +);
+        impl_assign!(AddAssign, $rhs, $name, add_assign, +);
+        impl_op!(Sub, $rhs, $name, sub, -);
+        impl_assign!(SubAssign, $rhs, $name, sub_assign, -);
+        impl_op!(Mul, $rhs, $name, mul, *);
+        impl_assign!(MulAssign, $rhs, $name, mul_assign, *);
+        impl_op!(Div, $rhs, $name, div, /);
+        impl_assign!(DivAssign, $rhs, $name, div_assign, /);
+    }
+}
 pub mod constants;
 pub use constants::*;
 #[cfg(feature = "error_propagation")]

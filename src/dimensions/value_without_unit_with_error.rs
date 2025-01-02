@@ -32,8 +32,6 @@ impl AddAssign for ValueWithoutUnitWithError {
         *self = *self + rhs;
     }
 }
-impl_op!(Add, f32, ValueWithoutUnitWithError, add, +);
-impl_assign!(AddAssign, f32, ValueWithoutUnitWithError, add_assign, +);
 impl Sub for ValueWithoutUnitWithError {
     type Output = Self;
     fn sub(self, rhs: Self) -> Self {
@@ -45,8 +43,6 @@ impl SubAssign for ValueWithoutUnitWithError {
         *self = *self - rhs;
     }
 }
-impl_op!(Sub, f32, ValueWithoutUnitWithError, sub, -);
-impl_assign!(SubAssign, f32, ValueWithoutUnitWithError, sub_assign, -);
 impl Mul for ValueWithoutUnitWithError {
     type Output = Self;
     fn mul(self, rhs: Self) -> Self {
@@ -87,6 +83,7 @@ impl Neg for ValueWithoutUnitWithError {
         Self::new(-self.value, self.error)
     }
 }
+impl_all_ops_with_assign!(ValueWithoutUnitWithError, f32);
 impl fmt::Display for ValueWithoutUnitWithError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{} ± {}", self.value, self.error)
