@@ -140,12 +140,6 @@ impl From<f32> for ValueWithError {
     }
 }
 #[cfg(feature = "error_propagation")]
-impl From<ValueWithError> for f32 {
-    fn from(was: ValueWithError) -> Self {
-        was.value
-    }
-}
-#[cfg(feature = "error_propagation")]
 impl Add for ValueWithError {
     type Output = Self;
     fn add(self, rhs: Self) -> Self {
