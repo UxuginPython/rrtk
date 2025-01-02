@@ -73,9 +73,9 @@ impl TryFrom<Quantity> for Command {
     type Error = ();
     fn try_from(was: Quantity) -> Result<Self, ()> {
         match was.unit {
-            MILLIMETER => Ok(Self::Position(was.get_value_f32())),
-            MILLIMETER_PER_SECOND => Ok(Self::Velocity(was.get_value_f32())),
-            MILLIMETER_PER_SECOND_SQUARED => Ok(Self::Acceleration(was.get_value_f32())),
+            MILLIMETER => Ok(Self::Position(was.value)),
+            MILLIMETER_PER_SECOND => Ok(Self::Velocity(was.value)),
+            MILLIMETER_PER_SECOND_SQUARED => Ok(Self::Acceleration(was.value)),
             _ => Err(()),
         }
     }

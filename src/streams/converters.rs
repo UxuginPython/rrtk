@@ -486,7 +486,7 @@ impl<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> Updatable<E> for Quantity
         self.value = match gotten {
             Err(error) => Err(error),
             Ok(None) => Ok(None),
-            Ok(Some(datum)) => Ok(Some(Datum::new(datum.time, datum.value.get_value_f32()))),
+            Ok(Some(datum)) => Ok(Some(Datum::new(datum.time, datum.value.value))),
         };
         Ok(())
     }
