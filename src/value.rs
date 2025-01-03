@@ -1,40 +1,5 @@
 use super::*;
 use core::fmt;
-macro_rules! impl_op_for_superior {
-    ($op_trait: ident, $rhs: ident, $name: ident, $op_func: ident, $op_symbol: tt) => {
-        impl $op_trait<$rhs> for $name {
-            type Output = Self;
-            fn $op_func(self, rhs: $rhs) -> Self {
-                self $op_symbol Self::from(rhs)
-            }
-        }
-    }
-}
-macro_rules! impl_all_ops_for_superior {
-    ($name: ident, $rhs: ident) => {
-        impl_op_for_superior!(Add, $rhs, $name, add, +);
-        impl_op_for_superior!(Sub, $rhs, $name, sub, -);
-        impl_op_for_superior!(Mul, $rhs, $name, mul, *);
-        impl_op_for_superior!(Div, $rhs, $name, div, /);
-    }
-}
-macro_rules! impl_assign {
-    ($assign_trait: ident, $rhs: ident, $name: ident, $assign_func: ident, $op_symbol: tt) => {
-        impl $assign_trait<$rhs> for $name {
-            fn $assign_func(&mut self, rhs: $rhs) {
-                *self = *self $op_symbol rhs;
-            }
-        }
-    }
-}
-macro_rules! impl_all_assigns {
-    ($name: ident, $rhs: ident) => {
-        impl_assign!(AddAssign, $rhs, $name, add_assign, +);
-        impl_assign!(SubAssign, $rhs, $name, sub_assign, -);
-        impl_assign!(MulAssign, $rhs, $name, mul_assign, *);
-        impl_assign!(DivAssign, $rhs, $name, div_assign, /);
-    }
-}
 macro_rules! impl_op_for_inferior {
     ($op_trait: ident, $rhs: ident, $name: ident, $op_func: ident, $op_symbol: tt) => {
         impl $op_trait<$rhs> for $name {
@@ -43,14 +8,6 @@ macro_rules! impl_op_for_inferior {
                 $rhs::from(self) $op_symbol rhs
             }
         }
-    }
-}
-macro_rules! impl_all_ops_for_inferior {
-    ($name: ident, $rhs: ident) => {
-        impl_op_for_inferior!(Add, $rhs, $name, add, +);
-        impl_op_for_inferior!(Sub, $rhs, $name, sub, -);
-        impl_op_for_inferior!(Mul, $rhs, $name, mul, *);
-        impl_op_for_inferior!(Div, $rhs, $name, div, /);
     }
 }
 macro_rules! impl_from_for_inner {
@@ -96,6 +53,23 @@ macro_rules! impl_from_variant {
             }
         }
     };
+}
+macro_rules! impl_assign {
+    ($assign_trait: ident, $rhs: ident, $name: ident, $assign_func: ident, $op_symbol: tt) => {
+        impl $assign_trait<$rhs> for $name {
+            fn $assign_func(&mut self, rhs: $rhs) {
+                *self = *self $op_symbol rhs;
+            }
+        }
+    }
+}
+macro_rules! impl_all_assigns {
+    ($name: ident, $rhs: ident) => {
+        impl_assign!(AddAssign, $rhs, $name, add_assign, +);
+        impl_assign!(SubAssign, $rhs, $name, sub_assign, -);
+        impl_assign!(MulAssign, $rhs, $name, mul_assign, *);
+        impl_assign!(DivAssign, $rhs, $name, div_assign, /);
+    }
 }
 
 mod f32_impls {
