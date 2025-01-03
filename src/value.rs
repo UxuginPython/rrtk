@@ -312,6 +312,19 @@ mod value_without_error {
         #[cfg(feature = "dimensional_analysis")]
         WithUnit(ValueWithUnitWithoutError),
     }
+    impl_from_variant!(ValueWithoutError, WithoutUnit, f32);
+    #[cfg(feature = "error_propagation")]
+    impl_from_variant!(ValueWithoutError, WithoutUnit, ValueWithoutUnitWithError);
+    #[cfg(feature = "dimensional_analysis")]
+    impl_from_variant!(ValueWithoutError, WithUnit, ValueWithUnitWithoutError);
+    #[cfg(all(feature = "dimensional_analysis", feature = "error_propagation"))]
+    impl_from_variant!(ValueWithoutError, WithUnit, ValueWithUnitWithError);
+    impl_from_matching_error!(ValueWithoutError, ValueWithoutUnit);
+    #[cfg(feature = "dimensional_analysis")]
+    impl_from_matching_error!(ValueWithoutError, ValueWithUnit);
+    #[cfg(feature = "error_propagation")]
+    impl_from_matching_unit!(ValueWithoutError, ValueWithError);
+    impl_from_matching_unit!(ValueWithoutError, Value);
 }
 pub use value_without_error::*;
 
