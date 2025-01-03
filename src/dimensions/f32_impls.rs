@@ -36,3 +36,4 @@ impl Div<ValueWithUnitWithoutError> for f32 {
         self_rhs_type / rhs
     }
 }
+impl_all_ops_for_inferior!(f32, ValueWithoutError);

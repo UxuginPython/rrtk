@@ -54,4 +54,4 @@ impl Div<f32> for ValueWithUnitWithoutError {
         self / rhs
     }
 }
-//TODO: superior to f32 and ValueWithoutError (doesn't exist yet)
+impl_all_ops_with_assign_for_superior!(ValueWithUnitWithoutError, ValueWithoutError);
