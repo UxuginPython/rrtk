@@ -207,6 +207,21 @@ mod value_with_unit_without_error {
         pub unit: Unit,
         pub value: f32,
     }
+    impl ValueWithUnitWithoutError {
+        pub fn new(unit: Unit, value: f32) -> Self {
+            Self {
+                unit: unit,
+                value: value,
+            }
+        }
+    }
+    #[cfg(feature = "error_propagation")]
+    impl From<ValueWithUnitWithError> for ValueWithUnitWithoutError {
+        fn from(was: ValueWithUnitWithError) -> Self {
+            Self::new(was.unit, was.value.into())
+        }
+    }
+    impl_from_matching_error!(ValueWithUnitWithoutError, ValueWithUnit);
 }
 #[cfg(feature = "dimensional_analysis")]
 pub use value_with_unit_without_error::*;
@@ -219,6 +234,20 @@ mod value_with_unit_with_error {
         pub unit: Unit,
         pub value: ValueWithoutUnitWithError,
     }
+    impl ValueWithUnitWithError {
+        pub fn new(unit: Unit, value: ValueWithoutUnitWithError) -> Self {
+            Self {
+                unit: unit,
+                value: value,
+            }
+        }
+    }
+    impl From<ValueWithUnitWithoutError> for ValueWithUnitWithError {
+        fn from(was: ValueWithUnitWithoutError) -> Self {
+            Self::new(was.unit, was.value.into())
+        }
+    }
+    impl_from_matching_error!(ValueWithUnitWithError, ValueWithUnit);
 }
 #[cfg(all(feature = "dimensional_analysis", feature = "error_propagation"))]
 pub use value_with_unit_with_error::*;
