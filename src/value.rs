@@ -147,6 +147,58 @@ mod value_without_unit_with_error {
             Self::new(was, 0.0)
         }
     }
+    #[cfg(feature = "dimensional_analysis")]
+    impl From<ValueWithUnitWithoutError> for ValueWithoutUnitWithError {
+        fn from(was: ValueWithUnitWithoutError) -> Self {
+            was.value.into()
+        }
+    }
+    #[cfg(feature = "dimensional_analysis")]
+    impl_from_for_inner!(ValueWithoutUnitWithError, ValueWithUnitWithError);
+    impl From<ValueWithoutUnit> for ValueWithoutUnitWithError {
+        fn from(was: ValueWithoutUnit) -> Self {
+            match was {
+                ValueWithoutUnit::WithoutError(x) => x.into(),
+                ValueWithoutUnit::WithError(x) => x,
+            }
+        }
+    }
+    #[cfg(feature = "dimensional_analysis")]
+    impl From<ValueWithUnit> for ValueWithoutUnitWithError {
+        fn from(was: ValueWithUnit) -> Self {
+            match was {
+                ValueWithUnit::WithoutError(x) => x.into(),
+                ValueWithUnit::WithError(x) => x.into(),
+            }
+        }
+    }
+    impl From<ValueWithoutError> for ValueWithoutUnitWithError {
+        fn from(was: ValueWithoutError) -> Self {
+            match was {
+                ValueWithoutError::WithoutUnit(x) => x.into(),
+                #[cfg(feature = "dimensional_analysis")]
+                ValueWithoutError::WithUnit(x) => x.into(),
+            }
+        }
+    }
+    impl From<ValueWithError> for ValueWithoutUnitWithError {
+        fn from(was: ValueWithError) -> Self {
+            match was {
+                ValueWithError::WithoutUnit(x) => x,
+                #[cfg(feature = "dimensional_analysis")]
+                ValueWithError::WithUnit(x) => x.into(),
+            }
+        }
+    }
+    impl From<Value> for ValueWithoutUnitWithError {
+        fn from(was: Value) -> Self {
+            match was {
+                Value::WithoutUnit(x) => x.into(),
+                #[cfg(feature = "dimensional_analysis")]
+                Value::WithUnit(x) => x.into(),
+            }
+        }
+    }
     impl Add for ValueWithoutUnitWithError {
         type Output = Self;
         fn add(self, rhs: Self) -> Self {
