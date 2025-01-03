@@ -30,7 +30,10 @@
     not(feature = "micromath")
 ))]
 compile_error!("internal_enhanced_float must only be enabled by another feature.");
-#[cfg(all(feature = "error_propagation", not(feature = "internal_enhanced_float")))]
+#[cfg(all(
+    feature = "error_propagation",
+    not(feature = "internal_enhanced_float")
+))]
 compile_error!("error_propagation feature requires one of std, libm, and micromath.");
 #[cfg(feature = "std")]
 use alloc::sync::Arc;

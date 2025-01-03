@@ -155,3 +155,69 @@ mod value_with_unit_with_error {
         value: ValueWithoutUnitWithError,
     }
 }
+#[cfg(all(feature = "dimensional_analysis", feature = "error_propagation"))]
+pub use value_with_unit_with_error::*;
+
+mod value_without_unit {
+    use super::*;
+    #[derive(Clone, Copy)]
+    #[non_exhaustive]
+    pub enum ValueWithoutUnit {
+        WithoutError(f32),
+        #[cfg(feature = "error_propagation")]
+        WithError(ValueWithoutUnitWithError),
+    }
+}
+pub use value_without_unit::*;
+
+#[cfg(feature = "dimensional_analysis")]
+mod value_with_unit {
+    use super::*;
+    #[derive(Clone, Copy)]
+    #[non_exhaustive]
+    pub enum ValueWithUnit {
+        WithoutError(ValueWithUnitWithoutError),
+        #[cfg(feature = "error_propagation")]
+        WithError(ValueWithUnitWithError),
+    }
+}
+#[cfg(feature = "dimensional_analysis")]
+pub use value_with_unit::*;
+
+mod value_without_error {
+    use super::*;
+    #[derive(Clone, Copy)]
+    #[non_exhaustive]
+    pub enum ValueWithoutError {
+        WithoutUnit(f32),
+        #[cfg(feature = "dimensional_analysis")]
+        WithUnit(ValueWithUnitWithoutError),
+    }
+}
+pub use value_without_error::*;
+
+#[cfg(feature = "error_propagation")]
+mod value_with_error {
+    use super::*;
+    #[derive(Clone, Copy)]
+    #[non_exhaustive]
+    pub enum ValueWithError {
+        WithoutUnit(ValueWithoutUnitWithError),
+        #[cfg(feature = "dimensional_analysis")]
+        WithUnit(ValueWithUnitWithError),
+    }
+}
+#[cfg(feature = "error_propagation")]
+pub use value_with_error::*;
+
+mod value {
+    use super::*;
+    #[derive(Clone, Copy)]
+    #[non_exhaustive]
+    pub enum Value {
+        WithoutUnit(ValueWithoutUnit),
+        #[cfg(feature = "dimensional_analysis")]
+        WithUnit(ValueWithUnit),
+    }
+}
+pub use value::*;
