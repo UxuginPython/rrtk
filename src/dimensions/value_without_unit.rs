@@ -1,6 +1,7 @@
 use super::*;
 //see reference module for why this is non_exhaustive
 #[non_exhaustive]
+#[derive(Clone, Copy)]
 pub enum ValueWithoutUnit {
     WithoutError(f32),
     #[cfg(feature = "error_propagation")]
@@ -33,3 +34,4 @@ impl_op!(Add, add, +);
 impl_op!(Sub, sub, -);
 impl_op!(Mul, mul, *);
 impl_op!(Div, div, /);
+impl_all_assign_for_superior!(ValueWithoutUnit, Self);
