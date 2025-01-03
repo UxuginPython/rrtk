@@ -17,7 +17,11 @@
 //!
 //!RRTK prefers **`std`** over **`libm`** and `libm` over **`micromath`** when multiple are
 //!available.
-#![warn(missing_docs)]
+//TODO: make these lints work
+#![allow(dead_code)]
+#![allow(unused_imports)]
+#![allow(unused_macros)]
+//#![warn(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
 #[cfg(all(
     feature = "internal_enhanced_float",
@@ -26,6 +30,8 @@
     not(feature = "micromath")
 ))]
 compile_error!("internal_enhanced_float must only be enabled by another feature.");
+#[cfg(all(feature = "error_propagation", not(feature = "internal_enhanced_float")))]
+compile_error!("error_propagation feature requires one of std, libm, and micromath.");
 #[cfg(feature = "std")]
 use alloc::sync::Arc;
 #[cfg(feature = "std")]
@@ -57,6 +63,7 @@ mod motion_profile;
 pub mod reference;
 mod state;
 pub mod streams;
+pub mod value;
 pub use command::*;
 pub use datum::*;
 #[cfg(feature = "internal_enhanced_float")]
