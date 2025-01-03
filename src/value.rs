@@ -66,8 +66,6 @@ macro_rules! impl_from_for_inner {
 mod f32_impls {
     use super::*;
     #[cfg(feature = "error_propagation")]
-    impl_all_ops_for_inferior!(f32, ValueWithoutUnitWithError);
-    #[cfg(feature = "error_propagation")]
     impl_from_for_inner!(f32, ValueWithoutUnitWithError);
     #[cfg(feature = "dimensional_analysis")]
     impl_from_for_inner!(f32, ValueWithUnitWithoutError);
