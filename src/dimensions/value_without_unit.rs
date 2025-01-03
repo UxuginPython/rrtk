@@ -7,6 +7,11 @@ pub enum ValueWithoutUnit {
     #[cfg(feature = "error_propagation")]
     WithError(ValueWithoutUnitWithError),
 }
+impl From<f32> for ValueWithoutUnit {
+    fn from(was: f32) -> Self {
+        Self::WithoutError(was)
+    }
+}
 macro_rules! impl_op {
     ($op_trait: ident, $op_func: ident, $op_symbol: tt) => {
         impl $op_trait for ValueWithoutUnit {
@@ -35,3 +40,6 @@ impl_op!(Sub, sub, -);
 impl_op!(Mul, mul, *);
 impl_op!(Div, div, /);
 impl_all_assign_for_superior!(ValueWithoutUnit, Self);
+impl_all_ops_with_assign_for_superior!(ValueWithoutUnit, f32);
+#[cfg(feature = "error_propagation")]
+impl_all_ops_for_inferior!(ValueWithoutUnit, ValueWithoutUnitWithError);

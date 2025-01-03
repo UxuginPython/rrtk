@@ -7,3 +7,4 @@ impl From<ValueWithoutUnitWithError> for f32 {
 }
 #[cfg(feature = "error_propagation")]
 impl_all_ops_for_inferior!(f32, ValueWithoutUnitWithError);
+impl_all_ops_for_inferior!(f32, ValueWithoutUnit);
