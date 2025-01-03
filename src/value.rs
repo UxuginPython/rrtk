@@ -75,15 +75,6 @@ macro_rules! impl_from_matching_error {
         }
     };
 }
-macro_rules! impl_from_variant {
-    ($name: ident, $variant: ident, $was: ident) => {
-        impl From<$was> for $name {
-            fn from(was: $was) -> Self {
-                Self::$variant(was.into())
-            }
-        }
-    };
-}
 macro_rules! impl_from_matching_unit {
     ($name: ident, $was: ident) => {
         impl From<$was> for $name {
@@ -93,6 +84,15 @@ macro_rules! impl_from_matching_unit {
                     #[cfg(feature = "dimensional_analysis")]
                     $was::WithUnit(x) => x.into(),
                 }
+            }
+        }
+    };
+}
+macro_rules! impl_from_variant {
+    ($name: ident, $variant: ident, $was: ident) => {
+        impl From<$was> for $name {
+            fn from(was: $was) -> Self {
+                Self::$variant(was.into())
             }
         }
     };
@@ -296,6 +296,9 @@ mod value_with_unit {
         #[cfg(feature = "error_propagation")]
         WithError(ValueWithUnitWithError),
     }
+    impl_from_variant!(ValueWithUnit, WithoutError, ValueWithUnitWithoutError);
+    #[cfg(feature = "error_propagation")]
+    impl_from_variant!(ValueWithUnit, WithError, ValueWithUnitWithError);
 }
 #[cfg(feature = "dimensional_analysis")]
 pub use value_with_unit::*;
