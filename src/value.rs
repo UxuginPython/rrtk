@@ -62,6 +62,32 @@ macro_rules! impl_from_for_inner {
         }
     };
 }
+macro_rules! impl_from_matching_error {
+    ($name: ident, $was: ident) => {
+        impl From<$was> for $name {
+            fn from(was: $was) -> Self {
+                match was {
+                    $was::WithoutError(x) => x.into(),
+                    #[cfg(feature = "error_propagation")]
+                    $was::WithError(x) => x.into(),
+                }
+            }
+        }
+    };
+}
+macro_rules! impl_from_matching_unit {
+    ($name: ident, $was: ident) => {
+        impl From<$was> for $name {
+            fn from(was: $was) -> Self {
+                match was {
+                    $was::WithoutUnit(x) => x.into(),
+                    #[cfg(feature = "dimensional_analysis")]
+                    $was::WithUnit(x) => x.into(),
+                }
+            }
+        }
+    };
+}
 
 mod f32_impls {
     use super::*;
@@ -75,53 +101,13 @@ mod f32_impls {
             was.value.value
         }
     }
-    impl From<ValueWithoutUnit> for f32 {
-        fn from(was: ValueWithoutUnit) -> Self {
-            match was {
-                ValueWithoutUnit::WithoutError(x) => x,
-                #[cfg(feature = "error_propagation")]
-                ValueWithoutUnit::WithError(x) => x.into(),
-            }
-        }
-    }
+    impl_from_matching_error!(f32, ValueWithoutUnit);
     #[cfg(feature = "dimensional_analysis")]
-    impl From<ValueWithUnit> for f32 {
-        fn from(was: ValueWithUnit) -> Self {
-            match was {
-                ValueWithUnit::WithoutError(x) => x.into(),
-                #[cfg(feature = "error_propagation")]
-                ValueWithUnit::WithError(x) => x.into(),
-            }
-        }
-    }
-    impl From<ValueWithoutError> for f32 {
-        fn from(was: ValueWithoutError) -> Self {
-            match was {
-                ValueWithoutError::WithoutUnit(x) => x,
-                #[cfg(feature = "dimensional_analysis")]
-                ValueWithoutError::WithUnit(x) => x.into(),
-            }
-        }
-    }
+    impl_from_matching_error!(f32, ValueWithUnit);
+    impl_from_matching_unit!(f32, ValueWithoutError);
     #[cfg(feature = "error_propagation")]
-    impl From<ValueWithError> for f32 {
-        fn from(was: ValueWithError) -> Self {
-            match was {
-                ValueWithError::WithoutUnit(x) => x.into(),
-                #[cfg(feature = "dimensional_analysis")]
-                ValueWithError::WithUnit(x) => x.into(),
-            }
-        }
-    }
-    impl From<Value> for f32 {
-        fn from(was: Value) -> Self {
-            match was {
-                Value::WithoutUnit(x) => x.into(),
-                #[cfg(feature = "dimensional_analysis")]
-                Value::WithUnit(x) => x.into(),
-            }
-        }
-    }
+    impl_from_matching_unit!(f32, ValueWithError);
+    impl_from_matching_unit!(f32, Value);
 }
 
 #[cfg(feature = "error_propagation")]
@@ -153,50 +139,12 @@ mod value_without_unit_with_error {
     }
     #[cfg(feature = "dimensional_analysis")]
     impl_from_for_inner!(ValueWithoutUnitWithError, ValueWithUnitWithError);
-    impl From<ValueWithoutUnit> for ValueWithoutUnitWithError {
-        fn from(was: ValueWithoutUnit) -> Self {
-            match was {
-                ValueWithoutUnit::WithoutError(x) => x.into(),
-                ValueWithoutUnit::WithError(x) => x,
-            }
-        }
-    }
+    impl_from_matching_error!(ValueWithoutUnitWithError, ValueWithoutUnit);
     #[cfg(feature = "dimensional_analysis")]
-    impl From<ValueWithUnit> for ValueWithoutUnitWithError {
-        fn from(was: ValueWithUnit) -> Self {
-            match was {
-                ValueWithUnit::WithoutError(x) => x.into(),
-                ValueWithUnit::WithError(x) => x.into(),
-            }
-        }
-    }
-    impl From<ValueWithoutError> for ValueWithoutUnitWithError {
-        fn from(was: ValueWithoutError) -> Self {
-            match was {
-                ValueWithoutError::WithoutUnit(x) => x.into(),
-                #[cfg(feature = "dimensional_analysis")]
-                ValueWithoutError::WithUnit(x) => x.into(),
-            }
-        }
-    }
-    impl From<ValueWithError> for ValueWithoutUnitWithError {
-        fn from(was: ValueWithError) -> Self {
-            match was {
-                ValueWithError::WithoutUnit(x) => x,
-                #[cfg(feature = "dimensional_analysis")]
-                ValueWithError::WithUnit(x) => x.into(),
-            }
-        }
-    }
-    impl From<Value> for ValueWithoutUnitWithError {
-        fn from(was: Value) -> Self {
-            match was {
-                Value::WithoutUnit(x) => x.into(),
-                #[cfg(feature = "dimensional_analysis")]
-                Value::WithUnit(x) => x.into(),
-            }
-        }
-    }
+    impl_from_matching_error!(ValueWithoutUnitWithError, ValueWithUnit);
+    impl_from_matching_unit!(ValueWithoutUnitWithError, ValueWithoutError);
+    impl_from_matching_unit!(ValueWithoutUnitWithError, ValueWithError);
+    impl_from_matching_unit!(ValueWithoutUnitWithError, Value);
     impl Add for ValueWithoutUnitWithError {
         type Output = Self;
         fn add(self, rhs: Self) -> Self {
