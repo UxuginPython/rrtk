@@ -11,7 +11,7 @@ mod powf {
     #[cfg(all(feature = "libm", not(feature = "std")))]
     pub use libm::powf;
     #[cfg(all(feature = "micromath", not(feature = "std"), not(feature = "libm")))]
-    pub use micromath::F32Ext;
+    use micromath::F32Ext;
 }
 pub use powf::*;
 #[cfg(feature = "error_propagation")]
@@ -25,7 +25,7 @@ mod sqrt {
         libm::sqrtf(x)
     }
     #[cfg(all(feature = "micromath", not(feature = "std"), not(feature = "libm")))]
-    pub use micromath::F32Ext;
+    use micromath::F32Ext;
 }
 #[cfg(feature = "error_propagation")]
 pub use sqrt::*;

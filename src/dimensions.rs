@@ -186,4 +186,6 @@ mod value_without_unit;
 pub use value_without_unit::*;
 mod quantity;
 pub use quantity::*;
+mod value_with_unit_without_error;
+pub use value_with_unit_without_error::*;
 pub type ValueWithoutUnitWithoutError = f32;
