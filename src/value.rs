@@ -53,9 +53,78 @@ macro_rules! impl_all_ops_for_inferior {
         impl_op_for_inferior!(Div, $rhs, $name, div, /);
     }
 }
+macro_rules! impl_from_for_inner {
+    ($name: ident, $was: ident) => {
+        impl From<$was> for $name {
+            fn from(was: $was) -> Self {
+                was.value
+            }
+        }
+    };
+}
 
-#[cfg(feature = "error_propagation")]
-impl_all_ops_for_inferior!(f32, ValueWithoutUnitWithError);
+mod f32_impls {
+    use super::*;
+    #[cfg(feature = "error_propagation")]
+    impl_all_ops_for_inferior!(f32, ValueWithoutUnitWithError);
+    #[cfg(feature = "error_propagation")]
+    impl_from_for_inner!(f32, ValueWithoutUnitWithError);
+    #[cfg(feature = "dimensional_analysis")]
+    impl_from_for_inner!(f32, ValueWithUnitWithoutError);
+    #[cfg(all(feature = "dimensional_analysis", feature = "error_propagation"))]
+    impl From<ValueWithUnitWithError> for f32 {
+        fn from(was: ValueWithUnitWithError) -> Self {
+            was.value.value
+        }
+    }
+    impl From<ValueWithoutUnit> for f32 {
+        fn from(was: ValueWithoutUnit) -> Self {
+            match was {
+                ValueWithoutUnit::WithoutError(x) => x,
+                #[cfg(feature = "error_propagation")]
+                ValueWithoutUnit::WithError(x) => x.into(),
+            }
+        }
+    }
+    #[cfg(feature = "dimensional_analysis")]
+    impl From<ValueWithUnit> for f32 {
+        fn from(was: ValueWithUnit) -> Self {
+            match was {
+                ValueWithUnit::WithoutError(x) => x.into(),
+                #[cfg(feature = "error_propagation")]
+                ValueWithUnit::WithError(x) => x.into(),
+            }
+        }
+    }
+    impl From<ValueWithoutError> for f32 {
+        fn from(was: ValueWithoutError) -> Self {
+            match was {
+                ValueWithoutError::WithoutUnit(x) => x,
+                #[cfg(feature = "dimensional_analysis")]
+                ValueWithoutError::WithUnit(x) => x.into(),
+            }
+        }
+    }
+    #[cfg(feature = "error_propagation")]
+    impl From<ValueWithError> for f32 {
+        fn from(was: ValueWithError) -> Self {
+            match was {
+                ValueWithError::WithoutUnit(x) => x.into(),
+                #[cfg(feature = "dimensional_analysis")]
+                ValueWithError::WithUnit(x) => x.into(),
+            }
+        }
+    }
+    impl From<Value> for f32 {
+        fn from(was: Value) -> Self {
+            match was {
+                Value::WithoutUnit(x) => x.into(),
+                #[cfg(feature = "dimensional_analysis")]
+                Value::WithUnit(x) => x.into(),
+            }
+        }
+    }
+}
 
 #[cfg(feature = "error_propagation")]
 mod value_without_unit_with_error {
@@ -123,8 +192,6 @@ mod value_without_unit_with_error {
         }
     }
     impl_all_assigns!(ValueWithoutUnitWithError, Self);
-    impl_all_ops_for_superior!(ValueWithoutUnitWithError, f32);
-    impl_all_assigns!(ValueWithoutUnitWithError, f32);
     impl fmt::Display for ValueWithoutUnitWithError {
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
             write!(f, "{} ± {}", self.value, self.error)
@@ -139,8 +206,8 @@ mod value_with_unit_without_error {
     use super::*;
     #[derive(Clone, Copy)]
     pub struct ValueWithUnitWithoutError {
-        unit: Unit,
-        value: f32,
+        pub unit: Unit,
+        pub value: f32,
     }
 }
 #[cfg(feature = "dimensional_analysis")]
@@ -151,8 +218,8 @@ mod value_with_unit_with_error {
     use super::*;
     #[derive(Clone, Copy)]
     pub struct ValueWithUnitWithError {
-        unit: Unit,
-        value: ValueWithoutUnitWithError,
+        pub unit: Unit,
+        pub value: ValueWithoutUnitWithError,
     }
 }
 #[cfg(all(feature = "dimensional_analysis", feature = "error_propagation"))]
