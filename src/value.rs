@@ -231,6 +231,26 @@ mod value_with_unit_without_error {
         }
     }
     impl_from_matching_error!(ValueWithUnitWithoutError, ValueWithUnit);
+    macro_rules! impl_op {
+        ($op_trait: ident, $op_func: ident, $op_symbol: tt) => {
+            impl $op_trait for ValueWithUnitWithoutError {
+                type Output = Self;
+                fn $op_func(self, rhs: Self) -> Self {
+                    Self::new(self.unit $op_symbol rhs.unit, self.value $op_symbol rhs.value)
+                }
+            }
+        }
+    }
+    impl_op!(Add, add, +);
+    impl_op!(Sub, sub, -);
+    impl_op!(Mul, mul, *);
+    impl_op!(Div, div, /);
+    impl Neg for ValueWithUnitWithoutError {
+        type Output = Self;
+        fn neg(self) -> Self {
+            Self::new(-self.unit, -self.value)
+        }
+    }
 }
 #[cfg(feature = "dimensional_analysis")]
 pub use value_with_unit_without_error::*;
@@ -257,6 +277,26 @@ mod value_with_unit_with_error {
         }
     }
     impl_from_matching_error!(ValueWithUnitWithError, ValueWithUnit);
+    macro_rules! impl_op {
+        ($op_trait: ident, $op_func: ident, $op_symbol: tt) => {
+            impl $op_trait for ValueWithUnitWithError {
+                type Output = Self;
+                fn $op_func(self, rhs: Self) -> Self {
+                    Self::new(self.unit $op_symbol rhs.unit, self.value $op_symbol rhs.value)
+                }
+            }
+        }
+    }
+    impl_op!(Add, add, +);
+    impl_op!(Sub, sub, -);
+    impl_op!(Mul, mul, *);
+    impl_op!(Div, div, /);
+    impl Neg for ValueWithUnitWithError {
+        type Output = Self;
+        fn neg(self) -> Self {
+            Self::new(-self.unit, -self.value)
+        }
+    }
 }
 #[cfg(all(feature = "dimensional_analysis", feature = "error_propagation"))]
 pub use value_with_unit_with_error::*;
