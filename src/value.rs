@@ -338,6 +338,18 @@ mod value_with_error {
         #[cfg(feature = "dimensional_analysis")]
         WithUnit(ValueWithUnitWithError),
     }
+    //This calls .into()
+    impl_from_variant!(ValueWithError, WithoutUnit, f32);
+    impl_from_variant!(ValueWithError, WithoutUnit, ValueWithoutUnitWithError);
+    #[cfg(feature = "dimensional_analysis")]
+    impl_from_variant!(ValueWithError, WithUnit, ValueWithUnitWithoutError);
+    #[cfg(feature = "dimensional_analysis")]
+    impl_from_variant!(ValueWithError, WithUnit, ValueWithUnitWithError);
+    impl_from_matching_error!(ValueWithError, ValueWithoutUnit);
+    #[cfg(feature = "dimensional_analysis")]
+    impl_from_matching_error!(ValueWithError, ValueWithUnit);
+    impl_from_matching_unit!(ValueWithError, ValueWithoutError);
+    impl_from_matching_unit!(ValueWithError, Value);
 }
 #[cfg(feature = "error_propagation")]
 pub use value_with_error::*;
@@ -351,5 +363,18 @@ mod value {
         #[cfg(feature = "dimensional_analysis")]
         WithUnit(ValueWithUnit),
     }
+    impl_from_variant!(Value, WithoutUnit, f32);
+    #[cfg(feature = "error_propagation")]
+    impl_from_variant!(Value, WithoutUnit, ValueWithoutUnitWithError);
+    #[cfg(feature = "dimensional_analysis")]
+    impl_from_variant!(Value, WithUnit, ValueWithUnitWithoutError);
+    #[cfg(all(feature = "dimensional_analysis", feature = "error_propagation"))]
+    impl_from_variant!(Value, WithUnit, ValueWithUnitWithError);
+    impl_from_matching_error!(Value, ValueWithoutUnit);
+    #[cfg(feature = "dimensional_analysis")]
+    impl_from_matching_error!(Value, ValueWithUnit);
+    impl_from_matching_unit!(Value, ValueWithoutError);
+    #[cfg(feature = "error_propagation")]
+    impl_from_matching_unit!(Value, ValueWithError);
 }
 pub use value::*;
