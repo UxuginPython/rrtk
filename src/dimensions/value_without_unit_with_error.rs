@@ -19,6 +19,14 @@ impl From<f32> for ValueWithoutUnitWithError {
         Self::new(was, 0.0)
     }
 }
+impl From<ValueWithoutUnit> for ValueWithoutUnitWithError {
+    fn from(was: ValueWithoutUnit) -> Self {
+        match was {
+            ValueWithoutUnit::WithoutError(x) => Self::from(x),
+            ValueWithoutUnit::WithError(x) => x,
+        }
+    }
+}
 impl Add for ValueWithoutUnitWithError {
     type Output = Self;
     fn add(self, rhs: Self) -> Self {
@@ -65,6 +73,7 @@ impl Neg for ValueWithoutUnitWithError {
 }
 impl_all_assign_for_superior!(ValueWithoutUnitWithError, Self);
 impl_all_ops_with_assign_for_superior!(ValueWithoutUnitWithError, f32);
+impl_all_ops_with_assign_for_superior!(ValueWithoutUnitWithError, ValueWithoutUnit);
 impl fmt::Display for ValueWithoutUnitWithError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{} ± {}", self.value, self.error)
