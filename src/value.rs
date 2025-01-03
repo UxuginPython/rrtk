@@ -75,6 +75,15 @@ macro_rules! impl_from_matching_error {
         }
     };
 }
+macro_rules! impl_from_variant {
+    ($name: ident, $variant: ident, $was: ident) => {
+        impl From<$was> for $name {
+            fn from(was: $was) -> Self {
+                Self::$variant(was.into())
+            }
+        }
+    };
+}
 macro_rules! impl_from_matching_unit {
     ($name: ident, $was: ident) => {
         impl From<$was> for $name {
@@ -261,6 +270,19 @@ mod value_without_unit {
         #[cfg(feature = "error_propagation")]
         WithError(ValueWithoutUnitWithError),
     }
+    impl_from_variant!(ValueWithoutUnit, WithoutError, f32);
+    #[cfg(feature = "error_propagation")]
+    impl_from_variant!(ValueWithoutUnit, WithError, ValueWithoutUnitWithError);
+    #[cfg(feature = "dimensional_analysis")]
+    impl_from_variant!(ValueWithoutUnit, WithoutError, ValueWithUnitWithoutError);
+    #[cfg(all(feature = "dimensional_analysis", feature = "error_propagation"))]
+    impl_from_variant!(ValueWithoutUnit, WithError, ValueWithUnitWithError);
+    #[cfg(feature = "dimensional_analysis")]
+    impl_from_matching_error!(ValueWithoutUnit, ValueWithUnit);
+    impl_from_matching_unit!(ValueWithoutUnit, ValueWithoutError);
+    #[cfg(feature = "error_propagation")]
+    impl_from_matching_unit!(ValueWithoutUnit, ValueWithError);
+    impl_from_matching_unit!(ValueWithoutUnit, Value);
 }
 pub use value_without_unit::*;
 
