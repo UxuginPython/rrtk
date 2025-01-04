@@ -250,7 +250,25 @@ mod value_without_unit_with_error {
     impl_all_assigns!(ValueWithoutUnitWithError, f32);
     #[cfg(feature = "dimensional_analysis")]
     impl_all_ops_for_inferior_add_unit!(ValueWithoutUnitWithError, ValueWithUnitWithError);
-    //TODO: implement ValueWithoutUnitWithError and ValueWithUnitWithoutError ops
+    #[cfg(feature = "dimensional_analysis")]
+    macro_rules! impl_op_value_w_unit_wo_error {
+        ($op_trait: ident, $op_func: ident, $op_symbol: tt) => {
+            impl $op_trait<ValueWithUnitWithoutError> for ValueWithoutUnitWithError {
+                type Output = ValueWithUnitWithError;
+                fn $op_func(self, rhs: ValueWithUnitWithoutError) -> ValueWithUnitWithError {
+                    ValueWithUnitWithError::new(rhs.unit, self $op_symbol rhs.value)
+                }
+            }
+        }
+    }
+    #[cfg(feature = "dimensional_analysis")]
+    impl_op_value_w_unit_wo_error!(Add, add, +);
+    #[cfg(feature = "dimensional_analysis")]
+    impl_op_value_w_unit_wo_error!(Sub, sub, -);
+    #[cfg(feature = "dimensional_analysis")]
+    impl_op_value_w_unit_wo_error!(Mul, mul, *);
+    #[cfg(feature = "dimensional_analysis")]
+    impl_op_value_w_unit_wo_error!(Div, div, /);
 }
 #[cfg(feature = "error_propagation")]
 pub use value_without_unit_with_error::*;
@@ -302,6 +320,24 @@ mod value_with_unit_without_error {
     impl_all_assigns!(ValueWithUnitWithoutError, f32);
     #[cfg(feature = "error_propagation")]
     impl_all_ops_for_inferior!(ValueWithUnitWithoutError, ValueWithUnitWithError);
+    macro_rules! impl_op_value_wo_unit_w_error {
+        ($op_trait: ident, $op_func: ident, $op_symbol: tt) => {
+            impl $op_trait<ValueWithoutUnitWithError> for ValueWithUnitWithoutError {
+                type Output = ValueWithUnitWithError;
+                fn $op_func(self, rhs: ValueWithoutUnitWithError) -> ValueWithUnitWithError {
+                    ValueWithUnitWithError::new(self.unit, self.value $op_symbol rhs)
+                }
+            }
+        }
+    }
+    #[cfg(feature = "error_propagation")]
+    impl_op_value_wo_unit_w_error!(Add, add, +);
+    #[cfg(feature = "error_propagation")]
+    impl_op_value_wo_unit_w_error!(Sub, sub, -);
+    #[cfg(feature = "error_propagation")]
+    impl_op_value_wo_unit_w_error!(Mul, mul, *);
+    #[cfg(feature = "error_propagation")]
+    impl_op_value_wo_unit_w_error!(Div, div, /);
 }
 #[cfg(feature = "dimensional_analysis")]
 pub use value_with_unit_without_error::*;
