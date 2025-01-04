@@ -53,6 +53,42 @@ macro_rules! impl_all_ops_for_inferior {
         impl_op_for_inferior!(Div, $rhs, $name, div, /);
     }
 }
+macro_rules! impl_op_for_superior_add_unit {
+    ($op_trait: ident, $rhs: ident, $name: ident, $op_func: ident, $op_symbol: tt) => {
+        impl $op_trait<$rhs> for $name {
+            type Output = Self;
+            fn $op_func(self, rhs: $rhs) -> Self {
+                Self::new(self.value $op_symbol rhs, self.unit)
+            }
+        }
+    }
+}
+macro_rules! impl_all_ops_for_superior_add_unit {
+    ($name: ident, $rhs: ident) => {
+        impl_op_for_superior_add_unit!(Add, $rhs, $name, add, +);
+        impl_op_for_superior_add_unit!(Sub, $rhs, $name, sub, -);
+        impl_op_for_superior_add_unit!(Mul, $rhs, $name, mul, *);
+        impl_op_for_superior_add_unit!(Div, $rhs, $name, div, /);
+    }
+}
+macro_rules! impl_op_for_inferior_add_unit {
+    ($op_trait: ident, $rhs: ident, $name: ident, $op_func: ident, $op_symbol: tt) => {
+        impl $op_trait<$rhs> for $name {
+            type Output = $rhs;
+            fn $op_func(self, rhs: $rhs) -> $rhs {
+                $rhs::new(self $op_symbol rhs.value, rhs.unit)
+            }
+        }
+    }
+}
+macro_rules! impl_all_ops_for_inferior_add_unit {
+    ($name: ident, $rhs: ident) => {
+        impl_op_for_inferior_add_unit!(Add, $rhs, $name, add, +);
+        impl_op_for_inferior_add_unit!(Sub, $rhs, $name, sub, -);
+        impl_op_for_inferior_add_unit!(Mul, $rhs, $name, mul, *);
+        impl_op_for_inferior_add_unit!(Div, $rhs, $name, div, /);
+    }
+}
 macro_rules! impl_from_for_inner {
     ($name: ident, $was: ident) => {
         impl From<$was> for $name {
@@ -117,6 +153,9 @@ mod f32_impls {
     #[cfg(feature = "error_propagation")]
     impl_from_matching_unit!(f32, ValueWithError);
     impl_from_matching_unit!(f32, Value);
+    impl_all_ops_for_inferior!(f32, ValueWithoutUnitWithError);
+    impl_all_ops_for_inferior_add_unit!(f32, ValueWithUnitWithoutError);
+    impl_all_ops_for_inferior_add_unit!(f32, ValueWithUnitWithError);
 }
 
 #[cfg(feature = "error_propagation")]
@@ -204,6 +243,10 @@ mod value_without_unit_with_error {
             write!(f, "{} ± {}", self.value, self.error)
         }
     }
+    impl_all_ops_for_superior!(ValueWithoutUnitWithError, f32);
+    impl_all_assigns!(ValueWithoutUnitWithError, f32);
+    impl_all_ops_for_inferior_add_unit!(ValueWithoutUnitWithError, ValueWithUnitWithError);
+    //TODO: implement ValueWithoutUnitWithError and ValueWithUnitWithoutError ops
 }
 #[cfg(feature = "error_propagation")]
 pub use value_without_unit_with_error::*;
@@ -251,6 +294,9 @@ mod value_with_unit_without_error {
             Self::new(-self.unit, -self.value)
         }
     }
+    impl_all_ops_for_superior_add_unit!(ValueWithUnitWithoutError, f32);
+    impl_all_assigns!(ValueWithUnitWithoutError, f32);
+    impl_all_ops_for_inferior!(ValueWithUnitWithoutError, ValueWithUnitWithError);
 }
 #[cfg(feature = "dimensional_analysis")]
 pub use value_with_unit_without_error::*;
@@ -297,6 +343,12 @@ mod value_with_unit_with_error {
             Self::new(-self.unit, -self.value)
         }
     }
+    impl_all_ops_for_superior_add_unit!(ValueWithUnitWithError, f32);
+    impl_all_assigns!(ValueWithUnitWithError, f32);
+    impl_all_ops_for_superior_add_unit!(ValueWithUnitWithError, ValueWithoutUnitWithError);
+    impl_all_assigns!(ValueWithUnitWithError, ValueWithoutUnitWithError);
+    impl_all_ops_for_superior!(ValueWithUnitWithError, ValueWithUnitWithoutError);
+    impl_all_assigns!(ValueWithUnitWithError, ValueWithUnitWithoutError);
 }
 #[cfg(all(feature = "dimensional_analysis", feature = "error_propagation"))]
 pub use value_with_unit_with_error::*;
