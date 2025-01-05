@@ -159,6 +159,62 @@ mod f32_impls {
     impl_all_ops_for_inferior_add_unit!(f32, ValueWithUnitWithoutError);
     #[cfg(all(feature = "dimensional_analysis", feature = "error_propagation"))]
     impl_all_ops_for_inferior_add_unit!(f32, ValueWithUnitWithError);
+    macro_rules! impl_op_matching_error {
+        ($op_trait: ident, $rhs: ident, $op_func: ident, $op_symbol: tt) => {
+            impl $op_trait<$rhs> for f32 {
+                type Output = $rhs;
+                fn $op_func(self, rhs: $rhs) -> $rhs {
+                    match rhs {
+                        $rhs::WithoutError(x) => (self $op_symbol x).into(),
+                        #[cfg(feature = "error_propagation")]
+                        $rhs::WithError(x) => (self $op_symbol x).into(),
+                    }
+                }
+            }
+        }
+    }
+    impl_op_matching_error!(Add, ValueWithoutUnit, add, +);
+    impl_op_matching_error!(Sub, ValueWithoutUnit, sub, -);
+    impl_op_matching_error!(Mul, ValueWithoutUnit, mul, *);
+    impl_op_matching_error!(Div, ValueWithoutUnit, div, /);
+    #[cfg(feature = "dimensional_analysis")]
+    impl_op_matching_error!(Add, ValueWithUnit, add, +);
+    #[cfg(feature = "dimensional_analysis")]
+    impl_op_matching_error!(Sub, ValueWithUnit, sub, -);
+    #[cfg(feature = "dimensional_analysis")]
+    impl_op_matching_error!(Mul, ValueWithUnit, mul, *);
+    #[cfg(feature = "dimensional_analysis")]
+    impl_op_matching_error!(Div, ValueWithUnit, div, /);
+    macro_rules! impl_op_matching_unit {
+        ($op_trait: ident, $rhs: ident, $op_func: ident, $op_symbol: tt) => {
+            impl $op_trait<$rhs> for f32 {
+                type Output = $rhs;
+                fn $op_func(self, rhs: $rhs) -> $rhs {
+                    match rhs {
+                        $rhs::WithoutUnit(x) => (self $op_symbol x).into(),
+                        #[cfg(feature = "dimensional_analysis")]
+                        $rhs::WithUnit(x) => (self $op_symbol x).into(),
+                    }
+                }
+            }
+        }
+    }
+    impl_op_matching_unit!(Add, ValueWithoutError, add, +);
+    impl_op_matching_unit!(Sub, ValueWithoutError, sub, -);
+    impl_op_matching_unit!(Mul, ValueWithoutError, mul, *);
+    impl_op_matching_unit!(Div, ValueWithoutError, div, /);
+    #[cfg(feature = "error_propagation")]
+    impl_op_matching_unit!(Add, ValueWithError, add, +);
+    #[cfg(feature = "error_propagation")]
+    impl_op_matching_unit!(Sub, ValueWithError, sub, -);
+    #[cfg(feature = "error_propagation")]
+    impl_op_matching_unit!(Mul, ValueWithError, mul, *);
+    #[cfg(feature = "error_propagation")]
+    impl_op_matching_unit!(Div, ValueWithError, div, /);
+    impl_op_matching_unit!(Add, Value, add, +);
+    impl_op_matching_unit!(Sub, Value, sub, -);
+    impl_op_matching_unit!(Mul, Value, mul, *);
+    impl_op_matching_unit!(Div, Value, div, /);
 }
 
 #[cfg(feature = "error_propagation")]
