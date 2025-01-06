@@ -223,6 +223,148 @@ macro_rules! impl_from_variant {
     };
 }
 
+#[cfg(all(
+    not(feature = "dimensional_analysis"),
+    not(feature = "error_propagation")
+))]
+pub trait GenericValue:
+    Add<f32>
+    + Add<ValueWithoutUnit>
+    + Add<ValueWithoutError>
+    + Add<Value>
+    + Sub<f32>
+    + Sub<ValueWithoutUnit>
+    + Sub<ValueWithoutError>
+    + Sub<Value>
+    + Mul<f32>
+    + Mul<ValueWithoutUnit>
+    + Mul<ValueWithoutError>
+    + Mul<Value>
+    + Div<f32>
+    + Div<ValueWithoutUnit>
+    + Div<ValueWithoutError>
+    + Div<Value>
+{
+}
+#[cfg(all(not(feature = "dimensional_analysis"), feature = "error_propagation"))]
+pub trait GenericValue:
+    Add<f32>
+    + Add<ValueWithoutUnitWithError>
+    + Add<ValueWithoutUnit>
+    + Add<ValueWithoutError>
+    + Add<ValueWithError>
+    + Add<Value>
+    + Sub<f32>
+    + Sub<ValueWithoutUnitWithError>
+    + Sub<ValueWithoutUnit>
+    + Sub<ValueWithoutError>
+    + Sub<ValueWithError>
+    + Sub<Value>
+    + Mul<f32>
+    + Mul<ValueWithoutUnitWithError>
+    + Mul<ValueWithoutUnit>
+    + Mul<ValueWithoutError>
+    + Mul<ValueWithError>
+    + Mul<Value>
+    + Div<f32>
+    + Div<ValueWithoutUnitWithError>
+    + Div<ValueWithoutUnit>
+    + Div<ValueWithoutError>
+    + Div<ValueWithError>
+    + Div<Value>
+{
+}
+#[cfg(all(feature = "dimensional_analysis", not(feature = "error_propagation")))]
+pub trait GenericValue:
+    From<ValueWithUnitWithoutError>
+    + From<ValueWithUnit>
+    + Add<f32>
+    + Add<ValueWithUnitWithoutError>
+    + Add<ValueWithoutUnit>
+    + Add<ValueWithUnit>
+    + Add<ValueWithoutError>
+    + Add<Value>
+    + Sub<f32>
+    + Sub<ValueWithUnitWithoutError>
+    + Sub<ValueWithoutUnit>
+    + Sub<ValueWithUnit>
+    + Sub<ValueWithoutError>
+    + Sub<Value>
+    + Mul<f32>
+    + Mul<ValueWithUnitWithoutError>
+    + Mul<ValueWithoutUnit>
+    + Mul<ValueWithUnit>
+    + Mul<ValueWithoutError>
+    + Mul<Value>
+    + Div<f32>
+    + Div<ValueWithUnitWithoutError>
+    + Div<ValueWithoutUnit>
+    + Div<ValueWithUnit>
+    + Div<ValueWithoutError>
+    + Div<Value>
+{
+}
+#[cfg(all(feature = "dimensional_analysis", feature = "error_propagation"))]
+pub trait GenericValue:
+    From<ValueWithUnitWithoutError>
+    + From<ValueWithUnitWithError>
+    + From<ValueWithUnit>
+    + Add<f32>
+    + Add<ValueWithoutUnitWithError>
+    + Add<ValueWithUnitWithoutError>
+    + Add<ValueWithUnitWithError>
+    + Add<ValueWithoutUnit>
+    + Add<ValueWithUnit>
+    + Add<ValueWithoutError>
+    + Add<ValueWithError>
+    + Add<Value>
+    + Sub<f32>
+    + Sub<ValueWithoutUnitWithError>
+    + Sub<ValueWithUnitWithoutError>
+    + Sub<ValueWithUnitWithError>
+    + Sub<ValueWithoutUnit>
+    + Sub<ValueWithUnit>
+    + Sub<ValueWithoutError>
+    + Sub<ValueWithError>
+    + Sub<Value>
+    + Mul<f32>
+    + Mul<ValueWithoutUnitWithError>
+    + Mul<ValueWithUnitWithoutError>
+    + Mul<ValueWithUnitWithError>
+    + Mul<ValueWithoutUnit>
+    + Mul<ValueWithUnit>
+    + Mul<ValueWithoutError>
+    + Mul<ValueWithError>
+    + Mul<Value>
+    + Div<f32>
+    + Div<ValueWithoutUnitWithError>
+    + Div<ValueWithUnitWithoutError>
+    + Div<ValueWithUnitWithError>
+    + Div<ValueWithoutUnit>
+    + Div<ValueWithUnit>
+    + Div<ValueWithoutError>
+    + Div<ValueWithError>
+    + Div<Value>
+{
+}
+//Values certainly with units cannot be From<T> where T does not certainly have a unit.
+#[cfg(not(feature = "error_propagation"))]
+pub trait GenericValuePossiblyWithoutUnit:
+    GenericValue + From<f32> + From<ValueWithoutUnit> + From<ValueWithoutError> + From<Value>
+{
+}
+#[cfg(feature = "error_propagation")]
+pub trait GenericValuePossiblyWithoutUnit:
+    GenericValue
+    + From<f32>
+    + From<ValueWithoutUnitWithError>
+    + From<ValueWithoutUnit>
+    + From<ValueWithoutError>
+    + From<ValueWithError>
+    + From<Value>
+{
+}
+
 mod f32_impls {
     use super::*;
     #[cfg(feature = "error_propagation")]
@@ -255,6 +397,8 @@ mod f32_impls {
     #[cfg(feature = "error_propagation")]
     impl_all_ops_matching_rhs_unit!(f32, ValueWithError, ValueWithError);
     impl_all_ops_matching_rhs_unit!(f32, Value, Value);
+    impl GenericValue for f32 {}
+    impl GenericValuePossiblyWithoutUnit for f32 {}
 }
 
 #[cfg(feature = "error_propagation")]
@@ -379,6 +523,8 @@ mod value_without_unit_with_error {
     impl_all_ops_matching_rhs_unit!(ValueWithoutUnitWithError, ValueWithoutError, ValueWithError);
     impl_all_ops_matching_rhs_unit!(ValueWithoutUnitWithError, ValueWithError, ValueWithError);
     impl_all_ops_matching_rhs_unit!(ValueWithoutUnitWithError, Value, ValueWithError);
+    impl GenericValue for ValueWithoutUnitWithError {}
+    impl GenericValuePossiblyWithoutUnit for ValueWithoutUnitWithError {}
 }
 #[cfg(feature = "error_propagation")]
 pub use value_without_unit_with_error::*;
@@ -462,6 +608,7 @@ mod value_with_unit_without_error {
         ValueWithUnitWithError
     );
     impl_all_ops_matching_rhs_unit!(ValueWithUnitWithoutError, Value, ValueWithUnit);
+    impl GenericValue for ValueWithUnitWithoutError {}
 }
 #[cfg(feature = "dimensional_analysis")]
 pub use value_with_unit_without_error::*;
@@ -535,6 +682,7 @@ mod value_with_unit_with_error {
         ValueWithUnitWithError
     );
     impl_all_ops_matching_rhs_unit!(ValueWithUnitWithError, Value, ValueWithUnitWithError);
+    impl GenericValue for ValueWithUnitWithError {}
 }
 #[cfg(all(feature = "dimensional_analysis", feature = "error_propagation"))]
 pub use value_with_unit_with_error::*;
@@ -583,6 +731,8 @@ mod value_without_unit {
     #[cfg(feature = "error_propagation")]
     impl_all_ops_matching_self_error!(ValueWithoutUnit, ValueWithError, ValueWithError);
     impl_all_ops_matching_self_error!(ValueWithoutUnit, Value, Value);
+    impl GenericValue for ValueWithoutUnit {}
+    impl GenericValuePossiblyWithoutUnit for ValueWithoutUnit {}
 }
 pub use value_without_unit::*;
 
@@ -619,6 +769,7 @@ mod value_with_unit {
     #[cfg(feature = "error_propagation")]
     impl_all_ops_matching_self_error!(ValueWithUnit, ValueWithError, ValueWithUnitWithError);
     impl_all_ops_matching_self_error!(ValueWithUnit, Value, Self);
+    impl GenericValue for ValueWithUnit {}
 }
 #[cfg(feature = "dimensional_analysis")]
 pub use value_with_unit::*;
@@ -667,6 +818,8 @@ mod value_without_error {
     #[cfg(feature = "error_propagation")]
     impl_all_ops_matching_self_unit!(ValueWithoutError, ValueWithError, ValueWithError);
     impl_all_ops_matching_self_unit!(ValueWithoutError, Value, Value);
+    impl GenericValue for ValueWithoutError {}
+    impl GenericValuePossiblyWithoutUnit for ValueWithoutError {}
 }
 pub use value_without_error::*;
 
@@ -712,6 +865,8 @@ mod value_with_error {
     impl_all_ops_matching_self_unit!(ValueWithError, ValueWithoutError, Self);
     impl_all_ops_matching_self_unit!(ValueWithError, Self, Self);
     impl_all_ops_matching_self_unit!(ValueWithError, Value, Self);
+    impl GenericValue for ValueWithError {}
+    impl GenericValuePossiblyWithoutUnit for ValueWithError {}
 }
 #[cfg(feature = "error_propagation")]
 pub use value_with_error::*;
@@ -752,5 +907,7 @@ mod value {
     #[cfg(feature = "error_propagation")]
     impl_all_ops_matching_self_unit!(Value, ValueWithError, ValueWithError);
     impl_all_ops_matching_self_unit!(Value, Self, Self);
+    impl GenericValue for Value {}
+    impl GenericValuePossiblyWithoutUnit for Value {}
 }
 pub use value::*;
