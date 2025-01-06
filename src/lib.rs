@@ -18,7 +18,6 @@
 //!RRTK prefers **`std`** over **`libm`** and `libm` over **`micromath`** when multiple are
 //!available.
 //TODO: make these lints work
-#![allow(dead_code)]
 #![allow(unused_imports)]
 #![allow(unused_macros)]
 //#![warn(missing_docs)]
