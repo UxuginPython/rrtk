@@ -133,6 +133,50 @@ macro_rules! impl_all_ops_matching_rhs_unit {
         impl_op_matching_rhs_unit!(Div, $rhs, $name, $output, div, /);
     }
 }
+macro_rules! impl_op_matching_self_error {
+    ($op_trait: ident, $rhs: ident, $name: ident, $output: ident, $op_func: ident, $op_symbol: tt) => {
+        impl $op_trait<$rhs> for $name {
+            type Output = $output;
+            fn $op_func(self, rhs: $rhs) -> $output {
+                match self {
+                    Self::WithoutError(x) => (x $op_symbol rhs).into(),
+                    #[cfg(feature = "error_propagation")]
+                    Self::WithError(x) => (x $op_symbol rhs).into(),
+                }
+            }
+        }
+    }
+}
+macro_rules! impl_all_ops_matching_self_error {
+    ($name: ident, $rhs: ident, $output: ident) => {
+        impl_op_matching_self_error!(Add, $rhs, $name, $output, add, +);
+        impl_op_matching_self_error!(Sub, $rhs, $name, $output, sub, -);
+        impl_op_matching_self_error!(Mul, $rhs, $name, $output, mul, *);
+        impl_op_matching_self_error!(Div, $rhs, $name, $output, div, /);
+    }
+}
+macro_rules! impl_op_matching_self_unit {
+    ($op_trait: ident, $rhs: ident, $name: ident, $output: ident, $op_func: ident, $op_symbol: tt) => {
+        impl $op_trait<$rhs> for $name {
+            type Output = $output;
+            fn $op_func(self, rhs: $rhs) -> $output {
+                match self {
+                    Self::WithoutUnit(x) => (x $op_symbol rhs).into(),
+                    #[cfg(feature = "dimensional_analysis")]
+                    Self::WithUnit(x) => (x $op_symbol rhs).into(),
+                }
+            }
+        }
+    }
+}
+macro_rules! impl_all_ops_matching_self_unit {
+    ($name: ident, $rhs: ident, $output: ident) => {
+        impl_op_matching_self_unit!(Add, $rhs, $name, $output, add, +);
+        impl_op_matching_self_unit!(Sub, $rhs, $name, $output, sub, -);
+        impl_op_matching_self_unit!(Mul, $rhs, $name, $output, mul, *);
+        impl_op_matching_self_unit!(Div, $rhs, $name, $output, div, /);
+    }
+}
 
 macro_rules! impl_from_for_inner {
     ($name: ident, $was: ident) => {
@@ -517,6 +561,28 @@ mod value_without_unit {
     #[cfg(feature = "error_propagation")]
     impl_from_matching_unit!(ValueWithoutUnit, ValueWithError);
     impl_from_matching_unit!(ValueWithoutUnit, Value);
+    impl_all_ops_matching_self_error!(ValueWithoutUnit, f32, Self);
+    #[cfg(feature = "error_propagation")]
+    impl_all_ops_matching_self_error!(
+        ValueWithoutUnit,
+        ValueWithoutUnitWithError,
+        ValueWithoutUnitWithError
+    );
+    #[cfg(feature = "dimensional_analysis")]
+    impl_all_ops_matching_self_error!(ValueWithoutUnit, ValueWithUnitWithoutError, ValueWithUnit);
+    #[cfg(all(feature = "dimensional_analysis", feature = "error_propagation"))]
+    impl_all_ops_matching_self_error!(
+        ValueWithoutUnit,
+        ValueWithUnitWithError,
+        ValueWithUnitWithError
+    );
+    impl_all_ops_matching_self_error!(ValueWithoutUnit, Self, Self);
+    #[cfg(feature = "dimensional_analysis")]
+    impl_all_ops_matching_self_error!(ValueWithoutUnit, ValueWithUnit, ValueWithUnit);
+    impl_all_ops_matching_self_error!(ValueWithoutUnit, ValueWithoutError, Value);
+    #[cfg(feature = "error_propagation")]
+    impl_all_ops_matching_self_error!(ValueWithoutUnit, ValueWithError, ValueWithError);
+    impl_all_ops_matching_self_error!(ValueWithoutUnit, Value, Value);
 }
 pub use value_without_unit::*;
 
@@ -533,6 +599,26 @@ mod value_with_unit {
     impl_from_variant!(ValueWithUnit, WithoutError, ValueWithUnitWithoutError);
     #[cfg(feature = "error_propagation")]
     impl_from_variant!(ValueWithUnit, WithError, ValueWithUnitWithError);
+    impl_all_ops_matching_self_error!(ValueWithUnit, f32, Self);
+    #[cfg(feature = "error_propagation")]
+    impl_all_ops_matching_self_error!(
+        ValueWithUnit,
+        ValueWithoutUnitWithError,
+        ValueWithUnitWithError
+    );
+    impl_all_ops_matching_self_error!(ValueWithUnit, ValueWithUnitWithoutError, Self);
+    #[cfg(feature = "error_propagation")]
+    impl_all_ops_matching_self_error!(
+        ValueWithUnit,
+        ValueWithUnitWithError,
+        ValueWithUnitWithError
+    );
+    impl_all_ops_matching_self_error!(ValueWithUnit, ValueWithoutUnit, Self);
+    impl_all_ops_matching_self_error!(ValueWithUnit, Self, Self);
+    impl_all_ops_matching_self_error!(ValueWithUnit, ValueWithoutError, Self);
+    #[cfg(feature = "error_propagation")]
+    impl_all_ops_matching_self_error!(ValueWithUnit, ValueWithError, ValueWithUnitWithError);
+    impl_all_ops_matching_self_error!(ValueWithUnit, Value, Self);
 }
 #[cfg(feature = "dimensional_analysis")]
 pub use value_with_unit::*;
@@ -559,6 +645,28 @@ mod value_without_error {
     #[cfg(feature = "error_propagation")]
     impl_from_matching_unit!(ValueWithoutError, ValueWithError);
     impl_from_matching_unit!(ValueWithoutError, Value);
+    impl_all_ops_matching_self_unit!(ValueWithoutError, f32, Self);
+    #[cfg(feature = "error_propagation")]
+    impl_all_ops_matching_self_unit!(ValueWithoutError, ValueWithoutUnitWithError, ValueWithError);
+    #[cfg(feature = "dimensional_analysis")]
+    impl_all_ops_matching_self_unit!(
+        ValueWithoutError,
+        ValueWithUnitWithoutError,
+        ValueWithUnitWithoutError
+    );
+    #[cfg(all(feature = "dimensional_analysis", feature = "error_propagation"))]
+    impl_all_ops_matching_self_unit!(
+        ValueWithoutError,
+        ValueWithUnitWithError,
+        ValueWithUnitWithError
+    );
+    impl_all_ops_matching_self_unit!(ValueWithoutError, ValueWithoutUnit, Value);
+    #[cfg(feature = "dimensional_analysis")]
+    impl_all_ops_matching_self_unit!(ValueWithoutError, ValueWithUnit, ValueWithUnit);
+    impl_all_ops_matching_self_unit!(ValueWithoutError, Self, Self);
+    #[cfg(feature = "error_propagation")]
+    impl_all_ops_matching_self_unit!(ValueWithoutError, ValueWithError, ValueWithError);
+    impl_all_ops_matching_self_unit!(ValueWithoutError, Value, Value);
 }
 pub use value_without_error::*;
 
@@ -584,6 +692,26 @@ mod value_with_error {
     impl_from_matching_error!(ValueWithError, ValueWithUnit);
     impl_from_matching_unit!(ValueWithError, ValueWithoutError);
     impl_from_matching_unit!(ValueWithError, Value);
+    impl_all_ops_matching_self_unit!(ValueWithError, f32, Self);
+    impl_all_ops_matching_self_unit!(ValueWithError, ValueWithoutUnitWithError, Self);
+    #[cfg(feature = "dimensional_analysis")]
+    impl_all_ops_matching_self_unit!(
+        ValueWithError,
+        ValueWithUnitWithoutError,
+        ValueWithUnitWithError
+    );
+    #[cfg(feature = "dimensional_analysis")]
+    impl_all_ops_matching_self_unit!(
+        ValueWithError,
+        ValueWithUnitWithError,
+        ValueWithUnitWithError
+    );
+    impl_all_ops_matching_self_unit!(ValueWithError, ValueWithoutUnit, Self);
+    #[cfg(feature = "dimensional_analysis")]
+    impl_all_ops_matching_self_unit!(ValueWithError, ValueWithUnit, ValueWithUnitWithError);
+    impl_all_ops_matching_self_unit!(ValueWithError, ValueWithoutError, Self);
+    impl_all_ops_matching_self_unit!(ValueWithError, Self, Self);
+    impl_all_ops_matching_self_unit!(ValueWithError, Value, Self);
 }
 #[cfg(feature = "error_propagation")]
 pub use value_with_error::*;
@@ -610,5 +738,19 @@ mod value {
     impl_from_matching_unit!(Value, ValueWithoutError);
     #[cfg(feature = "error_propagation")]
     impl_from_matching_unit!(Value, ValueWithError);
+    impl_all_ops_matching_self_unit!(Value, f32, Self);
+    #[cfg(feature = "error_propagation")]
+    impl_all_ops_matching_self_unit!(Value, ValueWithoutUnitWithError, ValueWithError);
+    #[cfg(feature = "dimensional_analysis")]
+    impl_all_ops_matching_self_unit!(Value, ValueWithUnitWithoutError, ValueWithUnit);
+    #[cfg(all(feature = "dimensional_analysis", feature = "error_propagation"))]
+    impl_all_ops_matching_self_unit!(Value, ValueWithUnitWithError, ValueWithUnitWithError);
+    impl_all_ops_matching_self_unit!(Value, ValueWithoutUnit, Self);
+    #[cfg(feature = "dimensional_analysis")]
+    impl_all_ops_matching_self_unit!(Value, ValueWithUnit, ValueWithUnit);
+    impl_all_ops_matching_self_unit!(Value, ValueWithoutError, Self);
+    #[cfg(feature = "error_propagation")]
+    impl_all_ops_matching_self_unit!(Value, ValueWithError, ValueWithError);
+    impl_all_ops_matching_self_unit!(Value, Self, Self);
 }
 pub use value::*;
