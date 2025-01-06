@@ -89,7 +89,7 @@ macro_rules! impl_all_ops_for_inferior_add_unit {
         impl_op_for_inferior_add_unit!(Div, $rhs, $name, div, /);
     }
 }
-macro_rules! impl_op_matching_error {
+macro_rules! impl_op_matching_rhs_error {
     ($op_trait: ident, $rhs: ident, $name: ident, $output: ident, $op_func: ident, $op_symbol: tt) => {
         impl $op_trait<$rhs> for $name {
             type Output = $output;
@@ -103,15 +103,15 @@ macro_rules! impl_op_matching_error {
         }
     }
 }
-macro_rules! impl_all_ops_matching_error {
+macro_rules! impl_all_ops_matching_rhs_error {
     ($name: ident, $rhs: ident, $output: ident) => {
-        impl_op_matching_error!(Add, $rhs, $name, $output, add, +);
-        impl_op_matching_error!(Sub, $rhs, $name, $output, sub, -);
-        impl_op_matching_error!(Mul, $rhs, $name, $output, mul, *);
-        impl_op_matching_error!(Div, $rhs, $name, $output, div, /);
+        impl_op_matching_rhs_error!(Add, $rhs, $name, $output, add, +);
+        impl_op_matching_rhs_error!(Sub, $rhs, $name, $output, sub, -);
+        impl_op_matching_rhs_error!(Mul, $rhs, $name, $output, mul, *);
+        impl_op_matching_rhs_error!(Div, $rhs, $name, $output, div, /);
     }
 }
-macro_rules! impl_op_matching_unit {
+macro_rules! impl_op_matching_rhs_unit {
     ($op_trait: ident, $rhs: ident, $name: ident, $output: ident, $op_func: ident, $op_symbol: tt) => {
         impl $op_trait<$rhs> for $name {
             type Output = $output;
@@ -125,12 +125,12 @@ macro_rules! impl_op_matching_unit {
         }
     }
 }
-macro_rules! impl_all_ops_matching_unit {
+macro_rules! impl_all_ops_matching_rhs_unit {
     ($name: ident, $rhs: ident, $output: ident) => {
-        impl_op_matching_unit!(Add, $rhs, $name, $output, add, +);
-        impl_op_matching_unit!(Sub, $rhs, $name, $output, sub, -);
-        impl_op_matching_unit!(Mul, $rhs, $name, $output, mul, *);
-        impl_op_matching_unit!(Div, $rhs, $name, $output, div, /);
+        impl_op_matching_rhs_unit!(Add, $rhs, $name, $output, add, +);
+        impl_op_matching_rhs_unit!(Sub, $rhs, $name, $output, sub, -);
+        impl_op_matching_rhs_unit!(Mul, $rhs, $name, $output, mul, *);
+        impl_op_matching_rhs_unit!(Div, $rhs, $name, $output, div, /);
     }
 }
 
@@ -204,13 +204,13 @@ mod f32_impls {
     impl_all_ops_for_inferior_add_unit!(f32, ValueWithUnitWithoutError);
     #[cfg(all(feature = "dimensional_analysis", feature = "error_propagation"))]
     impl_all_ops_for_inferior_add_unit!(f32, ValueWithUnitWithError);
-    impl_all_ops_matching_error!(f32, ValueWithoutUnit, ValueWithoutUnit);
+    impl_all_ops_matching_rhs_error!(f32, ValueWithoutUnit, ValueWithoutUnit);
     #[cfg(feature = "dimensional_analysis")]
-    impl_all_ops_matching_error!(f32, ValueWithUnit, ValueWithUnit);
-    impl_all_ops_matching_unit!(f32, ValueWithoutError, ValueWithoutError);
+    impl_all_ops_matching_rhs_error!(f32, ValueWithUnit, ValueWithUnit);
+    impl_all_ops_matching_rhs_unit!(f32, ValueWithoutError, ValueWithoutError);
     #[cfg(feature = "error_propagation")]
-    impl_all_ops_matching_unit!(f32, ValueWithError, ValueWithError);
-    impl_all_ops_matching_unit!(f32, Value, Value);
+    impl_all_ops_matching_rhs_unit!(f32, ValueWithError, ValueWithError);
+    impl_all_ops_matching_rhs_unit!(f32, Value, Value);
 }
 
 #[cfg(feature = "error_propagation")]
@@ -321,20 +321,20 @@ mod value_without_unit_with_error {
     impl_op_value_w_unit_wo_error!(Mul, mul, *);
     #[cfg(feature = "dimensional_analysis")]
     impl_op_value_w_unit_wo_error!(Div, div, /);
-    impl_all_ops_matching_error!(
+    impl_all_ops_matching_rhs_error!(
         ValueWithoutUnitWithError,
         ValueWithoutUnit,
         ValueWithoutUnitWithError
     );
     #[cfg(feature = "dimensional_analysis")]
-    impl_all_ops_matching_error!(
+    impl_all_ops_matching_rhs_error!(
         ValueWithoutUnitWithError,
         ValueWithUnit,
         ValueWithUnitWithError
     );
-    impl_all_ops_matching_unit!(ValueWithoutUnitWithError, ValueWithoutError, ValueWithError);
-    impl_all_ops_matching_unit!(ValueWithoutUnitWithError, ValueWithError, ValueWithError);
-    impl_all_ops_matching_unit!(ValueWithoutUnitWithError, Value, ValueWithError);
+    impl_all_ops_matching_rhs_unit!(ValueWithoutUnitWithError, ValueWithoutError, ValueWithError);
+    impl_all_ops_matching_rhs_unit!(ValueWithoutUnitWithError, ValueWithError, ValueWithError);
+    impl_all_ops_matching_rhs_unit!(ValueWithoutUnitWithError, Value, ValueWithError);
 }
 #[cfg(feature = "error_propagation")]
 pub use value_without_unit_with_error::*;
@@ -404,20 +404,20 @@ mod value_with_unit_without_error {
     impl_op_value_wo_unit_w_error!(Mul, mul, *);
     #[cfg(feature = "error_propagation")]
     impl_op_value_wo_unit_w_error!(Div, div, /);
-    impl_all_ops_matching_error!(ValueWithUnitWithoutError, ValueWithoutUnit, ValueWithUnit);
-    impl_all_ops_matching_error!(ValueWithUnitWithoutError, ValueWithUnit, ValueWithUnit);
-    impl_all_ops_matching_unit!(
+    impl_all_ops_matching_rhs_error!(ValueWithUnitWithoutError, ValueWithoutUnit, ValueWithUnit);
+    impl_all_ops_matching_rhs_error!(ValueWithUnitWithoutError, ValueWithUnit, ValueWithUnit);
+    impl_all_ops_matching_rhs_unit!(
         ValueWithUnitWithoutError,
         ValueWithoutError,
         ValueWithUnitWithoutError
     );
     #[cfg(feature = "error_propagation")]
-    impl_all_ops_matching_unit!(
+    impl_all_ops_matching_rhs_unit!(
         ValueWithUnitWithoutError,
         ValueWithError,
         ValueWithUnitWithError
     );
-    impl_all_ops_matching_unit!(ValueWithUnitWithoutError, Value, ValueWithUnit);
+    impl_all_ops_matching_rhs_unit!(ValueWithUnitWithoutError, Value, ValueWithUnit);
 }
 #[cfg(feature = "dimensional_analysis")]
 pub use value_with_unit_without_error::*;
@@ -470,27 +470,27 @@ mod value_with_unit_with_error {
     impl_all_assigns!(ValueWithUnitWithError, ValueWithoutUnitWithError);
     impl_all_ops_for_superior!(ValueWithUnitWithError, ValueWithUnitWithoutError);
     impl_all_assigns!(ValueWithUnitWithError, ValueWithUnitWithoutError);
-    impl_all_ops_matching_error!(
+    impl_all_ops_matching_rhs_error!(
         ValueWithUnitWithError,
         ValueWithoutUnit,
         ValueWithUnitWithError
     );
-    impl_all_ops_matching_error!(
+    impl_all_ops_matching_rhs_error!(
         ValueWithUnitWithError,
         ValueWithUnit,
         ValueWithUnitWithError
     );
-    impl_all_ops_matching_unit!(
+    impl_all_ops_matching_rhs_unit!(
         ValueWithUnitWithError,
         ValueWithoutError,
         ValueWithUnitWithError
     );
-    impl_all_ops_matching_unit!(
+    impl_all_ops_matching_rhs_unit!(
         ValueWithUnitWithError,
         ValueWithError,
         ValueWithUnitWithError
     );
-    impl_all_ops_matching_unit!(ValueWithUnitWithError, Value, ValueWithUnitWithError);
+    impl_all_ops_matching_rhs_unit!(ValueWithUnitWithError, Value, ValueWithUnitWithError);
 }
 #[cfg(all(feature = "dimensional_analysis", feature = "error_propagation"))]
 pub use value_with_unit_with_error::*;
