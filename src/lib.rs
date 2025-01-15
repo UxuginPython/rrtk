@@ -46,6 +46,7 @@ use core::ops::{
     Add, AddAssign, Deref, DerefMut, Div, DivAssign, Mul, MulAssign, Neg, Not, Sub, SubAssign,
 };
 mod command;
+mod compile_time_dimensions;
 mod compile_time_integer;
 mod datum;
 #[cfg(feature = "devices")]
