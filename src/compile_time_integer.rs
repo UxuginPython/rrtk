@@ -6,6 +6,7 @@ pub trait Integer {
     type Plus<T: Integer>: Integer;
     type Minus<T: Integer>: Integer;
     fn new() -> Self;
+    fn as_i8() -> i8;
 }
 #[derive(Clone, Copy, Debug)]
 #[repr(transparent)]
@@ -18,6 +19,9 @@ impl Integer for Zero {
     type Minus<T: Integer> = Self::Plus<T::Negative>;
     fn new() -> Self {
         Self
+    }
+    fn as_i8() -> i8 {
+        0
     }
 }
 #[derive(Clone, Copy, Debug)]
@@ -32,6 +36,9 @@ impl<T: Integer> Integer for OnePlus<T> {
     fn new() -> Self {
         Self(T::new())
     }
+    fn as_i8() -> i8 {
+        1 + T::as_i8()
+    }
 }
 #[derive(Clone, Copy, Debug)]
 #[repr(transparent)]
@@ -44,5 +51,8 @@ impl<T: Integer> Integer for NegativeOnePlus<T> {
     type Minus<S: Integer> = Self::Plus<S::Negative>;
     fn new() -> Self {
         Self(T::new())
+    }
+    fn as_i8() -> i8 {
+        -1 + T::as_i8()
     }
 }
