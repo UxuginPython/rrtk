@@ -1,5 +1,5 @@
 use super::*;
-pub trait Integer {
+pub trait Integer: fmt::Display {
     type PlusOne: Integer;
     type MinusOne: Integer;
     type Negative: Integer;
@@ -24,6 +24,12 @@ impl Integer for Zero {
         0
     }
 }
+//For some reason this cannot be a blanket impl. All the fmt::Display impls in this module are identical.
+impl fmt::Display for Zero {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", Self::as_i8())
+    }
+}
 #[derive(Clone, Copy, Debug)]
 #[repr(transparent)]
 pub struct OnePlus<T: Integer>(T);
@@ -40,6 +46,11 @@ impl<T: Integer> Integer for OnePlus<T> {
         1 + T::as_i8()
     }
 }
+impl<T: Integer> fmt::Display for OnePlus<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", Self::as_i8())
+    }
+}
 #[derive(Clone, Copy, Debug)]
 #[repr(transparent)]
 pub struct NegativeOnePlus<T: Integer>(T);
@@ -54,5 +65,10 @@ impl<T: Integer> Integer for NegativeOnePlus<T> {
     }
     fn as_i8() -> i8 {
         -1 + T::as_i8()
+    }
+}
+impl<T: Integer> fmt::Display for NegativeOnePlus<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", Self::as_i8())
     }
 }

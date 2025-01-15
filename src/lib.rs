@@ -40,11 +40,12 @@ use alloc::vec::Vec;
 //and it makes Cargo show a warning since there's an unused use.
 #[cfg(any(feature = "alloc", feature = "devices"))]
 use core::cell::RefCell;
-use core::fmt::Debug;
+use core::fmt;
 use core::marker::PhantomData;
 use core::ops::{
     Add, AddAssign, Deref, DerefMut, Div, DivAssign, Mul, MulAssign, Neg, Not, Sub, SubAssign,
 };
+use fmt::Debug;
 mod command;
 mod compile_time_dimensions;
 mod compile_time_integer;

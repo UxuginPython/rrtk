@@ -41,3 +41,8 @@ impl<MM1: Integer, S1: Integer, MM2: Integer, S2: Integer> Div<Quantity<MM2, S2>
         Quantity::from(self.2 / rhs.2)
     }
 }
+impl<MM: Integer, S: Integer> fmt::Display for Quantity<MM, S> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{} mm^{}s^{}", self.2, MM::as_i8(), S::as_i8())
+    }
+}
