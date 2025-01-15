@@ -46,6 +46,7 @@ use core::ops::{
     Add, AddAssign, Deref, DerefMut, Div, DivAssign, Mul, MulAssign, Neg, Not, Sub, SubAssign,
 };
 mod command;
+mod compile_time_numbers;
 mod datum;
 #[cfg(feature = "devices")]
 pub mod devices;
