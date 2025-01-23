@@ -404,6 +404,7 @@ macro_rules! static_rw_lock_reference {
 }
 #[cfg(feature = "std")]
 pub use static_rw_lock_reference;
+//TODO: Fix this documentation to explain about how Reference doesn't really have variants
 ///Create a new static [`Mutex`] of something and return a `PtrMutex`-variant [`Reference`] to it.
 ///
 ///The documentation shows `rrtk::static_mutex_reference` and `rrtk::reference::static_mutex_reference` separately. These are the

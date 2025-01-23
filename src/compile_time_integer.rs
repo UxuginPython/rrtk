@@ -1,5 +1,5 @@
 use super::*;
-pub trait Integer: fmt::Display {
+pub trait Integer: fmt::Display + Clone + Copy + Debug {
     type PlusOne: Integer;
     type MinusOne: Integer;
     type Negative: Integer;
