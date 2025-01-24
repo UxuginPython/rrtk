@@ -48,7 +48,7 @@ use core::ops::{
 use fmt::Debug;
 mod command;
 mod compile_time_dimensions;
-mod compile_time_integer;
+pub mod compile_time_integer;
 mod datum;
 #[cfg(feature = "devices")]
 pub mod devices;
