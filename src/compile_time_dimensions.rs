@@ -1,5 +1,25 @@
 use super::*;
 use compile_time_integer::*;
+///Gets the resulting type from multiplying quantities of two types. Basically an alias for
+///`<$a as Mul<$b>>::Output`. Rust's scoping rules for macros is a bit odd, but you should be able
+///to use `rrtk::mul!` and `rrtk::compile_time_dimensions::mul!` interchangably.
+#[macro_export]
+macro_rules! mul {
+    ($a: ty, $b: ty) => {
+        <$a as Mul<$b>>::Output
+    };
+}
+pub use mul;
+///Gets the resulting type from dividing quantities of two types. Basically an alias for
+///`<$a as Div<$b>>::Output`. Rust's scoping rules for macros is a bit odd, but you should be able
+///to use `rrtk::mul!` and `rrtk::compile_time_dimensions::mul!` interchangably.
+#[macro_export]
+macro_rules! div {
+    ($a: ty, $b: ty) => {
+        <$a as Div<$b>>::Output
+    };
+}
+pub use div;
 #[derive(Clone, Copy)]
 #[repr(transparent)]
 pub struct Quantity<MM: Integer, S: Integer>(PhantomData<MM>, PhantomData<S>, f32);
