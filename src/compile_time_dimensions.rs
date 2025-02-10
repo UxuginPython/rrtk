@@ -36,46 +36,51 @@ pub use div;
 ///parameters' representations of unit exponents.
 #[derive(Clone, Copy)]
 #[repr(transparent)]
-pub struct Quantity<MM: Integer, S: Integer>(PhantomData<MM>, PhantomData<S>, f32);
-impl<MM: Integer, S: Integer> From<f32> for Quantity<MM, S> {
-    fn from(was: f32) -> Self {
+pub struct Quantity<T, MM: Integer, S: Integer>(PhantomData<MM>, PhantomData<S>, T);
+impl<T, MM: Integer, S: Integer> From<T> for Quantity<T, MM, S> {
+    fn from(was: T) -> Self {
         Self(PhantomData, PhantomData, was)
     }
 }
-impl<MM: Integer, S: Integer> From<Quantity<MM, S>> for f32 {
-    fn from(was: Quantity<MM, S>) -> f32 {
+//TODO: unbreak this
+/*impl<T, MM: Integer, S: Integer> From<Quantity<T, MM, S>> for T {
+    fn from(was: Quantity<T, MM, S>) -> T {
         was.2
     }
-}
-impl<MM: Integer, S: Integer> Add for Quantity<MM, S> {
-    type Output = Self;
-    fn add(self, rhs: Self) -> Self {
-        Self::from(self.2 + rhs.2)
-    }
-}
-impl<MM: Integer, S: Integer> Sub for Quantity<MM, S> {
-    type Output = Self;
-    fn sub(self, rhs: Self) -> Self {
-        Self::from(self.2 - rhs.2)
-    }
-}
-impl<MM1: Integer, S1: Integer, MM2: Integer, S2: Integer> Mul<Quantity<MM2, S2>>
-    for Quantity<MM1, S1>
+}*/
+impl<T: Add<U, Output = O>, U, O, MM: Integer, S: Integer> Add<Quantity<U, MM, S>>
+    for Quantity<T, MM, S>
 {
-    type Output = Quantity<MM1::Plus<MM2>, S1::Plus<S2>>;
-    fn mul(self, rhs: Quantity<MM2, S2>) -> Quantity<MM1::Plus<MM2>, S1::Plus<S2>> {
+    type Output = Quantity<O, MM, S>;
+    fn add(self, rhs: Quantity<U, MM, S>) -> Quantity<O, MM, S> {
+        Quantity::from(self.2 + rhs.2)
+    }
+}
+impl<T: Sub<U, Output = O>, U, O, MM: Integer, S: Integer> Sub<Quantity<U, MM, S>>
+    for Quantity<T, MM, S>
+{
+    type Output = Quantity<O, MM, S>;
+    fn sub(self, rhs: Quantity<U, MM, S>) -> Quantity<O, MM, S> {
+        Quantity::from(self.2 - rhs.2)
+    }
+}
+impl<T: Mul<U, Output = O>, U, O, MM1: Integer, S1: Integer, MM2: Integer, S2: Integer>
+    Mul<Quantity<U, MM2, S2>> for Quantity<T, MM1, S1>
+{
+    type Output = Quantity<O, MM1::Plus<MM2>, S1::Plus<S2>>;
+    fn mul(self, rhs: Quantity<U, MM2, S2>) -> Quantity<O, MM1::Plus<MM2>, S1::Plus<S2>> {
         Quantity::from(self.2 * rhs.2)
     }
 }
-impl<MM1: Integer, S1: Integer, MM2: Integer, S2: Integer> Div<Quantity<MM2, S2>>
-    for Quantity<MM1, S1>
+impl<T: Div<U, Output = O>, U, O, MM1: Integer, S1: Integer, MM2: Integer, S2: Integer>
+    Div<Quantity<U, MM2, S2>> for Quantity<T, MM1, S1>
 {
-    type Output = Quantity<MM1::Minus<MM2>, S1::Minus<S2>>;
-    fn div(self, rhs: Quantity<MM2, S2>) -> Quantity<MM1::Minus<MM2>, S1::Minus<S2>> {
+    type Output = Quantity<O, MM1::Minus<MM2>, S1::Minus<S2>>;
+    fn div(self, rhs: Quantity<U, MM2, S2>) -> Quantity<O, MM1::Minus<MM2>, S1::Minus<S2>> {
         Quantity::from(self.2 / rhs.2)
     }
 }
-impl<MM: Integer, S: Integer> fmt::Display for Quantity<MM, S> {
+impl<T: fmt::Display, MM: Integer, S: Integer> fmt::Display for Quantity<T, MM, S> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{} mm^{}s^{}", self.2, MM::as_i8(), S::as_i8())
     }
