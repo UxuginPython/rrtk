@@ -37,12 +37,22 @@ pub use div;
 #[derive(Clone, Copy)]
 #[repr(transparent)]
 pub struct Quantity<T, MM: Integer, S: Integer>(PhantomData<MM>, PhantomData<S>, T);
+impl<T, MM: Integer, S: Integer> Quantity<T, MM, S> {
+    ///Constructor for `Quantity`.
+    pub const fn new(inner: T) -> Self {
+        Self(PhantomData, PhantomData, inner)
+    }
+    ///Converts the `Quantity` into its inner contained object, consuming it.
+    pub fn into_inner(self) -> T {
+        self.2
+    }
+}
 impl<T, MM: Integer, S: Integer> From<T> for Quantity<T, MM, S> {
     fn from(was: T) -> Self {
         Self(PhantomData, PhantomData, was)
     }
 }
-//TODO: unbreak this
+//TODO: fix this
 /*impl<T, MM: Integer, S: Integer> From<Quantity<T, MM, S>> for T {
     fn from(was: Quantity<T, MM, S>) -> T {
         was.2
