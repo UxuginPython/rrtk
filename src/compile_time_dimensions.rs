@@ -52,10 +52,16 @@ impl<T, MM: Integer, S: Integer> From<T> for Quantity<T, MM, S> {
         Self(PhantomData, PhantomData, was)
     }
 }
-//TODO: fix this
+//FIXME: E0210
 /*impl<T, MM: Integer, S: Integer> From<Quantity<T, MM, S>> for T {
     fn from(was: Quantity<T, MM, S>) -> T {
         was.2
+    }
+}*/
+//or, if you can't, FIXME instead: E0119
+/*impl<T, MM: Integer, S: Integer> Into<T> for Quantity<T, MM, S> {
+    fn into(self) -> T {
+        self.2
     }
 }*/
 impl<T: Add<U, Output = O>, U, O, MM: Integer, S: Integer> Add<Quantity<U, MM, S>>
