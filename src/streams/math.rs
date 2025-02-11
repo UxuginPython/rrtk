@@ -452,12 +452,12 @@ impl<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> Updatable<E> for Derivati
     }
 }
 ///A stream that computes the trapezoidal numerical integral of its input.
-pub struct IntegralStream<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> {
+pub struct IntegralStream<T, G: Getter<T, E> + ?Sized, E: Copy + Debug> {
     input: Reference<G>,
-    value: Output<Quantity, E>,
-    prev_output: Option<Datum<Quantity>>,
+    value: Output<T, E>,
+    prev_output: Option<Datum<T>>,
 }
-impl<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> IntegralStream<G, E> {
+impl<T, G: Getter<T, E> + ?Sized, E: Copy + Debug> IntegralStream<T, G, E> {
     ///Constructor for [`IntegralStream`].
     pub const fn new(input: Reference<G>) -> Self {
         Self {
@@ -467,14 +467,17 @@ impl<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> IntegralStream<G, E> {
         }
     }
 }
-impl<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> Getter<Quantity, E>
-    for IntegralStream<G, E>
+impl<T: Clone, G: Getter<T, E> + ?Sized, E: Copy + Debug> Getter<T, E> for IntegralStream<T, G, E>
+where
+    IntegralStream<T, G, E>: Updatable<E>,
 {
-    fn get(&self) -> Output<Quantity, E> {
+    fn get(&self) -> Output<T, E> {
         self.value.clone()
     }
 }
-impl<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> Updatable<E> for IntegralStream<G, E> {
+impl<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> Updatable<E>
+    for IntegralStream<Quantity, G, E>
+{
     fn update(&mut self) -> NothingOrError<E> {
         let output = self.input.borrow().get();
         let output = match output {
@@ -503,6 +506,59 @@ impl<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> Updatable<E> for Integral
         let value_addend = Quantity::from(output.time - prev_output.time)
             * (prev_output.value + output.value)
             / Quantity::dimensionless(2.0);
+        let value = match &self.value {
+            Ok(Some(real_value)) => value_addend + real_value.value,
+            _ => value_addend,
+        };
+        self.value = Ok(Some(Datum::new(output.time, value)));
+        self.prev_output = Some(output);
+        return Ok(());
+    }
+}
+impl<
+        MM: compile_time_integer::Integer<Minus<compile_time_integer::Zero> = MM>,
+        S: compile_time_integer::Integer<Minus<compile_time_integer::Zero> = S>,
+        G: Getter<compile_time_dimensions::Quantity<f32, MM, S>, E> + ?Sized,
+        E: Copy + Debug,
+    > Updatable<E> for IntegralStream<compile_time_dimensions::Quantity<f32, MM, S>, G, E>
+{
+    fn update(&mut self) -> NothingOrError<E> {
+        let output = self.input.borrow().get();
+        let output = match output {
+            Ok(ok) => ok,
+            Err(error) => {
+                self.value = Err(error);
+                self.prev_output = None;
+                return Err(error);
+            }
+        };
+        let output = match output {
+            Some(some) => some,
+            None => {
+                self.value = Ok(None);
+                self.prev_output = None;
+                return Ok(());
+            }
+        };
+        let prev_output = match self.prev_output {
+            Some(some) => some,
+            None => {
+                self.prev_output = Some(output);
+                return Ok(());
+            }
+        };
+        let value_addend = compile_time_dimensions::Quantity::<
+            f32,
+            compile_time_integer::Zero,
+            compile_time_integer::Zero,
+        >::from(f32::from(Quantity::from(
+            output.time - prev_output.time,
+        ))) * (prev_output.value + output.value)
+            / compile_time_dimensions::Quantity::<
+                f32,
+                compile_time_integer::Zero,
+                compile_time_integer::Zero,
+            >::from(2.0);
         let value = match &self.value {
             Ok(Some(real_value)) => value_addend + real_value.value,
             _ => value_addend,
