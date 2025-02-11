@@ -452,12 +452,12 @@ impl<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> Updatable<E> for Derivati
     }
 }
 ///A stream that computes the trapezoidal numerical integral of its input.
-pub struct IntegralStream<T, G: Getter<T, E> + ?Sized, E: Copy + Debug> {
+pub struct IntegralStream<T, O, G: Getter<T, E> + ?Sized, E: Copy + Debug> {
     input: Reference<G>,
-    value: Output<T, E>,
+    value: Output<O, E>,
     prev_output: Option<Datum<T>>,
 }
-impl<T, G: Getter<T, E> + ?Sized, E: Copy + Debug> IntegralStream<T, G, E> {
+impl<T, O, G: Getter<T, E> + ?Sized, E: Copy + Debug> IntegralStream<T, O, G, E> {
     ///Constructor for [`IntegralStream`].
     pub const fn new(input: Reference<G>) -> Self {
         Self {
@@ -467,16 +467,17 @@ impl<T, G: Getter<T, E> + ?Sized, E: Copy + Debug> IntegralStream<T, G, E> {
         }
     }
 }
-impl<T: Clone, G: Getter<T, E> + ?Sized, E: Copy + Debug> Getter<T, E> for IntegralStream<T, G, E>
+impl<T: Clone, G: Getter<T, E> + ?Sized, E: Copy + Debug> Getter<T, E>
+    for IntegralStream<T, T, G, E>
 where
-    IntegralStream<T, G, E>: Updatable<E>,
+    IntegralStream<T, T, G, E>: Updatable<E>,
 {
     fn get(&self) -> Output<T, E> {
         self.value.clone()
     }
 }
 impl<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> Updatable<E>
-    for IntegralStream<Quantity, G, E>
+    for IntegralStream<Quantity, Quantity, G, E>
 {
     fn update(&mut self) -> NothingOrError<E> {
         let output = self.input.borrow().get();
@@ -520,7 +521,25 @@ impl<
         S: compile_time_integer::Integer<Minus<compile_time_integer::Zero> = S>,
         G: Getter<compile_time_dimensions::Quantity<f32, MM, S>, E> + ?Sized,
         E: Copy + Debug,
-    > Updatable<E> for IntegralStream<compile_time_dimensions::Quantity<f32, MM, S>, G, E>
+    > Updatable<E>
+    for IntegralStream<
+        compile_time_dimensions::Quantity<f32, MM, S>,
+        compile_time_dimensions::Quantity<f32, MM, <S as compile_time_integer::Integer>::PlusOne>,
+        G,
+        E,
+    >
+where
+    //What this is trying to constrain is that S + 1 - 0 = S + 1.
+    //However, where equality constraints don't work yet, so it's a bit janky. This code is
+    //actually expressing something more like "S + 1 is an integer which, when 0 is subtracted from it, is equal to S + 1 [itself]"
+    //than "S + 1, as an integer, when 0 is subtracted from it, is equal to S + 1 [itself]." These
+    //are logically equivalent in this context, but the difference becomes a lot more clear when
+    //you read the actual code (although it is a bit messy) as it's pretty hard to describe in
+    //plain English. Basically, though, this way adds a redundant constraint that S + 1 is an
+    //integer rather than relying on the existing integer constraint implied by S's.
+    <S as compile_time_integer::Integer>::PlusOne: compile_time_integer::Integer<
+        Minus<compile_time_integer::Zero> = <S as compile_time_integer::Integer>::PlusOne,
+    >,
 {
     fn update(&mut self) -> NothingOrError<E> {
         let output = self.input.borrow().get();
@@ -547,13 +566,12 @@ impl<
                 return Ok(());
             }
         };
-        let value_addend = compile_time_dimensions::Quantity::<
+        let delta_time = compile_time_dimensions::Quantity::<
             f32,
             compile_time_integer::Zero,
-            compile_time_integer::Zero,
-        >::from(f32::from(Quantity::from(
-            output.time - prev_output.time,
-        ))) * (prev_output.value + output.value)
+            compile_time_integer::OnePlus<compile_time_integer::Zero>,
+        >::from(f32::from(Quantity::from(output.time - prev_output.time)));
+        let value_addend = delta_time * (prev_output.value + output.value)
             / compile_time_dimensions::Quantity::<
                 f32,
                 compile_time_integer::Zero,
