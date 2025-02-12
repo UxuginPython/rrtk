@@ -517,14 +517,15 @@ impl<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> Updatable<E>
     }
 }
 impl<
+        T: Number + From<Quantity>,
         MM: compile_time_integer::Integer<Minus<compile_time_integer::Zero> = MM>,
         S: compile_time_integer::Integer<Minus<compile_time_integer::Zero> = S>,
-        G: Getter<compile_time_dimensions::Quantity<f32, MM, S>, E> + ?Sized,
+        G: Getter<compile_time_dimensions::Quantity<T, MM, S>, E> + ?Sized,
         E: Copy + Debug,
     > Updatable<E>
     for IntegralStream<
-        compile_time_dimensions::Quantity<f32, MM, S>,
-        compile_time_dimensions::Quantity<f32, MM, <S as compile_time_integer::Integer>::PlusOne>,
+        compile_time_dimensions::Quantity<T, MM, S>,
+        compile_time_dimensions::Quantity<T, MM, <S as compile_time_integer::Integer>::PlusOne>,
         G,
         E,
     >
@@ -567,16 +568,16 @@ where
             }
         };
         let delta_time = compile_time_dimensions::Quantity::<
-            f32,
+            T,
             compile_time_integer::Zero,
             compile_time_integer::OnePlus<compile_time_integer::Zero>,
-        >::from(f32::from(Quantity::from(output.time - prev_output.time)));
+        >::from(T::from(Quantity::from(output.time - prev_output.time)));
         let value_addend = delta_time * (prev_output.value + output.value)
             / compile_time_dimensions::Quantity::<
-                f32,
+                T,
                 compile_time_integer::Zero,
                 compile_time_integer::Zero,
-            >::from(2.0);
+            >::from(T::two());
         let value = match &self.value {
             Ok(Some(real_value)) => value_addend + real_value.value,
             _ => value_addend,

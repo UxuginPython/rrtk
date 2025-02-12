@@ -17,7 +17,7 @@
 //!
 //!RRTK prefers **`std`** over **`libm`** and `libm` over **`micromath`** when multiple are
 //!available.
-#![warn(missing_docs)]
+//#![warn(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
 #[cfg(all(
     feature = "internal_enhanced_float",
@@ -730,5 +730,46 @@ pub fn latest<T>(dat1: Datum<T>, dat2: Datum<T>) -> Datum<T> {
         dat1
     } else {
         dat2
+    }
+}
+pub trait Number:
+    Sized
+    + Copy
+    + Add<Self, Output = Self>
+    + Sub<Self, Output = Self>
+    + Mul<Self, Output = Self>
+    + Div<Self, Output = Self>
+{
+    fn two() -> Self;
+}
+macro_rules! impl_number_integer {
+    ($num: ty) => {
+        impl Number for $num {
+            fn two() -> Self {
+                2
+            }
+        }
+    };
+}
+impl_number_integer!(u8);
+impl_number_integer!(u16);
+impl_number_integer!(u32);
+impl_number_integer!(u64);
+impl_number_integer!(u128);
+impl_number_integer!(usize);
+impl_number_integer!(i8);
+impl_number_integer!(i16);
+impl_number_integer!(i32);
+impl_number_integer!(i64);
+impl_number_integer!(i128);
+impl_number_integer!(isize);
+impl Number for f32 {
+    fn two() -> Self {
+        2.0
+    }
+}
+impl Number for f64 {
+    fn two() -> Self {
+        2.0
     }
 }
