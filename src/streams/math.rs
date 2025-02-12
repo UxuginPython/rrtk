@@ -467,12 +467,12 @@ impl<T, O, G: Getter<T, E> + ?Sized, E: Copy + Debug> IntegralStream<T, O, G, E>
         }
     }
 }
-impl<T: Clone, G: Getter<T, E> + ?Sized, E: Copy + Debug> Getter<T, E>
-    for IntegralStream<T, T, G, E>
+impl<T, O: Clone, G: Getter<T, E> + ?Sized, E: Copy + Debug> Getter<O, E>
+    for IntegralStream<T, O, G, E>
 where
-    IntegralStream<T, T, G, E>: Updatable<E>,
+    IntegralStream<T, O, G, E>: Updatable<E>,
 {
-    fn get(&self) -> Output<T, E> {
+    fn get(&self) -> Output<O, E> {
         self.value.clone()
     }
 }
