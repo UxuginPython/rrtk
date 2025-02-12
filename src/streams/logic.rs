@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-// Copyright 2024 UxuginPython
+// Copyright 2024-2025 UxuginPython
 //!Logic operations for boolean getters.
 use crate::streams::*;
 //TODO: make these take arrays of inputs with generic lengths.

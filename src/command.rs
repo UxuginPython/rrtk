@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-// Copyright 2024 UxuginPython
+// Copyright 2024-2025 UxuginPython
 use super::*;
 ///A command for a motor to perform: go to a position, run at a velocity, or accelerate at a rate.
 #[derive(Clone, Copy, Debug, PartialEq)]

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-// Copyright 2024 UxuginPython
+// Copyright 2024-2025 UxuginPython
 //!Streams that convert from one type to another. Some of these also do keep the same type and are
 //!for convenience in certain situations, for example when you do not want to handle a [`None`]
 //!variant yourself.

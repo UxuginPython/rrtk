@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-// Copyright 2024 UxuginPython
+// Copyright 2024-2025 UxuginPython
 //!Streams for control flow.
 use crate::streams::*;
 ///Propagates its input if a `Getter<bool, _>` returns `Ok(Some(true))`, otherwise returns

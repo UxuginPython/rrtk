@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BSD-3-Clause
+// Copyright 2024-2025 UxuginPython
 #![cfg(feature = "internal_enhanced_float")]
 //micromath's F32Ext is drop-in compatible with std floating point operations. However, we prefer
 //libm over micromath and std over libm, so this function definition is enabled if either std is

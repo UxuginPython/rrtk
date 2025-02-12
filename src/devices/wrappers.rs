@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-// Copyright 2024 UxuginPython
+// Copyright 2024-2025 UxuginPython
 //!Provided [`Device`] implementors that allow a raw [`Getter`] or [`Settable`] to work with the device
 //!system.
 use crate::*;
