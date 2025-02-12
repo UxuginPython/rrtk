@@ -11,7 +11,7 @@ use super::*;
 ///A trait used for defining numbers in RRTK's compile-time integer system based on operations on
 ///them. You should probably not implement this yourself; instead, use the [provided
 ///types](super::compile_time_integer) for constructing compile-time integers.
-pub trait Integer: fmt::Display + Clone + Copy + Debug {
+pub trait Integer: Copy + Debug + fmt::Display {
     ///The type representing **n + 1** where **n** is the implementor's value.
     type PlusOne: Integer;
     ///The type representing **n - 1** where **n** is the implementor's value.
