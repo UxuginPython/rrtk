@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-// Copyright 2024 UxuginPython
+// Copyright 2024-2025 UxuginPython
 //!RRTK's device system works through a graph-like structure where each device holds objects called
 //!terminals in [`RefCell`]s. Terminals represent anywhere that a device can connect to another.
 //!Connected terminals hold references to eachother's [`RefCell`]s. This module holds builtin

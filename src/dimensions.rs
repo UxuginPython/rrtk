@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-// Copyright 2024 UxuginPython
+// Copyright 2024-2025 UxuginPython
 //!This module contains types related to RRTK's dimensional analysis system. RRTK uses nanoseconds
 //!for time because they typically work nicely with computer clocks and are still precise when
 //!stored in an integer, which is important because exponentially losing precision for time is bad,

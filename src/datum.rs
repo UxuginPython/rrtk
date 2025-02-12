@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-// Copyright 2024 UxuginPython
+// Copyright 2024-2025 UxuginPython
 use crate::*;
 ///A container for a time and something else, usually an [`f32`] or a [`State`].
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

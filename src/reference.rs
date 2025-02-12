@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-// Copyright 2024 UxuginPython
+// Copyright 2024-2025 UxuginPython
 //![`Reference`] is a container holding an enum with variants containing different kinds of
 //!references, the availability of some of which depends on crate features. [`Reference`] is borrowed like
 //!a [`RefCell`]. This module contains it and its related types. [`Reference`] is also reexported at

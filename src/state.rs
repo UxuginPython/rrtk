@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-// Copyright 2024 UxuginPython
+// Copyright 2024-2025 UxuginPython
 use crate::*;
 ///A one-dimensional motion state with position, velocity, and acceleration.
 #[derive(Clone, Copy, Debug, Default, PartialEq)]

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-// Copyright 2024 UxuginPython
+// Copyright 2024-2025 UxuginPython
 #[cfg(all(feature = "devices", feature = "alloc"))]
 const COMMAND: Command = Command::new(PositionDerivative::Position, 5.0);
 #[cfg(all(feature = "devices", feature = "alloc"))]

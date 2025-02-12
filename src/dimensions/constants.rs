@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BSD-3-Clause
+// Copyright 2024-2025 UxuginPython
 //!Constant units. Millimeters are listed in the names before seconds except when second has a
 //!positive exponent and millimeter a negative. Everything in this module is reexported both at the
 //![`dimensions`] module and at the crate level.

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-// Copyright 2024 UxuginPython
+// Copyright 2024-2025 UxuginPython
 //!# Rust Robotics ToolKit
 //!**A set of algorithms and other tools for robotics in Rust.**
 //!
