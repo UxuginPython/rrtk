@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BSD-3-Clause
+// Copyright 2024-2025 UxuginPython
 //!RRTK's compile-time dimensional analysis system. This system is simpler than ones like
 //![`uom`](https://crates.io/crates/uom), but it serves a similar purpose: to protect users from
 //!dimension mismatch errors at compile time without runtime overhead. This is done through a

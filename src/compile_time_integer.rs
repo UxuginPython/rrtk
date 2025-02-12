@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BSD-3-Clause
+// Copyright 2024-2025 UxuginPython
 //!RRTK's compile-time integer system. This is basically a simpler version of
 //![Typenum](https://crates.io/crates/typenum/). It is used for compile-time dimensional analysis.
 //!0 is represented by the [`Zero`] struct. Positive integers are created by wrapping [`Zero`] with
