@@ -732,13 +732,14 @@ pub fn latest<T>(dat1: Datum<T>, dat2: Datum<T>) -> Datum<T> {
         dat2
     }
 }
-pub trait Number:
-    Sized
-    + Copy
-    + Add<Self, Output = Self>
-    + Sub<Self, Output = Self>
-    + Mul<Self, Output = Self>
-    + Div<Self, Output = Self>
+pub trait Number
+/*:
+Sized
++ Copy
++ Add<Self, Output = Self>
++ Sub<Self, Output = Self>
++ Mul<Self, Output = Self>
++ Div<Self, Output = Self>*/
 {
     fn two() -> Self;
 }

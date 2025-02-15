@@ -476,7 +476,7 @@ where
         self.value.clone()
     }
 }
-impl<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> Updatable<E>
+/*impl<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> Updatable<E>
     for IntegralStream<Quantity, Quantity, G, E>
 {
     fn update(&mut self) -> NothingOrError<E> {
@@ -515,32 +515,20 @@ impl<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> Updatable<E>
         self.prev_output = Some(output);
         return Ok(());
     }
-}
+}*/
 impl<
-        T: Number + From<Quantity>,
-        MM: compile_time_integer::Integer<Minus<compile_time_integer::Zero> = MM>,
-        S: compile_time_integer::Integer<Minus<compile_time_integer::Zero> = S>,
-        G: Getter<compile_time_dimensions::Quantity<T, MM, S>, E> + ?Sized,
+        T: Copy + From<Quantity> + Number,
+        O: Copy,
+        N1,
+        N2,
+        G: Getter<T, E> + ?Sized,
         E: Copy + Debug,
-    > Updatable<E>
-    for IntegralStream<
-        compile_time_dimensions::Quantity<T, MM, S>,
-        compile_time_dimensions::Quantity<T, MM, <S as compile_time_integer::Integer>::PlusOne>,
-        G,
-        E,
-    >
+    > Updatable<E> for IntegralStream<T, O, G, E>
 where
-    //What this is trying to constrain is that S + 1 - 0 = S + 1.
-    //However, where equality constraints don't work yet, so it's a bit janky. This code is
-    //actually expressing something more like "S + 1 is an integer which, when 0 is subtracted from it, is equal to S + 1 [itself]"
-    //than "S + 1, as an integer, when 0 is subtracted from it, is equal to S + 1 [itself]." These
-    //are logically equivalent in this context, but the difference becomes a lot more clear when
-    //you read the actual code (although it is a bit messy) as it's pretty hard to describe in
-    //plain English. Basically, though, this way adds a redundant constraint that S + 1 is an
-    //integer rather than relying on the existing integer constraint implied by S's.
-    <S as compile_time_integer::Integer>::PlusOne: compile_time_integer::Integer<
-        Minus<compile_time_integer::Zero> = <S as compile_time_integer::Integer>::PlusOne,
-    >,
+    T: Add<Output = N1>,
+    T: Mul<N1, Output = N2>,
+    N2: Div<T, Output = O>,
+    O: Add<O, Output = O>,
 {
     fn update(&mut self) -> NothingOrError<E> {
         let output = self.input.borrow().get();
@@ -567,17 +555,8 @@ where
                 return Ok(());
             }
         };
-        let delta_time = compile_time_dimensions::Quantity::<
-            T,
-            compile_time_integer::Zero,
-            compile_time_integer::OnePlus<compile_time_integer::Zero>,
-        >::from(T::from(Quantity::from(output.time - prev_output.time)));
-        let value_addend = delta_time * (prev_output.value + output.value)
-            / compile_time_dimensions::Quantity::<
-                T,
-                compile_time_integer::Zero,
-                compile_time_integer::Zero,
-            >::from(T::two());
+        let delta_time = T::from(Quantity::from(output.time - prev_output.time));
+        let value_addend = delta_time * (prev_output.value + output.value) / T::two();
         let value = match &self.value {
             Ok(Some(real_value)) => value_addend + real_value.value,
             _ => value_addend,
