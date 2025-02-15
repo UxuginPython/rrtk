@@ -516,14 +516,8 @@ where
         return Ok(());
     }
 }*/
-impl<
-        T: Copy + From<Quantity> + Number,
-        O: Copy,
-        N1,
-        N2,
-        G: Getter<T, E> + ?Sized,
-        E: Copy + Debug,
-    > Updatable<E> for IntegralStream<T, O, G, E>
+impl<T: From<Quantity> + Two, O: Copy, N1, N2, G: Getter<T, E> + ?Sized, E: Copy + Debug>
+    Updatable<E> for IntegralStream<T, O, G, E>
 where
     T: Add<Output = N1>,
     T: Mul<N1, Output = N2>,

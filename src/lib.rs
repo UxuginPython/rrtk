@@ -732,44 +732,38 @@ pub fn latest<T>(dat1: Datum<T>, dat2: Datum<T>) -> Datum<T> {
         dat2
     }
 }
-pub trait Number
-/*:
-Sized
-+ Copy
-+ Add<Self, Output = Self>
-+ Sub<Self, Output = Self>
-+ Mul<Self, Output = Self>
-+ Div<Self, Output = Self>*/
-{
+//There is no reason this trait needs a Copy bound itself. It's just only used in places where a
+//Copy bound makes sense anyway, so it saves typing to just have it here.
+trait Two: Copy {
     fn two() -> Self;
 }
-macro_rules! impl_number_integer {
+macro_rules! impl_two_integer {
     ($num: ty) => {
-        impl Number for $num {
+        impl Two for $num {
             fn two() -> Self {
                 2
             }
         }
     };
 }
-impl_number_integer!(u8);
-impl_number_integer!(u16);
-impl_number_integer!(u32);
-impl_number_integer!(u64);
-impl_number_integer!(u128);
-impl_number_integer!(usize);
-impl_number_integer!(i8);
-impl_number_integer!(i16);
-impl_number_integer!(i32);
-impl_number_integer!(i64);
-impl_number_integer!(i128);
-impl_number_integer!(isize);
-impl Number for f32 {
+impl_two_integer!(u8);
+impl_two_integer!(u16);
+impl_two_integer!(u32);
+impl_two_integer!(u64);
+impl_two_integer!(u128);
+impl_two_integer!(usize);
+impl_two_integer!(i8);
+impl_two_integer!(i16);
+impl_two_integer!(i32);
+impl_two_integer!(i64);
+impl_two_integer!(i128);
+impl_two_integer!(isize);
+impl Two for f32 {
     fn two() -> Self {
         2.0
     }
 }
-impl Number for f64 {
+impl Two for f64 {
     fn two() -> Self {
         2.0
     }
