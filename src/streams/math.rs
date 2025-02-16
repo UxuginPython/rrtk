@@ -476,7 +476,7 @@ where
         self.value.clone()
     }
 }
-/*impl<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> Updatable<E>
+impl<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> Updatable<E>
     for IntegralStream<Quantity, Quantity, G, E>
 {
     fn update(&mut self) -> NothingOrError<E> {
@@ -515,7 +515,7 @@ where
         self.prev_output = Some(output);
         return Ok(());
     }
-}*/
+}
 impl<T: From<Quantity> + Two, O: Copy, N1, N2, G: Getter<T, E> + ?Sized, E: Copy + Debug>
     Updatable<E> for IntegralStream<T, O, G, E>
 where
