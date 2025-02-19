@@ -848,3 +848,8 @@ impl PartialOrd for Quantity {
         self.value.partial_cmp(&other.value)
     }
 }
+impl Half for Quantity {
+    fn half(self) -> Self {
+        Self::new(self.value / 2.0, self.unit)
+    }
+}

@@ -103,8 +103,8 @@ impl<T: fmt::Display, MM: Integer, S: Integer> fmt::Display for Quantity<T, MM, 
         write!(f, "{} mm^{}s^{}", self.2, MM::as_i8(), S::as_i8())
     }
 }
-impl<T: Two, MM: Integer, S: Integer> Two for Quantity<T, MM, S> {
-    fn two() -> Self {
-        Self::new(T::two())
+impl<T: Half, MM: Integer, S: Integer> Half for Quantity<T, MM, S> {
+    fn half(self) -> Self {
+        Self::new(self.2.half())
     }
 }

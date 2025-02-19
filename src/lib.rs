@@ -732,39 +732,38 @@ pub fn latest<T>(dat1: Datum<T>, dat2: Datum<T>) -> Datum<T> {
         dat2
     }
 }
-//There is no reason this trait needs a Copy bound itself. It's just only used in places where a
-//Copy bound makes sense anyway, so it saves typing to just have it here.
-trait Two: Copy {
-    fn two() -> Self;
+//TODO: Decide if this should be pub trait.
+trait Half {
+    fn half(self) -> Self;
 }
-macro_rules! impl_two_integer {
+macro_rules! impl_half_integer {
     ($num: ty) => {
-        impl Two for $num {
-            fn two() -> Self {
-                2
+        impl Half for $num {
+            fn half(self) -> Self {
+                self / 2
             }
         }
     };
 }
-impl_two_integer!(u8);
-impl_two_integer!(u16);
-impl_two_integer!(u32);
-impl_two_integer!(u64);
-impl_two_integer!(u128);
-impl_two_integer!(usize);
-impl_two_integer!(i8);
-impl_two_integer!(i16);
-impl_two_integer!(i32);
-impl_two_integer!(i64);
-impl_two_integer!(i128);
-impl_two_integer!(isize);
-impl Two for f32 {
-    fn two() -> Self {
-        2.0
+impl_half_integer!(u8);
+impl_half_integer!(u16);
+impl_half_integer!(u32);
+impl_half_integer!(u64);
+impl_half_integer!(u128);
+impl_half_integer!(usize);
+impl_half_integer!(i8);
+impl_half_integer!(i16);
+impl_half_integer!(i32);
+impl_half_integer!(i64);
+impl_half_integer!(i128);
+impl_half_integer!(isize);
+impl Half for f32 {
+    fn half(self) -> Self {
+        self / 2.0
     }
 }
-impl Two for f64 {
-    fn two() -> Self {
-        2.0
+impl Half for f64 {
+    fn half(self) -> Self {
+        self / 2.0
     }
 }

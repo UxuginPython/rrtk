@@ -476,52 +476,13 @@ where
         self.value.clone()
     }
 }
-impl<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> Updatable<E>
-    for IntegralStream<Quantity, Quantity, G, E>
-{
-    fn update(&mut self) -> NothingOrError<E> {
-        let output = self.input.borrow().get();
-        let output = match output {
-            Ok(ok) => ok,
-            Err(error) => {
-                self.value = Err(error);
-                self.prev_output = None;
-                return Err(error);
-            }
-        };
-        let output = match output {
-            Some(some) => some,
-            None => {
-                self.value = Ok(None);
-                self.prev_output = None;
-                return Ok(());
-            }
-        };
-        let prev_output = match self.prev_output {
-            Some(some) => some,
-            None => {
-                self.prev_output = Some(output);
-                return Ok(());
-            }
-        };
-        let value_addend = Quantity::from(output.time - prev_output.time)
-            * (prev_output.value + output.value)
-            / Quantity::dimensionless(2.0);
-        let value = match &self.value {
-            Ok(Some(real_value)) => value_addend + real_value.value,
-            _ => value_addend,
-        };
-        self.value = Ok(Some(Datum::new(output.time, value)));
-        self.prev_output = Some(output);
-        return Ok(());
-    }
-}
-impl<T: From<Quantity> + Two, O: Copy, N1, N2, G: Getter<T, E> + ?Sized, E: Copy + Debug>
+impl<T: Copy, O: Copy + Half, N1, G: Getter<T, E> + ?Sized, E: Copy + Debug>
     Updatable<E> for IntegralStream<T, O, G, E>
 where
     T: Add<Output = N1>,
-    T: Mul<N1, Output = N2>,
-    N2: Div<T, Output = O>,
+    //FIXME: This constraint probably breaks a bunch of things. Mostly just need to implement
+    //Mul<T> for Time with more Ts.
+    Time: Mul<N1, Output = O>,
     O: Add<O, Output = O>,
 {
     fn update(&mut self) -> NothingOrError<E> {
@@ -549,8 +510,8 @@ where
                 return Ok(());
             }
         };
-        let delta_time = T::from(Quantity::from(output.time - prev_output.time));
-        let value_addend = delta_time * (prev_output.value + output.value) / T::two();
+        let delta_time = output.time - prev_output.time;
+        let value_addend = (delta_time * (prev_output.value + output.value)).half();
         let value = match &self.value {
             Ok(Some(real_value)) => value_addend + real_value.value,
             _ => value_addend,
