@@ -421,11 +421,11 @@ where
     }
 }
 #[cfg(feature = "alloc")]
-impl<
-        T: Clone + Default + AddAssign + Mul<f32, Output = T> + DivAssign<f32>,
-        G: Getter<T, E> + ?Sized,
-        E: Copy + Debug,
-    > Updatable<E> for MovingAverageStream<T, G, E>
+impl<T: Clone, N1: Default, G: Getter<T, E> + ?Sized, E: Copy + Debug> Updatable<E>
+    for MovingAverageStream<T, G, E>
+where
+    T: Mul<Time, Output = N1>,
+    N1: AddAssign + Div<Time, Output = T>,
 {
     fn update(&mut self) -> NothingOrError<E> {
         let output = self.input.borrow().get();
@@ -466,13 +466,13 @@ impl<
         start_times.push_front(output.time - self.window);
         let mut weights = Vec::with_capacity(self.input_values.len());
         for i in 0..self.input_values.len() {
-            weights.push(f32::from(Quantity::from(end_times[i] - start_times[i])));
+            weights.push(end_times[i] - start_times[i]);
         }
-        let mut value = T::default();
+        let mut value = N1::default();
         for i in 0..self.input_values.len() {
             value += self.input_values[i].value.clone() * weights[i];
         }
-        value /= f32::from(Quantity::from(self.window));
+        let value = value / self.window;
         self.value = Ok(Some(Datum::new(output.time, value)));
         Ok(())
     }
