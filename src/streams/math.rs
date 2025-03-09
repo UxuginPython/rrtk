@@ -395,13 +395,13 @@ impl<GB: Getter<f32, E> + ?Sized, GE: Getter<f32, E> + ?Sized, E: Copy + Debug> 
     }
 }
 ///A stream that computes the numerical derivative of its input.
-pub struct DerivativeStream<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> {
+pub struct DerivativeStream<T, O, G: Getter<T, E> + ?Sized, E: Copy + Debug> {
     input: Reference<G>,
-    value: Output<Quantity, E>,
+    value: Output<O, E>,
     //doesn't matter if this is an Err or Ok(None) - we can't use it either way if it's not Some
-    prev_output: Option<Datum<Quantity>>,
+    prev_output: Option<Datum<T>>,
 }
-impl<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> DerivativeStream<G, E> {
+impl<T, O, G: Getter<T, E> + ?Sized, E: Copy + Debug> DerivativeStream<T, O, G, E> {
     ///Constructor for [`DerivativeStream`].
     pub const fn new(input: Reference<G>) -> Self {
         Self {
@@ -411,14 +411,19 @@ impl<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> DerivativeStream<G, E> {
         }
     }
 }
-impl<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> Getter<Quantity, E>
-    for DerivativeStream<G, E>
+impl<T, O: Clone, G: Getter<T, E> + ?Sized, E: Copy + Debug> Getter<O, E>
+    for DerivativeStream<T, O, G, E>
+where DerivativeStream<T, O, G, E>: Updatable<E>,
 {
-    fn get(&self) -> Output<Quantity, E> {
+    fn get(&self) -> Output<O, E> {
         self.value.clone()
     }
 }
-impl<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> Updatable<E> for DerivativeStream<G, E> {
+impl<T: Copy, N1, O, G: Getter<T, E> + ?Sized, E: Copy + Debug> Updatable<E> for DerivativeStream<T, O, G, E>
+where
+    T: Sub<Output = N1>,
+    N1: Div<Time, Output = O>,
+{
     fn update(&mut self) -> NothingOrError<E> {
         let output = self.input.borrow().get();
         let output = match output {
@@ -445,7 +450,7 @@ impl<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> Updatable<E> for Derivati
             }
         };
         let value =
-            (output.value - prev_output.value) / Quantity::from(output.time - prev_output.time);
+            (output.value - prev_output.value) / (output.time - prev_output.time);
         self.value = Ok(Some(Datum::new(output.time, value)));
         self.prev_output = Some(output);
         Ok(())
