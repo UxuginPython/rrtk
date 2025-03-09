@@ -413,13 +413,15 @@ impl<T, O, G: Getter<T, E> + ?Sized, E: Copy + Debug> DerivativeStream<T, O, G, 
 }
 impl<T, O: Clone, G: Getter<T, E> + ?Sized, E: Copy + Debug> Getter<O, E>
     for DerivativeStream<T, O, G, E>
-where DerivativeStream<T, O, G, E>: Updatable<E>,
+where
+    DerivativeStream<T, O, G, E>: Updatable<E>,
 {
     fn get(&self) -> Output<O, E> {
         self.value.clone()
     }
 }
-impl<T: Copy, N1, O, G: Getter<T, E> + ?Sized, E: Copy + Debug> Updatable<E> for DerivativeStream<T, O, G, E>
+impl<T: Copy, N1, O, G: Getter<T, E> + ?Sized, E: Copy + Debug> Updatable<E>
+    for DerivativeStream<T, O, G, E>
 where
     T: Sub<Output = N1>,
     N1: Div<Time, Output = O>,
@@ -449,8 +451,7 @@ where
                 return Ok(());
             }
         };
-        let value =
-            (output.value - prev_output.value) / (output.time - prev_output.time);
+        let value = (output.value - prev_output.value) / (output.time - prev_output.time);
         self.value = Ok(Some(Datum::new(output.time, value)));
         self.prev_output = Some(output);
         Ok(())
@@ -481,8 +482,8 @@ where
         self.value.clone()
     }
 }
-impl<T: Copy, O: Copy + Half, N1, G: Getter<T, E> + ?Sized, E: Copy + Debug>
-    Updatable<E> for IntegralStream<T, O, G, E>
+impl<T: Copy, O: Copy + Half, N1, G: Getter<T, E> + ?Sized, E: Copy + Debug> Updatable<E>
+    for IntegralStream<T, O, G, E>
 where
     T: Add<Output = N1>,
     //FIXME: This constraint probably breaks a bunch of things. Mostly just need to implement
