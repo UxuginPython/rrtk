@@ -293,21 +293,12 @@ impl<T: Clone + Add<Output = T>, G: Getter<T, E> + ?Sized, E: Copy + Debug> EWMA
     }
 }
 #[cfg(feature = "internal_enhanced_float")]
-impl<
-        T: Clone + Add<Output = T> + Mul<f32, Output = T>,
-        G: Getter<T, E> + ?Sized,
-        E: Copy + Debug,
-    > Getter<T, E> for EWMAStream<T, G, E>
+impl<T: Clone + Add<Output = T>, G: Getter<T, E> + ?Sized, E: Copy + Debug> Getter<T, E>
+    for EWMAStream<T, G, E>
+where
+    EWMAStream<T, G, E>: Updatable<E>,
 {
     fn get(&self) -> Output<T, E> {
-        self.value.clone()
-    }
-}
-#[cfg(feature = "internal_enhanced_float")]
-impl<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> Getter<Quantity, E>
-    for EWMAStream<Quantity, G, E>
-{
-    fn get(&self) -> Output<Quantity, E> {
         self.value.clone()
     }
 }
@@ -420,11 +411,10 @@ impl<T, G: Getter<T, E> + ?Sized, E: Copy + Debug> MovingAverageStream<T, G, E> 
     }
 }
 #[cfg(feature = "alloc")]
-impl<
-        T: Clone + Default + AddAssign + Mul<f32, Output = T> + DivAssign<f32>,
-        G: Getter<T, E> + ?Sized,
-        E: Copy + Debug,
-    > Getter<T, E> for MovingAverageStream<T, G, E>
+impl<T: Clone, G: Getter<T, E> + ?Sized, E: Copy + Debug> Getter<T, E>
+    for MovingAverageStream<T, G, E>
+where
+    MovingAverageStream<T, G, E>: Updatable<E>,
 {
     fn get(&self) -> Output<T, E> {
         self.value.clone()
@@ -485,14 +475,6 @@ impl<
         value /= f32::from(Quantity::from(self.window));
         self.value = Ok(Some(Datum::new(output.time, value)));
         Ok(())
-    }
-}
-#[cfg(feature = "alloc")]
-impl<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> Getter<Quantity, E>
-    for MovingAverageStream<Quantity, G, E>
-{
-    fn get(&self) -> Output<Quantity, E> {
-        self.value.clone()
     }
 }
 #[cfg(feature = "alloc")]
