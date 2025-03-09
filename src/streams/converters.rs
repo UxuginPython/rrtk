@@ -3,6 +3,7 @@
 //!Streams that convert from one type to another. Some of these also do keep the same type and are
 //!for convenience in certain situations, for example when you do not want to handle a [`None`]
 //!variant yourself.
+use crate::compile_time_integer::Integer;
 use crate::streams::*;
 ///A stream converting all `Ok(None)` values from its input to `Err(_)` variants.
 pub struct NoneToError<T: Clone, G: Getter<T, E> + ?Sized, E: Copy + Debug> {
@@ -488,6 +489,104 @@ impl<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> Updatable<E> for Quantity
             Ok(None) => Ok(None),
             Ok(Some(datum)) => Ok(Some(Datum::new(datum.time, datum.value.value))),
         };
+        Ok(())
+    }
+}
+pub struct DimensionAdder<T, MM: Integer, S: Integer, G: Getter<T, E> + ?Sized, E: Copy + Debug> {
+    input: Reference<G>,
+    phantom_t: PhantomData<T>,
+    phantom_mm: PhantomData<MM>,
+    phantom_s: PhantomData<S>,
+    phantom_e: PhantomData<E>,
+}
+impl<T, MM: Integer, S: Integer, G: Getter<T, E> + ?Sized, E: Copy + Debug>
+    DimensionAdder<T, MM, S, G, E>
+{
+    pub fn new(input: Reference<G>) -> Self {
+        Self {
+            input: input,
+            phantom_t: PhantomData,
+            phantom_mm: PhantomData,
+            phantom_s: PhantomData,
+            phantom_e: PhantomData,
+        }
+    }
+}
+impl<T, MM: Integer, S: Integer, G: Getter<T, E> + ?Sized, E: Copy + Debug>
+    Getter<compile_time_dimensions::Quantity<T, MM, S>, E> for DimensionAdder<T, MM, S, G, E>
+{
+    fn get(&self) -> Output<compile_time_dimensions::Quantity<T, MM, S>, E> {
+        match self.input.borrow().get()? {
+            None => Ok(None),
+            Some(x) => Ok(Some(Datum::new(
+                x.time,
+                compile_time_dimensions::Quantity::new(x.value),
+            ))),
+        }
+    }
+}
+impl<T, MM: Integer, S: Integer, G: Getter<T, E> + ?Sized, E: Copy + Debug> Updatable<E>
+    for DimensionAdder<T, MM, S, G, E>
+{
+    fn update(&mut self) -> NothingOrError<E> {
+        Ok(())
+    }
+}
+pub struct DimensionRemover<
+    T,
+    MM: Integer,
+    S: Integer,
+    G: Getter<compile_time_dimensions::Quantity<T, MM, S>, E> + ?Sized,
+    E: Copy + Debug,
+> {
+    input: Reference<G>,
+    phantom_t: PhantomData<T>,
+    phantom_mm: PhantomData<MM>,
+    phantom_s: PhantomData<S>,
+    phantom_e: PhantomData<E>,
+}
+impl<
+        T,
+        MM: Integer,
+        S: Integer,
+        G: Getter<compile_time_dimensions::Quantity<T, MM, S>, E> + ?Sized,
+        E: Copy + Debug,
+    > DimensionRemover<T, MM, S, G, E>
+{
+    pub fn new(input: Reference<G>) -> Self {
+        Self {
+            input: input,
+            phantom_t: PhantomData,
+            phantom_mm: PhantomData,
+            phantom_s: PhantomData,
+            phantom_e: PhantomData,
+        }
+    }
+}
+impl<
+        T,
+        MM: Integer,
+        S: Integer,
+        G: Getter<compile_time_dimensions::Quantity<T, MM, S>, E> + ?Sized,
+        E: Copy + Debug,
+    > Getter<T, E> for DimensionRemover<T, MM, S, G, E>
+{
+    fn get(&self) -> Output<T, E> {
+        match self.input.borrow().get()? {
+            None => Ok(None),
+            Some(x) => Ok(Some(Datum::new(x.time, x.value.into_inner()))),
+        }
+    }
+}
+impl<
+        T,
+        MM: Integer,
+        S: Integer,
+        G: Getter<compile_time_dimensions::Quantity<T, MM, S>, E> + ?Sized,
+        E: Copy + Debug,
+    > Updatable<E> for DimensionRemover<T, MM, S, G, E>
+{
+    fn update(&mut self) -> NothingOrError<E> {
         Ok(())
     }
 }
