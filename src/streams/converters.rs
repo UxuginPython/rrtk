@@ -484,6 +484,8 @@ impl<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> Updatable<E> for Quantity
         Ok(())
     }
 }
+///Adds a compile-time [`Quantity`](compile_time_dimensions::Quantity) wrapper with a specific unit
+///around a number.
 pub struct DimensionAdder<T, MM: Integer, S: Integer, G: Getter<T, E> + ?Sized, E: Copy + Debug> {
     input: Reference<G>,
     phantom_t: PhantomData<T>,
@@ -494,6 +496,7 @@ pub struct DimensionAdder<T, MM: Integer, S: Integer, G: Getter<T, E> + ?Sized, 
 impl<T, MM: Integer, S: Integer, G: Getter<T, E> + ?Sized, E: Copy + Debug>
     DimensionAdder<T, MM, S, G, E>
 {
+    ///Constructor for `DimensionAdder`.
     pub fn new(input: Reference<G>) -> Self {
         Self {
             input: input,
@@ -524,6 +527,8 @@ impl<T, MM: Integer, S: Integer, G: Getter<T, E> + ?Sized, E: Copy + Debug> Upda
         Ok(())
     }
 }
+///Gets the inner number from the output of a getter returning compile-time
+///[`Quantity`](compile_time_dimensions::Quantity).
 pub struct DimensionRemover<
     T,
     MM: Integer,
@@ -545,6 +550,7 @@ impl<
         E: Copy + Debug,
     > DimensionRemover<T, MM, S, G, E>
 {
+    ///Constructor for `DimensionRemover`.
     pub fn new(input: Reference<G>) -> Self {
         Self {
             input: input,

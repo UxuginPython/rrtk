@@ -123,24 +123,30 @@ pub use constants::*;
 #[repr(transparent)]
 pub struct Time(i64);
 impl Time {
-    ///The constructor for [`Time`].
+    ///Construct a `Time` from `i64` nanoseconds, which is how the time is stored internally.
     pub const fn from_nanoseconds(value: i64) -> Self {
         Self(value)
     }
+    ///Construct a `Time` from `f32` seconds.
     pub const fn from_seconds(value: f32) -> Self {
         Self((value * 1_000_000_000.0) as i64)
     }
+    ///Construct a `Time` from compile-time [`Quantity`](compile_time_dimensions::Quantity) seconds stored using `f32`.
     pub fn from_compile_time_quantity(
         value: compile_time_dimensions::Quantity<f32, Zero, OnePlus<Zero>>,
     ) -> Self {
         Self::from_seconds(value.into_inner())
     }
+    ///Get the internal `i64` nanoseconds from the `Time`.
     pub const fn as_nanoseconds(self) -> i64 {
         self.0
     }
+    ///Get the value of the `Time` as `f32` seconds.
     pub const fn as_seconds(self) -> f32 {
         (self.0 as f32) / 1_000_000_000.0
     }
+    ///Get the value of the `Time` as compile-time `Quantity` seconds stored using `f32`.
+    ///Effectively a wrapper for [`as_seconds`](Self::as_seconds).
     pub const fn as_compile_time_quantity(
         self,
     ) -> compile_time_dimensions::Quantity<f32, Zero, OnePlus<Zero>> {
@@ -259,24 +265,28 @@ impl Div<Quantity> for Time {
         Quantity::from(self) / rhs
     }
 }
+///Converts the time to `f32` seconds before the operation.
 impl Mul<f32> for Time {
     type Output = f32;
     fn mul(self, rhs: f32) -> f32 {
         self.as_seconds() * rhs
     }
 }
+///Converts the time to `f32` seconds before the operation.
 impl Mul<Time> for f32 {
     type Output = Self;
     fn mul(self, rhs: Time) -> Self {
         self * rhs.as_seconds()
     }
 }
+///Converts the time to `f32` seconds before the operation.
 impl Div<f32> for Time {
     type Output = f32;
     fn div(self, rhs: f32) -> f32 {
         self.as_seconds() / rhs
     }
 }
+///Converts the time to `f32` seconds before the operation.
 impl Div<Time> for f32 {
     type Output = Self;
     fn div(self, rhs: Time) -> Self {
