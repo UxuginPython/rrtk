@@ -486,8 +486,6 @@ impl<T: Copy, O: Copy + Half, N1, G: Getter<T, E> + ?Sized, E: Copy + Debug> Upd
     for IntegralStream<T, O, G, E>
 where
     T: Add<Output = N1>,
-    //FIXME: This constraint probably breaks a bunch of things. Mostly just need to implement
-    //Mul<T> for Time with more Ts.
     Time: Mul<N1, Output = O>,
     O: Add<O, Output = O>,
 {

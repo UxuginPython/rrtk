@@ -98,6 +98,45 @@ impl<T: Div<U, Output = O>, U, O, MM1: Integer, S1: Integer, MM2: Integer, S2: I
         Quantity::from(self.2 / rhs.2)
     }
 }
+impl<MM: Integer, S: Integer> Mul<Time> for Quantity<f32, MM, S>
+where
+    //MM + 0 = MM
+    MM: Integer<Plus<Zero> = MM>,
+{
+    type Output = Quantity<f32, MM, S::Plus<OnePlus<Zero>>>;
+    fn mul(self, rhs: Time) -> Quantity<f32, MM, S::Plus<OnePlus<Zero>>> {
+        self * rhs.as_compile_time_quantity()
+    }
+}
+impl<MM: Integer, S: Integer> Mul<Quantity<f32, MM, S>> for Time {
+    type Output = Quantity<f32, MM, S::PlusOne>;
+    fn mul(self, rhs: Quantity<f32, MM, S>) -> Quantity<f32, MM, S::PlusOne> {
+        self.as_compile_time_quantity() * rhs
+    }
+}
+impl<MM: Integer, S: Integer> Div<Time> for Quantity<f32, MM, S>
+where
+    //MM - 0 = MM
+    MM: Integer<Minus<Zero> = MM>,
+{
+    type Output = Quantity<f32, MM, S::Minus<OnePlus<Zero>>>;
+    fn div(self, rhs: Time) -> Quantity<f32, MM, S::Minus<OnePlus<Zero>>> {
+        self / rhs.as_compile_time_quantity()
+    }
+}
+impl<MM: Integer, S: Integer> Div<Quantity<f32, MM, S>> for Time
+where
+    MM: Integer<Negative = MM>,
+{
+    //S - 1 = -S + 1
+    type Output = Quantity<f32, MM, <<S as Integer>::Negative as Integer>::PlusOne>;
+    fn div(
+        self,
+        rhs: Quantity<f32, MM, S>,
+    ) -> Quantity<f32, MM, <<S as Integer>::Negative as Integer>::PlusOne> {
+        self.as_compile_time_quantity() / rhs
+    }
+}
 impl<T: fmt::Display, MM: Integer, S: Integer> fmt::Display for Quantity<T, MM, S> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{} mm^{}s^{}", self.2, MM::as_i8(), S::as_i8())
