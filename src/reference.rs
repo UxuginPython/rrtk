@@ -15,6 +15,7 @@ use std::sync::{MutexGuard, RwLockReadGuard, RwLockWriteGuard};
 ///This means that if you write a `match` without all the features enabled, it won't cover all the
 ///variants if another crate in the tree enables more features. This is a problem because features
 ///are additive, so it is marked as non-exhaustive to remedy this.
+#[derive(Debug)]
 #[non_exhaustive]
 pub enum Borrow<'a, T: ?Sized> {
     ///A raw immutable pointer.
@@ -49,6 +50,7 @@ impl<T: ?Sized> Deref for Borrow<'_, T> {
 ///This means that if you write a `match` without all the features enabled, it won't cover all the
 ///variants if another crate in the tree enables more features. This is a problem because features
 ///are additive, so it is marked as non-exhaustive to remedy this.
+#[derive(Debug)]
 #[non_exhaustive]
 pub enum BorrowMut<'a, T: ?Sized> {
     ///A raw mutable pointer.
@@ -100,6 +102,7 @@ impl<T: ?Sized> DerefMut for BorrowMut<'_, T> {
 ///This means that if you write a `match` without all the features enabled, it won't cover all the
 ///variants if another crate in the tree enables more features. This is a problem because features
 ///are additive, so it is marked as non-exhaustive to remedy this.
+#[derive(Debug)]
 #[non_exhaustive]
 pub enum ReferenceUnsafe<T: ?Sized> {
     ///A raw mutable pointer. This is a useful variant if you are not multithreading and you want
@@ -255,6 +258,7 @@ impl<T: ?Sized> From<Reference<T>> for ReferenceUnsafe<T> {
 ///A container privately holding an enum with variants containing different kinds of references,
 ///the availability of some of which depends on crate features. [`Reference`] is borrowed like a [`RefCell`].
 ///It is also reexported at the crate level.
+#[derive(Debug)]
 #[repr(transparent)]
 pub struct Reference<T: ?Sized>(ReferenceUnsafe<T>);
 impl<T: ?Sized> Reference<T> {
@@ -314,6 +318,8 @@ impl<T: ?Sized> Reference<T> {
         unsafe { self.0.borrow_mut() }
     }
 }
+//It is necessary to implement Clone like this as #[derive(Clone)] would add an unnecessary Clone
+//bound to T.
 impl<T: ?Sized> Clone for Reference<T> {
     fn clone(&self) -> Self {
         Self(self.0.clone())
