@@ -232,3 +232,10 @@ Add moving average stream.
 - Implement `Add`, `Sub`, `Mul<f32>`, and `Div<f32>` and their respective `*Assign` traits for `Command`.
 - Implement `Getter<Command, E>` for `Terminal`.
 - Minor documentation fixes.
+## 0.7.0-alpha.0
+- Begin new compile-time dimensional analysis system using a custom compile-time integer system.
+- Somewhat rework `Time` to be more intuitive and to work more nicely with other types.
+- Make some streams more generic in the numeric types they accept, specifically `IntegralStream` and `DerivativeStream`.
+- Allow `Reference` to pass through `Getter` and `Updatable` implementations when its target implements them.
+- `#[derive(Debug)]` for some `Reference`-related types.
+- Minor documentation improvements.
