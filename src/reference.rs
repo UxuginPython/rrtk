@@ -268,7 +268,7 @@ impl<T: ?Sized> Reference<T> {
     ///static and getting a `Reference` of the raw pointer variant to it. Because the object is
     ///guaranteed to be static, it can be called without an unsafe block.
     pub const unsafe fn from_ptr(ptr: *mut T) -> Self {
-        Self(ReferenceUnsafe::from_ptr(ptr))
+        unsafe { Self(ReferenceUnsafe::from_ptr(ptr)) }
     }
     ///Create a [`Reference`] from an `Rc<RefCell<T>>`. The [`rc_ref_cell_reference`] function is a
     ///convenient way of putting an object in an `Rc<RefCell<T>>` and getting a [`Reference`] of this
@@ -282,14 +282,14 @@ impl<T: ?Sized> Reference<T> {
     ///an object in a static [`RwLock`] and getting a `Reference` of this variant to it.
     #[cfg(feature = "std")]
     pub const unsafe fn from_ptr_rw_lock(ptr_rw_lock: *const RwLock<T>) -> Self {
-        Self(ReferenceUnsafe::from_ptr_rw_lock(ptr_rw_lock))
+        unsafe { Self(ReferenceUnsafe::from_ptr_rw_lock(ptr_rw_lock)) }
     }
     ///Create a [`Reference`] from a `*const Mutex<T>`. Making the [`Mutex`] itself static is
     ///recommended. The [`static_mutex_reference!`] macro is a convenient way of putting an object in
     ///a static [`Mutex`] and getting a [`Reference`] of this variant to it.
     #[cfg(feature = "std")]
     pub const unsafe fn from_ptr_mutex(ptr_mutex: *const Mutex<T>) -> Self {
-        Self(ReferenceUnsafe::from_ptr_mutex(ptr_mutex))
+        unsafe { Self(ReferenceUnsafe::from_ptr_mutex(ptr_mutex)) }
     }
     ///Create a [`Reference`] from an `Arc<RwLock<T>>`. The [`arc_rw_lock_reference`] function is a
     ///convenient way of putting an object in an [`Arc<RwLock>`] and getting a [`Reference`] of this

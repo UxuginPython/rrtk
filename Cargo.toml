@@ -5,7 +5,7 @@
 name = "rrtk"
 version = "0.7.0-alpha.0"
 license = "BSD-3-Clause"
-edition = "2021"
+edition = "2024"
 authors = ["UxuginPython <uxugin at uxugin dot com>"]
 homepage = "http://rrtk.org"
 repository = "https://github.com/UxuginPython/rrtk"
