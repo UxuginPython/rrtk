@@ -325,6 +325,35 @@ impl<T: ?Sized> Clone for Reference<T> {
         Self(self.0.clone())
     }
 }
+impl<U: ?Sized + Updatable<E>, E: Copy + Debug> Updatable<E> for Reference<U> {
+    fn update(&mut self) -> NothingOrError<E> {
+        self.borrow_mut().update()
+    }
+}
+impl<G: ?Sized + Getter<T, E>, T, E: Copy + Debug> Getter<T, E> for Reference<G> {
+    fn get(&self) -> Output<T, E> {
+        self.borrow().get()
+    }
+}
+//This is currently stopped by E0515, but if this ever becomes possible (or you discover that it
+//was possible all along), do it.
+/*impl<S: ?Sized + Settable<T, E>, T: Clone, E: Copy + Debug> Settable<T, E> for Reference<S> {
+    //set must be implemented as S::set because
+    //1. implementing impl_set as S::set would nest the additional code that set adds over impl_set, and
+    //2. implementing impl_set as S::impl_set would be bad in case S::set is overridden for some reason.
+    fn set(&mut self, value: T) -> NothingOrError<E> {
+        self.borrow_mut().set(value)
+    }
+    fn impl_set(&mut self, _value: T) -> NothingOrError<E> {
+        unimplemented!();
+    }
+    fn get_settable_data_ref(&self) -> &SettableData<T, E> {
+        self.borrow().get_settable_data_ref()
+    }
+    fn get_settable_data_mut(&mut self) -> &mut SettableData<T, E> {
+        self.borrow_mut().get_settable_data_mut()
+    }
+}*/
 ///If you have a `Reference<Foo>` where `Foo` implements the `Bar` trait, you may end up wanting a
 ///`Reference<dyn Bar>`. To convert it, you would do this:
 ///```
