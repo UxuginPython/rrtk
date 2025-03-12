@@ -59,7 +59,7 @@ impl Getter<State, ()> for Encoder {
 #[cfg(all(feature = "devices", feature = "alloc"))]
 impl Updatable<()> for Encoder {
     fn update(&mut self) -> NothingOrError<()> {
-        self.time += Time(1_000_000_000);
+        self.time += Time::from_nanoseconds(1_000_000_000);
         Ok(())
     }
 }
@@ -72,7 +72,7 @@ fn main() {
     );
     let motor = Motor::new();
     let mut motor_wrapper =
-        devices::wrappers::PIDWrapper::new(motor, Time(0), STATE, COMMAND, K_VALUES);
+        devices::wrappers::PIDWrapper::new(motor, Time::ZERO, STATE, COMMAND, K_VALUES);
     let encoder = Encoder::default();
     let mut encoder_wrapper = devices::wrappers::GetterStateDeviceWrapper::new(encoder);
     connect(motor_wrapper.get_terminal(), encoder_wrapper.get_terminal());

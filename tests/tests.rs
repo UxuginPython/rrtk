@@ -11,7 +11,7 @@ fn state_new_raw() {
 #[test]
 fn state_update() {
     let mut state = State::new_raw(1.0, 2.0, 3.0);
-    state.update(Time(4_000_000_000));
+    state.update(Time::from_nanoseconds(4_000_000_000));
     assert_eq!(state.position, 33.0);
     assert_eq!(state.velocity, 14.0);
     assert_eq!(state.acceleration, 3.0);
@@ -91,44 +91,56 @@ fn state_ops() {
 #[test]
 fn latest_datum() {
     assert_eq!(
-        latest(Datum::new(Time(0), 0), Datum::new(Time(1), 1)),
-        Datum::new(Time(1), 1)
+        latest(
+            Datum::new(Time::ZERO, 0),
+            Datum::new(Time::from_nanoseconds(1), 1)
+        ),
+        Datum::new(Time::from_nanoseconds(1), 1)
     );
     assert_eq!(
-        latest(Datum::new(Time(1), 0), Datum::new(Time(0), 1)),
-        Datum::new(Time(1), 0)
+        latest(
+            Datum::new(Time::from_nanoseconds(1), 0),
+            Datum::new(Time::ZERO, 1)
+        ),
+        Datum::new(Time::from_nanoseconds(1), 0)
     );
     assert_eq!(
-        latest(Datum::new(Time(0), 0), Datum::new(Time(0), 1)),
-        Datum::new(Time(0), 0)
+        latest(Datum::new(Time::ZERO, 0), Datum::new(Time::ZERO, 1)),
+        Datum::new(Time::ZERO, 0)
     );
 }
 #[test]
 fn datum_replace_if_older_than() {
-    let mut x = Datum::new(Time(2_000_000_000), 2);
-    let y = Datum::new(Time(1_000_000_000), 3);
+    let mut x = Datum::new(Time::from_nanoseconds(2_000_000_000), 2);
+    let y = Datum::new(Time::from_nanoseconds(1_000_000_000), 3);
     assert!(!x.replace_if_older_than(y));
-    assert_eq!(x, Datum::new(Time(2_000_000_000), 2));
-    let y = Datum::new(Time(2_000_000_000), 3);
+    assert_eq!(x, Datum::new(Time::from_nanoseconds(2_000_000_000), 2));
+    let y = Datum::new(Time::from_nanoseconds(2_000_000_000), 3);
     assert!(!x.replace_if_older_than(y));
-    assert_eq!(x, Datum::new(Time(2_000_000_000), 2));
-    let y = Datum::new(Time(3_000_000_000), 3);
+    assert_eq!(x, Datum::new(Time::from_nanoseconds(2_000_000_000), 2));
+    let y = Datum::new(Time::from_nanoseconds(3_000_000_000), 3);
     assert!(x.replace_if_older_than(y));
     assert_eq!(x, y);
 }
 #[test]
 fn datum_replace_if_none_or_older_than() {
     let mut x = None;
-    let y = Datum::new(Time(2_000_000_000), 2);
+    let y = Datum::new(Time::from_nanoseconds(2_000_000_000), 2);
     assert!(x.replace_if_none_or_older_than(y));
     assert_eq!(x, Some(y));
-    let y = Datum::new(Time(1_000_000_000), 3);
+    let y = Datum::new(Time::from_nanoseconds(1_000_000_000), 3);
     assert!(!x.replace_if_none_or_older_than(y));
-    assert_eq!(x, Some(Datum::new(Time(2_000_000_000), 2)));
-    let y = Datum::new(Time(2_000_000_000), 3);
+    assert_eq!(
+        x,
+        Some(Datum::new(Time::from_nanoseconds(2_000_000_000), 2))
+    );
+    let y = Datum::new(Time::from_nanoseconds(2_000_000_000), 3);
     assert!(!x.replace_if_none_or_older_than(y));
-    assert_eq!(x, Some(Datum::new(Time(2_000_000_000), 2)));
-    let y = Datum::new(Time(3_000_000_000), 3);
+    assert_eq!(
+        x,
+        Some(Datum::new(Time::from_nanoseconds(2_000_000_000), 2))
+    );
+    let y = Datum::new(Time::from_nanoseconds(3_000_000_000), 3);
     assert!(x.replace_if_none_or_older_than(y));
     assert_eq!(x, Some(y));
 }
@@ -138,173 +150,189 @@ fn datum_replace_if_none_or_older_than_option() {
     let y = None;
     assert!(!x.replace_if_none_or_older_than_option(y));
     assert_eq!(x, None);
-    let y = Some(Datum::new(Time(2_000_000_000), 2));
+    let y = Some(Datum::new(Time::from_nanoseconds(2_000_000_000), 2));
     assert!(x.replace_if_none_or_older_than_option(y));
     assert_eq!(x, y);
 }
 #[test]
 fn datum_not() {
-    assert_eq!(!Datum::new(Time(0), false), Datum::new(Time(0), true));
+    assert_eq!(!Datum::new(Time::ZERO, false), Datum::new(Time::ZERO, true));
 }
 #[test]
 fn datum_neg() {
-    assert_eq!(-Datum::new(Time(0), 1), Datum::new(Time(0), -1));
+    assert_eq!(-Datum::new(Time::ZERO, 1), Datum::new(Time::ZERO, -1));
 }
 #[test]
 fn datum_add() {
     assert_eq!(
-        Datum::new(Time(0), 1) + Datum::new(Time(1), 1),
-        Datum::new(Time(1), 2)
+        Datum::new(Time::ZERO, 1) + Datum::new(Time::from_nanoseconds(1), 1),
+        Datum::new(Time::from_nanoseconds(1), 2)
     );
     assert_eq!(
-        Datum::new(Time(1), 1) + Datum::new(Time(0), 1),
-        Datum::new(Time(1), 2)
+        Datum::new(Time::from_nanoseconds(1), 1) + Datum::new(Time::ZERO, 1),
+        Datum::new(Time::from_nanoseconds(1), 2)
     );
 
-    let mut x = Datum::new(Time(0), 1);
-    x += Datum::new(Time(1), 1);
-    assert_eq!(x, Datum::new(Time(1), 2));
+    let mut x = Datum::new(Time::ZERO, 1);
+    x += Datum::new(Time::from_nanoseconds(1), 1);
+    assert_eq!(x, Datum::new(Time::from_nanoseconds(1), 2));
 
-    let mut x = Datum::new(Time(1), 1);
-    x += Datum::new(Time(0), 1);
-    assert_eq!(x, Datum::new(Time(1), 2));
+    let mut x = Datum::new(Time::from_nanoseconds(1), 1);
+    x += Datum::new(Time::ZERO, 1);
+    assert_eq!(x, Datum::new(Time::from_nanoseconds(1), 2));
 
-    assert_eq!(Datum::new(Time(0), 1) + 1, Datum::new(Time(0), 2));
+    assert_eq!(Datum::new(Time::ZERO, 1) + 1, Datum::new(Time::ZERO, 2));
 
-    let mut x = Datum::new(Time(0), 1);
+    let mut x = Datum::new(Time::ZERO, 1);
     x += 1;
-    assert_eq!(x, Datum::new(Time(0), 2));
+    assert_eq!(x, Datum::new(Time::ZERO, 2));
 }
 #[test]
 fn datum_sub() {
     assert_eq!(
-        Datum::new(Time(0), 1) - Datum::new(Time(1), 1),
-        Datum::new(Time(1), 0)
+        Datum::new(Time::ZERO, 1) - Datum::new(Time::from_nanoseconds(1), 1),
+        Datum::new(Time::from_nanoseconds(1), 0)
     );
     assert_eq!(
-        Datum::new(Time(1), 1) - Datum::new(Time(0), 1),
-        Datum::new(Time(1), 0)
+        Datum::new(Time::from_nanoseconds(1), 1) - Datum::new(Time::ZERO, 1),
+        Datum::new(Time::from_nanoseconds(1), 0)
     );
 
-    let mut x = Datum::new(Time(0), 1);
-    x -= Datum::new(Time(1), 1);
-    assert_eq!(x, Datum::new(Time(1), 0));
+    let mut x = Datum::new(Time::ZERO, 1);
+    x -= Datum::new(Time::from_nanoseconds(1), 1);
+    assert_eq!(x, Datum::new(Time::from_nanoseconds(1), 0));
 
-    let mut x = Datum::new(Time(1), 1);
-    x -= Datum::new(Time(0), 1);
-    assert_eq!(x, Datum::new(Time(1), 0));
+    let mut x = Datum::new(Time::from_nanoseconds(1), 1);
+    x -= Datum::new(Time::ZERO, 1);
+    assert_eq!(x, Datum::new(Time::from_nanoseconds(1), 0));
 
-    assert_eq!(Datum::new(Time(0), 1) - 1, Datum::new(Time(0), 0));
+    assert_eq!(Datum::new(Time::ZERO, 1) - 1, Datum::new(Time::ZERO, 0));
 
-    let mut x = Datum::new(Time(0), 1);
+    let mut x = Datum::new(Time::ZERO, 1);
     x -= 1;
-    assert_eq!(x, Datum::new(Time(0), 0));
+    assert_eq!(x, Datum::new(Time::ZERO, 0));
 }
 #[test]
 fn datum_mul() {
     assert_eq!(
-        Datum::new(Time(0), 2) * Datum::new(Time(1), 3),
-        Datum::new(Time(1), 6)
+        Datum::new(Time::ZERO, 2) * Datum::new(Time::from_nanoseconds(1), 3),
+        Datum::new(Time::from_nanoseconds(1), 6)
     );
     assert_eq!(
-        Datum::new(Time(1), 2) * Datum::new(Time(0), 3),
-        Datum::new(Time(1), 6)
+        Datum::new(Time::from_nanoseconds(1), 2) * Datum::new(Time::ZERO, 3),
+        Datum::new(Time::from_nanoseconds(1), 6)
     );
 
-    let mut x = Datum::new(Time(0), 2);
-    x *= Datum::new(Time(1), 3);
-    assert_eq!(x, Datum::new(Time(1), 6));
+    let mut x = Datum::new(Time::ZERO, 2);
+    x *= Datum::new(Time::from_nanoseconds(1), 3);
+    assert_eq!(x, Datum::new(Time::from_nanoseconds(1), 6));
 
-    let mut x = Datum::new(Time(1), 2);
-    x *= Datum::new(Time(0), 3);
-    assert_eq!(x, Datum::new(Time(1), 6));
+    let mut x = Datum::new(Time::from_nanoseconds(1), 2);
+    x *= Datum::new(Time::ZERO, 3);
+    assert_eq!(x, Datum::new(Time::from_nanoseconds(1), 6));
 
-    assert_eq!(Datum::new(Time(0), 2) * 3, Datum::new(Time(0), 6));
+    assert_eq!(Datum::new(Time::ZERO, 2) * 3, Datum::new(Time::ZERO, 6));
 
-    let mut x = Datum::new(Time(0), 2);
+    let mut x = Datum::new(Time::ZERO, 2);
     x *= 3;
-    assert_eq!(x, Datum::new(Time(0), 6));
+    assert_eq!(x, Datum::new(Time::ZERO, 6));
 }
 #[test]
 fn datum_div() {
     assert_eq!(
-        Datum::new(Time(0), 6) / Datum::new(Time(1), 2),
-        Datum::new(Time(1), 3)
+        Datum::new(Time::ZERO, 6) / Datum::new(Time::from_nanoseconds(1), 2),
+        Datum::new(Time::from_nanoseconds(1), 3)
     );
     assert_eq!(
-        Datum::new(Time(1), 6) / Datum::new(Time(0), 2),
-        Datum::new(Time(1), 3)
+        Datum::new(Time::from_nanoseconds(1), 6) / Datum::new(Time::ZERO, 2),
+        Datum::new(Time::from_nanoseconds(1), 3)
     );
 
-    let mut x = Datum::new(Time(0), 6);
-    x /= Datum::new(Time(1), 2);
-    assert_eq!(x, Datum::new(Time(1), 3));
+    let mut x = Datum::new(Time::ZERO, 6);
+    x /= Datum::new(Time::from_nanoseconds(1), 2);
+    assert_eq!(x, Datum::new(Time::from_nanoseconds(1), 3));
 
-    let mut x = Datum::new(Time(1), 6);
-    x /= Datum::new(Time(0), 2);
-    assert_eq!(x, Datum::new(Time(1), 3));
+    let mut x = Datum::new(Time::from_nanoseconds(1), 6);
+    x /= Datum::new(Time::ZERO, 2);
+    assert_eq!(x, Datum::new(Time::from_nanoseconds(1), 3));
 
-    assert_eq!(Datum::new(Time(0), 6) / 2, Datum::new(Time(0), 3));
+    assert_eq!(Datum::new(Time::ZERO, 6) / 2, Datum::new(Time::ZERO, 3));
 
-    let mut x = Datum::new(Time(0), 6);
+    let mut x = Datum::new(Time::ZERO, 6);
     x /= 2;
-    assert_eq!(x, Datum::new(Time(0), 3));
+    assert_eq!(x, Datum::new(Time::ZERO, 3));
 }
 #[test]
 fn datum_state_mul() {
     assert_eq!(
-        Datum::new(Time(0), State::new_raw(1.0, 2.0, 3.0)) * Datum::new(Time(1), 3.0),
-        Datum::new(Time(1), State::new_raw(3.0, 6.0, 9.0))
+        Datum::new(Time::ZERO, State::new_raw(1.0, 2.0, 3.0))
+            * Datum::new(Time::from_nanoseconds(1), 3.0),
+        Datum::new(Time::from_nanoseconds(1), State::new_raw(3.0, 6.0, 9.0))
     );
     assert_eq!(
-        Datum::new(Time(1), State::new_raw(1.0, 2.0, 3.0)) * Datum::new(Time(0), 3.0),
-        Datum::new(Time(1), State::new_raw(3.0, 6.0, 9.0))
+        Datum::new(Time::from_nanoseconds(1), State::new_raw(1.0, 2.0, 3.0))
+            * Datum::new(Time::ZERO, 3.0),
+        Datum::new(Time::from_nanoseconds(1), State::new_raw(3.0, 6.0, 9.0))
     );
 
-    let mut x = Datum::new(Time(0), State::new_raw(1.0, 2.0, 3.0));
-    x *= Datum::new(Time(1), 3.0);
-    assert_eq!(x, Datum::new(Time(1), State::new_raw(3.0, 6.0, 9.0)));
+    let mut x = Datum::new(Time::ZERO, State::new_raw(1.0, 2.0, 3.0));
+    x *= Datum::new(Time::from_nanoseconds(1), 3.0);
+    assert_eq!(
+        x,
+        Datum::new(Time::from_nanoseconds(1), State::new_raw(3.0, 6.0, 9.0))
+    );
 
-    let mut x = Datum::new(Time(1), State::new_raw(1.0, 2.0, 3.0));
-    x *= Datum::new(Time(0), 3.0);
-    assert_eq!(x, Datum::new(Time(1), State::new_raw(3.0, 6.0, 9.0)));
+    let mut x = Datum::new(Time::from_nanoseconds(1), State::new_raw(1.0, 2.0, 3.0));
+    x *= Datum::new(Time::ZERO, 3.0);
+    assert_eq!(
+        x,
+        Datum::new(Time::from_nanoseconds(1), State::new_raw(3.0, 6.0, 9.0))
+    );
 
     assert_eq!(
-        Datum::new(Time(0), State::new_raw(1.0, 2.0, 3.0)) * 3.0,
-        Datum::new(Time(0), State::new_raw(3.0, 6.0, 9.0))
+        Datum::new(Time::ZERO, State::new_raw(1.0, 2.0, 3.0)) * 3.0,
+        Datum::new(Time::ZERO, State::new_raw(3.0, 6.0, 9.0))
     );
 
-    let mut x = Datum::new(Time(0), State::new_raw(1.0, 2.0, 3.0));
+    let mut x = Datum::new(Time::ZERO, State::new_raw(1.0, 2.0, 3.0));
     x *= 3.0;
-    assert_eq!(x, Datum::new(Time(0), State::new_raw(3.0, 6.0, 9.0)));
+    assert_eq!(x, Datum::new(Time::ZERO, State::new_raw(3.0, 6.0, 9.0)));
 }
 #[test]
 fn datum_state_div() {
     assert_eq!(
-        Datum::new(Time(0), State::new_raw(2.0, 4.0, 6.0)) / Datum::new(Time(1), 2.0),
-        Datum::new(Time(1), State::new_raw(1.0, 2.0, 3.0))
+        Datum::new(Time::ZERO, State::new_raw(2.0, 4.0, 6.0))
+            / Datum::new(Time::from_nanoseconds(1), 2.0),
+        Datum::new(Time::from_nanoseconds(1), State::new_raw(1.0, 2.0, 3.0))
     );
     assert_eq!(
-        Datum::new(Time(1), State::new_raw(2.0, 4.0, 6.0)) / Datum::new(Time(0), 2.0),
-        Datum::new(Time(1), State::new_raw(1.0, 2.0, 3.0))
+        Datum::new(Time::from_nanoseconds(1), State::new_raw(2.0, 4.0, 6.0))
+            / Datum::new(Time::ZERO, 2.0),
+        Datum::new(Time::from_nanoseconds(1), State::new_raw(1.0, 2.0, 3.0))
     );
 
-    let mut x = Datum::new(Time(0), State::new_raw(2.0, 4.0, 6.0));
-    x /= Datum::new(Time(1), 2.0);
-    assert_eq!(x, Datum::new(Time(1), State::new_raw(1.0, 2.0, 3.0)));
+    let mut x = Datum::new(Time::ZERO, State::new_raw(2.0, 4.0, 6.0));
+    x /= Datum::new(Time::from_nanoseconds(1), 2.0);
+    assert_eq!(
+        x,
+        Datum::new(Time::from_nanoseconds(1), State::new_raw(1.0, 2.0, 3.0))
+    );
 
-    let mut x = Datum::new(Time(1), State::new_raw(2.0, 4.0, 6.0));
-    x /= Datum::new(Time(0), 2.0);
-    assert_eq!(x, Datum::new(Time(1), State::new_raw(1.0, 2.0, 3.0)));
+    let mut x = Datum::new(Time::from_nanoseconds(1), State::new_raw(2.0, 4.0, 6.0));
+    x /= Datum::new(Time::ZERO, 2.0);
+    assert_eq!(
+        x,
+        Datum::new(Time::from_nanoseconds(1), State::new_raw(1.0, 2.0, 3.0))
+    );
 
     assert_eq!(
-        Datum::new(Time(0), State::new_raw(2.0, 4.0, 6.0)) / 2.0,
-        Datum::new(Time(0), State::new_raw(1.0, 2.0, 3.0))
+        Datum::new(Time::ZERO, State::new_raw(2.0, 4.0, 6.0)) / 2.0,
+        Datum::new(Time::ZERO, State::new_raw(1.0, 2.0, 3.0))
     );
 
-    let mut x = Datum::new(Time(0), State::new_raw(2.0, 4.0, 6.0));
+    let mut x = Datum::new(Time::ZERO, State::new_raw(2.0, 4.0, 6.0));
     x /= 2.0;
-    assert_eq!(x, Datum::new(Time(0), State::new_raw(1.0, 2.0, 3.0)));
+    assert_eq!(x, Datum::new(Time::ZERO, State::new_raw(1.0, 2.0, 3.0)));
 }
 #[test]
 fn pid_k_values_evaluate() {
@@ -349,15 +377,15 @@ fn motion_profile_get_mode() {
         Quantity::new(0.01, MILLIMETER_PER_SECOND_SQUARED),
     );
     assert_eq!(
-        motion_profile.get_mode(Time(5_000_000_000)),
+        motion_profile.get_mode(Time::from_nanoseconds(5_000_000_000)),
         Some(PositionDerivative::Acceleration)
     );
     assert_eq!(
-        motion_profile.get_mode(Time(25_000_000_000)),
+        motion_profile.get_mode(Time::from_nanoseconds(25_000_000_000)),
         Some(PositionDerivative::Velocity)
     );
     assert_eq!(
-        motion_profile.get_mode(Time(35_000_000_000)),
+        motion_profile.get_mode(Time::from_nanoseconds(35_000_000_000)),
         Some(PositionDerivative::Acceleration)
     );
 }
@@ -369,21 +397,24 @@ fn motion_profile_get_acceleration() {
         Quantity::new(0.1, MILLIMETER_PER_SECOND),
         Quantity::new(0.01, MILLIMETER_PER_SECOND_SQUARED),
     );
-    assert_eq!(motion_profile.get_acceleration(Time(-1_000_000_000)), None);
     assert_eq!(
-        motion_profile.get_acceleration(Time(5_000_000_000)),
+        motion_profile.get_acceleration(Time::from_nanoseconds(-1_000_000_000)),
+        None
+    );
+    assert_eq!(
+        motion_profile.get_acceleration(Time::from_nanoseconds(5_000_000_000)),
         Some(Quantity::new(0.01, MILLIMETER_PER_SECOND_SQUARED))
     );
     assert_eq!(
-        motion_profile.get_acceleration(Time(25_000_000_000)),
+        motion_profile.get_acceleration(Time::from_nanoseconds(25_000_000_000)),
         Some(Quantity::new(0.0, MILLIMETER_PER_SECOND_SQUARED))
     );
     assert_eq!(
-        motion_profile.get_acceleration(Time(35_000_000_000)),
+        motion_profile.get_acceleration(Time::from_nanoseconds(35_000_000_000)),
         Some(Quantity::new(-0.01, MILLIMETER_PER_SECOND_SQUARED))
     );
     assert_eq!(
-        motion_profile.get_acceleration(Time(500_000_000_000)),
+        motion_profile.get_acceleration(Time::from_nanoseconds(500_000_000_000)),
         Some(Quantity::new(0.0, MILLIMETER_PER_SECOND_SQUARED))
     );
 }
@@ -395,24 +426,27 @@ fn motion_profile_get_velocity() {
         Quantity::new(0.1, MILLIMETER_PER_SECOND),
         Quantity::new(0.01, MILLIMETER_PER_SECOND_SQUARED),
     );
-    assert_eq!(motion_profile.get_velocity(Time(-1_000_000_000)), None);
+    assert_eq!(
+        motion_profile.get_velocity(Time::from_nanoseconds(-1_000_000_000)),
+        None
+    );
     let gv5 = motion_profile
-        .get_velocity(Time(5_000_000_000))
+        .get_velocity(Time::from_nanoseconds(5_000_000_000))
         .unwrap()
         .value;
     assert!(0.049 < gv5 && gv5 < 0.051);
     let gv25 = motion_profile
-        .get_velocity(Time(25_000_000_000))
+        .get_velocity(Time::from_nanoseconds(25_000_000_000))
         .unwrap()
         .value;
     assert!(0.099 < gv25 && gv25 < 0.101);
     let gv35 = motion_profile
-        .get_velocity(Time(35_000_000_000))
+        .get_velocity(Time::from_nanoseconds(35_000_000_000))
         .unwrap()
         .value;
     assert!(0.049 < gv35 && gv35 < 0.051);
     assert_eq!(
-        motion_profile.get_velocity(Time(500_000_000_000)),
+        motion_profile.get_velocity(Time::from_nanoseconds(500_000_000_000)),
         Some(Quantity::new(0.0, MILLIMETER_PER_SECOND))
     );
 }
@@ -425,17 +459,17 @@ fn motion_profile_get_velocity_2() {
         Quantity::new(0.01, MILLIMETER_PER_SECOND_SQUARED),
     );
     let gv5 = motion_profile
-        .get_velocity(Time(5_000_000_000))
+        .get_velocity(Time::from_nanoseconds(5_000_000_000))
         .unwrap()
         .value;
     assert!(0.049 < gv5 && gv5 < 0.051);
     let gv25 = motion_profile
-        .get_velocity(Time(25_000_000_000))
+        .get_velocity(Time::from_nanoseconds(25_000_000_000))
         .unwrap()
         .value;
     assert!(0.099 < gv25 && gv25 < 0.101);
     let gv35 = motion_profile
-        .get_velocity(Time(35_000_000_000))
+        .get_velocity(Time::from_nanoseconds(35_000_000_000))
         .unwrap()
         .value;
     assert!(0.049 < gv35 && gv35 < 0.051);
@@ -449,16 +483,16 @@ fn motion_profile_get_velocity_3() {
         Quantity::new(0.01, MILLIMETER_PER_SECOND_SQUARED),
     );
     assert_eq!(
-        motion_profile.get_velocity(Time(5_000_000_000)),
+        motion_profile.get_velocity(Time::from_nanoseconds(5_000_000_000)),
         Some(Quantity::new(0.15, MILLIMETER_PER_SECOND))
     );
     let gv15 = motion_profile
-        .get_velocity(Time(15_000_000_000))
+        .get_velocity(Time::from_nanoseconds(15_000_000_000))
         .unwrap()
         .value;
     assert!(0.199 < gv15 && gv15 < 0.201);
     assert_eq!(
-        motion_profile.get_velocity(Time(25_000_000_000)),
+        motion_profile.get_velocity(Time::from_nanoseconds(25_000_000_000)),
         Some(Quantity::new(0.15, MILLIMETER_PER_SECOND))
     );
 }
@@ -470,29 +504,32 @@ fn motion_profile_get_position() {
         Quantity::new(0.1, MILLIMETER_PER_SECOND),
         Quantity::new(0.01, MILLIMETER_PER_SECOND_SQUARED),
     );
-    assert_eq!(motion_profile.get_position(Time(-1_000_000_000)), None);
+    assert_eq!(
+        motion_profile.get_position(Time::from_nanoseconds(-1_000_000_000)),
+        None
+    );
     let gp5 = motion_profile
-        .get_position(Time(5_000_000_000))
+        .get_position(Time::from_nanoseconds(5_000_000_000))
         .unwrap()
         .value;
     assert!(0.124 < gp5 && gp5 < 0.126);
     assert_eq!(
         motion_profile
-            .get_position(Time(25_000_000_000))
+            .get_position(Time::from_nanoseconds(25_000_000_000))
             .unwrap()
             .value,
         2.0
     );
     assert_eq!(
         motion_profile
-            .get_position(Time(35_000_000_000))
+            .get_position(Time::from_nanoseconds(35_000_000_000))
             .unwrap()
             .value,
         2.875
     );
     assert_eq!(
         motion_profile
-            .get_position(Time(500_000_000_000))
+            .get_position(Time::from_nanoseconds(500_000_000_000))
             .unwrap()
             .value,
         3.0
@@ -508,21 +545,21 @@ fn motion_profile_get_position_2() {
     );
     assert_eq!(
         motion_profile
-            .get_position(Time(5_000_000_000))
+            .get_position(Time::from_nanoseconds(5_000_000_000))
             .unwrap()
             .value,
         1.125
     );
     assert_eq!(
         motion_profile
-            .get_position(Time(25_000_000_000))
+            .get_position(Time::from_nanoseconds(25_000_000_000))
             .unwrap()
             .value,
         3.0
     );
     assert_eq!(
         motion_profile
-            .get_position(Time(35_000_000_000))
+            .get_position(Time::from_nanoseconds(35_000_000_000))
             .unwrap()
             .value,
         3.875
@@ -538,21 +575,21 @@ fn motion_profile_get_position_3() {
     );
     assert_eq!(
         motion_profile
-            .get_position(Time(5_000_000_000))
+            .get_position(Time::from_nanoseconds(5_000_000_000))
             .unwrap()
             .value,
         1.625
     );
     assert_eq!(
         motion_profile
-            .get_position(Time(15_000_000_000))
+            .get_position(Time::from_nanoseconds(15_000_000_000))
             .unwrap()
             .value,
         3.5
     );
     assert_eq!(
         motion_profile
-            .get_position(Time(25_000_000_000))
+            .get_position(Time::from_nanoseconds(25_000_000_000))
             .unwrap()
             .value,
         5.375
@@ -568,20 +605,35 @@ fn motion_profile_history() {
     );
     let mut motion_profile = Box::new(motion_profile) as Box<dyn History<Command, ()>>;
     let _ = motion_profile.update().unwrap(); //This should do nothing.
-    assert_eq!(motion_profile.get(Time(-20_000_000_000)), None);
     assert_eq!(
-        motion_profile.get(Time(5_000_000_000)).unwrap().value,
+        motion_profile.get(Time::from_nanoseconds(-20_000_000_000)),
+        None
+    );
+    assert_eq!(
+        motion_profile
+            .get(Time::from_nanoseconds(5_000_000_000))
+            .unwrap()
+            .value,
         Command::new(PositionDerivative::Acceleration, 0.01)
     );
-    let g25 = motion_profile.get(Time(25_000_000_000)).unwrap().value;
+    let g25 = motion_profile
+        .get(Time::from_nanoseconds(25_000_000_000))
+        .unwrap()
+        .value;
     assert_eq!(PositionDerivative::from(g25), PositionDerivative::Velocity);
     assert!(0.099 < f32::from(g25) && f32::from(g25) < 0.101f32);
     assert_eq!(
-        motion_profile.get(Time(35_000_000_000)).unwrap().value,
+        motion_profile
+            .get(Time::from_nanoseconds(35_000_000_000))
+            .unwrap()
+            .value,
         Command::new(PositionDerivative::Acceleration, -0.01)
     );
     assert_eq!(
-        motion_profile.get(Time(99999_000_000_000)).unwrap().value,
+        motion_profile
+            .get(Time::from_nanoseconds(99999_000_000_000))
+            .unwrap()
+            .value,
         Command::new(PositionDerivative::Position, 3.0)
     );
 }
@@ -594,23 +646,23 @@ fn motion_profile_piece() {
         Quantity::new(0.01, MILLIMETER_PER_SECOND_SQUARED),
     );
     assert_eq!(
-        motion_profile.get_piece(Time(-20_000_000_000)),
+        motion_profile.get_piece(Time::from_nanoseconds(-20_000_000_000)),
         MotionProfilePiece::BeforeStart
     );
     assert_eq!(
-        motion_profile.get_piece(Time(5_000_000_000)),
+        motion_profile.get_piece(Time::from_nanoseconds(5_000_000_000)),
         MotionProfilePiece::InitialAcceleration
     );
     assert_eq!(
-        motion_profile.get_piece(Time(25_000_000_000)),
+        motion_profile.get_piece(Time::from_nanoseconds(25_000_000_000)),
         MotionProfilePiece::ConstantVelocity
     );
     assert_eq!(
-        motion_profile.get_piece(Time(35_000_000_000)),
+        motion_profile.get_piece(Time::from_nanoseconds(35_000_000_000)),
         MotionProfilePiece::EndAcceleration
     );
     assert_eq!(
-        motion_profile.get_piece(Time(500_000_000_000)),
+        motion_profile.get_piece(Time::from_nanoseconds(500_000_000_000)),
         MotionProfilePiece::Complete
     );
 }
@@ -690,22 +742,22 @@ fn time_getter_from_stream() {
     }
     impl Stream {
         const fn new() -> Self {
-            Self { time: Time(0) }
+            Self { time: Time::ZERO }
         }
     }
     impl Getter<(), ()> for Stream {
         fn get(&self) -> Output<(), ()> {
-            match self.time {
-                Time(0) => Ok(Some(Datum::new(self.time, ()))),
-                Time(1) => Ok(None),
-                Time(2) => Err(Error::Other(())),
+            match self.time.as_nanoseconds() {
+                0 => Ok(Some(Datum::new(self.time, ()))),
+                1 => Ok(None),
+                2 => Err(Error::Other(())),
                 _ => panic!("should always be 0, 1, or 2"),
             }
         }
     }
     impl Updatable<()> for Stream {
         fn update(&mut self) -> NothingOrError<()> {
-            self.time += Time(1);
+            self.time += Time::from_nanoseconds(1);
             Ok(())
         }
     }
@@ -714,7 +766,7 @@ fn time_getter_from_stream() {
         let stream = Reference::from_ptr(core::ptr::addr_of_mut!(STREAM));
         let mut time_getter = TimeGetterFromGetter::new(stream.clone());
         time_getter.update().unwrap(); //This should do nothing.
-        assert_eq!(time_getter.get(), Ok(Time(0)));
+        assert_eq!(time_getter.get(), Ok(Time::ZERO));
         stream.borrow_mut().update().unwrap();
         assert_eq!(time_getter.get(), Err(Error::FromNone));
         stream.borrow_mut().update().unwrap();
@@ -740,7 +792,7 @@ fn settable() {
             if self.none {
                 return Ok(None);
             }
-            Ok(Some(Datum::new(Time(0), self.value)))
+            Ok(Some(Datum::new(Time::ZERO, self.value)))
         }
     }
     impl Updatable<()> for MyGetter {
@@ -830,7 +882,7 @@ fn getter_from_history() {
         fn get(&self, time: Time) -> Option<Datum<i64>> {
             match self.update_test_state {
                 UpdateTestState::Unneeded | UpdateTestState::Waiting => {
-                    Some(Datum::new(time, time.into()))
+                    Some(Datum::new(time, time.as_nanoseconds()))
                 }
                 UpdateTestState::Updated => Some(Datum::new(time, 30)),
                 UpdateTestState::ReturnNone => None,
@@ -851,7 +903,9 @@ fn getter_from_history() {
     }
     impl MyTimeGetter {
         const fn new() -> Self {
-            Self { time: Time(5) }
+            Self {
+                time: Time::from_nanoseconds(5),
+            }
         }
     }
     impl TimeGetter<()> for MyTimeGetter {
@@ -861,7 +915,7 @@ fn getter_from_history() {
     }
     impl Updatable<()> for MyTimeGetter {
         fn update(&mut self) -> NothingOrError<()> {
-            self.time += Time(1);
+            self.time += Time::from_nanoseconds(1);
             Ok(())
         }
     }
@@ -873,9 +927,15 @@ fn getter_from_history() {
 
         {
             let no_delta = GetterFromHistory::new_no_delta(&mut my_history, my_time_getter.clone());
-            assert_eq!(no_delta.get().unwrap().unwrap(), Datum::new(Time(5), 5));
+            assert_eq!(
+                no_delta.get().unwrap().unwrap(),
+                Datum::new(Time::from_nanoseconds(5), 5)
+            );
             my_time_getter.borrow_mut().update().unwrap();
-            assert_eq!(no_delta.get().unwrap().unwrap(), Datum::new(Time(6), 6));
+            assert_eq!(
+                no_delta.get().unwrap().unwrap(),
+                Datum::new(Time::from_nanoseconds(6), 6)
+            );
         }
 
         {
@@ -884,12 +944,12 @@ fn getter_from_history() {
                     .unwrap();
             assert_eq!(
                 start_at_zero.get().unwrap().unwrap(),
-                Datum::new(Time(6), 0)
+                Datum::new(Time::from_nanoseconds(6), 0)
             );
             my_time_getter.borrow_mut().update().unwrap();
             assert_eq!(
                 start_at_zero.get().unwrap().unwrap(),
-                Datum::new(Time(7), 1)
+                Datum::new(Time::from_nanoseconds(7), 1)
             );
         }
 
@@ -897,17 +957,17 @@ fn getter_from_history() {
             let custom_start = GetterFromHistory::new_custom_start(
                 &mut my_history,
                 my_time_getter.clone(),
-                Time(10),
+                Time::from_nanoseconds(10),
             )
             .unwrap();
             assert_eq!(
                 custom_start.get().unwrap().unwrap(),
-                Datum::new(Time(7), 10)
+                Datum::new(Time::from_nanoseconds(7), 10)
             );
             my_time_getter.borrow_mut().update().unwrap();
             assert_eq!(
                 custom_start.get().unwrap().unwrap(),
-                Datum::new(Time(8), 11)
+                Datum::new(Time::from_nanoseconds(8), 11)
             );
         }
 
@@ -915,36 +975,51 @@ fn getter_from_history() {
             let custom_delta = GetterFromHistory::new_custom_delta(
                 &mut my_history,
                 my_time_getter.clone(),
-                Time(5),
+                Time::from_nanoseconds(5),
             );
             assert_eq!(
                 custom_delta.get().unwrap().unwrap(),
-                Datum::new(Time(8), 13)
+                Datum::new(Time::from_nanoseconds(8), 13)
             );
             my_time_getter.borrow_mut().update().unwrap();
             assert_eq!(
                 custom_delta.get().unwrap().unwrap(),
-                Datum::new(Time(9), 14)
+                Datum::new(Time::from_nanoseconds(9), 14)
             );
         }
 
         {
             let mut getter =
                 GetterFromHistory::new_no_delta(&mut my_history, my_time_getter.clone());
-            assert_eq!(getter.get().unwrap().unwrap(), Datum::new(Time(9), 9));
-            getter.set_delta(Time(5));
-            assert_eq!(getter.get().unwrap().unwrap(), Datum::new(Time(9), 14));
-            getter.set_time(Time(20)).unwrap();
-            assert_eq!(getter.get().unwrap().unwrap(), Datum::new(Time(9), 20));
+            assert_eq!(
+                getter.get().unwrap().unwrap(),
+                Datum::new(Time::from_nanoseconds(9), 9)
+            );
+            getter.set_delta(Time::from_nanoseconds(5));
+            assert_eq!(
+                getter.get().unwrap().unwrap(),
+                Datum::new(Time::from_nanoseconds(9), 14)
+            );
+            getter.set_time(Time::from_nanoseconds(20)).unwrap();
+            assert_eq!(
+                getter.get().unwrap().unwrap(),
+                Datum::new(Time::from_nanoseconds(9), 20)
+            );
         }
 
         {
             my_history.set_update_test();
             let mut getter =
                 GetterFromHistory::new_no_delta(&mut my_history, my_time_getter.clone());
-            assert_eq!(getter.get().unwrap().unwrap(), Datum::new(Time(9), 9));
+            assert_eq!(
+                getter.get().unwrap().unwrap(),
+                Datum::new(Time::from_nanoseconds(9), 9)
+            );
             getter.update().unwrap();
-            assert_eq!(getter.get().unwrap().unwrap(), Datum::new(Time(10), 30));
+            assert_eq!(
+                getter.get().unwrap().unwrap(),
+                Datum::new(Time::from_nanoseconds(10), 30)
+            );
         }
 
         {
@@ -959,7 +1034,7 @@ fn constant_getter() {
     struct MyTimeGetter;
     impl TimeGetter<()> for MyTimeGetter {
         fn get(&self) -> TimeOutput<()> {
-            Ok(Time(0))
+            Ok(Time::ZERO)
         }
     }
     impl Updatable<()> for MyTimeGetter {

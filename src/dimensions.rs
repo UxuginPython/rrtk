@@ -37,14 +37,14 @@
 //!`A *= B` and `A /= B`, it is not possible to implement them.
 //!```
 //!# use rrtk::*;
-//!let x = Time(2_000_000_000);
+//!let x = Time::from_nanoseconds(2_000_000_000);
 //!let y = Quantity::new(3.0, MILLIMETER_PER_SECOND);
 //!let z = x * y;
 //!assert_eq!(z, Quantity::new(6.0, MILLIMETER));
 //!```
 //!```compile_fail
 //!# use rrtk::*;
-//!let mut x = Time(2_000_000_000);
+//!let mut x = Time::from_nanoseconds(2_000_000_000);
 //!let y = Quantity::new(3.0, MILLIMETER_PER_SECOND);
 //!x *= y;
 //!```
@@ -52,7 +52,7 @@
 //!```
 //!# use rrtk::*;
 //!let mut x = Quantity::new(3.0, MILLIMETER_PER_SECOND);
-//!let y = Time(2_000_000_000);
+//!let y = Time::from_nanoseconds(2_000_000_000);
 //!x *= y;
 //!assert_eq!(x, Quantity::new(6.0, MILLIMETER));
 //!```
@@ -123,6 +123,8 @@ pub use constants::*;
 #[repr(transparent)]
 pub struct Time(i64);
 impl Time {
+    ///Zero time. You would get this from `Time::from_nanoseconds(0)`.
+    pub const ZERO: Self = Time(0);
     ///Construct a `Time` from `i64` nanoseconds, which is how the time is stored internally.
     pub const fn from_nanoseconds(value: i64) -> Self {
         Self(value)

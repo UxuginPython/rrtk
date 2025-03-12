@@ -13,30 +13,30 @@ fn terminal() {
     );
     term1
         .borrow_mut()
-        .set(Datum::new(Time(0), State::new_raw(1.0, 2.0, 3.0)))
+        .set(Datum::new(Time::ZERO, State::new_raw(1.0, 2.0, 3.0)))
         .unwrap();
     assert_eq!(
         term1.borrow().get(),
-        Ok(Some(Datum::new(Time(0), State::new_raw(1.0, 2.0, 3.0))))
+        Ok(Some(Datum::new(Time::ZERO, State::new_raw(1.0, 2.0, 3.0))))
     );
     let term2 = Terminal::<()>::new();
     connect(&term1, &term2);
     assert_eq!(
         term2.borrow().get(),
-        Ok(Some(Datum::new(Time(0), State::new_raw(1.0, 2.0, 3.0))))
+        Ok(Some(Datum::new(Time::ZERO, State::new_raw(1.0, 2.0, 3.0))))
     );
     term2
         .borrow_mut()
-        .set(Datum::new(Time(0), State::new_raw(4.0, 5.0, 6.0)))
+        .set(Datum::new(Time::ZERO, State::new_raw(4.0, 5.0, 6.0)))
         .unwrap();
     assert_eq!(
         term1.borrow().get(),
-        Ok(Some(Datum::new(Time(0), State::new_raw(2.5, 3.5, 4.5))))
+        Ok(Some(Datum::new(Time::ZERO, State::new_raw(2.5, 3.5, 4.5))))
     );
     term1
         .borrow_mut()
         .set(Datum::new(
-            Time(0),
+            Time::ZERO,
             Command::new(PositionDerivative::Position, 1.0),
         ))
         .unwrap(); //The stuff from `Settable` should take care of everything.
@@ -49,11 +49,11 @@ fn invert() {
     let terminal2 = Terminal::<()>::new();
     terminal1
         .borrow_mut()
-        .set(Datum::new(Time(0), State::new_raw(1.0, 2.0, 3.0)))
+        .set(Datum::new(Time::ZERO, State::new_raw(1.0, 2.0, 3.0)))
         .unwrap();
     terminal1
         .borrow_mut()
-        .set(Datum::new(Time(0), Command::Position(1.0)))
+        .set(Datum::new(Time::ZERO, Command::Position(1.0)))
         .unwrap();
     connect(invert.get_terminal_1(), &terminal1);
     connect(invert.get_terminal_2(), &terminal2);
@@ -92,11 +92,11 @@ fn invert() {
     let terminal2 = Terminal::<()>::new();
     terminal2
         .borrow_mut()
-        .set(Datum::new(Time(0), State::new_raw(-1.0, -2.0, -3.0)))
+        .set(Datum::new(Time::ZERO, State::new_raw(-1.0, -2.0, -3.0)))
         .unwrap();
     terminal2
         .borrow_mut()
-        .set(Datum::new(Time(0), Command::Position(-1.0)))
+        .set(Datum::new(Time::ZERO, Command::Position(-1.0)))
         .unwrap();
     connect(invert.get_terminal_1(), &terminal1);
     connect(invert.get_terminal_2(), &terminal2);
@@ -135,11 +135,11 @@ fn invert() {
     let terminal2 = Terminal::<()>::new();
     terminal1
         .borrow_mut()
-        .set(Datum::new(Time(0), State::new_raw(1.0, 2.0, 3.0)))
+        .set(Datum::new(Time::ZERO, State::new_raw(1.0, 2.0, 3.0)))
         .unwrap();
     terminal2
         .borrow_mut()
-        .set(Datum::new(Time(0), State::new_raw(-4.0, -5.0, -6.0)))
+        .set(Datum::new(Time::ZERO, State::new_raw(-4.0, -5.0, -6.0)))
         .unwrap();
     connect(invert.get_terminal_1(), &terminal1);
     connect(invert.get_terminal_2(), &terminal2);
@@ -183,20 +183,23 @@ fn gear_train_2() {
     assert_eq!(terminal2.borrow_mut().get(), Ok(None::<Datum<Command>>));
     terminal1
         .borrow_mut()
-        .set(Datum::new(Time(0), State::new_raw(3.0, 6.0, 9.0)))
+        .set(Datum::new(Time::ZERO, State::new_raw(3.0, 6.0, 9.0)))
         .unwrap();
     terminal1
         .borrow_mut()
-        .set(Datum::new(Time(0), Command::Position(3.0)))
+        .set(Datum::new(Time::ZERO, Command::Position(3.0)))
         .unwrap();
     gear_train.update().unwrap();
     assert_eq!(
         terminal2.borrow_mut().get(),
-        Ok(Some(Datum::new(Time(0), State::new_raw(-1.0, -2.0, -3.0))))
+        Ok(Some(Datum::new(
+            Time::ZERO,
+            State::new_raw(-1.0, -2.0, -3.0)
+        )))
     );
     assert_eq!(
         terminal2.borrow_mut().get(),
-        Ok(Some(Datum::new(Time(0), Command::Position(-1.0))))
+        Ok(Some(Datum::new(Time::ZERO, Command::Position(-1.0))))
     );
 }
 #[test]
@@ -210,20 +213,20 @@ fn gear_train_odd() {
     assert_eq!(terminal2.borrow_mut().get(), Ok(None::<Datum<Command>>));
     terminal1
         .borrow_mut()
-        .set(Datum::new(Time(0), State::new_raw(2.0, 4.0, 6.0)))
+        .set(Datum::new(Time::ZERO, State::new_raw(2.0, 4.0, 6.0)))
         .unwrap();
     terminal1
         .borrow_mut()
-        .set(Datum::new(Time(0), Command::Position(2.0)))
+        .set(Datum::new(Time::ZERO, Command::Position(2.0)))
         .unwrap();
     gear_train.update().unwrap();
     assert_eq!(
         terminal2.borrow_mut().get(),
-        Ok(Some(Datum::new(Time(0), State::new_raw(3.0, 6.0, 9.0))))
+        Ok(Some(Datum::new(Time::ZERO, State::new_raw(3.0, 6.0, 9.0))))
     );
     assert_eq!(
         terminal2.borrow_mut().get(),
-        Ok(Some(Datum::new(Time(0), Command::Position(3.0))))
+        Ok(Some(Datum::new(Time::ZERO, Command::Position(3.0))))
     );
 }
 #[test]
@@ -237,20 +240,23 @@ fn gear_train_even() {
     assert_eq!(terminal2.borrow_mut().get(), Ok(None::<Datum<Command>>));
     terminal1
         .borrow_mut()
-        .set(Datum::new(Time(0), State::new_raw(2.0, 4.0, 6.0)))
+        .set(Datum::new(Time::ZERO, State::new_raw(2.0, 4.0, 6.0)))
         .unwrap();
     terminal1
         .borrow_mut()
-        .set(Datum::new(Time(0), Command::Position(2.0)))
+        .set(Datum::new(Time::ZERO, Command::Position(2.0)))
         .unwrap();
     gear_train.update().unwrap();
     assert_eq!(
         terminal2.borrow_mut().get(),
-        Ok(Some(Datum::new(Time(0), State::new_raw(-3.0, -6.0, -9.0))))
+        Ok(Some(Datum::new(
+            Time::ZERO,
+            State::new_raw(-3.0, -6.0, -9.0)
+        )))
     );
     assert_eq!(
         terminal2.borrow_mut().get(),
-        Ok(Some(Datum::new(Time(0), Command::Position(-3.0))))
+        Ok(Some(Datum::new(Time::ZERO, Command::Position(-3.0))))
     );
 }
 #[test]
@@ -259,39 +265,63 @@ fn gear_train_multiple_inputs() {
     gear_train
         .get_terminal_1()
         .borrow_mut()
-        .set(Datum::new(Time(3), State::new_raw(2.0, 4.0, 6.0)))
+        .set(Datum::new(
+            Time::from_nanoseconds(3),
+            State::new_raw(2.0, 4.0, 6.0),
+        ))
         .unwrap();
     gear_train
         .get_terminal_1()
         .borrow_mut()
-        .set(Datum::new(Time(3), Command::Position(2.0)))
+        .set(Datum::new(
+            Time::from_nanoseconds(3),
+            Command::Position(2.0),
+        ))
         .unwrap();
     gear_train
         .get_terminal_2()
         .borrow_mut()
-        .set(Datum::new(Time(2), State::new_raw(-2.0, -4.0, -6.0)))
+        .set(Datum::new(
+            Time::from_nanoseconds(2),
+            State::new_raw(-2.0, -4.0, -6.0),
+        ))
         .unwrap();
     gear_train
         .get_terminal_2()
         .borrow_mut()
-        .set(Datum::new(Time(2), Command::Position(-2.0)))
+        .set(Datum::new(
+            Time::from_nanoseconds(2),
+            Command::Position(-2.0),
+        ))
         .unwrap();
     gear_train.update().unwrap();
     assert_eq!(
         gear_train.get_terminal_1().borrow().get(),
-        Ok(Some(Datum::new(Time(3), State::new_raw(2.4, 4.8, 7.2))))
+        Ok(Some(Datum::new(
+            Time::from_nanoseconds(3),
+            State::new_raw(2.4, 4.8, 7.2)
+        )))
     );
     assert_eq!(
         gear_train.get_terminal_1().borrow().get(),
-        Ok(Some(Datum::new(Time(3), Command::Position(2.0))))
+        Ok(Some(Datum::new(
+            Time::from_nanoseconds(3),
+            Command::Position(2.0)
+        )))
     );
     assert_eq!(
         gear_train.get_terminal_2().borrow().get(),
-        Ok(Some(Datum::new(Time(3), State::new_raw(-1.2, -2.4, -3.6))))
+        Ok(Some(Datum::new(
+            Time::from_nanoseconds(3),
+            State::new_raw(-1.2, -2.4, -3.6)
+        )))
     );
     assert_eq!(
         gear_train.get_terminal_2().borrow().get(),
-        Ok(Some(Datum::new(Time(3), Command::Position(-1.0))))
+        Ok(Some(Datum::new(
+            Time::from_nanoseconds(3),
+            Command::Position(-1.0)
+        )))
     );
 }
 #[test]
@@ -302,15 +332,15 @@ fn axle() {
     let terminal3 = Terminal::new();
     terminal1
         .borrow_mut()
-        .set(Datum::new(Time(0), State::new_raw(1.0, 2.0, 3.0)))
+        .set(Datum::new(Time::ZERO, State::new_raw(1.0, 2.0, 3.0)))
         .unwrap();
     terminal2
         .borrow_mut()
-        .set(Datum::new(Time(0), State::new_raw(4.0, 5.0, 6.0)))
+        .set(Datum::new(Time::ZERO, State::new_raw(4.0, 5.0, 6.0)))
         .unwrap();
     terminal1
         .borrow_mut()
-        .set(Datum::new(Time(0), Command::Position(1.0)))
+        .set(Datum::new(Time::ZERO, Command::Position(1.0)))
         .unwrap();
     connect(axle.get_terminal(0), &terminal1);
     connect(axle.get_terminal(1), &terminal2);
@@ -375,15 +405,15 @@ fn differential() {
     let terminal_sum = Terminal::new();
     terminal1
         .borrow_mut()
-        .set(Datum::new(Time(0), State::new_raw(2.0, 2.0, 2.0)))
+        .set(Datum::new(Time::ZERO, State::new_raw(2.0, 2.0, 2.0)))
         .unwrap();
     terminal2
         .borrow_mut()
-        .set(Datum::new(Time(0), State::new_raw(3.0, 3.0, 3.0)))
+        .set(Datum::new(Time::ZERO, State::new_raw(3.0, 3.0, 3.0)))
         .unwrap();
     terminal_sum
         .borrow_mut()
-        .set(Datum::new(Time(0), State::new_raw(4.0, 4.0, 4.0)))
+        .set(Datum::new(Time::ZERO, State::new_raw(4.0, 4.0, 4.0)))
         .unwrap();
     connect(differential.get_side_1(), &terminal1);
     connect(differential.get_side_2(), &terminal2);
@@ -426,15 +456,15 @@ fn differential_distrust_side_1() {
     let terminal_sum = Terminal::new();
     terminal1
         .borrow_mut()
-        .set(Datum::new(Time(0), State::new_raw(2.0, 2.0, 2.0)))
+        .set(Datum::new(Time::ZERO, State::new_raw(2.0, 2.0, 2.0)))
         .unwrap();
     terminal2
         .borrow_mut()
-        .set(Datum::new(Time(0), State::new_raw(3.0, 3.0, 3.0)))
+        .set(Datum::new(Time::ZERO, State::new_raw(3.0, 3.0, 3.0)))
         .unwrap();
     terminal_sum
         .borrow_mut()
-        .set(Datum::new(Time(0), State::new_raw(4.0, 4.0, 4.0)))
+        .set(Datum::new(Time::ZERO, State::new_raw(4.0, 4.0, 4.0)))
         .unwrap();
     connect(differential.get_side_1(), &terminal1);
     connect(differential.get_side_2(), &terminal2);
@@ -477,15 +507,15 @@ fn differential_distrust_side_2() {
     let terminal_sum = Terminal::new();
     terminal1
         .borrow_mut()
-        .set(Datum::new(Time(0), State::new_raw(2.0, 2.0, 2.0)))
+        .set(Datum::new(Time::ZERO, State::new_raw(2.0, 2.0, 2.0)))
         .unwrap();
     terminal2
         .borrow_mut()
-        .set(Datum::new(Time(0), State::new_raw(3.0, 3.0, 3.0)))
+        .set(Datum::new(Time::ZERO, State::new_raw(3.0, 3.0, 3.0)))
         .unwrap();
     terminal_sum
         .borrow_mut()
-        .set(Datum::new(Time(0), State::new_raw(4.0, 4.0, 4.0)))
+        .set(Datum::new(Time::ZERO, State::new_raw(4.0, 4.0, 4.0)))
         .unwrap();
     connect(differential.get_side_1(), &terminal1);
     connect(differential.get_side_2(), &terminal2);
@@ -528,15 +558,15 @@ fn differential_distrust_sum() {
     let terminal_sum = Terminal::new();
     terminal1
         .borrow_mut()
-        .set(Datum::new(Time(0), State::new_raw(2.0, 2.0, 2.0)))
+        .set(Datum::new(Time::ZERO, State::new_raw(2.0, 2.0, 2.0)))
         .unwrap();
     terminal2
         .borrow_mut()
-        .set(Datum::new(Time(0), State::new_raw(3.0, 3.0, 3.0)))
+        .set(Datum::new(Time::ZERO, State::new_raw(3.0, 3.0, 3.0)))
         .unwrap();
     terminal_sum
         .borrow_mut()
-        .set(Datum::new(Time(0), State::new_raw(4.0, 4.0, 4.0)))
+        .set(Datum::new(Time::ZERO, State::new_raw(4.0, 4.0, 4.0)))
         .unwrap();
     connect(differential.get_side_1(), &terminal1);
     connect(differential.get_side_2(), &terminal2);
@@ -601,7 +631,7 @@ fn actuator_wrapper() {
             assert_eq!(
                 self.get_last_request().unwrap(),
                 TerminalData {
-                    time: Time(2),
+                    time: Time::from_nanoseconds(2),
                     command: Some(Command::new(PositionDerivative::Position, 5.0)),
                     state: Some(State::new_raw(1.0, 2.0, 3.0)),
                 }
@@ -619,13 +649,16 @@ fn actuator_wrapper() {
     terminal
         .borrow_mut()
         .set(Datum::new(
-            Time(1),
+            Time::from_nanoseconds(1),
             Command::new(PositionDerivative::Position, 5.0),
         ))
         .unwrap();
     terminal
         .borrow_mut()
-        .set(Datum::new(Time(2), State::new_raw(1.0, 2.0, 3.0)))
+        .set(Datum::new(
+            Time::from_nanoseconds(2),
+            State::new_raw(1.0, 2.0, 3.0),
+        ))
         .unwrap();
     wrapper.update().unwrap();
     unsafe {
@@ -637,7 +670,7 @@ fn getter_state_device_wrapper() {
     struct GetterState;
     impl Getter<State, ()> for GetterState {
         fn get(&self) -> Output<State, ()> {
-            Ok(Some(Datum::new(Time(0), State::new_raw(1.0, 2.0, 3.0))))
+            Ok(Some(Datum::new(Time::ZERO, State::new_raw(1.0, 2.0, 3.0))))
         }
     }
     impl Updatable<()> for GetterState {
@@ -678,7 +711,7 @@ fn pid_wrapper() {
         fn new() -> Self {
             Self {
                 settable_data: SettableData::new(),
-                time: Time(0),
+                time: Time::ZERO,
             }
         }
     }
@@ -686,11 +719,11 @@ fn pid_wrapper() {
         fn impl_set(&mut self, value: f32) -> NothingOrError<()> {
             assert_eq!(
                 value,
-                match self.time {
-                    Time(1_000_000_000) => 5.0,
-                    Time(2_000_000_000) => 5.05,
-                    Time(3_000_000_000) => 5.1,
-                    Time(4_000_000_000) => 5.15,
+                match self.time.as_nanoseconds() {
+                    1_000_000_000 => 5.0,
+                    2_000_000_000 => 5.05,
+                    3_000_000_000 => 5.1,
+                    4_000_000_000 => 5.15,
                     _ => unimplemented!(),
                 }
             );
@@ -709,7 +742,7 @@ fn pid_wrapper() {
     impl Updatable<()> for Motor {
         fn update(&mut self) -> NothingOrError<()> {
             self.update_following_data().unwrap();
-            self.time += Time(1_000_000_000);
+            self.time += Time::from_nanoseconds(1_000_000_000);
             Ok(())
         }
     }
@@ -724,13 +757,13 @@ fn pid_wrapper() {
     }
     impl Updatable<()> for Encoder {
         fn update(&mut self) -> NothingOrError<()> {
-            self.time += Time(1_000_000_000);
+            self.time += Time::from_nanoseconds(1_000_000_000);
             Ok(())
         }
     }
     let motor = Motor::new();
     let mut motor_wrapper =
-        devices::wrappers::PIDWrapper::new(motor, Time(0), STATE, COMMAND, K_VALUES);
+        devices::wrappers::PIDWrapper::new(motor, Time::ZERO, STATE, COMMAND, K_VALUES);
     let encoder = Encoder::default();
     let mut encoder_wrapper = devices::wrappers::GetterStateDeviceWrapper::new(encoder);
     connect(motor_wrapper.get_terminal(), encoder_wrapper.get_terminal());

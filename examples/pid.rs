@@ -117,7 +117,7 @@ struct MyStream {
 #[cfg(feature = "alloc")]
 impl MyStream {
     pub fn new() -> Self {
-        Self { time: Time(0) }
+        Self { time: Time::ZERO }
     }
 }
 //In a real system, obviously, the process variable must be dependent on the command. This is a
@@ -136,7 +136,7 @@ impl Getter<Quantity, ()> for MyStream {
 #[cfg(feature = "alloc")]
 impl Updatable<()> for MyStream {
     fn update(&mut self) -> NothingOrError<()> {
-        self.time += Time(2_000_000_000);
+        self.time += Time::from_nanoseconds(2_000_000_000);
         Ok(())
     }
 }
@@ -156,7 +156,7 @@ fn main() {
     stream.update().unwrap();
     println!(
         "time: {:?}; setpoint: {:?}; process: {:?}; command: {:?}",
-        stream.get().unwrap().unwrap().time.0,
+        stream.get().unwrap().unwrap().time.as_nanoseconds(),
         SETPOINT.value,
         input.borrow().get().unwrap().unwrap().value.value,
         stream.get().unwrap().unwrap().value

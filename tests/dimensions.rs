@@ -2,20 +2,8 @@
 // Copyright 2024-2025 UxuginPython
 use rrtk::*;
 #[test]
-fn time_new() {
-    let x = Time::new(5_000_000_000);
-    let y = Time(5_000_000_000);
-    assert_eq!(x, y);
-}
-#[test]
-fn time_from_i64() {
-    let x = Time::from(5_000_000_000);
-    let y = Time(5_000_000_000);
-    assert_eq!(x, y);
-}
-#[test]
 fn i64_from_time() {
-    let x = i64::from(Time(5_000_000_000));
+    let x = Time::from_nanoseconds(5_000_000_000).as_nanoseconds();
     let y = 5_000_000_000;
     assert_eq!(x, y);
 }
@@ -23,7 +11,7 @@ fn i64_from_time() {
 fn time_try_from_quantity_success() {
     let x = Quantity::new(5.0, SECOND);
     let x = Time::try_from(x).unwrap();
-    let y = Time(5_000_000_000);
+    let y = Time::from_nanoseconds(5_000_000_000);
     assert_eq!(x, y);
 }
 #[test]
@@ -38,75 +26,78 @@ fn time_try_from_quantity_failure() {
 }
 #[test]
 fn quantity_from_time() {
-    let x = Quantity::from(Time(5_000_000_000));
+    let x = Quantity::from(Time::from_nanoseconds(5_000_000_000));
     let y = Quantity::new(5.0, SECOND);
     assert_eq!(x, y);
 }
 #[test]
 fn time_add_sub() {
-    let x = Time(2_000_000_000);
-    let y = Time(3_000_000_000);
-    assert_eq!(x + y, Time(5_000_000_000));
+    let x = Time::from_nanoseconds(2_000_000_000);
+    let y = Time::from_nanoseconds(3_000_000_000);
+    assert_eq!(x + y, Time::from_nanoseconds(5_000_000_000));
 
-    let mut x = Time(2_000_000_000);
-    x += Time(3_000_000_000);
-    assert_eq!(x, Time(5_000_000_000));
+    let mut x = Time::from_nanoseconds(2_000_000_000);
+    x += Time::from_nanoseconds(3_000_000_000);
+    assert_eq!(x, Time::from_nanoseconds(5_000_000_000));
 
-    let x = Time(3_000_000_000);
-    let y = Time(2_000_000_000);
-    assert_eq!(x - y, Time(1_000_000_000));
+    let x = Time::from_nanoseconds(3_000_000_000);
+    let y = Time::from_nanoseconds(2_000_000_000);
+    assert_eq!(x - y, Time::from_nanoseconds(1_000_000_000));
 
-    let mut x = Time(3_000_000_000);
-    x -= Time(2_000_000_000);
-    assert_eq!(x, Time(1_000_000_000));
+    let mut x = Time::from_nanoseconds(3_000_000_000);
+    x -= Time::from_nanoseconds(2_000_000_000);
+    assert_eq!(x, Time::from_nanoseconds(1_000_000_000));
 
-    let x = Time(2_000_000_000);
+    let x = Time::from_nanoseconds(2_000_000_000);
     let y = Quantity::new(3.0, SECOND);
     assert_eq!(x + y, Quantity::new(5.0, SECOND));
 
-    let x = Time(3_000_000_000);
+    let x = Time::from_nanoseconds(3_000_000_000);
     let y = Quantity::new(2.0, SECOND);
     assert_eq!(x - y, Quantity::new(1.0, SECOND));
 }
 #[test]
 fn time_mul_div() {
-    let x = Time(2_000_000_000);
-    let y = Time(3_000_000_000);
+    let x = Time::from_nanoseconds(2_000_000_000);
+    let y = Time::from_nanoseconds(3_000_000_000);
     assert_eq!(x * y, Quantity::new(6.0, SECOND_SQUARED));
 
-    let x = Time(4_000_000_000);
-    let y = Time(2_000_000_000);
+    let x = Time::from_nanoseconds(4_000_000_000);
+    let y = Time::from_nanoseconds(2_000_000_000);
     assert_eq!(x / y, Quantity::new(2.0, DIMENSIONLESS));
 
-    let x = Time(2_000_000_000);
+    let x = Time::from_nanoseconds(2_000_000_000);
     let y = DimensionlessInteger(3);
-    assert_eq!(x * y, Time(6_000_000_000));
+    assert_eq!(x * y, Time::from_nanoseconds(6_000_000_000));
 
-    let mut x = Time(2_000_000_000);
+    let mut x = Time::from_nanoseconds(2_000_000_000);
     let y = DimensionlessInteger(3);
     x *= y;
-    assert_eq!(x, Time(6_000_000_000));
+    assert_eq!(x, Time::from_nanoseconds(6_000_000_000));
 
-    let x = Time(4_000_000_000);
+    let x = Time::from_nanoseconds(4_000_000_000);
     let y = DimensionlessInteger(2);
-    assert_eq!(x / y, Time(2_000_000_000));
+    assert_eq!(x / y, Time::from_nanoseconds(2_000_000_000));
 
-    let mut x = Time(4_000_000_000);
+    let mut x = Time::from_nanoseconds(4_000_000_000);
     let y = DimensionlessInteger(2);
     x /= y;
-    assert_eq!(x, Time(2_000_000_000));
+    assert_eq!(x, Time::from_nanoseconds(2_000_000_000));
 
-    let x = Time(2_000_000_000);
+    let x = Time::from_nanoseconds(2_000_000_000);
     let y = Quantity::new(3.0, MILLIMETER_PER_SECOND_SQUARED);
     assert_eq!(x * y, Quantity::new(6.0, MILLIMETER_PER_SECOND));
 
-    let x = Time(4_000_000_000);
+    let x = Time::from_nanoseconds(4_000_000_000);
     let y = Quantity::new(2.0, MILLIMETER_PER_SECOND_SQUARED);
     assert_eq!(x / y, Quantity::new(2.0, SECOND_CUBED_PER_MILLIMETER));
 }
 #[test]
 fn time_neg() {
-    assert_eq!(-Time(1_000_000_000), Time(-1_000_000_000));
+    assert_eq!(
+        -Time::from_nanoseconds(1_000_000_000),
+        Time::from_nanoseconds(-1_000_000_000)
+    );
 }
 #[test]
 fn dimensionless_integer_new() {
@@ -178,11 +169,11 @@ fn dimensionless_integer_add_sub() {
 #[test]
 fn dimensionless_integer_mul_div() {
     let x = DimensionlessInteger(2);
-    let y = Time(3_000_000_000);
-    assert_eq!(x * y, Time(6_000_000_000));
+    let y = Time::from_nanoseconds(3_000_000_000);
+    assert_eq!(x * y, Time::from_nanoseconds(6_000_000_000));
 
     let x = DimensionlessInteger(4);
-    let y = Time(2_000_000_000);
+    let y = Time::from_nanoseconds(2_000_000_000);
     assert_eq!(x / y, Quantity::new(2.0, INVERSE_SECOND));
 
     let x = DimensionlessInteger(2);
@@ -538,20 +529,20 @@ fn quantity_add_sub_success() {
     assert_eq!(x, Quantity::new(1.0, MILLIMETER_PER_SECOND));
 
     let x = Quantity::new(2.0, SECOND);
-    let y = Time(3_000_000_000);
+    let y = Time::from_nanoseconds(3_000_000_000);
     assert_eq!(x + y, Quantity::new(5.0, SECOND));
 
     let mut x = Quantity::new(2.0, SECOND);
-    let y = Time(3_000_000_000);
+    let y = Time::from_nanoseconds(3_000_000_000);
     x += y;
     assert_eq!(x, Quantity::new(5.0, SECOND));
 
     let x = Quantity::new(3.0, SECOND);
-    let y = Time(2_000_000_000);
+    let y = Time::from_nanoseconds(2_000_000_000);
     assert_eq!(x - y, Quantity::new(1.0, SECOND));
 
     let mut x = Quantity::new(3.0, SECOND);
-    let y = Time(2_000_000_000);
+    let y = Time::from_nanoseconds(2_000_000_000);
     x -= y;
     assert_eq!(x, Quantity::new(1.0, SECOND));
 
@@ -640,20 +631,20 @@ fn quantity_mul_div() {
     assert_eq!(x, Quantity::new(2.0, MILLIMETER_PER_SECOND_CUBED));
 
     let x = Quantity::new(3.0, MILLIMETER_PER_SECOND_SQUARED);
-    let y = Time(2_000_000_000);
+    let y = Time::from_nanoseconds(2_000_000_000);
     assert_eq!(x * y, Quantity::new(6.0, MILLIMETER_PER_SECOND));
 
     let mut x = Quantity::new(3.0, MILLIMETER_PER_SECOND_SQUARED);
-    let y = Time(2_000_000_000);
+    let y = Time::from_nanoseconds(2_000_000_000);
     x *= y;
     assert_eq!(x, Quantity::new(6.0, MILLIMETER_PER_SECOND));
 
     let x = Quantity::new(4.0, MILLIMETER_PER_SECOND);
-    let y = Time(2_000_000_000);
+    let y = Time::from_nanoseconds(2_000_000_000);
     assert_eq!(x / y, Quantity::new(2.0, MILLIMETER_PER_SECOND_SQUARED));
 
     let mut x = Quantity::new(4.0, MILLIMETER_PER_SECOND);
-    let y = Time(2_000_000_000);
+    let y = Time::from_nanoseconds(2_000_000_000);
     x /= y;
     assert_eq!(x, Quantity::new(2.0, MILLIMETER_PER_SECOND_SQUARED));
 

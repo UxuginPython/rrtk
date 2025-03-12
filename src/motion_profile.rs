@@ -200,12 +200,12 @@ mod tests {
             Quantity::new(0.1, MILLIMETER_PER_SECOND),
             Quantity::new(0.01, MILLIMETER_PER_SECOND_SQUARED),
         );
-        assert_eq!(motion_profile.t1, Time(10_000_000_000));
+        assert_eq!(motion_profile.t1, Time::from_nanoseconds(10_000_000_000));
         assert_eq!(
             motion_profile.t2 / DimensionlessInteger(1_000_000),
-            Time(30_000_000_000) / DimensionlessInteger(1_000_000)
+            Time::from_nanoseconds(30_000_000_000) / DimensionlessInteger(1_000_000)
         );
-        assert_eq!(motion_profile.t3, Time(40_000_000_000));
+        assert_eq!(motion_profile.t3, Time::from_nanoseconds(40_000_000_000));
         assert_eq!(
             motion_profile.max_acc,
             Quantity::new(0.01, MILLIMETER_PER_SECOND_SQUARED)
@@ -219,11 +219,11 @@ mod tests {
             Quantity::new(0.1, MILLIMETER_PER_SECOND),
             Quantity::new(0.01, MILLIMETER_PER_SECOND_SQUARED),
         );
-        assert_eq!(motion_profile.t1, Time(10_000_000_000));
-        assert_eq!(motion_profile.t2, Time(20_000_000_000));
+        assert_eq!(motion_profile.t1, Time::from_nanoseconds(10_000_000_000));
+        assert_eq!(motion_profile.t2, Time::from_nanoseconds(20_000_000_000));
         assert_eq!(
             motion_profile.t3 / DimensionlessInteger(1_000_000),
-            Time(30_000_000_000) / DimensionlessInteger(1_000_000)
+            Time::from_nanoseconds(30_000_000_000) / DimensionlessInteger(1_000_000)
         );
         assert_eq!(
             motion_profile.max_acc,
@@ -238,14 +238,14 @@ mod tests {
             Quantity::new(0.1, MILLIMETER_PER_SECOND),
             Quantity::new(0.01, MILLIMETER_PER_SECOND_SQUARED),
         );
-        assert_eq!(motion_profile.t1, Time(0));
+        assert_eq!(motion_profile.t1, Time::from_nanoseconds(0));
         assert_eq!(
-            (motion_profile.t2 + Time(1000)) / DimensionlessInteger(1_000_000),
-            Time(25_000_000_000) / DimensionlessInteger(1_000_000)
+            (motion_profile.t2 + Time::from_nanoseconds(1000)) / DimensionlessInteger(1_000_000),
+            Time::from_nanoseconds(25_000_000_000) / DimensionlessInteger(1_000_000)
         );
         assert_eq!(
             motion_profile.t3 / DimensionlessInteger(1_000_000),
-            Time(35_000_000_000) / DimensionlessInteger(1_000_000)
+            Time::from_nanoseconds(35_000_000_000) / DimensionlessInteger(1_000_000)
         );
         assert_eq!(
             motion_profile.max_acc,
@@ -260,12 +260,12 @@ mod tests {
             Quantity::new(0.1, MILLIMETER_PER_SECOND),
             Quantity::new(0.01, MILLIMETER_PER_SECOND_SQUARED),
         );
-        assert_eq!(motion_profile.t1, Time(10_000_000_000));
+        assert_eq!(motion_profile.t1, Time::from_nanoseconds(10_000_000_000));
         assert_eq!(
             motion_profile.t2 / DimensionlessInteger(1_000_000),
-            Time(30_000_000_000) / DimensionlessInteger(1_000_000)
+            Time::from_nanoseconds(30_000_000_000) / DimensionlessInteger(1_000_000)
         );
-        assert_eq!(motion_profile.t3, Time(40_000_000_000));
+        assert_eq!(motion_profile.t3, Time::from_nanoseconds(40_000_000_000));
         assert_eq!(
             motion_profile.max_acc,
             Quantity::new(0.01, MILLIMETER_PER_SECOND_SQUARED)
@@ -279,14 +279,14 @@ mod tests {
             Quantity::new(0.2, MILLIMETER_PER_SECOND),
             Quantity::new(0.01, MILLIMETER_PER_SECOND_SQUARED),
         );
-        assert_eq!(motion_profile.t1, Time(20_000_000_000));
+        assert_eq!(motion_profile.t1, Time::from_nanoseconds(20_000_000_000));
         assert_eq!(
             motion_profile.t2 / DimensionlessInteger(1_000_000),
-            Time(30_000_000_000) / DimensionlessInteger(1_000_000)
+            Time::from_nanoseconds(30_000_000_000) / DimensionlessInteger(1_000_000)
         );
         assert_eq!(
-            (motion_profile.t3 + Time(10000)) / DimensionlessInteger(1_000_000),
-            Time(50_000_000_000) / DimensionlessInteger(1_000_000)
+            (motion_profile.t3 + Time::from_nanoseconds(10000)) / DimensionlessInteger(1_000_000),
+            Time::from_nanoseconds(50_000_000_000) / DimensionlessInteger(1_000_000)
         );
         assert_eq!(
             motion_profile.max_acc,
@@ -301,14 +301,14 @@ mod tests {
             Quantity::new(0.1, MILLIMETER_PER_SECOND),
             Quantity::new(0.02, MILLIMETER_PER_SECOND_SQUARED),
         );
-        assert_eq!(motion_profile.t1, Time(5_000_000_000));
+        assert_eq!(motion_profile.t1, Time::from_nanoseconds(5_000_000_000));
         assert_eq!(
             motion_profile.t2 / DimensionlessInteger(1_000_000),
-            Time(30_000_000_000) / DimensionlessInteger(1_000_000)
+            Time::from_nanoseconds(30_000_000_000) / DimensionlessInteger(1_000_000)
         );
         assert_eq!(
             motion_profile.t3 / DimensionlessInteger(1_000_000),
-            Time(35_000_000_000) / DimensionlessInteger(1_000_000)
+            Time::from_nanoseconds(35_000_000_000) / DimensionlessInteger(1_000_000)
         );
         assert_eq!(
             motion_profile.max_acc,
@@ -323,12 +323,12 @@ mod tests {
             Quantity::new(0.1, MILLIMETER_PER_SECOND),
             Quantity::new(0.01, MILLIMETER_PER_SECOND_SQUARED),
         );
-        assert_eq!(motion_profile.t1, Time(10_000_000_000));
+        assert_eq!(motion_profile.t1, Time::from_nanoseconds(10_000_000_000));
         assert_eq!(
             motion_profile.t2 / DimensionlessInteger(1_000_000),
-            Time(30_000_000_000) / DimensionlessInteger(1_000_000)
+            Time::from_nanoseconds(30_000_000_000) / DimensionlessInteger(1_000_000)
         );
-        assert_eq!(motion_profile.t3, Time(40_000_000_000));
+        assert_eq!(motion_profile.t3, Time::from_nanoseconds(40_000_000_000));
         assert_eq!(
             motion_profile.max_acc,
             Quantity::new(-0.01, MILLIMETER_PER_SECOND_SQUARED)

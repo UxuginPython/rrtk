@@ -276,7 +276,7 @@ impl<const N: usize, E: Copy + Debug> Updatable<E> for Axle<'_, N, E> {
     fn update(&mut self) -> NothingOrError<E> {
         self.update_terminals()?;
         let mut count = 0u16;
-        let mut datum = Datum::new(Time(i64::MIN), State::default());
+        let mut datum = Datum::new(Time::from_nanoseconds(i64::MIN), State::default());
         for i in &self.inputs {
             match i.borrow().get()? {
                 Some(gotten_datum) => {
