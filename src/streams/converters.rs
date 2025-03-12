@@ -78,7 +78,7 @@ impl<T: Clone, G: Getter<T, E> + ?Sized, TG: TimeGetter<E> + ?Sized, E: Copy + D
                 return Ok(Some(Datum::new(
                     self.time_getter.borrow().get()?,
                     self.none_value.clone(),
-                )))
+                )));
             }
         }
     }
@@ -543,12 +543,12 @@ pub struct DimensionRemover<
     phantom_e: PhantomData<E>,
 }
 impl<
-        T,
-        MM: Integer,
-        S: Integer,
-        G: Getter<compile_time_dimensions::Quantity<T, MM, S>, E> + ?Sized,
-        E: Copy + Debug,
-    > DimensionRemover<T, MM, S, G, E>
+    T,
+    MM: Integer,
+    S: Integer,
+    G: Getter<compile_time_dimensions::Quantity<T, MM, S>, E> + ?Sized,
+    E: Copy + Debug,
+> DimensionRemover<T, MM, S, G, E>
 {
     ///Constructor for `DimensionRemover`.
     pub fn new(input: Reference<G>) -> Self {
@@ -562,12 +562,12 @@ impl<
     }
 }
 impl<
-        T,
-        MM: Integer,
-        S: Integer,
-        G: Getter<compile_time_dimensions::Quantity<T, MM, S>, E> + ?Sized,
-        E: Copy + Debug,
-    > Getter<T, E> for DimensionRemover<T, MM, S, G, E>
+    T,
+    MM: Integer,
+    S: Integer,
+    G: Getter<compile_time_dimensions::Quantity<T, MM, S>, E> + ?Sized,
+    E: Copy + Debug,
+> Getter<T, E> for DimensionRemover<T, MM, S, G, E>
 {
     fn get(&self) -> Output<T, E> {
         match self.input.borrow().get()? {
@@ -577,12 +577,12 @@ impl<
     }
 }
 impl<
-        T,
-        MM: Integer,
-        S: Integer,
-        G: Getter<compile_time_dimensions::Quantity<T, MM, S>, E> + ?Sized,
-        E: Copy + Debug,
-    > Updatable<E> for DimensionRemover<T, MM, S, G, E>
+    T,
+    MM: Integer,
+    S: Integer,
+    G: Getter<compile_time_dimensions::Quantity<T, MM, S>, E> + ?Sized,
+    E: Copy + Debug,
+> Updatable<E> for DimensionRemover<T, MM, S, G, E>
 {
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())

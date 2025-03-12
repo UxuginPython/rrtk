@@ -303,11 +303,8 @@ where
     }
 }
 #[cfg(feature = "internal_enhanced_float")]
-impl<
-        T: Clone + Add<Output = T> + Mul<f32, Output = T>,
-        G: Getter<T, E> + ?Sized,
-        E: Copy + Debug,
-    > Updatable<E> for EWMAStream<T, G, E>
+impl<T: Clone + Add<Output = T> + Mul<f32, Output = T>, G: Getter<T, E> + ?Sized, E: Copy + Debug>
+    Updatable<E> for EWMAStream<T, G, E>
 {
     fn update(&mut self) -> NothingOrError<E> {
         let output = self.input.borrow().get();

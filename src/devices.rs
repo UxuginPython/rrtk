@@ -135,7 +135,9 @@ impl<'a, E: Copy + Debug> GearTrain<'a, E> {
     ///Construct a [`GearTrain`] from an array of the numbers of teeth on each gear in the train.
     pub const fn new<const N: usize>(teeth: [f32; N]) -> Self {
         if N < 2 {
-            panic!("rrtk::devices::GearTrain::new must be provided with at least two gear tooth counts.");
+            panic!(
+                "rrtk::devices::GearTrain::new must be provided with at least two gear tooth counts."
+            );
         }
         let ratio = teeth[0] / teeth[teeth.len() - 1] * if N % 2 == 0 { -1.0 } else { 1.0 };
         Self::with_ratio_raw(ratio)

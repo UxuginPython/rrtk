@@ -65,9 +65,9 @@ pub use datum::*;
 #[cfg(feature = "internal_enhanced_float")]
 use enhanced_float::*;
 pub use motion_profile::*;
+pub use reference::Reference;
 #[cfg(feature = "alloc")]
 pub use reference::rc_ref_cell_reference;
-pub use reference::Reference;
 #[cfg(feature = "std")]
 pub use reference::{arc_mutex_reference, arc_rw_lock_reference};
 pub use state::*;
@@ -593,7 +593,7 @@ impl<E: Copy + Debug> Getter<State, E> for Terminal<'_, E> {
                 2 => {
                     return Ok(Some(
                         (addends[0].assume_init() + addends[1].assume_init()) / 2.0,
-                    ))
+                    ));
                 }
                 _ => unimplemented!(),
             }
@@ -726,11 +726,7 @@ pub trait Device<E: Copy + Debug>: Updatable<E> {
 }
 ///Get the newer of two [`Datum`] objects.
 pub fn latest<T>(dat1: Datum<T>, dat2: Datum<T>) -> Datum<T> {
-    if dat1.time >= dat2.time {
-        dat1
-    } else {
-        dat2
-    }
+    if dat1.time >= dat2.time { dat1 } else { dat2 }
 }
 //TODO: Decide if this should be pub trait.
 trait Half {

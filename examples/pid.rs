@@ -175,5 +175,7 @@ fn main() {
 }
 #[cfg(not(feature = "alloc"))]
 fn main() {
-    println!("Enable the `alloc` feature to run this example.\nAssuming you're using Cargo, add the `--features alloc` flag to your command.");
+    println!(
+        "Enable the `alloc` feature to run this example.\nAssuming you're using Cargo, add the `--features alloc` flag to your command."
+    );
 }

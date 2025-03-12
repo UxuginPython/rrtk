@@ -83,13 +83,19 @@ fn main() {
 }
 #[cfg(all(not(feature = "devices"), feature = "alloc"))]
 fn main() {
-    println!("Enable the `devices` feature to run this example.\nAssuming you're using Cargo, add the `--features devices` flag to your command.");
+    println!(
+        "Enable the `devices` feature to run this example.\nAssuming you're using Cargo, add the `--features devices` flag to your command."
+    );
 }
 #[cfg(all(not(feature = "alloc"), feature = "devices"))]
 fn main() {
-    println!("Enable the `alloc` feature to run this example.\nAssuming you're using Cargo, add the `--features alloc` flag to your command.");
+    println!(
+        "Enable the `alloc` feature to run this example.\nAssuming you're using Cargo, add the `--features alloc` flag to your command."
+    );
 }
 #[cfg(all(not(feature = "alloc"), not(feature = "devices")))]
 fn main() {
-    println!("Enable the `alloc` and `devices` features to run this example.\nAssuming you're using Cargo, add the `--features alloc,devices` flag to your command.");
+    println!(
+        "Enable the `alloc` and `devices` features to run this example.\nAssuming you're using Cargo, add the `--features alloc,devices` flag to your command."
+    );
 }

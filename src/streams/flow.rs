@@ -61,12 +61,12 @@ pub struct IfElseStream<
     phantom_e: PhantomData<E>,
 }
 impl<
-        T,
-        GC: Getter<bool, E> + ?Sized,
-        GT: Getter<T, E> + ?Sized,
-        GF: Getter<T, E> + ?Sized,
-        E: Copy + Debug,
-    > IfElseStream<T, GC, GT, GF, E>
+    T,
+    GC: Getter<bool, E> + ?Sized,
+    GT: Getter<T, E> + ?Sized,
+    GF: Getter<T, E> + ?Sized,
+    E: Copy + Debug,
+> IfElseStream<T, GC, GT, GF, E>
 {
     ///Constructor for [`IfElseStream`].
     pub const fn new(
@@ -84,12 +84,12 @@ impl<
     }
 }
 impl<
-        T,
-        GC: Getter<bool, E> + ?Sized,
-        GT: Getter<T, E> + ?Sized,
-        GF: Getter<T, E> + ?Sized,
-        E: Copy + Debug,
-    > Getter<T, E> for IfElseStream<T, GC, GT, GF, E>
+    T,
+    GC: Getter<bool, E> + ?Sized,
+    GT: Getter<T, E> + ?Sized,
+    GF: Getter<T, E> + ?Sized,
+    E: Copy + Debug,
+> Getter<T, E> for IfElseStream<T, GC, GT, GF, E>
 {
     fn get(&self) -> Output<T, E> {
         let condition = match self.condition.borrow().get()? {
@@ -104,12 +104,12 @@ impl<
     }
 }
 impl<
-        T,
-        GC: Getter<bool, E> + ?Sized,
-        GT: Getter<T, E> + ?Sized,
-        GF: Getter<T, E> + ?Sized,
-        E: Copy + Debug,
-    > Updatable<E> for IfElseStream<T, GC, GT, GF, E>
+    T,
+    GC: Getter<bool, E> + ?Sized,
+    GT: Getter<T, E> + ?Sized,
+    GF: Getter<T, E> + ?Sized,
+    E: Copy + Debug,
+> Updatable<E> for IfElseStream<T, GC, GT, GF, E>
 {
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
