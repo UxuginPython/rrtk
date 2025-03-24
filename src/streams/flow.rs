@@ -4,17 +4,15 @@
 use crate::streams::*;
 ///Propagates its input if a `Getter<bool, _>` returns `Ok(Some(true))`, otherwise returns
 ///`Ok(None)`.
-pub struct IfStream<T, GC: Getter<bool, E> + ?Sized, GI: Getter<T, E> + ?Sized, E: Copy + Debug> {
-    condition: Reference<GC>,
-    input: Reference<GI>,
+pub struct IfStream<T, GC: Getter<bool, E>, GI: Getter<T, E>, E: Copy + Debug> {
+    condition: GC,
+    input: GI,
     phantom_t: PhantomData<T>,
     phantom_e: PhantomData<E>,
 }
-impl<T, GC: Getter<bool, E> + ?Sized, GI: Getter<T, E> + ?Sized, E: Copy + Debug>
-    IfStream<T, GC, GI, E>
-{
+impl<T, GC: Getter<bool, E>, GI: Getter<T, E>, E: Copy + Debug> IfStream<T, GC, GI, E> {
     ///Constructor for [`IfStream`].
-    pub const fn new(condition: Reference<GC>, input: Reference<GI>) -> Self {
+    pub const fn new(condition: GC, input: GI) -> Self {
         Self {
             condition: condition,
             input: input,
@@ -23,22 +21,22 @@ impl<T, GC: Getter<bool, E> + ?Sized, GI: Getter<T, E> + ?Sized, E: Copy + Debug
         }
     }
 }
-impl<T, GC: Getter<bool, E> + ?Sized, GI: Getter<T, E> + ?Sized, E: Copy + Debug> Getter<T, E>
+impl<T, GC: Getter<bool, E>, GI: Getter<T, E>, E: Copy + Debug> Getter<T, E>
     for IfStream<T, GC, GI, E>
 {
     fn get(&self) -> Output<T, E> {
-        let condition = match self.condition.borrow().get()? {
+        let condition = match self.condition.get()? {
             Some(output) => output.value,
             None => false,
         };
         if condition {
-            self.input.borrow().get()
+            self.input.get()
         } else {
             Ok(None)
         }
     }
 }
-impl<T, GC: Getter<bool, E> + ?Sized, GI: Getter<T, E> + ?Sized, E: Copy + Debug> Updatable<E>
+impl<T, GC: Getter<bool, E>, GI: Getter<T, E>, E: Copy + Debug> Updatable<E>
     for IfStream<T, GC, GI, E>
 {
     fn update(&mut self) -> NothingOrError<E> {
@@ -47,33 +45,19 @@ impl<T, GC: Getter<bool, E> + ?Sized, GI: Getter<T, E> + ?Sized, E: Copy + Debug
 }
 ///Returns the output of one input if a `Getter<bool, _>` returns `Ok(Some(true))` and another if
 ///it returns `Ok(Some(false))`. Returns `Ok(None)` if the `Getter<bool, _>` does.
-pub struct IfElseStream<
-    T,
-    GC: Getter<bool, E> + ?Sized,
-    GT: Getter<T, E> + ?Sized,
-    GF: Getter<T, E> + ?Sized,
-    E: Copy + Debug,
-> {
-    condition: Reference<GC>,
-    true_output: Reference<GT>,
-    false_output: Reference<GF>,
+pub struct IfElseStream<T, GC: Getter<bool, E>, GT: Getter<T, E>, GF: Getter<T, E>, E: Copy + Debug>
+{
+    condition: GC,
+    true_output: GT,
+    false_output: GF,
     phantom_t: PhantomData<T>,
     phantom_e: PhantomData<E>,
 }
-impl<
-    T,
-    GC: Getter<bool, E> + ?Sized,
-    GT: Getter<T, E> + ?Sized,
-    GF: Getter<T, E> + ?Sized,
-    E: Copy + Debug,
-> IfElseStream<T, GC, GT, GF, E>
+impl<T, GC: Getter<bool, E>, GT: Getter<T, E>, GF: Getter<T, E>, E: Copy + Debug>
+    IfElseStream<T, GC, GT, GF, E>
 {
     ///Constructor for [`IfElseStream`].
-    pub const fn new(
-        condition: Reference<GC>,
-        true_output: Reference<GT>,
-        false_output: Reference<GF>,
-    ) -> Self {
+    pub const fn new(condition: GC, true_output: GT, false_output: GF) -> Self {
         Self {
             condition: condition,
             true_output: true_output,
@@ -83,33 +67,23 @@ impl<
         }
     }
 }
-impl<
-    T,
-    GC: Getter<bool, E> + ?Sized,
-    GT: Getter<T, E> + ?Sized,
-    GF: Getter<T, E> + ?Sized,
-    E: Copy + Debug,
-> Getter<T, E> for IfElseStream<T, GC, GT, GF, E>
+impl<T, GC: Getter<bool, E>, GT: Getter<T, E>, GF: Getter<T, E>, E: Copy + Debug> Getter<T, E>
+    for IfElseStream<T, GC, GT, GF, E>
 {
     fn get(&self) -> Output<T, E> {
-        let condition = match self.condition.borrow().get()? {
+        let condition = match self.condition.get()? {
             Some(output) => output.value,
             None => return Ok(None),
         };
         if condition {
-            self.true_output.borrow().get()
+            self.true_output.get()
         } else {
-            self.false_output.borrow().get()
+            self.false_output.get()
         }
     }
 }
-impl<
-    T,
-    GC: Getter<bool, E> + ?Sized,
-    GT: Getter<T, E> + ?Sized,
-    GF: Getter<T, E> + ?Sized,
-    E: Copy + Debug,
-> Updatable<E> for IfElseStream<T, GC, GT, GF, E>
+impl<T, GC: Getter<bool, E>, GT: Getter<T, E>, GF: Getter<T, E>, E: Copy + Debug> Updatable<E>
+    for IfElseStream<T, GC, GT, GF, E>
 {
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
@@ -117,21 +91,14 @@ impl<
 }
 ///Returns the last value that a getter returned while another getter, a boolean, returned false.
 ///Passes the getter's value through if the boolean getter is false.
-pub struct FreezeStream<
-    T: Clone,
-    GC: Getter<bool, E> + ?Sized,
-    GI: Getter<T, E> + ?Sized,
-    E: Copy + Debug,
-> {
-    condition: Reference<GC>,
-    input: Reference<GI>,
+pub struct FreezeStream<T: Clone, GC: Getter<bool, E>, GI: Getter<T, E>, E: Copy + Debug> {
+    condition: GC,
+    input: GI,
     freeze_value: Output<T, E>,
 }
-impl<T: Clone, GC: Getter<bool, E> + ?Sized, GI: Getter<T, E> + ?Sized, E: Copy + Debug>
-    FreezeStream<T, GC, GI, E>
-{
+impl<T: Clone, GC: Getter<bool, E>, GI: Getter<T, E>, E: Copy + Debug> FreezeStream<T, GC, GI, E> {
     ///Constructor for [`FreezeStream`].
-    pub const fn new(condition: Reference<GC>, input: Reference<GI>) -> Self {
+    pub const fn new(condition: GC, input: GI) -> Self {
         Self {
             condition: condition,
             input: input,
@@ -139,18 +106,18 @@ impl<T: Clone, GC: Getter<bool, E> + ?Sized, GI: Getter<T, E> + ?Sized, E: Copy 
         }
     }
 }
-impl<T: Clone, GC: Getter<bool, E> + ?Sized, GI: Getter<T, E> + ?Sized, E: Copy + Debug>
-    Getter<T, E> for FreezeStream<T, GC, GI, E>
+impl<T: Clone, GC: Getter<bool, E>, GI: Getter<T, E>, E: Copy + Debug> Getter<T, E>
+    for FreezeStream<T, GC, GI, E>
 {
     fn get(&self) -> Output<T, E> {
         self.freeze_value.clone()
     }
 }
-impl<T: Clone, GC: Getter<bool, E> + ?Sized, GI: Getter<T, E> + ?Sized, E: Copy + Debug>
-    Updatable<E> for FreezeStream<T, GC, GI, E>
+impl<T: Clone, GC: Getter<bool, E>, GI: Getter<T, E>, E: Copy + Debug> Updatable<E>
+    for FreezeStream<T, GC, GI, E>
 {
     fn update(&mut self) -> NothingOrError<E> {
-        let condition = match self.condition.borrow().get() {
+        let condition = match self.condition.get() {
             Err(error) => {
                 self.freeze_value = Err(error);
                 return Err(error);
@@ -162,7 +129,7 @@ impl<T: Clone, GC: Getter<bool, E> + ?Sized, GI: Getter<T, E> + ?Sized, E: Copy 
             Ok(Some(condition)) => condition.value,
         };
         if !condition {
-            let gotten = self.input.borrow().get();
+            let gotten = self.input.get();
             self.freeze_value = gotten.clone();
             match gotten {
                 Ok(_) => {}
