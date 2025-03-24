@@ -32,16 +32,14 @@ impl AndState {
 ///| [`Some(false)`] | [`Some(true)`]  | [`Some(false)`] |
 ///| [`None`]        | [`Some(true)`]  | [`None`]        |
 ///| [`Some(true)`]  | [`Some(true)`]  | [`Some(true)`]  |
-pub struct AndStream<G1: Getter<bool, E> + ?Sized, G2: Getter<bool, E> + ?Sized, E: Copy + Debug> {
-    input1: Reference<G1>,
-    input2: Reference<G2>,
+pub struct AndStream<G1: Getter<bool, E>, G2: Getter<bool, E>, E: Copy + Debug> {
+    input1: G1,
+    input2: G2,
     phantom_e: PhantomData<E>,
 }
-impl<G1: Getter<bool, E> + ?Sized, G2: Getter<bool, E> + ?Sized, E: Copy + Debug>
-    AndStream<G1, G2, E>
-{
+impl<G1: Getter<bool, E>, G2: Getter<bool, E>, E: Copy + Debug> AndStream<G1, G2, E> {
     ///Constructor for [`AndStream`].
-    pub const fn new(input1: Reference<G1>, input2: Reference<G2>) -> Self {
+    pub const fn new(input1: G1, input2: G2) -> Self {
         Self {
             input1: input1,
             input2: input2,
@@ -49,12 +47,12 @@ impl<G1: Getter<bool, E> + ?Sized, G2: Getter<bool, E> + ?Sized, E: Copy + Debug
         }
     }
 }
-impl<G1: Getter<bool, E> + ?Sized, G2: Getter<bool, E> + ?Sized, E: Copy + Debug> Getter<bool, E>
+impl<G1: Getter<bool, E>, G2: Getter<bool, E>, E: Copy + Debug> Getter<bool, E>
     for AndStream<G1, G2, E>
 {
     fn get(&self) -> Output<bool, E> {
-        let gotten1 = self.input1.borrow().get()?;
-        let gotten2 = self.input2.borrow().get()?;
+        let gotten1 = self.input1.get()?;
+        let gotten2 = self.input2.get()?;
         //Never assume the boolean value of a None from an input:
         //To return true, we require that both inputs return true (not None).
         //To return false, we require that at least one input returns false (not None).
@@ -101,7 +99,7 @@ impl<G1: Getter<bool, E> + ?Sized, G2: Getter<bool, E> + ?Sized, E: Copy + Debug
         }
     }
 }
-impl<G1: Getter<bool, E> + ?Sized, G2: Getter<bool, E> + ?Sized, E: Copy + Debug> Updatable<E>
+impl<G1: Getter<bool, E>, G2: Getter<bool, E>, E: Copy + Debug> Updatable<E>
     for AndStream<G1, G2, E>
 {
     fn update(&mut self) -> NothingOrError<E> {
@@ -136,16 +134,14 @@ impl OrState {
 ///| [`Some(false)`] | [`Some(true)`]  | [`Some(true)`]  |
 ///| [`None`]        | [`Some(true)`]  | [`Some(true)`]  |
 ///| [`Some(true)`]  | [`Some(true)`]  | [`Some(true)`]  |
-pub struct OrStream<G1: Getter<bool, E> + ?Sized, G2: Getter<bool, E> + ?Sized, E: Copy + Debug> {
-    input1: Reference<G1>,
-    input2: Reference<G2>,
+pub struct OrStream<G1: Getter<bool, E>, G2: Getter<bool, E>, E: Copy + Debug> {
+    input1: G1,
+    input2: G2,
     phantom_e: PhantomData<E>,
 }
-impl<G1: Getter<bool, E> + ?Sized, G2: Getter<bool, E> + ?Sized, E: Copy + Debug>
-    OrStream<G1, G2, E>
-{
+impl<G1: Getter<bool, E>, G2: Getter<bool, E>, E: Copy + Debug> OrStream<G1, G2, E> {
     ///Constructor for [`OrStream`].
-    pub const fn new(input1: Reference<G1>, input2: Reference<G2>) -> Self {
+    pub const fn new(input1: G1, input2: G2) -> Self {
         Self {
             input1: input1,
             input2: input2,
@@ -153,12 +149,12 @@ impl<G1: Getter<bool, E> + ?Sized, G2: Getter<bool, E> + ?Sized, E: Copy + Debug
         }
     }
 }
-impl<G1: Getter<bool, E> + ?Sized, G2: Getter<bool, E> + ?Sized, E: Copy + Debug> Getter<bool, E>
+impl<G1: Getter<bool, E>, G2: Getter<bool, E>, E: Copy + Debug> Getter<bool, E>
     for OrStream<G1, G2, E>
 {
     fn get(&self) -> Output<bool, E> {
-        let gotten1 = self.input1.borrow().get()?;
-        let gotten2 = self.input2.borrow().get()?;
+        let gotten1 = self.input1.get()?;
+        let gotten2 = self.input2.get()?;
         let mut time = None;
         let mut or_state = OrState::ReturnableFalse;
         match gotten1 {
@@ -201,7 +197,7 @@ impl<G1: Getter<bool, E> + ?Sized, G2: Getter<bool, E> + ?Sized, E: Copy + Debug
         }
     }
 }
-impl<G1: Getter<bool, E> + ?Sized, G2: Getter<bool, E> + ?Sized, E: Copy + Debug> Updatable<E>
+impl<G1: Getter<bool, E>, G2: Getter<bool, E>, E: Copy + Debug> Updatable<E>
     for OrStream<G1, G2, E>
 {
     fn update(&mut self) -> NothingOrError<E> {
@@ -209,29 +205,29 @@ impl<G1: Getter<bool, E> + ?Sized, G2: Getter<bool, E> + ?Sized, E: Copy + Debug
     }
 }
 ///Performs a not operation on a boolean getter.
-pub struct NotStream<G: Getter<bool, E> + ?Sized, E: Copy + Debug> {
-    input: Reference<G>,
+pub struct NotStream<G: Getter<bool, E>, E: Copy + Debug> {
+    input: G,
     phantom_e: PhantomData<E>,
 }
-impl<G: Getter<bool, E> + ?Sized, E: Copy + Debug> NotStream<G, E> {
+impl<G: Getter<bool, E>, E: Copy + Debug> NotStream<G, E> {
     ///Constructor for [`NotStream`].
-    pub const fn new(input: Reference<G>) -> Self {
+    pub const fn new(input: G) -> Self {
         Self {
             input: input,
             phantom_e: PhantomData,
         }
     }
 }
-impl<G: Getter<bool, E> + ?Sized, E: Copy + Debug> Getter<bool, E> for NotStream<G, E> {
+impl<G: Getter<bool, E>, E: Copy + Debug> Getter<bool, E> for NotStream<G, E> {
     fn get(&self) -> Output<bool, E> {
-        match self.input.borrow().get() {
+        match self.input.get() {
             Ok(Some(datum)) => Ok(Some(!datum)),
             Ok(None) => Ok(None),
             Err(error) => Err(error),
         }
     }
 }
-impl<G: Getter<bool, E> + ?Sized, E: Copy + Debug> Updatable<E> for NotStream<G, E> {
+impl<G: Getter<bool, E>, E: Copy + Debug> Updatable<E> for NotStream<G, E> {
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
     }
