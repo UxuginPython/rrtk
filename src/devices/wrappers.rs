@@ -89,7 +89,7 @@ pub struct PIDWrapper<'a, T: Settable<f32, E>, E: Copy + Debug + 'static> {
     time: Reference<Time>,
     state: Reference<ConstantGetter<State, Time, E>>,
     command: Reference<ConstantGetter<Command, Time, E>>,
-    pid: Reference<streams::control::CommandPID<ConstantGetter<State, Time, E>, E>>,
+    pid: Reference<streams::control::CommandPID<Reference<ConstantGetter<State, Time, E>>, E>>,
     inner: T,
 }
 #[cfg(feature = "alloc")]
