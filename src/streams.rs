@@ -50,22 +50,16 @@ impl<T, const C: usize, E: Copy + Debug> Updatable<E> for Latest<T, C, E> {
     }
 }
 ///Expires data that are too old to be useful.
-pub struct Expirer<T, G: Getter<T, E> + ?Sized, TG: TimeGetter<E> + ?Sized, E: Copy + Debug> {
-    input: Reference<G>,
-    time_getter: Reference<TG>,
+pub struct Expirer<T, G: Getter<T, E>, TG: TimeGetter<E>, E: Copy + Debug> {
+    input: G,
+    time_getter: TG,
     max_time_delta: Time,
     phantom_t: PhantomData<T>,
     phantom_e: PhantomData<E>,
 }
-impl<T, G: Getter<T, E> + ?Sized, TG: TimeGetter<E> + ?Sized, E: Copy + Debug>
-    Expirer<T, G, TG, E>
-{
+impl<T, G: Getter<T, E>, TG: TimeGetter<E>, E: Copy + Debug> Expirer<T, G, TG, E> {
     ///Constructor for [`Expirer`].
-    pub const fn new(
-        input: Reference<G>,
-        time_getter: Reference<TG>,
-        max_time_delta: Time,
-    ) -> Self {
+    pub const fn new(input: G, time_getter: TG, max_time_delta: Time) -> Self {
         Self {
             input: input,
             time_getter: time_getter,
@@ -75,24 +69,20 @@ impl<T, G: Getter<T, E> + ?Sized, TG: TimeGetter<E> + ?Sized, E: Copy + Debug>
         }
     }
 }
-impl<T, G: Getter<T, E> + ?Sized, TG: TimeGetter<E> + ?Sized, E: Copy + Debug> Getter<T, E>
-    for Expirer<T, G, TG, E>
-{
+impl<T, G: Getter<T, E>, TG: TimeGetter<E>, E: Copy + Debug> Getter<T, E> for Expirer<T, G, TG, E> {
     fn get(&self) -> Output<T, E> {
-        let output = match self.input.borrow().get()? {
+        let output = match self.input.get()? {
             Some(datum) => datum,
             None => return Ok(None),
         };
-        let time = self.time_getter.borrow().get()?;
+        let time = self.time_getter.get()?;
         if time - output.time > self.max_time_delta {
             return Ok(None);
         }
         Ok(Some(output))
     }
 }
-impl<T, G: Getter<T, E> + ?Sized, TG: TimeGetter<E> + ?Sized, E: Copy + Debug> Updatable<E>
-    for Expirer<T, G, TG, E>
-{
+impl<T, G: Getter<T, E>, TG: TimeGetter<E>, E: Copy + Debug> Updatable<E> for Expirer<T, G, TG, E> {
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
     }
