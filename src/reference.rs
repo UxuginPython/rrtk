@@ -335,6 +335,11 @@ impl<G: ?Sized + Getter<T, E>, T, E: Copy + Debug> Getter<T, E> for Reference<G>
         self.borrow().get()
     }
 }
+impl<TG: ?Sized + TimeGetter<E>, E: Copy + Debug> TimeGetter<E> for Reference<TG> {
+    fn get(&self) -> TimeOutput<E> {
+        self.borrow().get()
+    }
+}
 //This is currently stopped by E0515, but if this ever becomes possible (or you discover that it
 //was possible all along), do it.
 /*impl<S: ?Sized + Settable<T, E>, T: Clone, E: Copy + Debug> Settable<T, E> for Reference<S> {
