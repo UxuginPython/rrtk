@@ -12,8 +12,7 @@ use rrtk::*;
 #[cfg(feature = "alloc")]
 struct StreamPID {
     //It is possible to avoid dynamic dispatch by using the actual stream types instead of
-    //`dyn Getter`, but doing that fully makes the types look like this:
-    //Reference<IntegralStream<DifferenceStream<Quantity, ConstantGetter<Quantity, TimeGetterFromGetter<Quantity, dyn Getter<Quantity, ()>, ()>, ()>, dyn Getter<Quantity, ()>, ()>, ()>>
+    //`dyn Getter`, but doing that fully makes the types very complicated.
     //Here, to make this example legible, we don't do that. However, if you're actually making
     //something for production, expanding the type fully to avoid dynamic dispatch may be a good
     //idea. It really depends on how much readability you're willing to give up for a small
@@ -40,6 +39,11 @@ impl StreamPID {
         let ki = ConstantGetter::new(time_getter.clone(), ki);
         let kd = ConstantGetter::new(time_getter.clone(), kd);
         let error = rc_ref_cell_reference(DifferenceStream::new(setpoint, input.clone()));
+        //Notice how one can directly use a Getter as an input for a stream OR put it in a
+        //Reference first if multiple things need access to it. Reference passes through the Getter
+        //implementation of its referent. Using a Reference to a Getter as a stream input is often
+        //necessary and not discouraged, but where possible, directly using the Getter will be
+        //slightly faster.
         let int = rc_ref_cell_reference(IntegralStream::new(error.clone()));
         let drv = rc_ref_cell_reference(DerivativeStream::new(error.clone()));
         //`ProductStream`'s behavior is to treat all `None` values as 1.0 so that it's as if they
