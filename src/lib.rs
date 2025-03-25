@@ -422,14 +422,14 @@ impl<G, TG: TimeGetter<E>, E: Copy + Debug> Getter<G, E> for GetterFromHistory<'
     }
 }
 ///Getter for returning a constant value.
-pub struct ConstantGetter<T: Clone, TG: TimeGetter<E> + ?Sized, E: Copy + Debug> {
+pub struct ConstantGetter<T: Clone, TG: TimeGetter<E>, E: Copy + Debug> {
     settable_data: SettableData<T, E>,
-    time_getter: Reference<TG>,
+    time_getter: TG,
     value: T,
 }
-impl<T: Clone, TG: TimeGetter<E> + ?Sized, E: Copy + Debug> ConstantGetter<T, TG, E> {
+impl<T: Clone, TG: TimeGetter<E>, E: Copy + Debug> ConstantGetter<T, TG, E> {
     ///Constructor for [`ConstantGetter`].
-    pub const fn new(time_getter: Reference<TG>, value: T) -> Self {
+    pub const fn new(time_getter: TG, value: T) -> Self {
         Self {
             settable_data: SettableData::new(),
             time_getter: time_getter,
@@ -437,17 +437,13 @@ impl<T: Clone, TG: TimeGetter<E> + ?Sized, E: Copy + Debug> ConstantGetter<T, TG
         }
     }
 }
-impl<T: Clone, TG: TimeGetter<E> + ?Sized, E: Copy + Debug> Getter<T, E>
-    for ConstantGetter<T, TG, E>
-{
+impl<T: Clone, TG: TimeGetter<E>, E: Copy + Debug> Getter<T, E> for ConstantGetter<T, TG, E> {
     fn get(&self) -> Output<T, E> {
-        let time = self.time_getter.borrow().get()?;
+        let time = self.time_getter.get()?;
         Ok(Some(Datum::new(time, self.value.clone())))
     }
 }
-impl<T: Clone, TG: TimeGetter<E> + ?Sized, E: Copy + Debug> Settable<T, E>
-    for ConstantGetter<T, TG, E>
-{
+impl<T: Clone, TG: TimeGetter<E>, E: Copy + Debug> Settable<T, E> for ConstantGetter<T, TG, E> {
     fn get_settable_data_ref(&self) -> &SettableData<T, E> {
         &self.settable_data
     }
@@ -459,9 +455,7 @@ impl<T: Clone, TG: TimeGetter<E> + ?Sized, E: Copy + Debug> Settable<T, E>
         Ok(())
     }
 }
-impl<T: Clone, TG: TimeGetter<E> + ?Sized, E: Copy + Debug> Updatable<E>
-    for ConstantGetter<T, TG, E>
-{
+impl<T: Clone, TG: TimeGetter<E>, E: Copy + Debug> Updatable<E> for ConstantGetter<T, TG, E> {
     ///This does not need to be called.
     fn update(&mut self) -> NothingOrError<E> {
         self.update_following_data()?;
