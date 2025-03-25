@@ -35,44 +35,35 @@ impl StreamPID {
         kd: Quantity,
     ) -> Self {
         let time_getter = rc_ref_cell_reference(TimeGetterFromGetter::new(input.clone()));
-        let setpoint = rc_ref_cell_reference(ConstantGetter::new(time_getter.clone(), setpoint));
-        let kp = rc_ref_cell_reference(ConstantGetter::new(time_getter.clone(), kp));
-        let ki = rc_ref_cell_reference(ConstantGetter::new(time_getter.clone(), ki));
-        let kd = rc_ref_cell_reference(ConstantGetter::new(time_getter.clone(), kd));
-        let error = rc_ref_cell_reference(DifferenceStream::new(setpoint.clone(), input.clone()));
+        let setpoint = ConstantGetter::new(time_getter.clone(), setpoint);
+        let kp = ConstantGetter::new(time_getter.clone(), kp);
+        let ki = ConstantGetter::new(time_getter.clone(), ki);
+        let kd = ConstantGetter::new(time_getter.clone(), kd);
+        let error = rc_ref_cell_reference(DifferenceStream::new(setpoint, input.clone()));
         let int = rc_ref_cell_reference(IntegralStream::new(error.clone()));
         let drv = rc_ref_cell_reference(DerivativeStream::new(error.clone()));
         //`ProductStream`'s behavior is to treat all `None` values as 1.0 so that it's as if they
         //were not included. However, this is not what we want with the coefficient. `NoneToValue`
         //is used to convert all `None` values to `Some(0.0)` to effectively exlude them from the
         //final sum.
-        let int_zeroer = rc_ref_cell_reference(NoneToValue::new(
+        let int_zeroer = NoneToValue::new(
             int.clone(),
             time_getter.clone(),
             Quantity::new(0.0, MILLIMETER),
-        ));
-        let drv_zeroer = rc_ref_cell_reference(NoneToValue::new(
+        );
+        let drv_zeroer = NoneToValue::new(
             drv.clone(),
             time_getter.clone(),
             Quantity::new(0.0, MILLIMETER),
-        ));
-        let kp_mul = rc_ref_cell_reference(ProductStream::new([
-            to_dyn!(Getter<Quantity, ()>, kp.clone()),
-            to_dyn!(Getter<Quantity, ()>, error.clone()),
-        ]));
+        );
+        let kp_mul = Product2::new(kp, error.clone());
         //The way a PID controller works necessitates that it adds quantities of different units.
         //Thus, QuantityToFloat streams are required to keep the dimensional analysis system from
         //stopping this.
         let pro_float_maker = rc_ref_cell_reference(QuantityToFloat::new(kp_mul));
-        let ki_mul = rc_ref_cell_reference(ProductStream::new([
-            to_dyn!(Getter<Quantity, ()>, ki.clone()),
-            to_dyn!(Getter<Quantity, ()>, int_zeroer.clone()),
-        ]));
+        let ki_mul = Product2::new(ki, int_zeroer);
         let int_float_maker = rc_ref_cell_reference(QuantityToFloat::new(ki_mul));
-        let kd_mul = rc_ref_cell_reference(ProductStream::new([
-            to_dyn!(Getter<Quantity, ()>, kd.clone()),
-            to_dyn!(Getter<Quantity, ()>, drv_zeroer.clone()),
-        ]));
+        let kd_mul = Product2::new(kd, drv_zeroer);
         let drv_float_maker = rc_ref_cell_reference(QuantityToFloat::new(kd_mul));
         let output = SumStream::new([
             to_dyn!(Getter<f32, ()>, pro_float_maker.clone()),
@@ -102,11 +93,11 @@ impl Updatable<()> for StreamPID {
         //SumStream just calculate their output in the get method since they do not need to store
         //any data beyond the `Reference`s to their inputs. The non-math streams used here work in
         //a similar way.
-        self.int.borrow_mut().update()?;
-        self.drv.borrow_mut().update()?;
-        self.pro_float_maker.borrow_mut().update()?;
-        self.int_float_maker.borrow_mut().update()?;
-        self.drv_float_maker.borrow_mut().update()?;
+        self.int.update()?;
+        self.drv.update()?;
+        self.pro_float_maker.update()?;
+        self.int_float_maker.update()?;
+        self.drv_float_maker.update()?;
         Ok(())
     }
 }
