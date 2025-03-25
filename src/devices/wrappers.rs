@@ -87,9 +87,11 @@ impl<T: Getter<State, E>, E: Copy + Debug> Updatable<E> for GetterStateDeviceWra
 pub struct PIDWrapper<'a, T: Settable<f32, E>, E: Copy + Debug + 'static> {
     terminal: RefCell<Terminal<'a, E>>,
     time: Reference<Time>,
-    state: Reference<ConstantGetter<State, Time, E>>,
-    command: Reference<ConstantGetter<Command, Time, E>>,
-    pid: Reference<streams::control::CommandPID<Reference<ConstantGetter<State, Time, E>>, E>>,
+    state: Reference<ConstantGetter<State, Reference<Time>, E>>,
+    command: Reference<ConstantGetter<Command, Reference<Time>, E>>,
+    pid: Reference<
+        streams::control::CommandPID<Reference<ConstantGetter<State, Reference<Time>, E>>, E>,
+    >,
     inner: T,
 }
 #[cfg(feature = "alloc")]
