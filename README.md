@@ -3,9 +3,6 @@
 
 It is almost entirely `no_std` and most things work without `alloc`. It does not currently integrate with any API directly. This may be added in the future, probably through another crate.
 
-## Anniversary Release 0.7.0-alpha.0
-One year ago today, RRTK's first version, 0.1.0, was released! To celebrate, RRTK 0.7.0-alpha.0 is released today. RRTK has come very far since this initial version, and and hopefully it will have come even further next year.
-
 ## License: BSD 3-Clause
 This basically means that you can do whatever you want as long as you give me attribution and you don't remove the license notices or use my name to endorse stuff I don't. Read the actual license for details though.
 

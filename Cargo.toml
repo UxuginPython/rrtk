@@ -3,7 +3,7 @@
 
 [package]
 name = "rrtk"
-version = "0.7.0-alpha.0"
+version = "0.7.0-alpha.1"
 license = "BSD-3-Clause"
 edition = "2024"
 authors = ["UxuginPython <uxugin at uxugin dot com>"]

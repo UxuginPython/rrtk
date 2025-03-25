@@ -239,3 +239,5 @@ Add moving average stream.
 - Allow `Reference` to pass through `Getter` and `Updatable` implementations when its target implements them.
 - `#[derive(Debug)]` for some `Reference`-related types.
 - Minor documentation improvements.
+## 0.7.0-alpha.1
+Allow the use of `Getter` implementors to be used directly as stream inputs instead of needing to be in a `Reference`. One can, of course, still put stream inputs in `Reference` (as is necessary when using the same `Getter` in multiple places) since `Reference` now passes through the `Getter`, `Updatable`, and `TimeGetter` implementations of its referent.
