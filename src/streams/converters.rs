@@ -8,16 +8,16 @@ use crate::streams::*;
 ///A stream converting all `Ok(None)` values from its input to `Err(_)` variants.
 pub struct NoneToError<T: Clone, G: Getter<T, E>, E: Copy + Debug> {
     input: G,
+    from_none: E,
     phantom_t: PhantomData<T>,
-    phantom_e: PhantomData<E>,
 }
 impl<T: Clone, G: Getter<T, E>, E: Copy + Debug> NoneToError<T, G, E> {
     ///Constructor for [`NoneToError`].
-    pub const fn new(input: G) -> Self {
+    pub const fn new(input: G, from_none: E) -> Self {
         Self {
             input: input,
+            from_none: from_none,
             phantom_t: PhantomData,
-            phantom_e: PhantomData,
         }
     }
 }
@@ -29,7 +29,7 @@ impl<T: Clone, G: Getter<T, E>, E: Copy + Debug> Getter<T, E> for NoneToError<T,
                 return Ok(output);
             }
             None => {
-                return Err(Error::FromNone);
+                return Err(self.from_none);
             }
         }
     }

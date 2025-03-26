@@ -71,19 +71,6 @@ pub use reference::rc_ref_cell_reference;
 #[cfg(feature = "std")]
 pub use reference::{arc_mutex_reference, arc_rw_lock_reference};
 pub use state::*;
-///RRTK follows the enum style of error handling. This is the error type returned from nearly all
-///RRTK types, but you can add your own custom error type using `Other(O)`. It is strongly
-///recommended that you use a single `O` type across your crate.
-#[derive(Clone, Copy, Debug, PartialEq)]
-#[non_exhaustive]
-pub enum Error<O: Copy + Debug> {
-    ///Returned when a `None` is elevated to an error by a
-    ///[`NoneToError`](streams::converters::NoneToError).
-    FromNone,
-    ///A custom error of a user-defined type. Not created by any RRTK type but can be propagated by
-    ///them.
-    Other(O),
-}
 ///A derivative of position: position, velocity, or acceleration.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum PositionDerivative {
@@ -201,11 +188,11 @@ impl PositionDerivativeDependentPIDKValues {
 }
 ///A generic output type when something may return an error, nothing, or something with a
 ///timestamp.
-pub type Output<T, E> = Result<Option<Datum<T>>, Error<E>>;
+pub type Output<T, E> = Result<Option<Datum<T>>, E>;
 ///Returned from [`TimeGetter`] objects, which may return either a time or an error.
-pub type TimeOutput<E> = Result<Time, Error<E>>;
+pub type TimeOutput<E> = Result<Time, E>;
 ///Returned when something may return either nothing or an error.
-pub type NothingOrError<E> = Result<(), Error<E>>;
+pub type NothingOrError<E> = Result<(), E>;
 ///An object for getting the absolute time.
 pub trait TimeGetter<E: Copy + Debug>: Updatable<E> {
     ///Get the time.
@@ -359,7 +346,7 @@ impl<'a, G, TG: TimeGetter<E>, E: Copy + Debug> GetterFromHistory<'a, G, TG, E> 
     pub fn new_start_at_zero(
         history: &'a mut impl History<G, E>,
         time_getter: Reference<TG>,
-    ) -> Result<Self, Error<E>> {
+    ) -> Result<Self, E> {
         let time_delta = -time_getter.borrow().get()?;
         Ok(Self {
             history: history,
@@ -373,7 +360,7 @@ impl<'a, G, TG: TimeGetter<E>, E: Copy + Debug> GetterFromHistory<'a, G, TG, E> 
         history: &'a mut impl History<G, E>,
         time_getter: Reference<TG>,
         start: Time,
-    ) -> Result<Self, Error<E>> {
+    ) -> Result<Self, E> {
         let time_delta = start - time_getter.borrow().get()?;
         Ok(Self {
             history: history,

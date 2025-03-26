@@ -102,7 +102,7 @@ mod command_pid {
         input: G,
         command: Command,
         kvals: PositionDerivativeDependentPIDKValues,
-        update_state: Result<Option<Update0>, Error<E>>,
+        update_state: Result<Option<Update0>, E>,
     }
     impl<G: Getter<State, E>, E: Copy + Debug> CommandPID<G, E> {
         ///Constructor for `CommandPID`.
