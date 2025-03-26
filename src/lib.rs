@@ -298,28 +298,39 @@ pub trait Settable<S: Clone, E: Copy + Debug>: Updatable<E> {
         data.last_request.clone()
     }
 }
+//TODO: Update documentation to explain why error type is Option<E>.
 ///Because [`Getter`]s always return a timestamp (as long as they don't return `Err(_)` or
 ///`Ok(None)`), we can use this to treat them like [`TimeGetter`]s.
 pub struct TimeGetterFromGetter<T: Clone, G: Getter<T, E>, E: Copy + Debug> {
-    elevator: streams::converters::NoneToError<T, G, E>,
+    getter: G,
+    phantom_t: PhantomData<T>,
+    phantom_e: PhantomData<E>,
 }
 impl<T: Clone, G: Getter<T, E>, E: Copy + Debug> TimeGetterFromGetter<T, G, E> {
     ///Constructor for [`TimeGetterFromGetter`].
-    pub const fn new(stream: G) -> Self {
+    pub const fn new(getter: G) -> Self {
         Self {
-            elevator: streams::converters::NoneToError::new(stream),
+            getter: getter,
+            phantom_t: PhantomData,
+            phantom_e: PhantomData,
         }
     }
 }
-impl<T: Clone, G: Getter<T, E>, E: Copy + Debug> TimeGetter<E> for TimeGetterFromGetter<T, G, E> {
-    fn get(&self) -> TimeOutput<E> {
-        let output = self.elevator.get()?;
-        let output = output.expect("`NoneToError` made all `Ok(None)`s into `Err(_)`s, and `?` returned all `Err(_)`s, so we're sure this is now an `Ok(Some(_))`.");
-        return Ok(output.time);
+impl<T: Clone, G: Getter<T, E>, E: Copy + Debug> TimeGetter<Option<E>>
+    for TimeGetterFromGetter<T, G, E>
+{
+    fn get(&self) -> TimeOutput<Option<E>> {
+        match self.getter.get() {
+            Err(error) => Err(Some(error)),
+            Ok(None) => Err(None),
+            Ok(Some(datum)) => Ok(datum.time),
+        }
     }
 }
-impl<T: Clone, G: Getter<T, E>, E: Copy + Debug> Updatable<E> for TimeGetterFromGetter<T, G, E> {
-    fn update(&mut self) -> NothingOrError<E> {
+impl<T: Clone, G: Getter<T, E>, E: Copy + Debug> Updatable<Option<E>>
+    for TimeGetterFromGetter<T, G, E>
+{
+    fn update(&mut self) -> NothingOrError<Option<E>> {
         Ok(())
     }
 }
