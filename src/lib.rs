@@ -301,12 +301,12 @@ pub trait Settable<S: Clone, E: Copy + Debug>: Updatable<E> {
 //TODO: Update documentation to explain why error type is Option<E>.
 ///Because [`Getter`]s always return a timestamp (as long as they don't return `Err(_)` or
 ///`Ok(None)`), we can use this to treat them like [`TimeGetter`]s.
-pub struct TimeGetterFromGetter<T: Clone, G: Getter<T, E>, E: Copy + Debug> {
+pub struct TimeGetterFromGetter<T, G: Getter<T, E>, E: Copy + Debug> {
     getter: G,
     phantom_t: PhantomData<T>,
     phantom_e: PhantomData<E>,
 }
-impl<T: Clone, G: Getter<T, E>, E: Copy + Debug> TimeGetterFromGetter<T, G, E> {
+impl<T, G: Getter<T, E>, E: Copy + Debug> TimeGetterFromGetter<T, G, E> {
     ///Constructor for [`TimeGetterFromGetter`].
     pub const fn new(getter: G) -> Self {
         Self {
@@ -316,9 +316,7 @@ impl<T: Clone, G: Getter<T, E>, E: Copy + Debug> TimeGetterFromGetter<T, G, E> {
         }
     }
 }
-impl<T: Clone, G: Getter<T, E>, E: Copy + Debug> TimeGetter<Option<E>>
-    for TimeGetterFromGetter<T, G, E>
-{
+impl<T, G: Getter<T, E>, E: Copy + Debug> TimeGetter<Option<E>> for TimeGetterFromGetter<T, G, E> {
     fn get(&self) -> TimeOutput<Option<E>> {
         match self.getter.get() {
             Err(error) => Err(Some(error)),
@@ -327,9 +325,7 @@ impl<T: Clone, G: Getter<T, E>, E: Copy + Debug> TimeGetter<Option<E>>
         }
     }
 }
-impl<T: Clone, G: Getter<T, E>, E: Copy + Debug> Updatable<Option<E>>
-    for TimeGetterFromGetter<T, G, E>
-{
+impl<T, G: Getter<T, E>, E: Copy + Debug> Updatable<Option<E>> for TimeGetterFromGetter<T, G, E> {
     fn update(&mut self) -> NothingOrError<Option<E>> {
         Ok(())
     }
