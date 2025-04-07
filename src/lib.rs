@@ -71,6 +71,8 @@ pub use reference::rc_ref_cell_reference;
 #[cfg(feature = "std")]
 pub use reference::{arc_mutex_reference, arc_rw_lock_reference};
 pub use state::*;
+#[derive(Clone, Copy, Debug)]
+pub struct CannotConvert;
 ///A derivative of position: position, velocity, or acceleration.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum PositionDerivative {
@@ -87,13 +89,13 @@ pub enum PositionDerivative {
     all(debug_assertions, feature = "dim_check_debug")
 ))]
 impl TryFrom<Unit> for PositionDerivative {
-    type Error = ();
-    fn try_from(was: Unit) -> Result<Self, ()> {
+    type Error = CannotConvert;
+    fn try_from(was: Unit) -> Result<Self, CannotConvert> {
         Ok(match was {
             MILLIMETER => PositionDerivative::Position,
             MILLIMETER_PER_SECOND => PositionDerivative::Velocity,
             MILLIMETER_PER_SECOND_SQUARED => PositionDerivative::Acceleration,
-            _ => return Err(()),
+            _ => return Err(CannotConvert),
         })
     }
 }
@@ -107,10 +109,10 @@ impl From<Command> for PositionDerivative {
     }
 }
 impl TryFrom<MotionProfilePiece> for PositionDerivative {
-    type Error = ();
-    fn try_from(was: MotionProfilePiece) -> Result<Self, ()> {
+    type Error = CannotConvert;
+    fn try_from(was: MotionProfilePiece) -> Result<Self, CannotConvert> {
         match was {
-            MotionProfilePiece::BeforeStart | MotionProfilePiece::Complete => Err(()),
+            MotionProfilePiece::BeforeStart | MotionProfilePiece::Complete => Err(CannotConvert),
             MotionProfilePiece::InitialAcceleration | MotionProfilePiece::EndAcceleration => {
                 Ok(PositionDerivative::Acceleration)
             }
@@ -669,6 +671,8 @@ pub fn connect<'a, E: Copy + Debug>(
     term1_borrow.other = Some(term2);
     term2_borrow.other = Some(term1);
 }
+//TODO: Rename either this or SettableData to remove that potential connotation since they're
+//completely different
 ///Data that are sent between terminals: A timestamp, an optional command, and a state.
 #[cfg(feature = "devices")]
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -682,21 +686,21 @@ pub struct TerminalData {
 }
 #[cfg(feature = "devices")]
 impl TryFrom<TerminalData> for Datum<Command> {
-    type Error = ();
-    fn try_from(value: TerminalData) -> Result<Datum<Command>, ()> {
+    type Error = CannotConvert;
+    fn try_from(value: TerminalData) -> Result<Datum<Command>, CannotConvert> {
         match value.command {
             Some(command) => Ok(Datum::new(value.time, command)),
-            None => Err(()),
+            None => Err(CannotConvert),
         }
     }
 }
 #[cfg(feature = "devices")]
 impl TryFrom<TerminalData> for Datum<State> {
-    type Error = ();
-    fn try_from(value: TerminalData) -> Result<Datum<State>, ()> {
+    type Error = CannotConvert;
+    fn try_from(value: TerminalData) -> Result<Datum<State>, CannotConvert> {
         match value.state {
             Some(state) => Ok(Datum::new(value.time, state)),
-            None => Err(()),
+            None => Err(CannotConvert),
         }
     }
 }

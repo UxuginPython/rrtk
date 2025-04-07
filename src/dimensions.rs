@@ -167,12 +167,12 @@ impl From<Time> for compile_time_dimensions::Quantity<f32, Zero, OnePlus<Zero>> 
 }
 //TODO: figure out for to use the Error enum with this
 impl TryFrom<Quantity> for Time {
-    type Error = ();
-    fn try_from(was: Quantity) -> Result<Self, ()> {
+    type Error = CannotConvert;
+    fn try_from(was: Quantity) -> Result<Self, CannotConvert> {
         if was.unit.eq_assume_true(&SECOND) {
             Ok(Self((was.value * 1_000_000_000.0) as i64))
         } else {
-            Err(())
+            Err(CannotConvert)
         }
     }
 }
@@ -318,12 +318,12 @@ impl From<DimensionlessInteger> for i64 {
     }
 }
 impl TryFrom<Quantity> for DimensionlessInteger {
-    type Error = ();
-    fn try_from(was: Quantity) -> Result<Self, ()> {
+    type Error = CannotConvert;
+    fn try_from(was: Quantity) -> Result<Self, CannotConvert> {
         if was.unit.eq_assume_true(&DIMENSIONLESS) {
             Ok(Self(was.value as i64))
         } else {
-            Err(())
+            Err(CannotConvert)
         }
     }
 }
@@ -556,8 +556,8 @@ impl From<PositionDerivative> for Unit {
     }
 }
 impl TryFrom<MotionProfilePiece> for Unit {
-    type Error = ();
-    fn try_from(was: MotionProfilePiece) -> Result<Self, ()> {
+    type Error = CannotConvert;
+    fn try_from(was: MotionProfilePiece) -> Result<Self, CannotConvert> {
         let pos_der: PositionDerivative = was.try_into()?;
         let unit: Self = pos_der.into();
         Ok(unit)
