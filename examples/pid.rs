@@ -17,6 +17,8 @@ struct StreamPID {
     //something for production, expanding the type fully to avoid dynamic dispatch may be a good
     //idea. It really depends on how much readability you're willing to give up for a small
     //performance boost.
+    //Also note that you should almost always use a more specific error type than (). This example
+    //is not focused on error handling.
     int: Reference<dyn Getter<Quantity, ()>>,
     drv: Reference<dyn Getter<Quantity, ()>>,
     pro_float_maker: Reference<dyn Getter<f32, ()>>,
@@ -33,7 +35,7 @@ impl StreamPID {
         ki: Quantity,
         kd: Quantity,
     ) -> Self {
-        let time_getter = rc_ref_cell_reference(TimeGetterFromGetter::new(input.clone()));
+        let time_getter = rc_ref_cell_reference(TimeGetterFromGetter::new(input.clone(), ()));
         let setpoint = ConstantGetter::new(time_getter.clone(), setpoint);
         let kp = ConstantGetter::new(time_getter.clone(), kp);
         let ki = ConstantGetter::new(time_getter.clone(), ki);
