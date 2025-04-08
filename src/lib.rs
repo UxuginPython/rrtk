@@ -71,7 +71,7 @@ pub use reference::rc_ref_cell_reference;
 #[cfg(feature = "std")]
 pub use reference::{arc_mutex_reference, arc_rw_lock_reference};
 pub use state::*;
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct CannotConvert;
 ///A derivative of position: position, velocity, or acceleration.
 #[derive(Clone, Copy, Debug, PartialEq)]
