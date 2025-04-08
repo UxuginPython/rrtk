@@ -9,35 +9,6 @@ use rrtk::streams::math::*;
 use rrtk::streams::*;
 use rrtk::*;
 #[test]
-fn time_getter_from_stream() {
-    struct DummyStream {
-        time: Time,
-    }
-    impl DummyStream {
-        pub const fn new() -> Self {
-            Self { time: Time::ZERO }
-        }
-    }
-    impl Getter<f32, ()> for DummyStream {
-        fn get(&self) -> Output<f32, ()> {
-            Ok(Some(Datum::new(self.time, 0.0)))
-        }
-    }
-    impl Updatable<()> for DummyStream {
-        fn update(&mut self) -> NothingOrError<()> {
-            self.time += Time::from_nanoseconds(1);
-            Ok(())
-        }
-    }
-    unsafe {
-        static mut STREAM: DummyStream = DummyStream::new();
-        let stream = Reference::from_ptr(core::ptr::addr_of_mut!(STREAM));
-        let time_getter = TimeGetterFromGetter::new(stream.clone());
-        stream.borrow_mut().update().unwrap();
-        assert_eq!(time_getter.get().unwrap(), Time::from_nanoseconds(1));
-    }
-}
-#[test]
 fn expirer() {
     struct DummyStream;
     impl Getter<f32, ()> for DummyStream {
@@ -117,7 +88,10 @@ fn expirer_none() {
 #[test]
 fn none_to_error() {
     #[derive(Clone, Copy, Debug)]
-    struct Nothing;
+    enum Error {
+        RealError,
+        FromNone,
+    }
     struct DummyStream {
         index: u8,
     }
@@ -126,18 +100,18 @@ fn none_to_error() {
             Self { index: 0 }
         }
     }
-    impl Getter<f32, Nothing> for DummyStream {
-        fn get(&self) -> Output<f32, Nothing> {
+    impl Getter<f32, Error> for DummyStream {
+        fn get(&self) -> Output<f32, Error> {
             if self.index == 1 {
                 return Ok(None);
             } else if self.index == 2 {
-                return Err(Error::Other(Nothing));
+                return Err(Error::RealError);
             }
             return Ok(Some(Datum::new(Time::ZERO, 0.0)));
         }
     }
-    impl Updatable<Nothing> for DummyStream {
-        fn update(&mut self) -> NothingOrError<Nothing> {
+    impl Updatable<Error> for DummyStream {
+        fn update(&mut self) -> NothingOrError<Error> {
             self.index += 1;
             Ok(())
         }
@@ -145,7 +119,7 @@ fn none_to_error() {
     unsafe {
         static mut INPUT: DummyStream = DummyStream::new();
         let input = Reference::from_ptr(core::ptr::addr_of_mut!(INPUT));
-        let mut stream = NoneToError::new(input.clone());
+        let mut stream = NoneToError::new(input.clone(), Error::FromNone);
         stream.update().unwrap(); //This should do nothing.
         match stream.get() {
             Ok(option) => match option {
@@ -174,7 +148,7 @@ fn none_to_error() {
                 panic!("should return Err");
             }
             Err(Error::FromNone) => {
-                panic!("should return Nothing error");
+                panic!("should return Error::RealError");
             }
             Err(_) => {}
         }
@@ -183,7 +157,7 @@ fn none_to_error() {
 #[test]
 fn none_to_value() {
     #[derive(Clone, Copy, Debug)]
-    struct Nothing;
+    struct Error;
     struct DummyStream {
         index: u8,
     }
@@ -192,18 +166,18 @@ fn none_to_value() {
             Self { index: 0 }
         }
     }
-    impl Getter<f32, Nothing> for DummyStream {
-        fn get(&self) -> Output<f32, Nothing> {
+    impl Getter<f32, Error> for DummyStream {
+        fn get(&self) -> Output<f32, Error> {
             if self.index == 1 {
                 return Ok(None);
             } else if self.index == 2 {
-                return Err(Error::Other(Nothing));
+                return Err(Error);
             }
             return Ok(Some(Datum::new(Time::ZERO, 1.0)));
         }
     }
-    impl Updatable<Nothing> for DummyStream {
-        fn update(&mut self) -> NothingOrError<Nothing> {
+    impl Updatable<Error> for DummyStream {
+        fn update(&mut self) -> NothingOrError<Error> {
             self.index += 1;
             Ok(())
         }
@@ -422,7 +396,7 @@ fn position_to_state() {
 #[test]
 fn sum_stream() {
     #[derive(Clone, Copy, Debug)]
-    struct Nothing;
+    struct Error;
     struct ErroringStream {
         index: u8,
     }
@@ -431,10 +405,10 @@ fn sum_stream() {
             Self { index: 0 }
         }
     }
-    impl Getter<f32, Nothing> for ErroringStream {
-        fn get(&self) -> Output<f32, Nothing> {
+    impl Getter<f32, Error> for ErroringStream {
+        fn get(&self) -> Output<f32, Error> {
             if self.index == 0 {
-                return Err(Error::Other(Nothing));
+                return Err(Error);
             } else if self.index == 1 {
                 return Ok(None);
             } else {
@@ -442,8 +416,8 @@ fn sum_stream() {
             }
         }
     }
-    impl Updatable<Nothing> for ErroringStream {
-        fn update(&mut self) -> NothingOrError<Nothing> {
+    impl Updatable<Error> for ErroringStream {
+        fn update(&mut self) -> NothingOrError<Error> {
             self.index += 1;
             Ok(())
         }
@@ -454,13 +428,13 @@ fn sum_stream() {
             Self {}
         }
     }
-    impl Getter<f32, Nothing> for NormalStream {
-        fn get(&self) -> Output<f32, Nothing> {
+    impl Getter<f32, Error> for NormalStream {
+        fn get(&self) -> Output<f32, Error> {
             Ok(Some(Datum::new(Time::from_nanoseconds(1), 1.0)))
         }
     }
-    impl Updatable<Nothing> for NormalStream {
-        fn update(&mut self) -> NothingOrError<Nothing> {
+    impl Updatable<Error> for NormalStream {
+        fn update(&mut self) -> NothingOrError<Error> {
             Ok(())
         }
     }
@@ -519,7 +493,7 @@ fn empty_sum_stream() {
 #[test]
 fn sum2() {
     #[derive(Clone, Copy, Debug)]
-    struct Nothing;
+    struct Error;
     struct ErroringStream {
         index: u8,
     }
@@ -528,10 +502,10 @@ fn sum2() {
             Self { index: 0 }
         }
     }
-    impl Getter<f32, Nothing> for ErroringStream {
-        fn get(&self) -> Output<f32, Nothing> {
+    impl Getter<f32, Error> for ErroringStream {
+        fn get(&self) -> Output<f32, Error> {
             if self.index == 0 {
-                return Err(Error::Other(Nothing));
+                return Err(Error);
             } else if self.index == 1 {
                 return Ok(None);
             } else {
@@ -539,8 +513,8 @@ fn sum2() {
             }
         }
     }
-    impl Updatable<Nothing> for ErroringStream {
-        fn update(&mut self) -> NothingOrError<Nothing> {
+    impl Updatable<Error> for ErroringStream {
+        fn update(&mut self) -> NothingOrError<Error> {
             self.index += 1;
             Ok(())
         }
@@ -551,13 +525,13 @@ fn sum2() {
             Self {}
         }
     }
-    impl Getter<f32, Nothing> for NormalStream {
-        fn get(&self) -> Output<f32, Nothing> {
+    impl Getter<f32, Error> for NormalStream {
+        fn get(&self) -> Output<f32, Error> {
             Ok(Some(Datum::new(Time::from_nanoseconds(1), 1.0)))
         }
     }
-    impl Updatable<Nothing> for NormalStream {
-        fn update(&mut self) -> NothingOrError<Nothing> {
+    impl Updatable<Error> for NormalStream {
+        fn update(&mut self) -> NothingOrError<Error> {
             Ok(())
         }
     }
@@ -603,7 +577,7 @@ fn difference_stream() {
     impl Getter<f32, DummyError> for Stream1 {
         fn get(&self) -> Output<f32, DummyError> {
             if self.index == 0 || self.index == 1 || self.index == 2 {
-                return Err(Error::Other(DummyError));
+                return Err(DummyError);
             } else if self.index == 3 || self.index == 4 || self.index == 5 {
                 return Ok(None);
             }
@@ -627,7 +601,7 @@ fn difference_stream() {
     impl Getter<f32, DummyError> for Stream2 {
         fn get(&self) -> Output<f32, DummyError> {
             if self.index == 0 || self.index == 3 || self.index == 6 {
-                return Err(Error::Other(DummyError));
+                return Err(DummyError);
             } else if self.index == 1 || self.index == 4 || self.index == 7 {
                 return Ok(None);
             }
@@ -748,7 +722,7 @@ fn difference_stream() {
 #[test]
 fn product_stream() {
     #[derive(Clone, Copy, Debug)]
-    struct Nothing;
+    struct Error;
     struct ErroringStream {
         index: u8,
     }
@@ -757,10 +731,10 @@ fn product_stream() {
             Self { index: 0 }
         }
     }
-    impl Getter<f32, Nothing> for ErroringStream {
-        fn get(&self) -> Output<f32, Nothing> {
+    impl Getter<f32, Error> for ErroringStream {
+        fn get(&self) -> Output<f32, Error> {
             if self.index == 0 {
-                return Err(Error::Other(Nothing));
+                return Err(Error);
             } else if self.index == 1 {
                 return Ok(None);
             } else {
@@ -768,8 +742,8 @@ fn product_stream() {
             }
         }
     }
-    impl Updatable<Nothing> for ErroringStream {
-        fn update(&mut self) -> NothingOrError<Nothing> {
+    impl Updatable<Error> for ErroringStream {
+        fn update(&mut self) -> NothingOrError<Error> {
             self.index += 1;
             Ok(())
         }
@@ -780,13 +754,13 @@ fn product_stream() {
             Self {}
         }
     }
-    impl Getter<f32, Nothing> for NormalStream {
-        fn get(&self) -> Output<f32, Nothing> {
+    impl Getter<f32, Error> for NormalStream {
+        fn get(&self) -> Output<f32, Error> {
             Ok(Some(Datum::new(Time::from_nanoseconds(1), 5.0)))
         }
     }
-    impl Updatable<Nothing> for NormalStream {
-        fn update(&mut self) -> NothingOrError<Nothing> {
+    impl Updatable<Error> for NormalStream {
+        fn update(&mut self) -> NothingOrError<Error> {
             Ok(())
         }
     }
@@ -845,7 +819,7 @@ fn empty_product_stream() {
 #[test]
 fn product2() {
     #[derive(Clone, Copy, Debug)]
-    struct Nothing;
+    struct Error;
     struct ErroringStream {
         index: u8,
     }
@@ -854,10 +828,10 @@ fn product2() {
             Self { index: 0 }
         }
     }
-    impl Getter<f32, Nothing> for ErroringStream {
-        fn get(&self) -> Output<f32, Nothing> {
+    impl Getter<f32, Error> for ErroringStream {
+        fn get(&self) -> Output<f32, Error> {
             if self.index == 0 {
-                return Err(Error::Other(Nothing));
+                return Err(Error);
             } else if self.index == 1 {
                 return Ok(None);
             } else {
@@ -865,8 +839,8 @@ fn product2() {
             }
         }
     }
-    impl Updatable<Nothing> for ErroringStream {
-        fn update(&mut self) -> NothingOrError<Nothing> {
+    impl Updatable<Error> for ErroringStream {
+        fn update(&mut self) -> NothingOrError<Error> {
             self.index += 1;
             Ok(())
         }
@@ -877,13 +851,13 @@ fn product2() {
             Self {}
         }
     }
-    impl Getter<f32, Nothing> for NormalStream {
-        fn get(&self) -> Output<f32, Nothing> {
+    impl Getter<f32, Error> for NormalStream {
+        fn get(&self) -> Output<f32, Error> {
             Ok(Some(Datum::new(Time::from_nanoseconds(1), 5.0)))
         }
     }
-    impl Updatable<Nothing> for NormalStream {
-        fn update(&mut self) -> NothingOrError<Nothing> {
+    impl Updatable<Error> for NormalStream {
+        fn update(&mut self) -> NothingOrError<Error> {
             Ok(())
         }
     }
@@ -929,7 +903,7 @@ fn quotient_stream() {
     impl Getter<f32, DummyError> for Stream1 {
         fn get(&self) -> Output<f32, DummyError> {
             if self.index == 0 || self.index == 1 || self.index == 2 {
-                return Err(Error::Other(DummyError));
+                return Err(DummyError);
             } else if self.index == 3 || self.index == 4 || self.index == 5 {
                 return Ok(None);
             }
@@ -953,7 +927,7 @@ fn quotient_stream() {
     impl Getter<f32, DummyError> for Stream2 {
         fn get(&self) -> Output<f32, DummyError> {
             if self.index == 0 || self.index == 3 || self.index == 6 {
-                return Err(Error::Other(DummyError));
+                return Err(DummyError);
             } else if self.index == 1 || self.index == 4 || self.index == 7 {
                 return Ok(None);
             }
@@ -1091,7 +1065,7 @@ fn exponent_stream() {
     impl Getter<f32, DummyError> for Stream1 {
         fn get(&self) -> Output<f32, DummyError> {
             if self.index == 0 || self.index == 1 || self.index == 2 {
-                return Err(Error::Other(DummyError));
+                return Err(DummyError);
             } else if self.index == 3 || self.index == 4 || self.index == 5 {
                 return Ok(None);
             }
@@ -1115,7 +1089,7 @@ fn exponent_stream() {
     impl Getter<f32, DummyError> for Stream2 {
         fn get(&self) -> Output<f32, DummyError> {
             if self.index == 0 || self.index == 3 || self.index == 6 {
-                return Err(Error::Other(DummyError));
+                return Err(DummyError);
             } else if self.index == 1 || self.index == 4 || self.index == 7 {
                 return Ok(None);
             }
@@ -1675,6 +1649,8 @@ fn moving_average_stream_quantity() {
 }
 #[test]
 fn latest() {
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    struct Error;
     struct Stream1 {
         time: Time,
     }
@@ -1683,8 +1659,8 @@ fn latest() {
             Self { time: Time::ZERO }
         }
     }
-    impl Getter<u8, ()> for Stream1 {
-        fn get(&self) -> Output<u8, ()> {
+    impl Getter<u8, Error> for Stream1 {
+        fn get(&self) -> Output<u8, Error> {
             match self.time.as_nanoseconds() {
                 0 => Ok(Some(Datum::new(Time::from_nanoseconds(1), 1))), //Some, Some
                 1 => Ok(Some(Datum::new(Time::ZERO, 0))),                //Some, Some
@@ -1692,13 +1668,13 @@ fn latest() {
                 3 => Ok(Some(Datum::new(Time::ZERO, 1))),                //Some, Err
                 4 => Ok(None),                                           //None, None
                 5 => Ok(None),                                           //None, Err
-                6 => Err(Error::Other(())),                              //Err,  Err
+                6 => Err(Error),                                         //Err,  Err
                 _ => panic!("should be unreachable"),
             }
         }
     }
-    impl Updatable<()> for Stream1 {
-        fn update(&mut self) -> NothingOrError<()> {
+    impl Updatable<Error> for Stream1 {
+        fn update(&mut self) -> NothingOrError<Error> {
             self.time += Time::from_nanoseconds(1);
             Ok(())
         }
@@ -1711,22 +1687,22 @@ fn latest() {
             Self { time: Time::ZERO }
         }
     }
-    impl Getter<u8, ()> for Stream2 {
-        fn get(&self) -> Output<u8, ()> {
+    impl Getter<u8, Error> for Stream2 {
+        fn get(&self) -> Output<u8, Error> {
             match self.time.as_nanoseconds() {
                 0 => Ok(Some(Datum::new(Time::ZERO, 0))), //Some, Some
                 1 => Ok(Some(Datum::new(Time::from_nanoseconds(1), 2))), //Some, Some
                 2 => Ok(None),                            //Some, None
-                3 => Err(Error::Other(())),               //Some, Err
+                3 => Err(Error),                          //Some, Err
                 4 => Ok(None),                            //None, None
-                5 => Err(Error::Other(())),               //None, Err
-                6 => Err(Error::Other(())),               //Err,  Err
+                5 => Err(Error),                          //None, Err
+                6 => Err(Error),                          //Err,  Err
                 _ => panic!("should be unreachable"),
             }
         }
     }
-    impl Updatable<()> for Stream2 {
-        fn update(&mut self) -> NothingOrError<()> {
+    impl Updatable<Error> for Stream2 {
+        fn update(&mut self) -> NothingOrError<Error> {
             self.time += Time::from_nanoseconds(1);
             Ok(())
         }
