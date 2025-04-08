@@ -22,7 +22,7 @@ fn time_try_from_quantity_success() {
 fn time_try_from_quantity_failure() {
     let x = Quantity::new(5.0, MILLIMETER);
     let x = Time::try_from(x);
-    assert_eq!(x, Err(()));
+    assert_eq!(x, Err(CannotConvert));
 }
 #[test]
 fn quantity_from_time() {
@@ -132,7 +132,7 @@ fn dimensionless_integer_try_from_quantity_success() {
 fn dimensionless_integer_try_from_quantity_failure() {
     let x = Quantity::new(5.0, MILLIMETER);
     let x = DimensionlessInteger::try_from(x);
-    assert_eq!(x, Err(()));
+    assert_eq!(x, Err(CannotConvert));
 }
 #[test]
 fn quantity_from_dimensionless_integer() {
@@ -347,7 +347,10 @@ fn unit_from_position_derivative() {
     all(debug_assertions, feature = "dim_check_debug")
 ))]
 fn unit_try_from_motion_profile_piece() {
-    assert_eq!(Unit::try_from(MotionProfilePiece::BeforeStart), Err(()));
+    assert_eq!(
+        Unit::try_from(MotionProfilePiece::BeforeStart),
+        Err(CannotConvert)
+    );
     assert_eq!(
         Unit::try_from(MotionProfilePiece::InitialAcceleration),
         Ok(MILLIMETER_PER_SECOND_SQUARED)
@@ -360,7 +363,10 @@ fn unit_try_from_motion_profile_piece() {
         Unit::try_from(MotionProfilePiece::EndAcceleration),
         Ok(MILLIMETER_PER_SECOND_SQUARED)
     );
-    assert_eq!(Unit::try_from(MotionProfilePiece::Complete), Err(()));
+    assert_eq!(
+        Unit::try_from(MotionProfilePiece::Complete),
+        Err(CannotConvert)
+    );
 }
 #[test]
 fn unit_add_sub_success() {
