@@ -737,6 +737,11 @@ fn command_ops() {
 }
 #[test]
 fn time_getter_from_stream() {
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    enum Error {
+        GetterNone,
+        GetterError,
+    }
     struct Stream {
         time: Time,
     }
@@ -745,18 +750,18 @@ fn time_getter_from_stream() {
             Self { time: Time::ZERO }
         }
     }
-    impl Getter<(), ()> for Stream {
-        fn get(&self) -> Output<(), ()> {
+    impl Getter<(), Error> for Stream {
+        fn get(&self) -> Output<(), Error> {
             match self.time.as_nanoseconds() {
                 0 => Ok(Some(Datum::new(self.time, ()))),
                 1 => Ok(None),
-                2 => Err(Error::Other(())),
+                2 => Err(Error::GetterError),
                 _ => panic!("should always be 0, 1, or 2"),
             }
         }
     }
-    impl Updatable<()> for Stream {
-        fn update(&mut self) -> NothingOrError<()> {
+    impl Updatable<Error> for Stream {
+        fn update(&mut self) -> NothingOrError<Error> {
             self.time += Time::from_nanoseconds(1);
             Ok(())
         }
@@ -764,13 +769,13 @@ fn time_getter_from_stream() {
     unsafe {
         static mut STREAM: Stream = Stream::new();
         let stream = Reference::from_ptr(core::ptr::addr_of_mut!(STREAM));
-        let mut time_getter = TimeGetterFromGetter::new(stream.clone());
+        let mut time_getter = TimeGetterFromGetter::new(stream.clone(), Error::GetterNone);
         time_getter.update().unwrap(); //This should do nothing.
         assert_eq!(time_getter.get(), Ok(Time::ZERO));
         stream.borrow_mut().update().unwrap();
-        assert_eq!(time_getter.get(), Err(Error::FromNone));
+        assert_eq!(time_getter.get(), Err(Error::GetterNone));
         stream.borrow_mut().update().unwrap();
-        assert_eq!(time_getter.get(), Err(Error::Other(())));
+        assert_eq!(time_getter.get(), Err(Error::GetterError));
     }
 }
 #[test]
