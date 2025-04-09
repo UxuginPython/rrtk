@@ -89,16 +89,18 @@ pub struct PIDWrapper<'a, T: Settable<f32, E>, E: Copy + Debug + 'static> {
     time: Reference<Time>,
     state: Reference<ConstantGetter<State, Reference<Time>, E>>,
     command: Reference<ConstantGetter<Command, Reference<Time>, E>>,
-    pid: Reference<
+    feeder: Feeder<
+        f32,
         streams::control::CommandPID<Reference<ConstantGetter<State, Reference<Time>, E>>, E>,
+        T,
+        E,
     >,
-    inner: T,
 }
 #[cfg(feature = "alloc")]
 impl<'a, T: Settable<f32, E>, E: Copy + Debug + 'static> PIDWrapper<'a, T, E> {
     ///Constructor for [`PIDWrapper`].
     pub fn new(
-        mut inner: T,
+        inner: T,
         initial_time: Time,
         initial_state: State,
         initial_command: Command,
@@ -114,19 +116,14 @@ impl<'a, T: Settable<f32, E>, E: Copy + Debug + 'static> PIDWrapper<'a, T, E> {
             time.clone(),
             initial_command,
         ))));
-        let pid = Reference::from_rc_ref_cell(Rc::new(RefCell::new(
-            streams::control::CommandPID::new(state.clone(), initial_command, kvalues),
-        )));
-        pid.borrow_mut()
-            .follow(to_dyn!(Getter<Command, E>, command.clone()));
-        inner.follow(to_dyn!(Getter<f32, E>, pid.clone()));
+        let pid = streams::control::CommandPID::new(state.clone(), initial_command, kvalues);
+        let feeder = Feeder::new(pid, inner);
         Self {
             terminal: terminal,
             time: time,
             state: state,
             command: command,
-            pid: pid,
-            inner: inner,
+            feeder: feeder,
         }
     }
     ///Get a reference to this wrapper's terminal.
@@ -159,11 +156,10 @@ impl<T: Settable<f32, E>, E: Copy + Debug + 'static> Updatable<E> for PIDWrapper
                     Some(command) => self.command.borrow_mut().set(command)?,
                     None => (),
                 }
-                self.pid.borrow_mut().update()?;
             }
             None => (),
         }
-        self.inner.update()?;
+        self.feeder.update()?;
         Ok(())
     }
 }

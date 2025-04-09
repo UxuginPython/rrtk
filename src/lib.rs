@@ -247,17 +247,6 @@ pub trait Settable<S: Clone, E: Copy + Debug>: Updatable<E> {
     ///reference to it, and make [`get_settable_data_ref`](Settable::get_settable_data_ref)
     ///return an immutable reference to it.
     fn get_settable_data_mut(&mut self) -> &mut SettableData<S, E>;
-    ///Begin following a [`Getter`] of the same type. For this to work, you must have
-    ///[`update_following_data`](Settable::update_following_data) in your [`Updatable`] implementation.
-    fn follow(&mut self, getter: Reference<dyn Getter<S, E>>) {
-        let data = self.get_settable_data_mut();
-        data.following = Some(getter);
-    }
-    ///Stop following the [`Getter`].
-    fn stop_following(&mut self) {
-        let data = self.get_settable_data_mut();
-        data.following = None;
-    }
     ///Get a new value from the [`Getter`] we're following, if there is one, and call
     ///[`set`](Settable::set)
     ///accordingly. You must add this to your [`Updatable`] implementation if you are following
