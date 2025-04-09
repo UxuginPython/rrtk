@@ -282,6 +282,39 @@ pub trait Settable<S: Clone, E: Copy + Debug>: Updatable<E> {
         Ok(())
     }
 }
+///Feeds the output of a [`Getter`] into a [`Settable`].
+pub struct Feeder<T: Clone, G: Getter<T, E>, S: Settable<T, E>, E: Copy + Debug> {
+    getter: G,
+    settable: S,
+    phantom_t: PhantomData<T>,
+    phantom_e: PhantomData<E>,
+}
+impl<T: Clone, G: Getter<T, E>, S: Settable<T, E>, E: Copy + Debug> Feeder<T, G, S, E> {
+    ///Constructor for `Feeder`.
+    pub fn new(getter: G, settable: S) -> Self {
+        Self {
+            getter: getter,
+            settable: settable,
+            phantom_t: PhantomData,
+            phantom_e: PhantomData,
+        }
+    }
+}
+impl<T: Clone, G: Getter<T, E>, S: Settable<T, E>, E: Copy + Debug> Updatable<E>
+    for Feeder<T, G, S, E>
+{
+    fn update(&mut self) -> NothingOrError<E> {
+        //TODO: Currently, this just returns if anything fails, which can skip settable.update. Do
+        //      you really want this?
+        self.getter.update()?;
+        match self.getter.get()? {
+            Some(datum) => self.settable.set(datum.value)?,
+            None => {}
+        };
+        self.settable.update()?;
+        Ok(())
+    }
+}
 ///Because [`Getter`]s always return a timestamp (as long as they don't return `Err(_)` or
 ///`Ok(None)`), we can use this to treat them like [`TimeGetter`]s.
 pub struct TimeGetterFromGetter<T, G: Getter<T, E>, E: Copy + Debug> {
