@@ -241,3 +241,10 @@ Add moving average stream.
 - Minor documentation improvements.
 ## 0.7.0-alpha.1
 Allow the use of `Getter` implementors to be used directly as stream inputs instead of needing to be in a `Reference`. One can, of course, still put stream inputs in `Reference` (as is necessary when using the same `Getter` in multiple places) since `Reference` now passes through the `Getter`, `Updatable`, and `TimeGetter` implementations of its referent.
+## 0.7.0-alpha.2
+Remove `Error` enum:
+- Change `Output` type alias (`Getter::get`'s return type) from `Result<Option<Datum<T>>, Error<E>>` to `Result<Option<Datum<T>>, E>`.
+- Change `TimeOutput` type alias (`TimeGetter::get`'s return type) from `Result<Time, Error<E>>` to `Result<Time, E>`.
+- Change `NothingOrError` type alias (`Updatable::update`'s return type) from `Result<(), Error<E>>` to `Result<(), E>`.
+- Make `NoneToError` and `TimeGetterFromGetter` require error values to return when they receive `Ok(None)`.
+  - `TimeGetterFromGetter` no longer uses `NoneToError` internally, so remove its `T: Clone` bound.
