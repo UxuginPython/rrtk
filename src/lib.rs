@@ -517,8 +517,8 @@ impl<E: Copy + Debug> Settable<Datum<State>, E> for Terminal<'_, E> {
     fn get_settable_data_mut(&mut self) -> &mut SettableData<Datum<State>, E> {
         &mut self.settable_data_state
     }
-    //SettableData takes care of this for us.
-    fn set(&mut self, _state: Datum<State>) -> NothingOrError<E> {
+    fn set(&mut self, state: Datum<State>) -> NothingOrError<E> {
+        self.last_request_state = Some(state);
         Ok(())
     }
 }
@@ -530,7 +530,8 @@ impl<E: Copy + Debug> Settable<Datum<Command>, E> for Terminal<'_, E> {
     fn get_settable_data_mut(&mut self) -> &mut SettableData<Datum<Command>, E> {
         &mut self.settable_data_command
     }
-    fn set(&mut self, _command: Datum<Command>) -> NothingOrError<E> {
+    fn set(&mut self, command: Datum<Command>) -> NothingOrError<E> {
+        self.last_request_command = Some(command);
         Ok(())
     }
 }
