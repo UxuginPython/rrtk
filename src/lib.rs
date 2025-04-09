@@ -235,16 +235,8 @@ impl<S, E: Copy + Debug> SettableData<S, E> {
 ///Something with a [`set`](Settable::set) method. Usually used for motors and other mechanical components and
 ///systems. This trait too is fairly broad.
 pub trait Settable<S: Clone, E: Copy + Debug>: Updatable<E> {
-    ///Set something, not updating the internal [`SettableData`]. Due to current limitations of the
-    ///language, you must implement this but call [`set`](Settable::set). Do not call this directly as it will make
-    ///[`get_last_request`](Settable::get_last_request) work incorrectly.
-    fn impl_set(&mut self, value: S) -> NothingOrError<E>;
-    ///Set something to a value. For example, this could set a motor to a voltage. You should call
-    ///this and not [`impl_set`](Settable::impl_set).
-    fn set(&mut self, value: S) -> NothingOrError<E> {
-        self.impl_set(value.clone())?;
-        Ok(())
-    }
+    ///Set something to a value. For example, this could set a motor to a voltage.
+    fn set(&mut self, value: S) -> NothingOrError<E>;
     ///As traits cannot have fields, get functions and separate types are required. All you have to
     ///do is make a field for a corresponding [`SettableData`], make this return an immutable
     ///reference to it, and make [`get_settable_data_mut`](Settable::get_settable_data_mut)
@@ -435,7 +427,7 @@ impl<T: Clone, TG: TimeGetter<E>, E: Copy + Debug> Settable<T, E> for ConstantGe
     fn get_settable_data_mut(&mut self) -> &mut SettableData<T, E> {
         &mut self.settable_data
     }
-    fn impl_set(&mut self, value: T) -> NothingOrError<E> {
+    fn set(&mut self, value: T) -> NothingOrError<E> {
         self.value = value;
         Ok(())
     }
@@ -526,7 +518,7 @@ impl<E: Copy + Debug> Settable<Datum<State>, E> for Terminal<'_, E> {
         &mut self.settable_data_state
     }
     //SettableData takes care of this for us.
-    fn impl_set(&mut self, _state: Datum<State>) -> NothingOrError<E> {
+    fn set(&mut self, _state: Datum<State>) -> NothingOrError<E> {
         Ok(())
     }
 }
@@ -538,7 +530,7 @@ impl<E: Copy + Debug> Settable<Datum<Command>, E> for Terminal<'_, E> {
     fn get_settable_data_mut(&mut self) -> &mut SettableData<Datum<Command>, E> {
         &mut self.settable_data_command
     }
-    fn impl_set(&mut self, _command: Datum<Command>) -> NothingOrError<E> {
+    fn set(&mut self, _command: Datum<Command>) -> NothingOrError<E> {
         Ok(())
     }
 }

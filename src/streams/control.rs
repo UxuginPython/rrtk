@@ -135,7 +135,7 @@ mod command_pid {
         fn get_settable_data_mut(&mut self) -> &mut SettableData<Command, E> {
             &mut self.settable_data
         }
-        fn impl_set(&mut self, command: Command) -> NothingOrError<E> {
+        fn set(&mut self, command: Command) -> NothingOrError<E> {
             if command != self.command {
                 self.reset();
                 self.command = command;
