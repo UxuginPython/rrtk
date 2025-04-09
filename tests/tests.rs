@@ -809,11 +809,13 @@ fn settable() {
     }
     struct MySettable {
         settable_data: SettableData<u8, ()>,
+        last_request: Option<u8>,
     }
     impl MySettable {
         fn new() -> Self {
             Self {
                 settable_data: SettableData::new(),
+                last_request: None,
             }
         }
     }
@@ -824,7 +826,8 @@ fn settable() {
         fn get_settable_data_mut(&mut self) -> &mut SettableData<u8, ()> {
             &mut self.settable_data
         }
-        fn impl_set(&mut self, _: u8) -> NothingOrError<()> {
+        fn set(&mut self, x: u8) -> NothingOrError<()> {
+            self.last_request = Some(x);
             Ok(())
         }
     }
@@ -835,9 +838,9 @@ fn settable() {
         }
     }
     let mut my_settable = MySettable::new();
-    assert_eq!(my_settable.get_last_request(), None);
+    assert_eq!(my_settable.last_request, None);
     my_settable.set(3).unwrap();
-    assert_eq!(my_settable.get_last_request(), Some(3));
+    assert_eq!(my_settable.last_request, Some(3));
     unsafe {
         static mut MY_GETTER: MyGetter = MyGetter::new();
         let my_getter = Reference::from_ptr(core::ptr::addr_of_mut!(MY_GETTER));
@@ -846,17 +849,17 @@ fn settable() {
         let my_getter_dyn = to_dyn!(Getter<u8, ()>, x);
         my_settable.follow(my_getter_dyn);
         my_settable.update().unwrap();
-        assert_eq!(my_settable.get_last_request(), Some(3));
+        assert_eq!(my_settable.last_request, Some(3));
         my_getter.borrow_mut().update().unwrap();
         my_settable.update().unwrap();
-        assert_eq!(my_settable.get_last_request(), Some(6));
+        assert_eq!(my_settable.last_request, Some(6));
         my_getter.borrow_mut().update().unwrap();
         my_settable.update().unwrap();
-        assert_eq!(my_settable.get_last_request(), Some(7));
+        assert_eq!(my_settable.last_request, Some(7));
         my_settable.stop_following();
         my_getter.borrow_mut().update().unwrap();
         my_settable.update().unwrap();
-        assert_eq!(my_settable.get_last_request(), Some(7));
+        assert_eq!(my_settable.last_request, Some(7));
     }
 }
 #[test]
