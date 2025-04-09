@@ -248,3 +248,6 @@ Remove `Error` enum:
 - Change `NothingOrError` type alias (`Updatable::update`'s return type) from `Result<(), Error<E>>` to `Result<(), E>`.
 - Make `NoneToError` and `TimeGetterFromGetter` require error values to return when they receive `Ok(None)`.
   - `TimeGetterFromGetter` no longer uses `NoneToError` internally, so remove its `T: Clone` bound.
+## 0.7.0-alpha.3
+- Remove `Settable::impl_set`. Now both call `Settable::set` and implement it in the impl block instead of calling `set` and implementing `impl_set`.
+- Remove `Settable::get_last_request`.
