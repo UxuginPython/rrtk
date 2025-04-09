@@ -607,11 +607,13 @@ fn differential_distrust_sum() {
 fn actuator_wrapper() {
     struct Actuator {
         settable_data: SettableData<TerminalData, ()>,
+        last_request: Option<TerminalData>,
     }
     impl Actuator {
         fn new() -> Self {
             Self {
                 settable_data: SettableData::new(),
+                last_request: None,
             }
         }
     }
@@ -622,14 +624,15 @@ fn actuator_wrapper() {
         fn get_settable_data_mut(&mut self) -> &mut SettableData<TerminalData, ()> {
             &mut self.settable_data
         }
-        fn impl_set(&mut self, _: TerminalData) -> NothingOrError<()> {
+        fn set(&mut self, x: TerminalData) -> NothingOrError<()> {
+            self.last_request = Some(x);
             Ok(())
         }
     }
     impl Updatable<()> for Actuator {
         fn update(&mut self) -> NothingOrError<()> {
             assert_eq!(
-                self.get_last_request().unwrap(),
+                self.last_request.unwrap(),
                 TerminalData {
                     time: Time::from_nanoseconds(2),
                     command: Some(Command::new(PositionDerivative::Position, 5.0)),
@@ -716,7 +719,7 @@ fn pid_wrapper() {
         }
     }
     impl Settable<f32, ()> for Motor {
-        fn impl_set(&mut self, value: f32) -> NothingOrError<()> {
+        fn set(&mut self, value: f32) -> NothingOrError<()> {
             assert_eq!(
                 value,
                 match self.time.as_nanoseconds() {
