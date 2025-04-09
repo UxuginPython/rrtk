@@ -225,15 +225,11 @@ pub trait Getter<G, E: Copy + Debug>: Updatable<E> {
 ///Internal data needed for following a [`Getter`] with a [`Settable`].
 pub struct SettableData<S, E: Copy + Debug> {
     following: Option<Reference<dyn Getter<S, E>>>,
-    last_request: Option<S>,
 }
 impl<S, E: Copy + Debug> SettableData<S, E> {
     ///Constructor for [`SettableData`].
     pub const fn new() -> Self {
-        Self {
-            following: None,
-            last_request: None,
-        }
+        Self { following: None }
     }
 }
 ///Something with a [`set`](Settable::set) method. Usually used for motors and other mechanical components and
@@ -247,8 +243,6 @@ pub trait Settable<S: Clone, E: Copy + Debug>: Updatable<E> {
     ///this and not [`impl_set`](Settable::impl_set).
     fn set(&mut self, value: S) -> NothingOrError<E> {
         self.impl_set(value.clone())?;
-        let data = self.get_settable_data_mut();
-        data.last_request = Some(value);
         Ok(())
     }
     ///As traits cannot have fields, get functions and separate types are required. All you have to
@@ -294,11 +288,6 @@ pub trait Settable<S: Clone, E: Copy + Debug>: Updatable<E> {
             }
         }
         Ok(())
-    }
-    ///Get the argument from the last time [`set`](Settable::set) was called.
-    fn get_last_request(&self) -> Option<S> {
-        let data = self.get_settable_data_ref();
-        data.last_request.clone()
     }
 }
 ///Because [`Getter`]s always return a timestamp (as long as they don't return `Err(_)` or
@@ -491,7 +480,9 @@ impl<E: Copy + Debug> Updatable<E> for Time {
 #[cfg(feature = "devices")]
 pub struct Terminal<'a, E: Copy + Debug> {
     settable_data_state: SettableData<Datum<State>, E>,
+    last_request_state: Option<Datum<State>>,
     settable_data_command: SettableData<Datum<Command>, E>,
+    last_request_command: Option<Datum<Command>>,
     other: Option<&'a RefCell<Terminal<'a, E>>>,
 }
 #[cfg(feature = "devices")]
@@ -501,7 +492,9 @@ impl<E: Copy + Debug> Terminal<'_, E> {
     pub const fn new_raw() -> Self {
         Self {
             settable_data_state: SettableData::new(),
+            last_request_state: None,
             settable_data_command: SettableData::new(),
+            last_request_command: None,
             other: None,
         }
     }
@@ -555,7 +548,7 @@ impl<E: Copy + Debug> Getter<State, E> for Terminal<'_, E> {
         let mut addends: [core::mem::MaybeUninit<Datum<State>>; 2] =
             [core::mem::MaybeUninit::uninit(); 2];
         let mut addend_count = 0usize;
-        match self.get_last_request() {
+        match self.last_request_state {
             Some(state) => {
                 addends[0].write(state);
                 addend_count += 1;
@@ -563,7 +556,7 @@ impl<E: Copy + Debug> Getter<State, E> for Terminal<'_, E> {
             None => (),
         }
         match self.other {
-            Some(other) => match other.borrow().get_last_request() {
+            Some(other) => match other.borrow().last_request_state {
                 Some(state) => {
                     addends[addend_count].write(state);
                     addend_count += 1;
@@ -590,30 +583,26 @@ impl<E: Copy + Debug> Getter<State, E> for Terminal<'_, E> {
 impl<E: Copy + Debug> Getter<Command, E> for Terminal<'_, E> {
     fn get(&self) -> Output<Command, E> {
         let mut maybe_command: Option<Datum<Command>> = None;
-        match self.get_last_request() {
+        match self.last_request_command {
             Some(command) => {
                 maybe_command = Some(command);
             }
             None => {}
         }
         match self.other {
-            Some(other) => {
-                match <Terminal<'_, E> as Settable<Datum<Command>, E>>::get_last_request(
-                    &other.borrow(),
-                ) {
-                    Some(gotten_command) => match maybe_command {
-                        Some(command_some) => {
-                            if gotten_command.time > command_some.time {
-                                maybe_command = Some(gotten_command);
-                            }
-                        }
-                        None => {
+            Some(other) => match other.borrow().last_request_command {
+                Some(gotten_command) => match maybe_command {
+                    Some(command_some) => {
+                        if gotten_command.time > command_some.time {
                             maybe_command = Some(gotten_command);
                         }
-                    },
-                    None => (),
-                }
-            }
+                    }
+                    None => {
+                        maybe_command = Some(gotten_command);
+                    }
+                },
+                None => (),
+            },
             None => (),
         }
         Ok(maybe_command)
