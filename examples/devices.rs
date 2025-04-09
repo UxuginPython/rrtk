@@ -1,5 +1,8 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // Copyright 2024-2025 UxuginPython
+//TODO: Go over this example. It's pretty confusing that the primary device system example is a
+//runaway motor with its encoder detached, especially when where are no comments. It's also not
+//just a Settable bug - read Encoder's Getter impl.
 #[cfg(all(feature = "devices", feature = "alloc"))]
 const COMMAND: Command = Command::new(PositionDerivative::Position, 5.0);
 #[cfg(all(feature = "devices", feature = "alloc"))]
@@ -26,7 +29,7 @@ impl Motor {
 }
 #[cfg(all(feature = "devices", feature = "alloc"))]
 impl Settable<f32, ()> for Motor {
-    fn impl_set(&mut self, value: f32) -> NothingOrError<()> {
+    fn set(&mut self, value: f32) -> NothingOrError<()> {
         println!("Motor voltage set to {:?}", value);
         Ok(())
     }
