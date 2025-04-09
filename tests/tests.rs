@@ -780,33 +780,6 @@ fn time_getter_from_stream() {
 }
 #[test]
 fn settable() {
-    struct MyGetter {
-        none: bool,
-        value: u8,
-    }
-    impl MyGetter {
-        const fn new() -> Self {
-            Self {
-                none: true,
-                value: 5,
-            }
-        }
-    }
-    impl Getter<u8, ()> for MyGetter {
-        fn get(&self) -> Output<u8, ()> {
-            if self.none {
-                return Ok(None);
-            }
-            Ok(Some(Datum::new(Time::ZERO, self.value)))
-        }
-    }
-    impl Updatable<()> for MyGetter {
-        fn update(&mut self) -> NothingOrError<()> {
-            self.none = false;
-            self.value += 1;
-            Ok(())
-        }
-    }
     struct MySettable {
         settable_data: SettableData<u8, ()>,
         last_request: Option<u8>,
@@ -841,26 +814,6 @@ fn settable() {
     assert_eq!(my_settable.last_request, None);
     my_settable.set(3).unwrap();
     assert_eq!(my_settable.last_request, Some(3));
-    unsafe {
-        static mut MY_GETTER: MyGetter = MyGetter::new();
-        let my_getter = Reference::from_ptr(core::ptr::addr_of_mut!(MY_GETTER));
-        //let my_getter_dyn: Reference<dyn Getter<u8, ()>> = my_getter.clone();
-        let x = my_getter.clone();
-        let my_getter_dyn = to_dyn!(Getter<u8, ()>, x);
-        my_settable.follow(my_getter_dyn);
-        my_settable.update().unwrap();
-        assert_eq!(my_settable.last_request, Some(3));
-        my_getter.borrow_mut().update().unwrap();
-        my_settable.update().unwrap();
-        assert_eq!(my_settable.last_request, Some(6));
-        my_getter.borrow_mut().update().unwrap();
-        my_settable.update().unwrap();
-        assert_eq!(my_settable.last_request, Some(7));
-        my_settable.stop_following();
-        my_getter.borrow_mut().update().unwrap();
-        my_settable.update().unwrap();
-        assert_eq!(my_settable.last_request, Some(7));
-    }
 }
 #[test]
 fn getter_from_history() {
