@@ -224,18 +224,18 @@ pub trait Getter<G, E: Copy + Debug>: Updatable<E> {
 }
 ///Something with a [`set`](Settable::set) method. Usually used for motors and other mechanical components and
 ///systems. This trait too is fairly broad.
-pub trait Settable<S: Clone, E: Copy + Debug>: Updatable<E> {
+pub trait Settable<S, E: Copy + Debug>: Updatable<E> {
     ///Set something to a value. For example, this could set a motor to a voltage.
     fn set(&mut self, value: S) -> NothingOrError<E>;
 }
 ///Feeds the output of a [`Getter`] into a [`Settable`].
-pub struct Feeder<T: Clone, G: Getter<T, E>, S: Settable<T, E>, E: Copy + Debug> {
+pub struct Feeder<T, G: Getter<T, E>, S: Settable<T, E>, E: Copy + Debug> {
     getter: G,
     settable: S,
     phantom_t: PhantomData<T>,
     phantom_e: PhantomData<E>,
 }
-impl<T: Clone, G: Getter<T, E>, S: Settable<T, E>, E: Copy + Debug> Feeder<T, G, S, E> {
+impl<T, G: Getter<T, E>, S: Settable<T, E>, E: Copy + Debug> Feeder<T, G, S, E> {
     ///Constructor for `Feeder`.
     pub fn new(getter: G, settable: S) -> Self {
         Self {
@@ -246,7 +246,7 @@ impl<T: Clone, G: Getter<T, E>, S: Settable<T, E>, E: Copy + Debug> Feeder<T, G,
         }
     }
 }
-impl<T: Clone, G: Getter<T, E>, S: Settable<T, E>, E: Copy + Debug> Updatable<E>
+impl<T, G: Getter<T, E>, S: Settable<T, E>, E: Copy + Debug> Updatable<E>
     for Feeder<T, G, S, E>
 {
     fn update(&mut self) -> NothingOrError<E> {
@@ -609,7 +609,6 @@ pub fn connect<'a, E: Copy + Debug>(
     term1_borrow.other = Some(term2);
     term2_borrow.other = Some(term1);
 }
-//TODO: Rename either this or SettableData to remove that potential connotation since they're
 //completely different
 ///Data that are sent between terminals: A timestamp, an optional command, and a state.
 #[cfg(feature = "devices")]

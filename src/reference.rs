@@ -340,7 +340,7 @@ impl<TG: ?Sized + TimeGetter<E>, E: Copy + Debug> TimeGetter<E> for Reference<TG
         self.borrow().get()
     }
 }
-impl<T: Clone, S: ?Sized + Settable<T, E>, E: Copy + Debug> Settable<T, E> for Reference<S> {
+impl<T, S: ?Sized + Settable<T, E>, E: Copy + Debug> Settable<T, E> for Reference<S> {
     fn set(&mut self, value: T) -> NothingOrError<E> {
         self.borrow_mut().set(value)
     }
