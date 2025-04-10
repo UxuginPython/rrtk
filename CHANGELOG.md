@@ -251,3 +251,9 @@ Remove `Error` enum:
 ## 0.7.0-alpha.3
 - Remove `Settable::impl_set`. Now both call `Settable::set` and implement it in the impl block instead of calling `set` and implementing `impl_set`.
 - Remove `Settable::get_last_request`.
+## 0.7.0-alpha.4
+- Remove `SettableData`, `Settable::get_settable_data_ref`, and `Settable::get_settable_data_mut`.
+- Remove `Settable::follow`, `Settable::stop_following`, and `Settable::update_following_data`.
+- Add `Feeder` to replace `Settable`'s removed following functionality.
+- Remove `Settable`'s now-unnecessary `Clone` bound.
+- Pass `Settable` through `Reference` as `Updatable` and `Getter` are.
