@@ -781,24 +781,14 @@ fn time_getter_from_stream() {
 #[test]
 fn settable() {
     struct MySettable {
-        settable_data: SettableData<u8, ()>,
         last_request: Option<u8>,
     }
     impl MySettable {
         fn new() -> Self {
-            Self {
-                settable_data: SettableData::new(),
-                last_request: None,
-            }
+            Self { last_request: None }
         }
     }
     impl Settable<u8, ()> for MySettable {
-        fn get_settable_data_ref(&self) -> &SettableData<u8, ()> {
-            &self.settable_data
-        }
-        fn get_settable_data_mut(&mut self) -> &mut SettableData<u8, ()> {
-            &mut self.settable_data
-        }
         fn set(&mut self, x: u8) -> NothingOrError<()> {
             self.last_request = Some(x);
             Ok(())
@@ -806,7 +796,6 @@ fn settable() {
     }
     impl Updatable<()> for MySettable {
         fn update(&mut self) -> NothingOrError<()> {
-            self.update_following_data()?;
             Ok(())
         }
     }

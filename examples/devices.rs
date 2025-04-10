@@ -16,15 +16,11 @@ const K_VALUES: PositionDerivativeDependentPIDKValues = PositionDerivativeDepend
 #[cfg(all(feature = "devices", feature = "alloc"))]
 use rrtk::*;
 #[cfg(all(feature = "devices", feature = "alloc"))]
-struct Motor {
-    settable_data: SettableData<f32, ()>,
-}
+struct Motor {}
 #[cfg(all(feature = "devices", feature = "alloc"))]
 impl Motor {
     fn new() -> Self {
-        Self {
-            settable_data: SettableData::new(),
-        }
+        Self {}
     }
 }
 #[cfg(all(feature = "devices", feature = "alloc"))]
@@ -33,17 +29,10 @@ impl Settable<f32, ()> for Motor {
         println!("Motor voltage set to {:?}", value);
         Ok(())
     }
-    fn get_settable_data_ref(&self) -> &SettableData<f32, ()> {
-        &self.settable_data
-    }
-    fn get_settable_data_mut(&mut self) -> &mut SettableData<f32, ()> {
-        &mut self.settable_data
-    }
 }
 #[cfg(all(feature = "devices", feature = "alloc"))]
 impl Updatable<()> for Motor {
     fn update(&mut self) -> NothingOrError<()> {
-        self.update_following_data().unwrap();
         Ok(())
     }
 }

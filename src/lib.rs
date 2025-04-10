@@ -246,9 +246,7 @@ impl<T, G: Getter<T, E>, S: Settable<T, E>, E: Copy + Debug> Feeder<T, G, S, E> 
         }
     }
 }
-impl<T, G: Getter<T, E>, S: Settable<T, E>, E: Copy + Debug> Updatable<E>
-    for Feeder<T, G, S, E>
-{
+impl<T, G: Getter<T, E>, S: Settable<T, E>, E: Copy + Debug> Updatable<E> for Feeder<T, G, S, E> {
     fn update(&mut self) -> NothingOrError<E> {
         //TODO: Currently, this just returns if anything fails, which can skip settable.update. Do
         //      you really want this?

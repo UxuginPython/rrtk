@@ -606,24 +606,14 @@ fn differential_distrust_sum() {
 #[test]
 fn actuator_wrapper() {
     struct Actuator {
-        settable_data: SettableData<TerminalData, ()>,
         last_request: Option<TerminalData>,
     }
     impl Actuator {
         fn new() -> Self {
-            Self {
-                settable_data: SettableData::new(),
-                last_request: None,
-            }
+            Self { last_request: None }
         }
     }
     impl Settable<TerminalData, ()> for Actuator {
-        fn get_settable_data_ref(&self) -> &SettableData<TerminalData, ()> {
-            &self.settable_data
-        }
-        fn get_settable_data_mut(&mut self) -> &mut SettableData<TerminalData, ()> {
-            &mut self.settable_data
-        }
         fn set(&mut self, x: TerminalData) -> NothingOrError<()> {
             self.last_request = Some(x);
             Ok(())
@@ -707,15 +697,11 @@ fn pid_wrapper() {
         );
     use rrtk::*;
     struct Motor {
-        settable_data: SettableData<f32, ()>,
         time: Time,
     }
     impl Motor {
         fn new() -> Self {
-            Self {
-                settable_data: SettableData::new(),
-                time: Time::ZERO,
-            }
+            Self { time: Time::ZERO }
         }
     }
     impl Settable<f32, ()> for Motor {
@@ -736,16 +722,9 @@ fn pid_wrapper() {
             }
             Ok(())
         }
-        fn get_settable_data_ref(&self) -> &SettableData<f32, ()> {
-            &self.settable_data
-        }
-        fn get_settable_data_mut(&mut self) -> &mut SettableData<f32, ()> {
-            &mut self.settable_data
-        }
     }
     impl Updatable<()> for Motor {
         fn update(&mut self) -> NothingOrError<()> {
-            self.update_following_data().unwrap();
             self.time += Time::from_nanoseconds(1_000_000_000);
             Ok(())
         }
