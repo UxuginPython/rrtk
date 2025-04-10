@@ -577,3 +577,40 @@ impl<
         Ok(())
     }
 }
+///Converts the output of a getter to another type through [`Into`]. Leaves the timestamp the same
+///and passes through `Err(_)` and `Ok(None)` identically.
+pub struct IntoConverter<TI: Into<TO>, TO, G: Getter<TI, E>, E: Copy + Debug> {
+    input: G,
+    phantom_ti: PhantomData<TI>,
+    phantom_to: PhantomData<TO>,
+    phantom_e: PhantomData<E>,
+}
+impl<TI: Into<TO>, TO, G: Getter<TI, E>, E: Copy + Debug> IntoConverter<TI, TO, G, E> {
+    ///Constructor for `IntoConverter`.
+    pub const fn new(input: G) -> Self {
+        Self {
+            input: input,
+            phantom_ti: PhantomData,
+            phantom_to: PhantomData,
+            phantom_e: PhantomData,
+        }
+    }
+}
+impl<TI: Into<TO>, TO, G: Getter<TI, E>, E: Copy + Debug> Getter<TO, E>
+    for IntoConverter<TI, TO, G, E>
+{
+    fn get(&self) -> Output<TO, E> {
+        Ok(match self.input.get()? {
+            None => None,
+            Some(datum) => Some(Datum::new(datum.time, datum.value.into())),
+        })
+    }
+}
+impl<TI: Into<TO>, TO, G: Getter<TI, E>, E: Copy + Debug> Updatable<E>
+    for IntoConverter<TI, TO, G, E>
+{
+    ///This does not need to be called.
+    fn update(&mut self) -> NothingOrError<E> {
+        Ok(())
+    }
+}
