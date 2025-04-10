@@ -16,13 +16,7 @@ const K_VALUES: PositionDerivativeDependentPIDKValues = PositionDerivativeDepend
 #[cfg(all(feature = "devices", feature = "alloc"))]
 use rrtk::*;
 #[cfg(all(feature = "devices", feature = "alloc"))]
-struct Motor {}
-#[cfg(all(feature = "devices", feature = "alloc"))]
-impl Motor {
-    fn new() -> Self {
-        Self {}
-    }
-}
+struct Motor;
 #[cfg(all(feature = "devices", feature = "alloc"))]
 impl Settable<f32, ()> for Motor {
     fn set(&mut self, value: f32) -> NothingOrError<()> {
@@ -62,7 +56,7 @@ fn main() {
         "K values are {:?}",
         K_VALUES.get_k_values(PositionDerivative::from(COMMAND))
     );
-    let motor = Motor::new();
+    let motor = Motor;
     let mut motor_wrapper =
         devices::wrappers::PIDWrapper::new(motor, Time::ZERO, STATE, COMMAND, K_VALUES);
     let encoder = Encoder::default();
