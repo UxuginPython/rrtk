@@ -222,54 +222,11 @@ pub trait Getter<G, E: Copy + Debug>: Updatable<E> {
     ///Get something.
     fn get(&self) -> Output<G, E>;
 }
-///Internal data needed for following a [`Getter`] with a [`Settable`].
-pub struct SettableData<S, E: Copy + Debug> {
-    following: Option<Reference<dyn Getter<S, E>>>,
-}
-impl<S, E: Copy + Debug> SettableData<S, E> {
-    ///Constructor for [`SettableData`].
-    pub const fn new() -> Self {
-        Self { following: None }
-    }
-}
 ///Something with a [`set`](Settable::set) method. Usually used for motors and other mechanical components and
 ///systems. This trait too is fairly broad.
 pub trait Settable<S: Clone, E: Copy + Debug>: Updatable<E> {
     ///Set something to a value. For example, this could set a motor to a voltage.
     fn set(&mut self, value: S) -> NothingOrError<E>;
-    ///As traits cannot have fields, get functions and separate types are required. All you have to
-    ///do is make a field for a corresponding [`SettableData`], make this return an immutable
-    ///reference to it, and make [`get_settable_data_mut`](Settable::get_settable_data_mut)
-    ///return a mutable reference to it.
-    fn get_settable_data_ref(&self) -> &SettableData<S, E>;
-    ///As traits cannot have fields, get functions and separate types are required. All you have to
-    ///do is make a field for a corresponding [`SettableData`], make this return a mutable
-    ///reference to it, and make [`get_settable_data_ref`](Settable::get_settable_data_ref)
-    ///return an immutable reference to it.
-    fn get_settable_data_mut(&mut self) -> &mut SettableData<S, E>;
-    ///Get a new value from the [`Getter`] we're following, if there is one, and call
-    ///[`set`](Settable::set)
-    ///accordingly. You must add this to your [`Updatable`] implementation if you are following
-    ///[`Getter`]s. This is a current limitation of the Rust language. If specialization is ever
-    ///stabilized, this will hopefully be done in a better way.
-    fn update_following_data(&mut self) -> NothingOrError<E> {
-        let data = self.get_settable_data_ref();
-        match &data.following {
-            None => {}
-            Some(getter) => {
-                let new_value = getter.borrow().get()?;
-                match new_value {
-                    None => {
-                        return Ok(());
-                    }
-                    Some(datum) => {
-                        self.set(datum.value)?;
-                    }
-                }
-            }
-        }
-        Ok(())
-    }
 }
 ///Feeds the output of a [`Getter`] into a [`Settable`].
 pub struct Feeder<T: Clone, G: Getter<T, E>, S: Settable<T, E>, E: Copy + Debug> {
@@ -422,17 +379,17 @@ impl<G, TG: TimeGetter<E>, E: Copy + Debug> Getter<G, E> for GetterFromHistory<'
 }
 ///Getter for returning a constant value.
 pub struct ConstantGetter<T: Clone, TG: TimeGetter<E>, E: Copy + Debug> {
-    settable_data: SettableData<T, E>,
     time_getter: TG,
     value: T,
+    phantom_e: PhantomData<E>,
 }
 impl<T: Clone, TG: TimeGetter<E>, E: Copy + Debug> ConstantGetter<T, TG, E> {
     ///Constructor for [`ConstantGetter`].
     pub const fn new(time_getter: TG, value: T) -> Self {
         Self {
-            settable_data: SettableData::new(),
             time_getter: time_getter,
             value: value,
+            phantom_e: PhantomData,
         }
     }
 }
@@ -443,12 +400,6 @@ impl<T: Clone, TG: TimeGetter<E>, E: Copy + Debug> Getter<T, E> for ConstantGett
     }
 }
 impl<T: Clone, TG: TimeGetter<E>, E: Copy + Debug> Settable<T, E> for ConstantGetter<T, TG, E> {
-    fn get_settable_data_ref(&self) -> &SettableData<T, E> {
-        &self.settable_data
-    }
-    fn get_settable_data_mut(&mut self) -> &mut SettableData<T, E> {
-        &mut self.settable_data
-    }
     fn set(&mut self, value: T) -> NothingOrError<E> {
         self.value = value;
         Ok(())
@@ -457,7 +408,6 @@ impl<T: Clone, TG: TimeGetter<E>, E: Copy + Debug> Settable<T, E> for ConstantGe
 impl<T: Clone, TG: TimeGetter<E>, E: Copy + Debug> Updatable<E> for ConstantGetter<T, TG, E> {
     ///This does not need to be called.
     fn update(&mut self) -> NothingOrError<E> {
-        self.update_following_data()?;
         Ok(())
     }
 }
@@ -493,9 +443,7 @@ impl<E: Copy + Debug> Updatable<E> for Time {
 ///A place where a device can connect to another.
 #[cfg(feature = "devices")]
 pub struct Terminal<'a, E: Copy + Debug> {
-    settable_data_state: SettableData<Datum<State>, E>,
     last_request_state: Option<Datum<State>>,
-    settable_data_command: SettableData<Datum<Command>, E>,
     last_request_command: Option<Datum<Command>>,
     other: Option<&'a RefCell<Terminal<'a, E>>>,
 }
@@ -505,9 +453,7 @@ impl<E: Copy + Debug> Terminal<'_, E> {
     ///however, in which case you should call [`new`](Terminal::new), which returns [`RefCell<Terminal>`].
     pub const fn new_raw() -> Self {
         Self {
-            settable_data_state: SettableData::new(),
             last_request_state: None,
-            settable_data_command: SettableData::new(),
             last_request_command: None,
             other: None,
         }
@@ -533,12 +479,6 @@ impl<E: Copy + Debug> Terminal<'_, E> {
 }
 #[cfg(feature = "devices")]
 impl<E: Copy + Debug> Settable<Datum<State>, E> for Terminal<'_, E> {
-    fn get_settable_data_ref(&self) -> &SettableData<Datum<State>, E> {
-        &self.settable_data_state
-    }
-    fn get_settable_data_mut(&mut self) -> &mut SettableData<Datum<State>, E> {
-        &mut self.settable_data_state
-    }
     fn set(&mut self, state: Datum<State>) -> NothingOrError<E> {
         self.last_request_state = Some(state);
         Ok(())
@@ -546,12 +486,6 @@ impl<E: Copy + Debug> Settable<Datum<State>, E> for Terminal<'_, E> {
 }
 #[cfg(feature = "devices")]
 impl<E: Copy + Debug> Settable<Datum<Command>, E> for Terminal<'_, E> {
-    fn get_settable_data_ref(&self) -> &SettableData<Datum<Command>, E> {
-        &self.settable_data_command
-    }
-    fn get_settable_data_mut(&mut self) -> &mut SettableData<Datum<Command>, E> {
-        &mut self.settable_data_command
-    }
     fn set(&mut self, command: Datum<Command>) -> NothingOrError<E> {
         self.last_request_command = Some(command);
         Ok(())
@@ -654,9 +588,8 @@ impl<E: Copy + Debug> Getter<TerminalData, E> for Terminal<'_, E> {
 }
 #[cfg(feature = "devices")]
 impl<E: Copy + Debug> Updatable<E> for Terminal<'_, E> {
+    ///This does not need to be called.
     fn update(&mut self) -> NothingOrError<E> {
-        <Terminal<'_, E> as Settable<Datum<Command>, E>>::update_following_data(self)?;
-        <Terminal<'_, E> as Settable<Datum<State>, E>>::update_following_data(self)?;
         Ok(())
     }
 }

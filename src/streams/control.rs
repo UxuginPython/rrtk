@@ -98,7 +98,6 @@ mod command_pid {
     ///derivative of a [`Command`]. Designed to make it easier to use a standard DC motor and an encoder
     ///as a de facto servo.
     pub struct CommandPID<G: Getter<State, E>, E: Copy + Debug> {
-        settable_data: SettableData<Command, E>,
         input: G,
         command: Command,
         kvals: PositionDerivativeDependentPIDKValues,
@@ -112,7 +111,6 @@ mod command_pid {
             kvalues: PositionDerivativeDependentPIDKValues,
         ) -> Self {
             Self {
-                settable_data: SettableData::new(),
                 input: input,
                 command: command,
                 kvals: kvalues,
@@ -129,12 +127,6 @@ mod command_pid {
         }
     }
     impl<G: Getter<State, E>, E: Copy + Debug> Settable<Command, E> for CommandPID<G, E> {
-        fn get_settable_data_ref(&self) -> &SettableData<Command, E> {
-            &self.settable_data
-        }
-        fn get_settable_data_mut(&mut self) -> &mut SettableData<Command, E> {
-            &mut self.settable_data
-        }
         fn set(&mut self, command: Command) -> NothingOrError<E> {
             if command != self.command {
                 self.reset();
@@ -173,7 +165,6 @@ mod command_pid {
     }
     impl<G: Getter<State, E>, E: Copy + Debug> Updatable<E> for CommandPID<G, E> {
         fn update(&mut self) -> NothingOrError<E> {
-            self.update_following_data()?;
             let raw_get = self.input.get();
             let datum_state = match raw_get {
                 Ok(Some(value)) => value,
