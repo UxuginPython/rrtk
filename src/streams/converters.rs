@@ -486,7 +486,7 @@ pub struct DimensionAdder<T, MM: Integer, S: Integer, G: Getter<T, E>, E: Copy +
 }
 impl<T, MM: Integer, S: Integer, G: Getter<T, E>, E: Copy + Debug> DimensionAdder<T, MM, S, G, E> {
     ///Constructor for `DimensionAdder`.
-    pub fn new(input: G) -> Self {
+    pub const fn new(input: G) -> Self {
         Self {
             input: input,
             phantom_t: PhantomData,
@@ -540,7 +540,7 @@ impl<
 > DimensionRemover<T, MM, S, G, E>
 {
     ///Constructor for `DimensionRemover`.
-    pub fn new(input: G) -> Self {
+    pub const fn new(input: G) -> Self {
         Self {
             input: input,
             phantom_t: PhantomData,
