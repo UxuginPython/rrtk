@@ -723,10 +723,11 @@ fn pid_wrapper() {
             assert_eq!(
                 value,
                 match self.time.as_nanoseconds() {
-                    1_000_000_000 => 5.0,
-                    2_000_000_000 => 5.05,
-                    3_000_000_000 => 5.1,
-                    4_000_000_000 => 5.15,
+                    0 => 5.0,
+                    1_000_000_000 => 5.05,
+                    2_000_000_000 => 5.1,
+                    3_000_000_000 => 5.15,
+                    4_000_000_000 => 5.20,
                     _ => unimplemented!(),
                 }
             );
@@ -776,6 +777,6 @@ fn pid_wrapper() {
     }
     #[allow(static_mut_refs)]
     unsafe {
-        assert_eq!(ASSERTS, 4);
+        assert_eq!(ASSERTS, 5);
     }
 }
