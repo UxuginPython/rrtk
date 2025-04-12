@@ -579,25 +579,23 @@ impl<
 }
 ///Converts the output of a getter to another type through [`Into`]. Leaves the timestamp the same
 ///and passes through `Err(_)` and `Ok(None)` identically.
-pub struct IntoConverter<TI: Into<TO>, TO, G: Getter<TI, E>, E: Copy + Debug> {
+pub struct IntoConverter<TI, G: Getter<TI, E>, E: Copy + Debug> {
     input: G,
     phantom_ti: PhantomData<TI>,
-    phantom_to: PhantomData<TO>,
     phantom_e: PhantomData<E>,
 }
-impl<TI: Into<TO>, TO, G: Getter<TI, E>, E: Copy + Debug> IntoConverter<TI, TO, G, E> {
+impl<TI, G: Getter<TI, E>, E: Copy + Debug> IntoConverter<TI, G, E> {
     ///Constructor for `IntoConverter`.
     pub const fn new(input: G) -> Self {
         Self {
             input: input,
             phantom_ti: PhantomData,
-            phantom_to: PhantomData,
             phantom_e: PhantomData,
         }
     }
 }
 impl<TI: Into<TO>, TO, G: Getter<TI, E>, E: Copy + Debug> Getter<TO, E>
-    for IntoConverter<TI, TO, G, E>
+    for IntoConverter<TI, G, E>
 {
     fn get(&self) -> Output<TO, E> {
         Ok(match self.input.get()? {
@@ -606,9 +604,7 @@ impl<TI: Into<TO>, TO, G: Getter<TI, E>, E: Copy + Debug> Getter<TO, E>
         })
     }
 }
-impl<TI: Into<TO>, TO, G: Getter<TI, E>, E: Copy + Debug> Updatable<E>
-    for IntoConverter<TI, TO, G, E>
-{
+impl<TI, G: Getter<TI, E>, E: Copy + Debug> Updatable<E> for IntoConverter<TI, G, E> {
     ///This does not need to be called.
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
@@ -616,27 +612,23 @@ impl<TI: Into<TO>, TO, G: Getter<TI, E>, E: Copy + Debug> Updatable<E>
 }
 ///Converts errors returned by a getter to another type through [`Into`]. Leaves `Ok` values
 ///unchanged.
-pub struct ErrorIntoConverter<T, G: Getter<T, EI>, EI: Copy + Debug + Into<EO>, EO: Copy + Debug> {
+pub struct ErrorIntoConverter<T, G: Getter<T, EI>, EI: Copy + Debug> {
     input: G,
     phantom_t: PhantomData<T>,
     phantom_ei: PhantomData<EI>,
-    phantom_eo: PhantomData<EO>,
 }
-impl<T, G: Getter<T, EI>, EI: Copy + Debug + Into<EO>, EO: Copy + Debug>
-    ErrorIntoConverter<T, G, EI, EO>
-{
+impl<T, G: Getter<T, EI>, EI: Copy + Debug> ErrorIntoConverter<T, G, EI> {
     ///Constructor for `ErrorIntoConverter`.
     pub const fn new(input: G) -> Self {
         Self {
             input: input,
             phantom_t: PhantomData,
             phantom_ei: PhantomData,
-            phantom_eo: PhantomData,
         }
     }
 }
 impl<T, G: Getter<T, EI>, EI: Copy + Debug + Into<EO>, EO: Copy + Debug> Getter<T, EO>
-    for ErrorIntoConverter<T, G, EI, EO>
+    for ErrorIntoConverter<T, G, EI>
 {
     fn get(&self) -> Output<T, EO> {
         match self.input.get() {
@@ -646,7 +638,7 @@ impl<T, G: Getter<T, EI>, EI: Copy + Debug + Into<EO>, EO: Copy + Debug> Getter<
     }
 }
 impl<T, G: Getter<T, EI>, EI: Copy + Debug + Into<EO>, EO: Copy + Debug> Updatable<EO>
-    for ErrorIntoConverter<T, G, EI, EO>
+    for ErrorIntoConverter<T, G, EI>
 {
     ///This does not need to be called.
     fn update(&mut self) -> NothingOrError<EO> {
