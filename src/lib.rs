@@ -84,7 +84,6 @@ pub enum PositionDerivative {
     ///How fast how fast you're going's changing.
     Acceleration,
 }
-//TODO: figure out for to use the Error enum with this
 #[cfg(any(
     feature = "dim_check_release",
     all(debug_assertions, feature = "dim_check_debug")
@@ -607,7 +606,6 @@ pub fn connect<'a, E: Copy + Debug>(
     term1_borrow.other = Some(term2);
     term2_borrow.other = Some(term1);
 }
-//completely different
 ///Data that are sent between terminals: A timestamp, an optional command, and a state.
 #[cfg(feature = "devices")]
 #[derive(Clone, Copy, Debug, PartialEq)]
