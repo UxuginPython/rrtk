@@ -598,10 +598,10 @@ impl<TI: Into<TO>, TO, G: Getter<TI, E>, E: Copy + Debug> Getter<TO, E>
     for IntoConverter<TI, G, E>
 {
     fn get(&self) -> Output<TO, E> {
-        Ok(match self.input.get()? {
-            None => None,
-            Some(datum) => Some(Datum::new(datum.time, datum.value.into())),
-        })
+        Ok(self
+            .input //Result<Option<Datum<T>>, E>
+            .get()? //Option<Datum<T>>
+            .map(|datum| /*Datum<T>*/ Datum::new(datum.time, datum.value.into())))
     }
 }
 impl<TI, G: Getter<TI, E>, E: Copy + Debug> Updatable<E> for IntoConverter<TI, G, E> {
@@ -631,10 +631,7 @@ impl<T, G: Getter<T, EI>, EI: Copy + Debug + Into<EO>, EO: Copy + Debug> Getter<
     for ErrorIntoConverter<T, G, EI>
 {
     fn get(&self) -> Output<T, EO> {
-        match self.input.get() {
-            Err(error) => Err(error.into()),
-            Ok(option) => Ok(option),
-        }
+        self.input.get().map_err(|error| error.into())
     }
 }
 impl<T, G: Getter<T, EI>, EI: Copy + Debug + Into<EO>, EO: Copy + Debug> Updatable<EO>
