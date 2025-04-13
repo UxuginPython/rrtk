@@ -61,16 +61,24 @@ impl<T: AddAssign + Copy, const N: usize, E: Copy + Debug> Updatable<E> for SumS
 ///number of inputs. If one inputs returns `Ok(None)`, the other input's output is returned. If
 ///both inputs return `Ok(None)`, returns `Ok(None)`. If this is not the desired behavior, use
 ///[`NoneToValue`](converters::NoneToValue) or [`NoneToError`](converters::NoneToError).
-pub struct Sum2<G1, G2> {
+pub struct Sum2<T1: Add<T2>, T2, G1: Getter<T1, E>, G2: Getter<T2, E>, E: Copy + Debug> {
     addend1: G1,
     addend2: G2,
+    phantom_t1: PhantomData<T1>,
+    phantom_t2: PhantomData<T2>,
+    phantom_e: PhantomData<E>,
 }
-impl<G1, G2> Sum2<G1, G2> {
+impl<T1: Add<T2>, T2, G1: Getter<T1, E>, G2: Getter<T2, E>, E: Copy + Debug>
+    Sum2<T1, T2, G1, G2, E>
+{
     ///Constructor for [`Sum2`].
     pub const fn new(addend1: G1, addend2: G2) -> Self {
         Self {
             addend1: addend1,
             addend2: addend2,
+            phantom_t1: PhantomData,
+            phantom_t2: PhantomData,
+            phantom_e: PhantomData,
         }
     }
 }
@@ -105,7 +113,9 @@ impl<
         )))
     }
 }
-impl<G1, G2> Updatable<E> for Sum2<G1, G2> {
+impl<T1: Add<T2>, T2, G1: Getter<T1, E>, G2: Getter<T2, E>, E: Copy + Debug> Updatable<E>
+    for Sum2<T1, T2, G1, G2, E>
+{
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
     }
