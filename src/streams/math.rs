@@ -151,10 +151,7 @@ impl<TM: Sub<TS, Output = TO>, TS, TO, GM: Getter<TM, E>, GS: Getter<TS, E>, E: 
         match subtrahend_output {
             Some(_) => {}
             None => {
-                return Ok(Some(Datum::new(
-                    minuend_output.time,
-                    minuend_output.value.into(),
-                )));
+                return Ok(None);
             }
         }
         let subtrahend_output = subtrahend_output.unwrap();
@@ -225,44 +222,49 @@ impl<T: MulAssign + Copy, const N: usize, E: Copy + Debug> Updatable<E> for Prod
 ///adds any number of inputs. If one input returns `Ok(None)`, returns the other input's output. If
 ///both inputs return `Ok(None)`, returns `Ok(None)`. If this is not the desired behavior, use
 ///[`NoneToValue`](converters::NoneToValue) or [`NoneToError`](converters::NoneToError).
-pub struct Product2<T: Mul<Output = T>, G1: Getter<T, E>, G2: Getter<T, E>, E: Copy + Debug> {
+pub struct Product2<T1: Mul<T2>, T2, G1: Getter<T1, E>, G2: Getter<T2, E>, E: Copy + Debug> {
     addend1: G1,
     addend2: G2,
-    phantom_t: PhantomData<T>,
+    phantom_t1: PhantomData<T1>,
+    phantom_t2: PhantomData<T2>,
     phantom_e: PhantomData<E>,
 }
-impl<T: Mul<Output = T>, G1: Getter<T, E>, G2: Getter<T, E>, E: Copy + Debug>
-    Product2<T, G1, G2, E>
+impl<T1: Mul<T2>, T2, G1: Getter<T1, E>, G2: Getter<T2, E>, E: Copy + Debug>
+    Product2<T1, T2, G1, G2, E>
 {
     ///Constructor for [`Product2`].
     pub const fn new(addend1: G1, addend2: G2) -> Self {
         Self {
             addend1: addend1,
             addend2: addend2,
-            phantom_t: PhantomData,
+            phantom_t1: PhantomData,
+            phantom_t2: PhantomData,
             phantom_e: PhantomData,
         }
     }
 }
-impl<T: Mul<Output = T>, G1: Getter<T, E>, G2: Getter<T, E>, E: Copy + Debug> Getter<T, E>
-    for Product2<T, G1, G2, E>
+impl<T1: Mul<T2, Output = TO>, T2, TO, G1: Getter<T1, E>, G2: Getter<T2, E>, E: Copy + Debug>
+    Getter<TO, E> for Product2<T1, T2, G1, G2, E>
 {
-    fn get(&self) -> Output<T, E> {
+    fn get(&self) -> Output<TO, E> {
         let x = self.addend1.get()?;
         let x = match x {
             Some(x) => x,
-            None => return self.addend2.get(),
+            None => return Ok(None),
         };
         let y = self.addend2.get()?;
         let y = match y {
             Some(y) => y,
-            None => return Ok(Some(x)),
+            None => return Ok(None),
         };
-        Ok(Some(x * y))
+        Ok(Some(Datum::new(
+            core::cmp::max(x.time, y.time),
+            x.value * y.value,
+        )))
     }
 }
-impl<T: Mul<Output = T>, G1: Getter<T, E>, G2: Getter<T, E>, E: Copy + Debug> Updatable<E>
-    for Product2<T, G1, G2, E>
+impl<T1: Mul<T2>, T2, G1: Getter<T1, E>, G2: Getter<T2, E>, E: Copy + Debug> Updatable<E>
+    for Product2<T1, T2, G1, G2, E>
 {
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
