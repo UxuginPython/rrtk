@@ -61,60 +61,42 @@ impl<T: AddAssign + Copy, const N: usize, E: Copy + Debug> Updatable<E> for SumS
 ///number of inputs. If one inputs returns `Ok(None)`, the other input's output is returned. If
 ///both inputs return `Ok(None)`, returns `Ok(None)`. If this is not the desired behavior, use
 ///[`NoneToValue`](converters::NoneToValue) or [`NoneToError`](converters::NoneToError).
-pub struct Sum2<T1: Add<T2>, T2, G1: Getter<T1, E>, G2: Getter<T2, E>, E: Copy + Debug> {
+pub struct Sum2<T: Add<Output = T>, G1: Getter<T, E>, G2: Getter<T, E>, E: Copy + Debug> {
     addend1: G1,
     addend2: G2,
-    phantom_t1: PhantomData<T1>,
-    phantom_t2: PhantomData<T2>,
+    phantom_t: PhantomData<T>,
     phantom_e: PhantomData<E>,
 }
-impl<T1: Add<T2>, T2, G1: Getter<T1, E>, G2: Getter<T2, E>, E: Copy + Debug>
-    Sum2<T1, T2, G1, G2, E>
-{
+impl<T: Add<Output = T>, G1: Getter<T, E>, G2: Getter<T, E>, E: Copy + Debug> Sum2<T, G1, G2, E> {
     ///Constructor for [`Sum2`].
     pub const fn new(addend1: G1, addend2: G2) -> Self {
         Self {
             addend1: addend1,
             addend2: addend2,
-            phantom_t1: PhantomData,
-            phantom_t2: PhantomData,
+            phantom_t: PhantomData,
             phantom_e: PhantomData,
         }
     }
 }
-impl<
-    T1: Add<T2, Output = TO> + Into<TO>,
-    T2: Into<TO>,
-    TO,
-    G1: Getter<T1, E>,
-    G2: Getter<T2, E>,
-    E: Copy + Debug,
-> Getter<TO, E> for Sum2<T1, T2, G1, G2, E>
+impl<T: Add<Output = T>, G1: Getter<T, E>, G2: Getter<T, E>, E: Copy + Debug> Getter<T, E>
+    for Sum2<T, G1, G2, E>
 {
-    fn get(&self) -> Output<TO, E> {
+    fn get(&self) -> Output<T, E> {
         let x = self.addend1.get()?;
         let x = match x {
             Some(x) => x,
-            None => {
-                return Ok(self
-                    .addend2
-                    .get()?
-                    .map(|datum| Datum::new(datum.time, datum.value.into())));
-            }
+            None => return self.addend2.get(),
         };
         let y = self.addend2.get()?;
         let y = match y {
             Some(y) => y,
-            None => return Ok(Some(Datum::new(x.time, x.value.into()))),
+            None => return Ok(Some(x)),
         };
-        Ok(Some(Datum::new(
-            core::cmp::max(x.time, y.time),
-            x.value + y.value,
-        )))
+        Ok(Some(x + y))
     }
 }
-impl<T1: Add<T2>, T2, G1: Getter<T1, E>, G2: Getter<T2, E>, E: Copy + Debug> Updatable<E>
-    for Sum2<T1, T2, G1, G2, E>
+impl<T: Add<Output = T>, G1: Getter<T, E>, G2: Getter<T, E>, E: Copy + Debug> Updatable<E>
+    for Sum2<T, G1, G2, E>
 {
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
