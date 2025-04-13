@@ -57,6 +57,7 @@ impl<T: AddAssign + Copy, const N: usize, E: Copy + Debug> Updatable<E> for SumS
         Ok(())
     }
 }
+//TODO: fix docs
 ///A stream that adds two inputs. This should be a bit faster than [`SumStream`], which adds any
 ///number of inputs. If one inputs returns `Ok(None)`, the other input's output is returned. If
 ///both inputs return `Ok(None)`, returns `Ok(None)`. If this is not the desired behavior, use
