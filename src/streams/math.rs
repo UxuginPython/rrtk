@@ -272,29 +272,31 @@ impl<T1: Mul<T2>, T2, G1: Getter<T1, E>, G2: Getter<T2, E>, E: Copy + Debug> Upd
 }
 ///A stream that divides one if its inputs by the other. If the divisor returns `Ok(None)`, the
 ///dividend's value is returned directly.
-pub struct QuotientStream<T: Div<Output = T>, GD: Getter<T, E>, GS: Getter<T, E>, E: Copy + Debug> {
+pub struct QuotientStream<TD: Div<TS>, TS, GD: Getter<TD, E>, GS: Getter<TS, E>, E: Copy + Debug> {
     dividend: GD,
     divisor: GS,
-    phantom_t: PhantomData<T>,
+    phantom_td: PhantomData<TD>,
+    phantom_ts: PhantomData<TS>,
     phantom_e: PhantomData<E>,
 }
-impl<T: Div<Output = T>, GD: Getter<T, E>, GS: Getter<T, E>, E: Copy + Debug>
-    QuotientStream<T, GD, GS, E>
+impl<TD: Div<TS>, TS, GD: Getter<TD, E>, GS: Getter<TS, E>, E: Copy + Debug>
+    QuotientStream<TD, TS, GD, GS, E>
 {
     ///Constructor for [`QuotientStream`].
     pub const fn new(dividend: GD, divisor: GS) -> Self {
         Self {
             dividend: dividend,
             divisor: divisor,
-            phantom_t: PhantomData,
+            phantom_td: PhantomData,
+            phantom_ts: PhantomData,
             phantom_e: PhantomData,
         }
     }
 }
-impl<T: Div<Output = T>, GD: Getter<T, E>, GS: Getter<T, E>, E: Copy + Debug> Getter<T, E>
-    for QuotientStream<T, GD, GS, E>
+impl<TD: Div<TS, Output = TO>, TS, TO, GD: Getter<TD, E>, GS: Getter<TS, E>, E: Copy + Debug>
+    Getter<TO, E> for QuotientStream<TD, TS, GD, GS, E>
 {
-    fn get(&self) -> Output<T, E> {
+    fn get(&self) -> Output<TO, E> {
         let dividend_output = self.dividend.get()?;
         let divisor_output = self.divisor.get()?;
         match dividend_output {
@@ -307,7 +309,7 @@ impl<T: Div<Output = T>, GD: Getter<T, E>, GS: Getter<T, E>, E: Copy + Debug> Ge
         match divisor_output {
             Some(_) => {}
             None => {
-                return Ok(Some(dividend_output));
+                return Ok(None);
             }
         }
         let divisor_output = divisor_output.unwrap();
@@ -320,8 +322,8 @@ impl<T: Div<Output = T>, GD: Getter<T, E>, GS: Getter<T, E>, E: Copy + Debug> Ge
         Ok(Some(Datum::new(time, value)))
     }
 }
-impl<T: Div<Output = T>, GD: Getter<T, E>, GS: Getter<T, E>, E: Copy + Debug> Updatable<E>
-    for QuotientStream<T, GD, GS, E>
+impl<TD: Div<TS>, TS, GD: Getter<TD, E>, GS: Getter<TS, E>, E: Copy + Debug> Updatable<E>
+    for QuotientStream<TD, TS, GD, GS, E>
 {
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
