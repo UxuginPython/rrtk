@@ -83,6 +83,41 @@ impl<T: Clone, G: Getter<T, E>, TG: TimeGetter<E>, E: Copy + Debug> Updatable<E>
         Ok(())
     }
 }
+///Converts all `Ok(None)` values to `Ok(Some(T::default()))`.
+pub struct NoneToDefault<T: Default, G: Getter<T, E>, TG: TimeGetter<E>, E: Copy + Debug> {
+    input: G,
+    time_getter: TG,
+    phantom_t: PhantomData<T>,
+    phantom_e: PhantomData<E>,
+}
+impl<T: Default, G: Getter<T, E>, TG: TimeGetter<E>, E: Copy + Debug> NoneToDefault<T, G, TG, E> {
+    ///Constructor for `NoneToDefault`.
+    pub const fn new(input: G, time_getter: TG) -> Self {
+        Self {
+            input: input,
+            time_getter: time_getter,
+            phantom_t: PhantomData,
+            phantom_e: PhantomData,
+        }
+    }
+}
+impl<T: Default, G: Getter<T, E>, TG: TimeGetter<E>, E: Copy + Debug> Getter<T, E>
+    for NoneToDefault<T, G, TG, E>
+{
+    fn get(&self) -> Output<T, E> {
+        Ok(Some(match self.input.get()? {
+            Some(value) => value,
+            None => Datum::new(self.time_getter.get()?, T::default()),
+        }))
+    }
+}
+impl<T: Default, G: Getter<T, E>, TG: TimeGetter<E>, E: Copy + Debug> Updatable<E>
+    for NoneToDefault<T, G, TG, E>
+{
+    fn update(&mut self) -> NothingOrError<E> {
+        Ok(())
+    }
+}
 pub use acceleration_to_state::AccelerationToState;
 mod acceleration_to_state {
     use super::*;
