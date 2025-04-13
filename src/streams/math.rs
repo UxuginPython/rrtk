@@ -122,21 +122,28 @@ impl<T1: Add<T2>, T2, G1: Getter<T1, E>, G2: Getter<T2, E>, E: Copy + Debug> Upd
 }
 ///A stream that subtracts one of its inputs from the other. If the subtrahend stream returns
 ///`Ok(None)`, the minuend's value will be returned directly.
-pub struct DifferenceStream<GM, GS> {
+pub struct DifferenceStream<T: Sub<Output = T>, GM: Getter<T, E>, GS: Getter<T, E>, E: Copy + Debug>
+{
     minuend: GM,
     subtrahend: GS,
+    phantom_t: PhantomData<T>,
+    phantom_e: PhantomData<E>,
 }
-impl<GM, GS> DifferenceStream<GM, GS> {
+impl<T: Sub<Output = T>, GM: Getter<T, E>, GS: Getter<T, E>, E: Copy + Debug>
+    DifferenceStream<T, GM, GS, E>
+{
     ///Constructor for [`DifferenceStream`].
     pub const fn new(minuend: GM, subtrahend: GS) -> Self {
         Self {
             minuend: minuend,
             subtrahend: subtrahend,
+            phantom_t: PhantomData,
+            phantom_e: PhantomData,
         }
     }
 }
 impl<T: Sub<Output = T>, GM: Getter<T, E>, GS: Getter<T, E>, E: Copy + Debug> Getter<T, E>
-    for DifferenceStream<GM, GS>
+    for DifferenceStream<T, GM, GS, E>
 {
     fn get(&self) -> Output<T, E> {
         let minuend_output = self.minuend.get()?;
@@ -164,7 +171,9 @@ impl<T: Sub<Output = T>, GM: Getter<T, E>, GS: Getter<T, E>, E: Copy + Debug> Ge
         Ok(Some(Datum::new(time, value)))
     }
 }
-impl<GM, GS, E: Copy + Debug> Updatable<E> for DifferenceStream<GM, GS> {
+impl<T: Sub<Output = T>, GM: Getter<T, E>, GS: Getter<T, E>, E: Copy + Debug> Updatable<E>
+    for DifferenceStream<T, GM, GS, E>
+{
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
     }
