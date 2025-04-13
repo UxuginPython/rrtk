@@ -82,30 +82,21 @@ impl<T1: Add<T2>, T2, G1: Getter<T1, E>, G2: Getter<T2, E>, E: Copy + Debug>
         }
     }
 }
-impl<
-    T1: Add<T2, Output = TO> + Into<TO>,
-    T2: Into<TO>,
-    TO,
-    G1: Getter<T1, E>,
-    G2: Getter<T2, E>,
-    E: Copy + Debug,
-> Getter<TO, E> for Sum2<T1, T2, G1, G2, E>
+impl<T1: Add<T2, Output = TO>, T2, TO, G1: Getter<T1, E>, G2: Getter<T2, E>, E: Copy + Debug>
+    Getter<TO, E> for Sum2<T1, T2, G1, G2, E>
 {
     fn get(&self) -> Output<TO, E> {
         let x = self.addend1.get()?;
         let x = match x {
             Some(x) => x,
             None => {
-                return Ok(self
-                    .addend2
-                    .get()?
-                    .map(|datum| Datum::new(datum.time, datum.value.into())));
+                return Ok(None);
             }
         };
         let y = self.addend2.get()?;
         let y = match y {
             Some(y) => y,
-            None => return Ok(Some(Datum::new(x.time, x.value.into()))),
+            None => return Ok(None),
         };
         Ok(Some(Datum::new(
             core::cmp::max(x.time, y.time),
@@ -144,14 +135,8 @@ impl<TM: Sub<TS>, TS, GM: Getter<TM, E>, GS: Getter<TS, E>, E: Copy + Debug>
         }
     }
 }
-impl<
-    TM: Sub<TS, Output = TO> + Into<TO>,
-    TS,
-    TO,
-    GM: Getter<TM, E>,
-    GS: Getter<TS, E>,
-    E: Copy + Debug,
-> Getter<TO, E> for DifferenceStream<TM, TS, GM, GS, E>
+impl<TM: Sub<TS, Output = TO>, TS, TO, GM: Getter<TM, E>, GS: Getter<TS, E>, E: Copy + Debug>
+    Getter<TO, E> for DifferenceStream<TM, TS, GM, GS, E>
 {
     fn get(&self) -> Output<TO, E> {
         let minuend_output = self.minuend.get()?;
