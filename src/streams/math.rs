@@ -81,7 +81,7 @@ impl<
     G1: Getter<T1, E>,
     G2: Getter<T2, E>,
     E: Copy + Debug,
-> Getter<TO, E> for Sum2<T1, T2, G1, G2, E>
+> Getter<TO, E> for Sum2<G1, G2>
 {
     fn get(&self) -> Output<TO, E> {
         let x = self.addend1.get()?;
@@ -105,7 +105,7 @@ impl<
         )))
     }
 }
-impl<G1, G2> Updatable<E> for Sum2<G1, G2> {
+impl<G1, G2, E: Copy + Debug> Updatable<E> for Sum2<G1, G2> {
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
     }
