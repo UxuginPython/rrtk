@@ -55,13 +55,67 @@ impl<T> OptionDatumExt<T> for Option<Datum<T>> {
         self.replace_if_none_or_older_than(maybe_replace_with)
     }
 }
-//Unfortunately implementing the ops traits is really awkward here and has unnecessary restrictions
-//because of needing to provide implementations for T and Datum<T>. If we ever get negative trait
-//bounds, it will be possible to provide a much better generic implementation for cases where the
-//type of other is not necessarily the same as T. Additionally, I may just be doing it wrong.
-//Regardless, for now, these are only implemented where other is T or Datum<T> and not a more
-//generic type. Special cases for State and Command are provided due to their Mul<f32> and Div<f32>
-//implementations.
+///Really hacky specialization workaround. Implement for any type that is not `Datum` itself
+///including types using `Datum` as a type parameter or associated type.
+pub trait NotDatum {}
+impl NotDatum for u8 {}
+impl NotDatum for u16 {}
+impl NotDatum for u32 {}
+impl NotDatum for u64 {}
+impl NotDatum for u128 {}
+impl NotDatum for usize {}
+impl NotDatum for i8 {}
+impl NotDatum for i16 {}
+impl NotDatum for i32 {}
+impl NotDatum for i64 {}
+impl NotDatum for i128 {}
+impl NotDatum for isize {}
+impl NotDatum for f32 {}
+impl NotDatum for f64 {}
+impl<T> NotDatum for Option<T> {}
+impl<T, E> NotDatum for Result<T, E> {}
+impl<T: ?Sized> NotDatum for core::cell::UnsafeCell<T> {}
+impl<T: ?Sized> NotDatum for core::cell::Cell<T> {}
+impl<T: ?Sized> NotDatum for core::cell::RefCell<T> {}
+impl<T: ?Sized> NotDatum for &T {}
+impl<T: ?Sized> NotDatum for &mut T {}
+impl<T: ?Sized> NotDatum for *const T {}
+impl<T: ?Sized> NotDatum for *mut T {}
+impl<T, const N: usize> NotDatum for [T; N] {}
+#[cfg(feature = "alloc")]
+impl NotDatum for alloc::string::String {}
+#[cfg(feature = "alloc")]
+impl<T> NotDatum for Vec<T> {}
+#[cfg(feature = "alloc")]
+impl<T: ?Sized> NotDatum for Rc<T> {}
+#[cfg(feature = "std")]
+impl<T: ?Sized> NotDatum for Arc<T> {}
+#[cfg(feature = "std")]
+impl<T: ?Sized> NotDatum for Mutex<T> {}
+#[cfg(feature = "std")]
+impl<T: ?Sized> NotDatum for RwLock<T> {}
+impl NotDatum for State {}
+impl NotDatum for Command {}
+impl NotDatum for PositionDerivative {}
+impl<T: ?Sized> NotDatum for Reference<T> {}
+impl<T: ?Sized> NotDatum for reference::ReferenceUnsafe<T> {}
+impl NotDatum for CannotConvert {}
+impl NotDatum for Time {}
+impl NotDatum for Quantity {}
+impl NotDatum for Unit {}
+impl NotDatum for DimensionlessInteger {}
+impl NotDatum for compile_time_integer::Zero {}
+impl<T: compile_time_integer::Integer> NotDatum for compile_time_integer::OnePlus<T> {}
+impl<T: compile_time_integer::Integer> NotDatum for compile_time_integer::NegativeOnePlus<T> {}
+impl<T, MM, S> NotDatum for compile_time_dimensions::Quantity<T, MM, S>
+where
+    MM: compile_time_integer::Integer,
+    S: compile_time_integer::Integer,
+{
+}
+impl NotDatum for MotionProfilePiece {}
+impl NotDatum for PIDKValues {}
+impl NotDatum for PositionDerivativeDependentPIDKValues {}
 impl<T: Not<Output = O>, O> Not for Datum<T> {
     type Output = Datum<O>;
     fn not(self) -> Datum<O> {
@@ -74,9 +128,9 @@ impl<T: Neg<Output = O>, O> Neg for Datum<T> {
         Datum::new(self.time, -self.value)
     }
 }
-impl<T: Add<Output = O>, O> Add for Datum<T> {
+impl<T: Add<TR, Output = O>, TR, O> Add<Datum<TR>> for Datum<T> {
     type Output = Datum<O>;
-    fn add(self, other: Self) -> Datum<O> {
+    fn add(self, other: Datum<TR>) -> Datum<O> {
         let output_value = self.value + other.value;
         let output_time = if self.time >= other.time {
             self.time
@@ -86,8 +140,8 @@ impl<T: Add<Output = O>, O> Add for Datum<T> {
         Datum::new(output_time, output_value)
     }
 }
-impl<T: AddAssign> AddAssign for Datum<T> {
-    fn add_assign(&mut self, other: Self) {
+impl<T: AddAssign<TR>, TR> AddAssign<Datum<TR>> for Datum<T> {
+    fn add_assign(&mut self, other: Datum<TR>) {
         self.value += other.value;
         self.time = if self.time >= other.time {
             self.time
@@ -96,21 +150,21 @@ impl<T: AddAssign> AddAssign for Datum<T> {
         };
     }
 }
-impl<T: Add<Output = O>, O> Add<T> for Datum<T> {
+impl<T: Add<TR, Output = O>, TR: NotDatum, O> Add<TR> for Datum<T> {
     type Output = Datum<O>;
-    fn add(self, other: T) -> Datum<O> {
+    fn add(self, other: TR) -> Datum<O> {
         let output_value = self.value + other;
         Datum::new(self.time, output_value)
     }
 }
-impl<T: AddAssign> AddAssign<T> for Datum<T> {
-    fn add_assign(&mut self, other: T) {
+impl<T: AddAssign<TR>, TR: NotDatum> AddAssign<TR> for Datum<T> {
+    fn add_assign(&mut self, other: TR) {
         self.value += other;
     }
 }
-impl<T: Sub<Output = O>, O> Sub for Datum<T> {
+impl<T: Sub<TR, Output = O>, TR, O> Sub<Datum<TR>> for Datum<T> {
     type Output = Datum<O>;
-    fn sub(self, other: Self) -> Datum<O> {
+    fn sub(self, other: Datum<TR>) -> Datum<O> {
         let output_value = self.value - other.value;
         let output_time = if self.time >= other.time {
             self.time
@@ -120,8 +174,8 @@ impl<T: Sub<Output = O>, O> Sub for Datum<T> {
         Datum::new(output_time, output_value)
     }
 }
-impl<T: SubAssign> SubAssign for Datum<T> {
-    fn sub_assign(&mut self, other: Self) {
+impl<T: SubAssign<TR>, TR> SubAssign<Datum<TR>> for Datum<T> {
+    fn sub_assign(&mut self, other: Datum<TR>) {
         self.value -= other.value;
         self.time = if self.time >= other.time {
             self.time
@@ -130,21 +184,21 @@ impl<T: SubAssign> SubAssign for Datum<T> {
         };
     }
 }
-impl<T: Sub<Output = O>, O> Sub<T> for Datum<T> {
+impl<T: Sub<TR, Output = O>, TR: NotDatum, O> Sub<TR> for Datum<T> {
     type Output = Datum<O>;
-    fn sub(self, other: T) -> Datum<O> {
+    fn sub(self, other: TR) -> Datum<O> {
         let output_value = self.value - other;
         Datum::new(self.time, output_value)
     }
 }
-impl<T: SubAssign> SubAssign<T> for Datum<T> {
-    fn sub_assign(&mut self, other: T) {
+impl<T: SubAssign<TR>, TR: NotDatum> SubAssign<TR> for Datum<T> {
+    fn sub_assign(&mut self, other: TR) {
         self.value -= other;
     }
 }
-impl<T: Mul<Output = O>, O> Mul for Datum<T> {
+impl<T: Mul<TR, Output = O>, TR, O> Mul<Datum<TR>> for Datum<T> {
     type Output = Datum<O>;
-    fn mul(self, other: Self) -> Datum<O> {
+    fn mul(self, other: Datum<TR>) -> Datum<O> {
         let output_value = self.value * other.value;
         let output_time = if self.time >= other.time {
             self.time
@@ -154,8 +208,8 @@ impl<T: Mul<Output = O>, O> Mul for Datum<T> {
         Datum::new(output_time, output_value)
     }
 }
-impl<T: MulAssign> MulAssign for Datum<T> {
-    fn mul_assign(&mut self, other: Self) {
+impl<T: MulAssign<TR>, TR> MulAssign<Datum<TR>> for Datum<T> {
+    fn mul_assign(&mut self, other: Datum<TR>) {
         self.value *= other.value;
         self.time = if self.time >= other.time {
             self.time
@@ -164,21 +218,21 @@ impl<T: MulAssign> MulAssign for Datum<T> {
         };
     }
 }
-impl<T: Mul<Output = O>, O> Mul<T> for Datum<T> {
+impl<T: Mul<TR, Output = O>, TR: NotDatum, O> Mul<TR> for Datum<T> {
     type Output = Datum<O>;
-    fn mul(self, other: T) -> Datum<O> {
+    fn mul(self, other: TR) -> Datum<O> {
         let output_value = self.value * other;
         Datum::new(self.time, output_value)
     }
 }
-impl<T: MulAssign> MulAssign<T> for Datum<T> {
-    fn mul_assign(&mut self, other: T) {
+impl<T: MulAssign<TR>, TR: NotDatum> MulAssign<TR> for Datum<T> {
+    fn mul_assign(&mut self, other: TR) {
         self.value *= other;
     }
 }
-impl<T: Div<Output = O>, O> Div for Datum<T> {
+impl<T: Div<TR, Output = O>, TR, O> Div<Datum<TR>> for Datum<T> {
     type Output = Datum<O>;
-    fn div(self, other: Self) -> Datum<O> {
+    fn div(self, other: Datum<TR>) -> Datum<O> {
         let output_value = self.value / other.value;
         let output_time = if self.time >= other.time {
             self.time
@@ -188,8 +242,8 @@ impl<T: Div<Output = O>, O> Div for Datum<T> {
         Datum::new(output_time, output_value)
     }
 }
-impl<T: DivAssign> DivAssign for Datum<T> {
-    fn div_assign(&mut self, other: Self) {
+impl<T: DivAssign<TR>, TR> DivAssign<Datum<TR>> for Datum<T> {
+    fn div_assign(&mut self, other: Datum<TR>) {
         self.value /= other.value;
         self.time = if self.time >= other.time {
             self.time
@@ -198,151 +252,15 @@ impl<T: DivAssign> DivAssign for Datum<T> {
         };
     }
 }
-impl<T: Div<Output = O>, O> Div<T> for Datum<T> {
+impl<T: Div<TR, Output = O>, TR: NotDatum, O> Div<TR> for Datum<T> {
     type Output = Datum<O>;
-    fn div(self, other: T) -> Datum<O> {
+    fn div(self, other: TR) -> Datum<O> {
         let output_value = self.value / other;
         Datum::new(self.time, output_value)
     }
 }
-impl<T: DivAssign> DivAssign<T> for Datum<T> {
-    fn div_assign(&mut self, other: T) {
-        self.value /= other;
-    }
-}
-impl Mul<Datum<f32>> for Datum<State> {
-    type Output = Self;
-    fn mul(self, other: Datum<f32>) -> Self {
-        let output_value = self.value * other.value;
-        let output_time = if self.time >= other.time {
-            self.time
-        } else {
-            other.time
-        };
-        Datum::new(output_time, output_value)
-    }
-}
-impl MulAssign<Datum<f32>> for Datum<State> {
-    fn mul_assign(&mut self, other: Datum<f32>) {
-        self.value *= other.value;
-        self.time = if self.time >= other.time {
-            self.time
-        } else {
-            other.time
-        };
-    }
-}
-impl Mul<f32> for Datum<State> {
-    type Output = Self;
-    fn mul(self, other: f32) -> Self {
-        let output_value = self.value * other;
-        Datum::new(self.time, output_value)
-    }
-}
-impl MulAssign<f32> for Datum<State> {
-    fn mul_assign(&mut self, other: f32) {
-        self.value *= other;
-    }
-}
-impl Div<Datum<f32>> for Datum<State> {
-    type Output = Self;
-    fn div(self, other: Datum<f32>) -> Self {
-        let output_value = self.value / other.value;
-        let output_time = if self.time >= other.time {
-            self.time
-        } else {
-            other.time
-        };
-        Datum::new(output_time, output_value)
-    }
-}
-impl DivAssign<Datum<f32>> for Datum<State> {
-    fn div_assign(&mut self, other: Datum<f32>) {
-        self.value /= other.value;
-        self.time = if self.time >= other.time {
-            self.time
-        } else {
-            other.time
-        };
-    }
-}
-impl Div<f32> for Datum<State> {
-    type Output = Self;
-    fn div(self, other: f32) -> Self {
-        let output_value = self.value / other;
-        Datum::new(self.time, output_value)
-    }
-}
-impl DivAssign<f32> for Datum<State> {
-    fn div_assign(&mut self, other: f32) {
-        self.value /= other;
-    }
-}
-impl Mul<Datum<f32>> for Datum<Command> {
-    type Output = Self;
-    fn mul(self, other: Datum<f32>) -> Self {
-        let output_value = self.value * other.value;
-        let output_time = if self.time >= other.time {
-            self.time
-        } else {
-            other.time
-        };
-        Datum::new(output_time, output_value)
-    }
-}
-impl MulAssign<Datum<f32>> for Datum<Command> {
-    fn mul_assign(&mut self, other: Datum<f32>) {
-        self.value *= other.value;
-        self.time = if self.time >= other.time {
-            self.time
-        } else {
-            other.time
-        };
-    }
-}
-impl Mul<f32> for Datum<Command> {
-    type Output = Self;
-    fn mul(self, other: f32) -> Self {
-        let output_value = self.value * other;
-        Datum::new(self.time, output_value)
-    }
-}
-impl MulAssign<f32> for Datum<Command> {
-    fn mul_assign(&mut self, other: f32) {
-        self.value *= other;
-    }
-}
-impl Div<Datum<f32>> for Datum<Command> {
-    type Output = Self;
-    fn div(self, other: Datum<f32>) -> Self {
-        let output_value = self.value / other.value;
-        let output_time = if self.time >= other.time {
-            self.time
-        } else {
-            other.time
-        };
-        Datum::new(output_time, output_value)
-    }
-}
-impl DivAssign<Datum<f32>> for Datum<Command> {
-    fn div_assign(&mut self, other: Datum<f32>) {
-        self.value /= other.value;
-        self.time = if self.time >= other.time {
-            self.time
-        } else {
-            other.time
-        };
-    }
-}
-impl Div<f32> for Datum<Command> {
-    type Output = Self;
-    fn div(self, other: f32) -> Self {
-        let output_value = self.value / other;
-        Datum::new(self.time, output_value)
-    }
-}
-impl DivAssign<f32> for Datum<Command> {
-    fn div_assign(&mut self, other: f32) {
+impl<T: DivAssign<TR>, TR: NotDatum> DivAssign<TR> for Datum<T> {
+    fn div_assign(&mut self, other: TR) {
         self.value /= other;
     }
 }
