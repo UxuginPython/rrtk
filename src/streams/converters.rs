@@ -6,12 +6,22 @@
 use crate::compile_time_integer::Integer;
 use crate::streams::*;
 ///A stream converting all `Ok(None)` values from its input to `Err(_)` variants.
-pub struct NoneToError<T: Clone, G: Getter<T, E>, E: Copy + Debug> {
+pub struct NoneToError<T, G, E>
+where
+    T: Clone,
+    G: Getter<T, E>,
+    E: Copy + Debug,
+{
     input: G,
     from_none: E,
     phantom_t: PhantomData<T>,
 }
-impl<T: Clone, G: Getter<T, E>, E: Copy + Debug> NoneToError<T, G, E> {
+impl<T, G, E> NoneToError<T, G, E>
+where
+    T: Clone,
+    G: Getter<T, E>,
+    E: Copy + Debug,
+{
     ///Constructor for [`NoneToError`].
     pub const fn new(input: G, from_none: E) -> Self {
         Self {
@@ -21,7 +31,12 @@ impl<T: Clone, G: Getter<T, E>, E: Copy + Debug> NoneToError<T, G, E> {
         }
     }
 }
-impl<T: Clone, G: Getter<T, E>, E: Copy + Debug> Getter<T, E> for NoneToError<T, G, E> {
+impl<T, G, E> Getter<T, E> for NoneToError<T, G, E>
+where
+    T: Clone,
+    G: Getter<T, E>,
+    E: Copy + Debug,
+{
     fn get(&self) -> Output<T, E> {
         let output = self.input.get()?;
         match output {
@@ -34,20 +49,37 @@ impl<T: Clone, G: Getter<T, E>, E: Copy + Debug> Getter<T, E> for NoneToError<T,
         }
     }
 }
-impl<T: Clone, G: Getter<T, E>, E: Copy + Debug> Updatable<E> for NoneToError<T, G, E> {
+impl<T, G, E> Updatable<E> for NoneToError<T, G, E>
+where
+    T: Clone,
+    G: Getter<T, E>,
+    E: Copy + Debug,
+{
     ///This does not need to be called.
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
     }
 }
 ///A stream converting all `Ok(None)` values from its input to a default `Ok(Some(_))` value.
-pub struct NoneToValue<T: Clone, G: Getter<T, E>, TG: TimeGetter<E>, E: Copy + Debug> {
+pub struct NoneToValue<T, G, TG, E>
+where
+    T: Clone,
+    G: Getter<T, E>,
+    TG: TimeGetter<E>,
+    E: Copy + Debug,
+{
     input: G,
     time_getter: TG,
     none_value: T,
     phantom_e: PhantomData<E>,
 }
-impl<T: Clone, G: Getter<T, E>, TG: TimeGetter<E>, E: Copy + Debug> NoneToValue<T, G, TG, E> {
+impl<T, G, TG, E> NoneToValue<T, G, TG, E>
+where
+    T: Clone,
+    G: Getter<T, E>,
+    TG: TimeGetter<E>,
+    E: Copy + Debug,
+{
     ///Constructor for [`NoneToValue`].
     pub const fn new(input: G, time_getter: TG, none_value: T) -> Self {
         Self {
@@ -58,8 +90,12 @@ impl<T: Clone, G: Getter<T, E>, TG: TimeGetter<E>, E: Copy + Debug> NoneToValue<
         }
     }
 }
-impl<T: Clone, G: Getter<T, E>, TG: TimeGetter<E>, E: Copy + Debug> Getter<T, E>
-    for NoneToValue<T, G, TG, E>
+impl<T, G, TG, E> Getter<T, E> for NoneToValue<T, G, TG, E>
+where
+    T: Clone,
+    G: Getter<T, E>,
+    TG: TimeGetter<E>,
+    E: Copy + Debug,
 {
     fn get(&self) -> Output<T, E> {
         let output = self.input.get()?;
@@ -76,21 +112,37 @@ impl<T: Clone, G: Getter<T, E>, TG: TimeGetter<E>, E: Copy + Debug> Getter<T, E>
         }
     }
 }
-impl<T: Clone, G: Getter<T, E>, TG: TimeGetter<E>, E: Copy + Debug> Updatable<E>
-    for NoneToValue<T, G, TG, E>
+impl<T, G, TG, E> Updatable<E> for NoneToValue<T, G, TG, E>
+where
+    T: Clone,
+    G: Getter<T, E>,
+    TG: TimeGetter<E>,
+    E: Copy + Debug,
 {
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
     }
 }
 ///Converts all `Ok(None)` values to `Ok(Some(T::default()))`.
-pub struct NoneToDefault<T: Default, G: Getter<T, E>, TG: TimeGetter<E>, E: Copy + Debug> {
+pub struct NoneToDefault<T, G, TG, E>
+where
+    T: Default,
+    G: Getter<T, E>,
+    TG: TimeGetter<E>,
+    E: Copy + Debug,
+{
     input: G,
     time_getter: TG,
     phantom_t: PhantomData<T>,
     phantom_e: PhantomData<E>,
 }
-impl<T: Default, G: Getter<T, E>, TG: TimeGetter<E>, E: Copy + Debug> NoneToDefault<T, G, TG, E> {
+impl<T, G, TG, E> NoneToDefault<T, G, TG, E>
+where
+    T: Default,
+    G: Getter<T, E>,
+    TG: TimeGetter<E>,
+    E: Copy + Debug,
+{
     ///Constructor for `NoneToDefault`.
     pub const fn new(input: G, time_getter: TG) -> Self {
         Self {
@@ -101,8 +153,12 @@ impl<T: Default, G: Getter<T, E>, TG: TimeGetter<E>, E: Copy + Debug> NoneToDefa
         }
     }
 }
-impl<T: Default, G: Getter<T, E>, TG: TimeGetter<E>, E: Copy + Debug> Getter<T, E>
-    for NoneToDefault<T, G, TG, E>
+impl<T, G, TG, E> Getter<T, E> for NoneToDefault<T, G, TG, E>
+where
+    T: Default,
+    G: Getter<T, E>,
+    TG: TimeGetter<E>,
+    E: Copy + Debug,
 {
     fn get(&self) -> Output<T, E> {
         Ok(Some(match self.input.get()? {
@@ -111,8 +167,12 @@ impl<T: Default, G: Getter<T, E>, TG: TimeGetter<E>, E: Copy + Debug> Getter<T, 
         }))
     }
 }
-impl<T: Default, G: Getter<T, E>, TG: TimeGetter<E>, E: Copy + Debug> Updatable<E>
-    for NoneToDefault<T, G, TG, E>
+impl<T, G, TG, E> Updatable<E> for NoneToDefault<T, G, TG, E>
+where
+    T: Default,
+    G: Getter<T, E>,
+    TG: TimeGetter<E>,
+    E: Copy + Debug,
 {
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
