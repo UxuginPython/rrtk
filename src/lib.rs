@@ -228,13 +228,23 @@ pub trait Settable<S, E: Copy + Debug>: Updatable<E> {
     fn set(&mut self, value: S) -> NothingOrError<E>;
 }
 ///Feeds the output of a [`Getter`] into a [`Settable`].
-pub struct Feeder<T, G: Getter<T, E>, S: Settable<T, E>, E: Copy + Debug> {
+pub struct Feeder<T, G, S, E>
+where
+    G: Getter<T, E>,
+    S: Settable<T, E>,
+    E: Copy + Debug,
+{
     getter: G,
     settable: S,
     phantom_t: PhantomData<T>,
     phantom_e: PhantomData<E>,
 }
-impl<T, G: Getter<T, E>, S: Settable<T, E>, E: Copy + Debug> Feeder<T, G, S, E> {
+impl<T, G, S, E> Feeder<T, G, S, E>
+where
+    G: Getter<T, E>,
+    S: Settable<T, E>,
+    E: Copy + Debug,
+{
     ///Constructor for `Feeder`.
     pub fn new(getter: G, settable: S) -> Self {
         Self {
@@ -245,7 +255,12 @@ impl<T, G: Getter<T, E>, S: Settable<T, E>, E: Copy + Debug> Feeder<T, G, S, E> 
         }
     }
 }
-impl<T, G: Getter<T, E>, S: Settable<T, E>, E: Copy + Debug> Updatable<E> for Feeder<T, G, S, E> {
+impl<T, G, S, E> Updatable<E> for Feeder<T, G, S, E>
+where
+    G: Getter<T, E>,
+    S: Settable<T, E>,
+    E: Copy + Debug,
+{
     fn update(&mut self) -> NothingOrError<E> {
         //TODO: Currently, this just returns if anything fails, which can skip settable.update. Do
         //      you really want this?
@@ -375,12 +390,22 @@ impl<G, TG: TimeGetter<E>, E: Copy + Debug> Getter<G, E> for GetterFromHistory<'
     }
 }
 ///Getter for returning a constant value.
-pub struct ConstantGetter<T: Clone, TG: TimeGetter<E>, E: Copy + Debug> {
+pub struct ConstantGetter<T, TG, E>
+where
+    T: Clone,
+    TG: TimeGetter<E>,
+    E: Copy + Debug,
+{
     time_getter: TG,
     value: T,
     phantom_e: PhantomData<E>,
 }
-impl<T: Clone, TG: TimeGetter<E>, E: Copy + Debug> ConstantGetter<T, TG, E> {
+impl<T, TG, E> ConstantGetter<T, TG, E>
+where
+    T: Clone,
+    TG: TimeGetter<E>,
+    E: Copy + Debug,
+{
     ///Constructor for [`ConstantGetter`].
     pub const fn new(time_getter: TG, value: T) -> Self {
         Self {
@@ -390,19 +415,34 @@ impl<T: Clone, TG: TimeGetter<E>, E: Copy + Debug> ConstantGetter<T, TG, E> {
         }
     }
 }
-impl<T: Clone, TG: TimeGetter<E>, E: Copy + Debug> Getter<T, E> for ConstantGetter<T, TG, E> {
+impl<T, TG, E> Getter<T, E> for ConstantGetter<T, TG, E>
+where
+    T: Clone,
+    TG: TimeGetter<E>,
+    E: Copy + Debug,
+{
     fn get(&self) -> Output<T, E> {
         let time = self.time_getter.get()?;
         Ok(Some(Datum::new(time, self.value.clone())))
     }
 }
-impl<T: Clone, TG: TimeGetter<E>, E: Copy + Debug> Settable<T, E> for ConstantGetter<T, TG, E> {
+impl<T, TG, E> Settable<T, E> for ConstantGetter<T, TG, E>
+where
+    T: Clone,
+    TG: TimeGetter<E>,
+    E: Copy + Debug,
+{
     fn set(&mut self, value: T) -> NothingOrError<E> {
         self.value = value;
         Ok(())
     }
 }
-impl<T: Clone, TG: TimeGetter<E>, E: Copy + Debug> Updatable<E> for ConstantGetter<T, TG, E> {
+impl<T, TG, E> Updatable<E> for ConstantGetter<T, TG, E>
+where
+    T: Clone,
+    TG: TimeGetter<E>,
+    E: Copy + Debug,
+{
     ///This does not need to be called.
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
