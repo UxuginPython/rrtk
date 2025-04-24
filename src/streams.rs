@@ -50,14 +50,24 @@ impl<T, const C: usize, E: Copy + Debug> Updatable<E> for Latest<T, C, E> {
     }
 }
 ///Expires data that are too old to be useful.
-pub struct Expirer<T, G: Getter<T, E>, TG: TimeGetter<E>, E: Copy + Debug> {
+pub struct Expirer<T, G, TG, E>
+where
+    G: Getter<T, E>,
+    TG: TimeGetter<E>,
+    E: Copy + Debug,
+{
     input: G,
     time_getter: TG,
     max_time_delta: Time,
     phantom_t: PhantomData<T>,
     phantom_e: PhantomData<E>,
 }
-impl<T, G: Getter<T, E>, TG: TimeGetter<E>, E: Copy + Debug> Expirer<T, G, TG, E> {
+impl<T, G, TG, E> Expirer<T, G, TG, E>
+where
+    G: Getter<T, E>,
+    TG: TimeGetter<E>,
+    E: Copy + Debug,
+{
     ///Constructor for [`Expirer`].
     pub const fn new(input: G, time_getter: TG, max_time_delta: Time) -> Self {
         Self {
@@ -69,7 +79,12 @@ impl<T, G: Getter<T, E>, TG: TimeGetter<E>, E: Copy + Debug> Expirer<T, G, TG, E
         }
     }
 }
-impl<T, G: Getter<T, E>, TG: TimeGetter<E>, E: Copy + Debug> Getter<T, E> for Expirer<T, G, TG, E> {
+impl<T, G, TG, E> Getter<T, E> for Expirer<T, G, TG, E>
+where
+    G: Getter<T, E>,
+    TG: TimeGetter<E>,
+    E: Copy + Debug,
+{
     fn get(&self) -> Output<T, E> {
         let output = match self.input.get()? {
             Some(datum) => datum,
@@ -82,7 +97,12 @@ impl<T, G: Getter<T, E>, TG: TimeGetter<E>, E: Copy + Debug> Getter<T, E> for Ex
         Ok(Some(output))
     }
 }
-impl<T, G: Getter<T, E>, TG: TimeGetter<E>, E: Copy + Debug> Updatable<E> for Expirer<T, G, TG, E> {
+impl<T, G, TG, E> Updatable<E> for Expirer<T, G, TG, E>
+where
+    G: Getter<T, E>,
+    TG: TimeGetter<E>,
+    E: Copy + Debug,
+{
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
     }
