@@ -62,15 +62,25 @@ impl<T: AddAssign + Copy, const N: usize, E: Copy + Debug> Updatable<E> for SumS
 ///number of inputs. If one inputs returns `Ok(None)`, the other input's output is returned. If
 ///both inputs return `Ok(None)`, returns `Ok(None)`. If this is not the desired behavior, use
 ///[`NoneToValue`](converters::NoneToValue) or [`NoneToError`](converters::NoneToError).
-pub struct Sum2<T1: Add<T2>, T2, G1: Getter<T1, E>, G2: Getter<T2, E>, E: Copy + Debug> {
+pub struct Sum2<T1, T2, G1, G2, E>
+where
+    T1: Add<T2>,
+    G1: Getter<T1, E>,
+    G2: Getter<T2, E>,
+    E: Copy + Debug,
+{
     addend1: G1,
     addend2: G2,
     phantom_t1: PhantomData<T1>,
     phantom_t2: PhantomData<T2>,
     phantom_e: PhantomData<E>,
 }
-impl<T1: Add<T2>, T2, G1: Getter<T1, E>, G2: Getter<T2, E>, E: Copy + Debug>
-    Sum2<T1, T2, G1, G2, E>
+impl<T1, T2, G1, G2, E> Sum2<T1, T2, G1, G2, E>
+where
+    T1: Add<T2>,
+    G1: Getter<T1, E>,
+    G2: Getter<T2, E>,
+    E: Copy + Debug,
 {
     ///Constructor for [`Sum2`].
     pub const fn new(addend1: G1, addend2: G2) -> Self {
@@ -83,8 +93,12 @@ impl<T1: Add<T2>, T2, G1: Getter<T1, E>, G2: Getter<T2, E>, E: Copy + Debug>
         }
     }
 }
-impl<T1: Add<T2, Output = TO>, T2, TO, G1: Getter<T1, E>, G2: Getter<T2, E>, E: Copy + Debug>
-    Getter<TO, E> for Sum2<T1, T2, G1, G2, E>
+impl<T1, T2, TO, G1, G2, E> Getter<TO, E> for Sum2<T1, T2, G1, G2, E>
+where
+    T1: Add<T2, Output = TO>,
+    G1: Getter<T1, E>,
+    G2: Getter<T2, E>,
+    E: Copy + Debug,
 {
     fn get(&self) -> Output<TO, E> {
         let x = self.addend1.get()?;
@@ -105,8 +119,12 @@ impl<T1: Add<T2, Output = TO>, T2, TO, G1: Getter<T1, E>, G2: Getter<T2, E>, E: 
         )))
     }
 }
-impl<T1: Add<T2>, T2, G1: Getter<T1, E>, G2: Getter<T2, E>, E: Copy + Debug> Updatable<E>
-    for Sum2<T1, T2, G1, G2, E>
+impl<T1, T2, G1, G2, E> Updatable<E> for Sum2<T1, T2, G1, G2, E>
+where
+    T1: Add<T2>,
+    G1: Getter<T1, E>,
+    G2: Getter<T2, E>,
+    E: Copy + Debug,
 {
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
@@ -114,7 +132,12 @@ impl<T1: Add<T2>, T2, G1: Getter<T1, E>, G2: Getter<T2, E>, E: Copy + Debug> Upd
 }
 ///A stream that subtracts one of its inputs from the other. If the subtrahend stream returns
 ///`Ok(None)`, the minuend's value will be returned directly.
-pub struct DifferenceStream<TM: Sub<TS>, TS, GM: Getter<TM, E>, GS: Getter<TS, E>, E: Copy + Debug>
+pub struct DifferenceStream<TM, TS, GM, GS, E>
+where
+    TM: Sub<TS>,
+    GM: Getter<TM, E>,
+    GS: Getter<TS, E>,
+    E: Copy + Debug,
 {
     minuend: GM,
     subtrahend: GS,
@@ -122,8 +145,12 @@ pub struct DifferenceStream<TM: Sub<TS>, TS, GM: Getter<TM, E>, GS: Getter<TS, E
     phantom_ts: PhantomData<TS>,
     phantom_e: PhantomData<E>,
 }
-impl<TM: Sub<TS>, TS, GM: Getter<TM, E>, GS: Getter<TS, E>, E: Copy + Debug>
-    DifferenceStream<TM, TS, GM, GS, E>
+impl<TM, TS, GM, GS, E> DifferenceStream<TM, TS, GM, GS, E>
+where
+    TM: Sub<TS>,
+    GM: Getter<TM, E>,
+    GS: Getter<TS, E>,
+    E: Copy + Debug,
 {
     ///Constructor for [`DifferenceStream`].
     pub const fn new(minuend: GM, subtrahend: GS) -> Self {
@@ -136,8 +163,12 @@ impl<TM: Sub<TS>, TS, GM: Getter<TM, E>, GS: Getter<TS, E>, E: Copy + Debug>
         }
     }
 }
-impl<TM: Sub<TS, Output = TO>, TS, TO, GM: Getter<TM, E>, GS: Getter<TS, E>, E: Copy + Debug>
-    Getter<TO, E> for DifferenceStream<TM, TS, GM, GS, E>
+impl<TM, TS, TO, GM, GS, E> Getter<TO, E> for DifferenceStream<TM, TS, GM, GS, E>
+where
+    TM: Sub<TS, Output = TO>,
+    GM: Getter<TM, E>,
+    GS: Getter<TS, E>,
+    E: Copy + Debug,
 {
     fn get(&self) -> Output<TO, E> {
         let minuend_output = self.minuend.get()?;
@@ -165,8 +196,12 @@ impl<TM: Sub<TS, Output = TO>, TS, TO, GM: Getter<TM, E>, GS: Getter<TS, E>, E: 
         Ok(Some(Datum::new(time, value)))
     }
 }
-impl<TM: Sub<TS>, TS, GM: Getter<TM, E>, GS: Getter<TS, E>, E: Copy + Debug> Updatable<E>
-    for DifferenceStream<TM, TS, GM, GS, E>
+impl<TM, TS, GM, GS, E> Updatable<E> for DifferenceStream<TM, TS, GM, GS, E>
+where
+    TM: Sub<TS>,
+    GM: Getter<TM, E>,
+    GS: Getter<TS, E>,
+    E: Copy + Debug,
 {
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
