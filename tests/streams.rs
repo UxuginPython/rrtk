@@ -549,7 +549,7 @@ fn sum2() {
         }
         //normal does not need update
         erroring.borrow_mut().update().unwrap();
-        assert_eq!(stream.get().unwrap(), None);
+        assert!(stream.get().unwrap().is_none());
         erroring.borrow_mut().update().unwrap();
         assert_eq!(
             stream.get().unwrap().unwrap().time,
@@ -653,27 +653,11 @@ fn difference_stream() {
         stream1.borrow_mut().update().unwrap();
         stream2.borrow_mut().update().unwrap();
         //None, None
-        match stream.get() {
-            Ok(Some(_)) => {
-                panic!();
-            }
-            Ok(None) => {}
-            Err(_) => {
-                panic!();
-            }
-        }
+        assert!(stream.get().unwrap().is_none());
         stream1.borrow_mut().update().unwrap();
         stream2.borrow_mut().update().unwrap();
         //None, Some
-        match stream.get() {
-            Ok(Some(_)) => {
-                panic!();
-            }
-            Ok(None) => {}
-            Err(_) => {
-                panic!();
-            }
-        }
+        assert!(stream.get().unwrap().is_none());
         stream1.borrow_mut().update().unwrap();
         stream2.borrow_mut().update().unwrap();
         //Some, Err
@@ -868,7 +852,7 @@ fn product2() {
         }
         //normal does not need update
         erroring.borrow_mut().update().unwrap();
-        assert_eq!(stream.get().unwrap(), None);
+        assert!(stream.get().unwrap().is_none());
         erroring.borrow_mut().update().unwrap();
         assert_eq!(
             stream.get().unwrap().unwrap().time,
@@ -972,27 +956,11 @@ fn quotient_stream() {
         stream1.borrow_mut().update().unwrap();
         stream2.borrow_mut().update().unwrap();
         //None, None
-        match stream.get() {
-            Ok(Some(_)) => {
-                panic!();
-            }
-            Ok(None) => {}
-            Err(_) => {
-                panic!();
-            }
-        }
+        assert!(stream.get().unwrap().is_none());
         stream1.borrow_mut().update().unwrap();
         stream2.borrow_mut().update().unwrap();
         //None, Some
-        match stream.get() {
-            Ok(Some(_)) => {
-                panic!();
-            }
-            Ok(None) => {}
-            Err(_) => {
-                panic!();
-            }
-        }
+        assert!(stream.get().unwrap().is_none());
         stream1.borrow_mut().update().unwrap();
         stream2.borrow_mut().update().unwrap();
         //Some, Err
