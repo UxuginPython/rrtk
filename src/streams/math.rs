@@ -404,13 +404,23 @@ where
 ///A stream that exponentiates one of its inputs to the other. If the exponent input returns
 ///`Ok(None)`, the base's value is returned directly. Only available with `std`.
 #[cfg(feature = "internal_enhanced_float")]
-pub struct ExponentStream<GB: Getter<f32, E>, GE: Getter<f32, E>, E: Copy + Debug> {
+pub struct ExponentStream<GB, GE, E>
+where
+    GB: Getter<f32, E>,
+    GE: Getter<f32, E>,
+    E: Copy + Debug,
+{
     base: GB,
     exponent: GE,
     phantom_e: PhantomData<E>,
 }
 #[cfg(feature = "internal_enhanced_float")]
-impl<GB: Getter<f32, E>, GE: Getter<f32, E>, E: Copy + Debug> ExponentStream<GB, GE, E> {
+impl<GB, GE, E> ExponentStream<GB, GE, E>
+where
+    GB: Getter<f32, E>,
+    GE: Getter<f32, E>,
+    E: Copy + Debug,
+{
     ///Constructor for [`ExponentStream`].
     pub const fn new(base: GB, exponent: GE) -> Self {
         Self {
@@ -421,8 +431,11 @@ impl<GB: Getter<f32, E>, GE: Getter<f32, E>, E: Copy + Debug> ExponentStream<GB,
     }
 }
 #[cfg(feature = "internal_enhanced_float")]
-impl<GB: Getter<f32, E>, GE: Getter<f32, E>, E: Copy + Debug> Getter<f32, E>
-    for ExponentStream<GB, GE, E>
+impl<GB, GE, E> Getter<f32, E> for ExponentStream<GB, GE, E>
+where
+    GB: Getter<f32, E>,
+    GE: Getter<f32, E>,
+    E: Copy + Debug,
 {
     fn get(&self) -> Output<f32, E> {
         let base_output = self.base.get()?;
@@ -451,8 +464,11 @@ impl<GB: Getter<f32, E>, GE: Getter<f32, E>, E: Copy + Debug> Getter<f32, E>
     }
 }
 #[cfg(feature = "internal_enhanced_float")]
-impl<GB: Getter<f32, E>, GE: Getter<f32, E>, E: Copy + Debug> Updatable<E>
-    for ExponentStream<GB, GE, E>
+impl<GB, GE, E> Updatable<E> for ExponentStream<GB, GE, E>
+where
+    GB: Getter<f32, E>,
+    GE: Getter<f32, E>,
+    E: Copy + Debug,
 {
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
@@ -475,18 +491,23 @@ impl<T, O, G: Getter<T, E>, E: Copy + Debug> DerivativeStream<T, O, G, E> {
         }
     }
 }
-impl<T, O: Clone, G: Getter<T, E>, E: Copy + Debug> Getter<O, E> for DerivativeStream<T, O, G, E>
+impl<T, O, G, E> Getter<O, E> for DerivativeStream<T, O, G, E>
 where
     DerivativeStream<T, O, G, E>: Updatable<E>,
+    O: Clone,
+    G: Getter<T, E>,
+    E: Copy + Debug,
 {
     fn get(&self) -> Output<O, E> {
         self.value.clone()
     }
 }
-impl<T: Copy, N1, O, G: Getter<T, E>, E: Copy + Debug> Updatable<E> for DerivativeStream<T, O, G, E>
+impl<T, N1, O, G, E> Updatable<E> for DerivativeStream<T, O, G, E>
 where
-    T: Sub<Output = N1>,
+    T: Copy + Sub<Output = N1>,
     N1: Div<Time, Output = O>,
+    G: Getter<T, E>,
+    E: Copy + Debug,
 {
     fn update(&mut self) -> NothingOrError<E> {
         let output = self.input.get();
@@ -535,20 +556,24 @@ impl<T, O, G: Getter<T, E>, E: Copy + Debug> IntegralStream<T, O, G, E> {
         }
     }
 }
-impl<T, O: Clone, G: Getter<T, E>, E: Copy + Debug> Getter<O, E> for IntegralStream<T, O, G, E>
+impl<T, O, G, E> Getter<O, E> for IntegralStream<T, O, G, E>
 where
     IntegralStream<T, O, G, E>: Updatable<E>,
+    O: Clone,
+    G: Getter<T, E>,
+    E: Copy + Debug,
 {
     fn get(&self) -> Output<O, E> {
         self.value.clone()
     }
 }
-impl<T: Copy, O: Copy + Half, N1, G: Getter<T, E>, E: Copy + Debug> Updatable<E>
-    for IntegralStream<T, O, G, E>
+impl<T, O, N1, G, E> Updatable<E> for IntegralStream<T, O, G, E>
 where
-    T: Add<Output = N1>,
+    T: Copy + Add<Output = N1>,
     Time: Mul<N1, Output = O>,
-    O: Add<O, Output = O>,
+    O: Copy + Half + Add<O, Output = O>,
+    G: Getter<T, E>,
+    E: Copy + Debug,
 {
     fn update(&mut self) -> NothingOrError<E> {
         let output = self.input.get();
