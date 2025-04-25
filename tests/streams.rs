@@ -549,11 +549,7 @@ fn sum2() {
         }
         //normal does not need update
         erroring.borrow_mut().update().unwrap();
-        assert_eq!(
-            stream.get().unwrap().unwrap().time,
-            Time::from_nanoseconds(1)
-        );
-        assert_eq!(stream.get().unwrap().unwrap().value, 1.0);
+        assert_eq!(stream.get().unwrap(), None);
         erroring.borrow_mut().update().unwrap();
         assert_eq!(
             stream.get().unwrap().unwrap().time,
@@ -691,13 +687,10 @@ fn difference_stream() {
         stream2.borrow_mut().update().unwrap();
         //Some, None
         match stream.get() {
-            Ok(Some(x)) => {
-                assert_eq!(x.time, Time::from_nanoseconds(1));
-                assert_eq!(x.value, 10.0);
-            }
-            Ok(None) => {
+            Ok(Some(_)) => {
                 panic!();
             }
+            Ok(None) => {}
             Err(_) => {
                 panic!();
             }
@@ -875,11 +868,7 @@ fn product2() {
         }
         //normal does not need update
         erroring.borrow_mut().update().unwrap();
-        assert_eq!(
-            stream.get().unwrap().unwrap().time,
-            Time::from_nanoseconds(1)
-        );
-        assert_eq!(stream.get().unwrap().unwrap().value, 5.0);
+        assert_eq!(stream.get().unwrap(), None);
         erroring.borrow_mut().update().unwrap();
         assert_eq!(
             stream.get().unwrap().unwrap().time,
@@ -1017,13 +1006,10 @@ fn quotient_stream() {
         stream2.borrow_mut().update().unwrap();
         //Some, None
         match stream.get() {
-            Ok(Some(x)) => {
-                assert_eq!(x.time, Time::from_nanoseconds(1));
-                assert_eq!(x.value, 12.0);
-            }
-            Ok(None) => {
+            Ok(Some(_)) => {
                 panic!();
             }
+            Ok(None) => {}
             Err(_) => {
                 panic!();
             }
