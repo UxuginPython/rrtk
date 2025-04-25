@@ -32,12 +32,22 @@ impl AndState {
 ///| [`Some(false)`] | [`Some(true)`]  | [`Some(false)`] |
 ///| [`None`]        | [`Some(true)`]  | [`None`]        |
 ///| [`Some(true)`]  | [`Some(true)`]  | [`Some(true)`]  |
-pub struct AndStream<G1: Getter<bool, E>, G2: Getter<bool, E>, E: Copy + Debug> {
+pub struct AndStream<G1, G2, E>
+where
+    G1: Getter<bool, E>,
+    G2: Getter<bool, E>,
+    E: Copy + Debug,
+{
     input1: G1,
     input2: G2,
     phantom_e: PhantomData<E>,
 }
-impl<G1: Getter<bool, E>, G2: Getter<bool, E>, E: Copy + Debug> AndStream<G1, G2, E> {
+impl<G1, G2, E> AndStream<G1, G2, E>
+where
+    G1: Getter<bool, E>,
+    G2: Getter<bool, E>,
+    E: Copy + Debug,
+{
     ///Constructor for [`AndStream`].
     pub const fn new(input1: G1, input2: G2) -> Self {
         Self {
@@ -47,8 +57,11 @@ impl<G1: Getter<bool, E>, G2: Getter<bool, E>, E: Copy + Debug> AndStream<G1, G2
         }
     }
 }
-impl<G1: Getter<bool, E>, G2: Getter<bool, E>, E: Copy + Debug> Getter<bool, E>
-    for AndStream<G1, G2, E>
+impl<G1, G2, E> Getter<bool, E> for AndStream<G1, G2, E>
+where
+    G1: Getter<bool, E>,
+    G2: Getter<bool, E>,
+    E: Copy + Debug,
 {
     fn get(&self) -> Output<bool, E> {
         let gotten1 = self.input1.get()?;
@@ -99,8 +112,11 @@ impl<G1: Getter<bool, E>, G2: Getter<bool, E>, E: Copy + Debug> Getter<bool, E>
         }
     }
 }
-impl<G1: Getter<bool, E>, G2: Getter<bool, E>, E: Copy + Debug> Updatable<E>
-    for AndStream<G1, G2, E>
+impl<G1, G2, E> Updatable<E> for AndStream<G1, G2, E>
+where
+    G1: Getter<bool, E>,
+    G2: Getter<bool, E>,
+    E: Copy + Debug,
 {
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
@@ -134,12 +150,22 @@ impl OrState {
 ///| [`Some(false)`] | [`Some(true)`]  | [`Some(true)`]  |
 ///| [`None`]        | [`Some(true)`]  | [`Some(true)`]  |
 ///| [`Some(true)`]  | [`Some(true)`]  | [`Some(true)`]  |
-pub struct OrStream<G1: Getter<bool, E>, G2: Getter<bool, E>, E: Copy + Debug> {
+pub struct OrStream<G1, G2, E>
+where
+    G1: Getter<bool, E>,
+    G2: Getter<bool, E>,
+    E: Copy + Debug,
+{
     input1: G1,
     input2: G2,
     phantom_e: PhantomData<E>,
 }
-impl<G1: Getter<bool, E>, G2: Getter<bool, E>, E: Copy + Debug> OrStream<G1, G2, E> {
+impl<G1, G2, E> OrStream<G1, G2, E>
+where
+    G1: Getter<bool, E>,
+    G2: Getter<bool, E>,
+    E: Copy + Debug,
+{
     ///Constructor for [`OrStream`].
     pub const fn new(input1: G1, input2: G2) -> Self {
         Self {
@@ -149,8 +175,11 @@ impl<G1: Getter<bool, E>, G2: Getter<bool, E>, E: Copy + Debug> OrStream<G1, G2,
         }
     }
 }
-impl<G1: Getter<bool, E>, G2: Getter<bool, E>, E: Copy + Debug> Getter<bool, E>
-    for OrStream<G1, G2, E>
+impl<G1, G2, E> Getter<bool, E> for OrStream<G1, G2, E>
+where
+    G1: Getter<bool, E>,
+    G2: Getter<bool, E>,
+    E: Copy + Debug,
 {
     fn get(&self) -> Output<bool, E> {
         let gotten1 = self.input1.get()?;
@@ -197,8 +226,11 @@ impl<G1: Getter<bool, E>, G2: Getter<bool, E>, E: Copy + Debug> Getter<bool, E>
         }
     }
 }
-impl<G1: Getter<bool, E>, G2: Getter<bool, E>, E: Copy + Debug> Updatable<E>
-    for OrStream<G1, G2, E>
+impl<G1, G2, E> Updatable<E> for OrStream<G1, G2, E>
+where
+    G1: Getter<bool, E>,
+    G2: Getter<bool, E>,
+    E: Copy + Debug,
 {
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
