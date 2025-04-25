@@ -121,36 +121,16 @@ fn none_to_error() {
         let input = Reference::from_ptr(core::ptr::addr_of_mut!(INPUT));
         let mut stream = NoneToError::new(input.clone(), Error::FromNone);
         stream.update().unwrap(); //This should do nothing.
-        match stream.get() {
-            Ok(option) => match option {
-                Some(_) => {}
-                None => {
-                    panic!("should not have None");
-                }
-            },
-            Err(_) => {
-                panic!("should not have Err now");
-            }
+        assert!(stream.get().unwrap().is_some());
+        input.borrow_mut().update().unwrap();
+        if let Err(Error::FromNone) = stream.get() {
+        } else {
+            panic!();
         }
         input.borrow_mut().update().unwrap();
-        match stream.get() {
-            Ok(_) => {
-                panic!("should return Err");
-            }
-            Err(Error::FromNone) => {}
-            Err(_) => {
-                panic!("should be FromNone");
-            }
-        }
-        input.borrow_mut().update().unwrap();
-        match stream.get() {
-            Ok(_) => {
-                panic!("should return Err");
-            }
-            Err(Error::FromNone) => {
-                panic!("should return Error::RealError");
-            }
-            Err(_) => {}
+        if let Err(Error::RealError) = stream.get() {
+        } else {
+            panic!();
         }
     }
 }
@@ -208,38 +188,11 @@ fn none_to_value() {
         let time_getter = Reference::from_ptr(core::ptr::addr_of_mut!(TIME_GETTER));
         let mut stream = NoneToValue::new(input.clone(), time_getter, 2.0);
         stream.update().unwrap(); //This should do nothing.
-        match stream.get() {
-            Ok(option) => match option {
-                Some(datum) => {
-                    assert_eq!(datum.value, 1.0);
-                }
-                None => {
-                    panic!("should return Ok(Some(_)), returned Ok(None)");
-                }
-            },
-            Err(_) => {
-                panic!("should return Ok(Some(_)), returned Err(_)");
-            }
-        }
+        assert_eq!(stream.get().unwrap().unwrap().value, 1.0);
         input.borrow_mut().update().unwrap();
-        match stream.get() {
-            Ok(Some(datum)) => {
-                assert_eq!(datum.value, 2.0);
-            }
-            Ok(None) => {
-                panic!("should return Ok(Some(_)), returned Ok(None)")
-            }
-            Err(_) => {
-                panic!("should return Ok(Some(_)), returned Err(_)");
-            }
-        }
+        assert_eq!(stream.get().unwrap().unwrap().value, 2.0);
         input.borrow_mut().update().unwrap();
-        match stream.get() {
-            Ok(_) => {
-                panic!("should return Err(_), returned Ok(_)");
-            }
-            Err(_) => {}
-        }
+        assert!(stream.get().is_err());
     }
 }
 #[test]
@@ -447,12 +400,7 @@ fn sum_stream() {
             to_dyn!(Getter<f32, _>, erroring.clone()),
             to_dyn!(Getter<f32, _>, normal.clone()),
         ]);
-        match stream.get() {
-            Ok(_) => {
-                panic!("error not propagated")
-            }
-            Err(_) => {}
-        }
+        assert!(stream.get().is_err());
         //normal does not need update
         erroring.borrow_mut().update().unwrap();
         assert_eq!(
@@ -541,12 +489,7 @@ fn sum2() {
         static mut NORMAL: NormalStream = NormalStream::new();
         let normal = Reference::from_ptr(core::ptr::addr_of_mut!(NORMAL));
         let stream = Sum2::new(erroring.clone(), normal.clone());
-        match stream.get() {
-            Ok(_) => {
-                panic!("error not propagated")
-            }
-            Err(_) => {}
-        }
+        assert!(stream.get().is_err());
         //normal does not need update
         erroring.borrow_mut().update().unwrap();
         assert!(stream.get().unwrap().is_none());
@@ -617,39 +560,19 @@ fn difference_stream() {
         let stream2 = Reference::from_ptr(core::ptr::addr_of_mut!(STREAM_2));
         let stream = DifferenceStream::new(stream1.clone(), stream2.clone());
         //Err, Err
-        match stream.get() {
-            Ok(_) => {
-                panic!();
-            }
-            Err(_) => {}
-        }
+        assert!(stream.get().is_err());
         stream1.borrow_mut().update().unwrap();
         stream2.borrow_mut().update().unwrap();
         //Err, None
-        match stream.get() {
-            Ok(_) => {
-                panic!();
-            }
-            Err(_) => {}
-        }
+        assert!(stream.get().is_err());
         stream1.borrow_mut().update().unwrap();
         stream2.borrow_mut().update().unwrap();
         //Err, Some
-        match stream.get() {
-            Ok(_) => {
-                panic!();
-            }
-            Err(_) => {}
-        }
+        assert!(stream.get().is_err());
         stream1.borrow_mut().update().unwrap();
         stream2.borrow_mut().update().unwrap();
         //None, Err
-        match stream.get() {
-            Ok(_) => {
-                panic!();
-            }
-            Err(_) => {}
-        }
+        assert!(stream.get().is_err());
         stream1.borrow_mut().update().unwrap();
         stream2.borrow_mut().update().unwrap();
         //None, None
@@ -661,38 +584,19 @@ fn difference_stream() {
         stream1.borrow_mut().update().unwrap();
         stream2.borrow_mut().update().unwrap();
         //Some, Err
-        match stream.get() {
-            Ok(_) => {
-                panic!();
-            }
-            Err(_) => {}
-        }
+        assert!(stream.get().is_err());
         stream1.borrow_mut().update().unwrap();
         stream2.borrow_mut().update().unwrap();
         //Some, None
-        match stream.get() {
-            Ok(Some(_)) => {
-                panic!();
-            }
-            Ok(None) => {}
-            Err(_) => {
-                panic!();
-            }
-        }
+        assert!(stream.get().unwrap().is_none());
         stream1.borrow_mut().update().unwrap();
         stream2.borrow_mut().update().unwrap();
         //Some, Some
-        match stream.get() {
-            Ok(Some(x)) => {
-                assert_eq!(x.time, Time::from_nanoseconds(2));
-                assert_eq!(x.value, 7.0);
-            }
-            Ok(None) => {
-                panic!();
-            }
-            Err(_) => {
-                panic!();
-            }
+        if let Ok(Some(x)) = stream.get() {
+            assert_eq!(x.time, Time::from_nanoseconds(2));
+            assert_eq!(x.value, 7.0);
+        } else {
+            panic!();
         }
     }
 }
@@ -750,12 +654,7 @@ fn product_stream() {
             to_dyn!(Getter<f32, _>, erroring.clone()),
             to_dyn!(Getter<f32, _>, normal.clone()),
         ]);
-        match stream.get() {
-            Ok(_) => {
-                panic!("error not propagated")
-            }
-            Err(_) => {}
-        }
+        assert!(stream.get().is_err());
         //normal does not need update
         erroring.borrow_mut().update().unwrap();
         assert_eq!(
@@ -844,12 +743,7 @@ fn product2() {
         static mut NORMAL: NormalStream = NormalStream::new();
         let normal = Reference::from_ptr(core::ptr::addr_of_mut!(NORMAL));
         let stream = Product2::new(erroring.clone(), normal.clone());
-        match stream.get() {
-            Ok(_) => {
-                panic!("error not propagated")
-            }
-            Err(_) => {}
-        }
+        assert!(stream.get().is_err());
         //normal does not need update
         erroring.borrow_mut().update().unwrap();
         assert!(stream.get().unwrap().is_none());
@@ -920,39 +814,19 @@ fn quotient_stream() {
         let stream2 = Reference::from_ptr(core::ptr::addr_of_mut!(STREAM_2));
         let stream = QuotientStream::new(stream1.clone(), stream2.clone());
         //Err, Err
-        match stream.get() {
-            Ok(_) => {
-                panic!();
-            }
-            Err(_) => {}
-        }
+        assert!(stream.get().is_err());
         stream1.borrow_mut().update().unwrap();
         stream2.borrow_mut().update().unwrap();
         //Err, None
-        match stream.get() {
-            Ok(_) => {
-                panic!();
-            }
-            Err(_) => {}
-        }
+        assert!(stream.get().is_err());
         stream1.borrow_mut().update().unwrap();
         stream2.borrow_mut().update().unwrap();
         //Err, Some
-        match stream.get() {
-            Ok(_) => {
-                panic!();
-            }
-            Err(_) => {}
-        }
+        assert!(stream.get().is_err());
         stream1.borrow_mut().update().unwrap();
         stream2.borrow_mut().update().unwrap();
         //None, Err
-        match stream.get() {
-            Ok(_) => {
-                panic!();
-            }
-            Err(_) => {}
-        }
+        assert!(stream.get().is_err());
         stream1.borrow_mut().update().unwrap();
         stream2.borrow_mut().update().unwrap();
         //None, None
@@ -964,38 +838,19 @@ fn quotient_stream() {
         stream1.borrow_mut().update().unwrap();
         stream2.borrow_mut().update().unwrap();
         //Some, Err
-        match stream.get() {
-            Ok(_) => {
-                panic!();
-            }
-            Err(_) => {}
-        }
+        assert!(stream.get().is_err());
         stream1.borrow_mut().update().unwrap();
         stream2.borrow_mut().update().unwrap();
         //Some, None
-        match stream.get() {
-            Ok(Some(_)) => {
-                panic!();
-            }
-            Ok(None) => {}
-            Err(_) => {
-                panic!();
-            }
-        }
+        assert!(stream.get().unwrap().is_none());
         stream1.borrow_mut().update().unwrap();
         stream2.borrow_mut().update().unwrap();
         //Some, Some
-        match stream.get() {
-            Ok(Some(x)) => {
-                assert_eq!(x.time, Time::from_nanoseconds(2));
-                assert_eq!(x.value, 4.0);
-            }
-            Ok(None) => {
-                panic!();
-            }
-            Err(_) => {
-                panic!();
-            }
+        if let Ok(Some(x)) = stream.get() {
+            assert_eq!(x.time, Time::from_nanoseconds(2));
+            assert_eq!(x.value, 4.0);
+        } else {
+            panic!();
         }
     }
 }
@@ -1063,101 +918,48 @@ fn exponent_stream() {
         let stream2 = Reference::from_ptr(core::ptr::addr_of_mut!(STREAM_2));
         let stream = ExponentStream::new(stream1.clone(), stream2.clone());
         //Err, Err
-        match stream.get() {
-            Ok(_) => {
-                panic!();
-            }
-            Err(_) => {}
-        }
+        assert!(stream.get().is_err());
         stream1.borrow_mut().update().unwrap();
         stream2.borrow_mut().update().unwrap();
         //Err, None
-        match stream.get() {
-            Ok(_) => {
-                panic!();
-            }
-            Err(_) => {}
-        }
+        assert!(stream.get().is_err());
         stream1.borrow_mut().update().unwrap();
         stream2.borrow_mut().update().unwrap();
         //Err, Some
-        match stream.get() {
-            Ok(_) => {
-                panic!();
-            }
-            Err(_) => {}
-        }
+        assert!(stream.get().is_err());
         stream1.borrow_mut().update().unwrap();
         stream2.borrow_mut().update().unwrap();
         //None, Err
-        match stream.get() {
-            Ok(_) => {
-                panic!();
-            }
-            Err(_) => {}
-        }
+        assert!(stream.get().is_err());
         stream1.borrow_mut().update().unwrap();
         stream2.borrow_mut().update().unwrap();
         //None, None
-        match stream.get() {
-            Ok(Some(_)) => {
-                panic!();
-            }
-            Ok(None) => {}
-            Err(_) => {
-                panic!();
-            }
-        }
+        assert!(stream.get().unwrap().is_none());
         stream1.borrow_mut().update().unwrap();
         stream2.borrow_mut().update().unwrap();
         //None, Some
-        match stream.get() {
-            Ok(Some(_)) => {
-                panic!();
-            }
-            Ok(None) => {}
-            Err(_) => {
-                panic!();
-            }
-        }
+        assert!(stream.get().unwrap().is_none());
         stream1.borrow_mut().update().unwrap();
         stream2.borrow_mut().update().unwrap();
         //Some, Err
-        match stream.get() {
-            Ok(_) => {
-                panic!();
-            }
-            Err(_) => {}
-        }
+        assert!(stream.get().is_err());
         stream1.borrow_mut().update().unwrap();
         stream2.borrow_mut().update().unwrap();
         //Some, None
-        match stream.get() {
-            Ok(Some(x)) => {
-                assert_eq!(x.time, Time::from_nanoseconds(1));
-                assert_eq!(x.value, 5.0);
-            }
-            Ok(None) => {
-                panic!();
-            }
-            Err(_) => {
-                panic!();
-            }
+        if let Ok(Some(x)) = stream.get() {
+            assert_eq!(x.time, Time::from_nanoseconds(1));
+            assert_eq!(x.value, 5.0);
+        } else {
+            panic!();
         }
         stream1.borrow_mut().update().unwrap();
         stream2.borrow_mut().update().unwrap();
         //Some, Some
-        match stream.get() {
-            Ok(Some(x)) => {
-                assert_eq!(x.time, Time::from_nanoseconds(2));
-                assert_eq!(x.value, 125.0);
-            }
-            Ok(None) => {
-                panic!();
-            }
-            Err(_) => {
-                panic!();
-            }
+        if let Ok(Some(x)) = stream.get() {
+            assert_eq!(x.time, Time::from_nanoseconds(2));
+            assert_eq!(x.value, 125.0);
+        } else {
+            panic!();
         }
     }
 }
