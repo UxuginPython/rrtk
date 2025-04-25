@@ -258,15 +258,25 @@ impl<T: MulAssign + Copy, const N: usize, E: Copy + Debug> Updatable<E> for Prod
 ///adds any number of inputs. If one input returns `Ok(None)`, returns the other input's output. If
 ///both inputs return `Ok(None)`, returns `Ok(None)`. If this is not the desired behavior, use
 ///[`NoneToValue`](converters::NoneToValue) or [`NoneToError`](converters::NoneToError).
-pub struct Product2<T1: Mul<T2>, T2, G1: Getter<T1, E>, G2: Getter<T2, E>, E: Copy + Debug> {
+pub struct Product2<T1, T2, G1, G2, E>
+where
+    T1: Mul<T2>,
+    G1: Getter<T1, E>,
+    G2: Getter<T2, E>,
+    E: Copy + Debug,
+{
     addend1: G1,
     addend2: G2,
     phantom_t1: PhantomData<T1>,
     phantom_t2: PhantomData<T2>,
     phantom_e: PhantomData<E>,
 }
-impl<T1: Mul<T2>, T2, G1: Getter<T1, E>, G2: Getter<T2, E>, E: Copy + Debug>
-    Product2<T1, T2, G1, G2, E>
+impl<T1, T2, G1, G2, E> Product2<T1, T2, G1, G2, E>
+where
+    T1: Mul<T2>,
+    G1: Getter<T1, E>,
+    G2: Getter<T2, E>,
+    E: Copy + Debug,
 {
     ///Constructor for [`Product2`].
     pub const fn new(addend1: G1, addend2: G2) -> Self {
@@ -279,8 +289,12 @@ impl<T1: Mul<T2>, T2, G1: Getter<T1, E>, G2: Getter<T2, E>, E: Copy + Debug>
         }
     }
 }
-impl<T1: Mul<T2, Output = TO>, T2, TO, G1: Getter<T1, E>, G2: Getter<T2, E>, E: Copy + Debug>
-    Getter<TO, E> for Product2<T1, T2, G1, G2, E>
+impl<T1, T2, TO, G1, G2, E> Getter<TO, E> for Product2<T1, T2, G1, G2, E>
+where
+    T1: Mul<T2, Output = TO>,
+    G1: Getter<T1, E>,
+    G2: Getter<T2, E>,
+    E: Copy + Debug,
 {
     fn get(&self) -> Output<TO, E> {
         let x = self.addend1.get()?;
@@ -299,8 +313,12 @@ impl<T1: Mul<T2, Output = TO>, T2, TO, G1: Getter<T1, E>, G2: Getter<T2, E>, E: 
         )))
     }
 }
-impl<T1: Mul<T2>, T2, G1: Getter<T1, E>, G2: Getter<T2, E>, E: Copy + Debug> Updatable<E>
-    for Product2<T1, T2, G1, G2, E>
+impl<T1, T2, G1, G2, E> Updatable<E> for Product2<T1, T2, G1, G2, E>
+where
+    T1: Mul<T2>,
+    G1: Getter<T1, E>,
+    G2: Getter<T2, E>,
+    E: Copy + Debug,
 {
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
@@ -308,15 +326,25 @@ impl<T1: Mul<T2>, T2, G1: Getter<T1, E>, G2: Getter<T2, E>, E: Copy + Debug> Upd
 }
 ///A stream that divides one if its inputs by the other. If the divisor returns `Ok(None)`, the
 ///dividend's value is returned directly.
-pub struct QuotientStream<TD: Div<TS>, TS, GD: Getter<TD, E>, GS: Getter<TS, E>, E: Copy + Debug> {
+pub struct QuotientStream<TD, TS, GD, GS, E>
+where
+    TD: Div<TS>,
+    GD: Getter<TD, E>,
+    GS: Getter<TS, E>,
+    E: Copy + Debug,
+{
     dividend: GD,
     divisor: GS,
     phantom_td: PhantomData<TD>,
     phantom_ts: PhantomData<TS>,
     phantom_e: PhantomData<E>,
 }
-impl<TD: Div<TS>, TS, GD: Getter<TD, E>, GS: Getter<TS, E>, E: Copy + Debug>
-    QuotientStream<TD, TS, GD, GS, E>
+impl<TD, TS, GD, GS, E> QuotientStream<TD, TS, GD, GS, E>
+where
+    TD: Div<TS>,
+    GD: Getter<TD, E>,
+    GS: Getter<TS, E>,
+    E: Copy + Debug,
 {
     ///Constructor for [`QuotientStream`].
     pub const fn new(dividend: GD, divisor: GS) -> Self {
@@ -329,8 +357,12 @@ impl<TD: Div<TS>, TS, GD: Getter<TD, E>, GS: Getter<TS, E>, E: Copy + Debug>
         }
     }
 }
-impl<TD: Div<TS, Output = TO>, TS, TO, GD: Getter<TD, E>, GS: Getter<TS, E>, E: Copy + Debug>
-    Getter<TO, E> for QuotientStream<TD, TS, GD, GS, E>
+impl<TD, TS, TO, GD, GS, E> Getter<TO, E> for QuotientStream<TD, TS, GD, GS, E>
+where
+    TD: Div<TS, Output = TO>,
+    GD: Getter<TD, E>,
+    GS: Getter<TS, E>,
+    E: Copy + Debug,
 {
     fn get(&self) -> Output<TO, E> {
         let dividend_output = self.dividend.get()?;
@@ -358,8 +390,12 @@ impl<TD: Div<TS, Output = TO>, TS, TO, GD: Getter<TD, E>, GS: Getter<TS, E>, E: 
         Ok(Some(Datum::new(time, value)))
     }
 }
-impl<TD: Div<TS>, TS, GD: Getter<TD, E>, GS: Getter<TS, E>, E: Copy + Debug> Updatable<E>
-    for QuotientStream<TD, TS, GD, GS, E>
+impl<TD, TS, GD, GS, E> Updatable<E> for QuotientStream<TD, TS, GD, GS, E>
+where
+    TD: Div<TS>,
+    GD: Getter<TD, E>,
+    GS: Getter<TS, E>,
+    E: Copy + Debug,
 {
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
