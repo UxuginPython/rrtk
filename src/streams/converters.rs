@@ -570,6 +570,9 @@ impl<G: Getter<Quantity, E>, E: Copy + Debug> Updatable<E> for QuantityToFloat<G
         Ok(())
     }
 }
+//TODO: Decide if you want to make this and DimensionRemover use where clauses too. It makes it a
+//bit less clear what's a real type vs what's just a compile-time integer, but it's more in line
+//with the other types and might be a bit easier to read.
 ///Adds a compile-time [`Quantity`](compile_time_dimensions::Quantity) wrapper with a specific unit
 ///around a number.
 pub struct DimensionAdder<T, MM: Integer, S: Integer, G: Getter<T, E>, E: Copy + Debug> {
@@ -689,8 +692,11 @@ impl<TI, G: Getter<TI, E>, E: Copy + Debug> IntoConverter<TI, G, E> {
         }
     }
 }
-impl<TI: Into<TO>, TO, G: Getter<TI, E>, E: Copy + Debug> Getter<TO, E>
-    for IntoConverter<TI, G, E>
+impl<TI, TO, G, E> Getter<TO, E> for IntoConverter<TI, G, E>
+where
+    TI: Into<TO>,
+    G: Getter<TI, E>,
+    E: Copy + Debug,
 {
     fn get(&self) -> Output<TO, E> {
         Ok(self
@@ -722,8 +728,11 @@ impl<T, G: Getter<T, EI>, EI: Copy + Debug> ErrorIntoConverter<T, G, EI> {
         }
     }
 }
-impl<T, G: Getter<T, EI>, EI: Copy + Debug + Into<EO>, EO: Copy + Debug> Getter<T, EO>
-    for ErrorIntoConverter<T, G, EI>
+impl<T, G, EI, EO> Getter<T, EO> for ErrorIntoConverter<T, G, EI>
+where
+    G: Getter<T, EI>,
+    EI: Copy + Debug + Into<EO>,
+    EO: Copy + Debug,
 {
     fn get(&self) -> Output<T, EO> {
         self.input.get().map_err(|error| error.into())
