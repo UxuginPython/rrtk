@@ -294,7 +294,7 @@ impl<T, G: Getter<T, E>, E: Clone + Debug> TimeGetter<E> for TimeGetterFromGette
     fn get(&self) -> TimeOutput<E> {
         match self.getter.get() {
             Err(error) => Err(error),
-            Ok(None) => Err(self.none_error),
+            Ok(None) => Err(self.none_error.clone()),
             Ok(Some(datum)) => Ok(datum.time),
         }
     }

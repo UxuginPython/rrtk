@@ -168,7 +168,9 @@ where
     fn update(&mut self) -> NothingOrError<E> {
         let condition = match self.condition.get() {
             Err(error) => {
-                self.freeze_value = Err(error);
+                //XXX: This may change when you standardize when Updatable::update errors.
+                //Remove this clone if you don't return the error.
+                self.freeze_value = Err(error.clone());
                 return Err(error);
             }
             Ok(None) => {

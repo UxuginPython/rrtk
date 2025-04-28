@@ -44,7 +44,7 @@ where
                 return Ok(output);
             }
             None => {
-                return Err(self.from_none);
+                return Err(self.from_none.clone());
             }
         }
     }

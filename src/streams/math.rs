@@ -518,7 +518,9 @@ where
         let output = match output {
             Ok(ok) => ok,
             Err(error) => {
-                self.value = Err(error);
+                //XXX: This may change when you standardize when Updatable::update errors.
+                //Remove this clone if you don't return the error.
+                self.value = Err(error.clone());
                 self.prev_output = None;
                 return Err(error);
             }
@@ -584,7 +586,9 @@ where
         let output = match output {
             Ok(ok) => ok,
             Err(error) => {
-                self.value = Err(error);
+                //XXX: This may change when you standardize when Updatable::update errors.
+                //Remove this clone if you don't return the error.
+                self.value = Err(error.clone());
                 self.prev_output = None;
                 return Err(error);
             }

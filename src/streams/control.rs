@@ -51,7 +51,9 @@ impl<G: Getter<f32, E>, E: Clone + Debug> Updatable<E> for PIDControllerStream<G
             }
             Err(error) => {
                 self.reset();
-                self.output = Err(error);
+                //XXX: This may change when you standardize when Updatable::update errors.
+                //Remove this clone if you don't return the error.
+                self.output = Err(error.clone());
                 return Err(error);
             }
         };
@@ -138,7 +140,7 @@ mod command_pid {
     impl<G: Getter<State, E>, E: Clone + Debug> Getter<f32, E> for CommandPID<G, E> {
         fn get(&self) -> Output<f32, E> {
             match &self.update_state {
-                Err(error) => Err(*error),
+                Err(error) => Err(error.clone()),
                 Ok(None) => Ok(None),
                 Ok(Some(update_0)) => match self.command.into() {
                     PositionDerivative::Position => {
@@ -173,7 +175,9 @@ mod command_pid {
                     return Ok(());
                 }
                 Err(error) => {
-                    self.update_state = Err(error);
+                    //XXX: This may change when you standardize when Updatable::update errors.
+                    //Remove this clone if you don't return the error.
+                    self.update_state = Err(error.clone());
                     return Err(error);
                 }
             };
@@ -319,7 +323,9 @@ where
         let output = self.input.get();
         let output = match output {
             Err(error) => {
-                self.value = Err(error);
+                //XXX: This may change when you standardize when Updatable::update errors.
+                //Remove this clone if you don't return the error.
+                self.value = Err(error.clone());
                 self.update_time = None;
                 return Err(error);
             }
@@ -360,7 +366,9 @@ impl<G: Getter<Quantity, E>, E: Clone + Debug> Updatable<E> for EWMAStream<Quant
         let output = self.input.get();
         let output = match output {
             Err(error) => {
-                self.value = Err(error);
+                //XXX: This may change when you standardize when Updatable::update errors.
+                //Remove this clone if you don't return the error.
+                self.value = Err(error.clone());
                 self.update_time = None;
                 return Err(error);
             }
@@ -450,7 +458,9 @@ where
                 return Ok(());
             }
             Err(error) => {
-                self.value = Err(error);
+                //XXX: This may change when you standardize when Updatable::update errors.
+                //Remove this clone if you don't return the error.
+                self.value = Err(error.clone());
                 self.input_values.clear();
                 return Err(error);
             }
@@ -504,7 +514,9 @@ impl<G: Getter<Quantity, E>, E: Clone + Debug> Updatable<E>
                 return Ok(());
             }
             Err(error) => {
-                self.value = Err(error);
+                //XXX: This may change when you standardize when Updatable::update errors.
+                //Remove this clone if you don't return the error.
+                self.value = Err(error.clone());
                 self.input_values.clear();
                 return Err(error);
             }
