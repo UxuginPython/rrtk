@@ -196,17 +196,17 @@ pub type TimeOutput<E> = Result<Time, E>;
 ///Returned when something may return either nothing or an error.
 pub type NothingOrError<E> = Result<(), E>;
 ///An object for getting the absolute time.
-pub trait TimeGetter<E: Copy + Debug>: Updatable<E> {
+pub trait TimeGetter<E: Clone + Debug>: Updatable<E> {
     ///Get the time.
     fn get(&self) -> TimeOutput<E>;
 }
 ///An object that can return a value, like a [`Getter`], for a given time.
-pub trait History<T, E: Copy + Debug>: Updatable<E> {
+pub trait History<T, E: Clone + Debug>: Updatable<E> {
     ///Get a value at a time.
     fn get(&self, time: Time) -> Option<Datum<T>>;
 }
 ///Something with an [`update`](Updatable::update) method. Mostly for subtraiting.
-pub trait Updatable<E: Copy + Debug> {
+pub trait Updatable<E: Clone + Debug> {
     ///As this trait is very generic, exactly what this does will be very dependent on the
     ///implementor.
     fn update(&mut self) -> NothingOrError<E>;
@@ -217,13 +217,13 @@ pub trait Updatable<E: Copy + Debug> {
 ///as fields can be referred to as streams, though this is only in naming and trait-wise there is
 ///no distinction. The other common use for this trait is encoders. These should not be called
 ///streams.
-pub trait Getter<G, E: Copy + Debug>: Updatable<E> {
+pub trait Getter<G, E: Clone + Debug>: Updatable<E> {
     ///Get something.
     fn get(&self) -> Output<G, E>;
 }
 ///Something with a [`set`](Settable::set) method. Usually used for motors and other mechanical components and
 ///systems. This trait too is fairly broad.
-pub trait Settable<S, E: Copy + Debug>: Updatable<E> {
+pub trait Settable<S, E: Clone + Debug>: Updatable<E> {
     ///Set something to a value. For example, this could set a motor to a voltage.
     fn set(&mut self, value: S) -> NothingOrError<E>;
 }
@@ -232,7 +232,7 @@ pub struct Feeder<T, G, S, E>
 where
     G: Getter<T, E>,
     S: Settable<T, E>,
-    E: Copy + Debug,
+    E: Clone + Debug,
 {
     getter: G,
     settable: S,
@@ -243,7 +243,7 @@ impl<T, G, S, E> Feeder<T, G, S, E>
 where
     G: Getter<T, E>,
     S: Settable<T, E>,
-    E: Copy + Debug,
+    E: Clone + Debug,
 {
     ///Constructor for `Feeder`.
     pub fn new(getter: G, settable: S) -> Self {
@@ -259,7 +259,7 @@ impl<T, G, S, E> Updatable<E> for Feeder<T, G, S, E>
 where
     G: Getter<T, E>,
     S: Settable<T, E>,
-    E: Copy + Debug,
+    E: Clone + Debug,
 {
     fn update(&mut self) -> NothingOrError<E> {
         //TODO: Currently, this just returns if anything fails, which can skip settable.update. Do
@@ -275,12 +275,12 @@ where
 }
 ///Because [`Getter`]s always return a timestamp (as long as they don't return `Err(_)` or
 ///`Ok(None)`), we can use this to treat them like [`TimeGetter`]s.
-pub struct TimeGetterFromGetter<T, G: Getter<T, E>, E: Copy + Debug> {
+pub struct TimeGetterFromGetter<T, G: Getter<T, E>, E: Clone + Debug> {
     getter: G,
     none_error: E,
     phantom_t: PhantomData<T>,
 }
-impl<T, G: Getter<T, E>, E: Copy + Debug> TimeGetterFromGetter<T, G, E> {
+impl<T, G: Getter<T, E>, E: Clone + Debug> TimeGetterFromGetter<T, G, E> {
     ///Constructor for [`TimeGetterFromGetter`].
     pub const fn new(getter: G, none_error: E) -> Self {
         Self {
@@ -290,7 +290,7 @@ impl<T, G: Getter<T, E>, E: Copy + Debug> TimeGetterFromGetter<T, G, E> {
         }
     }
 }
-impl<T, G: Getter<T, E>, E: Copy + Debug> TimeGetter<E> for TimeGetterFromGetter<T, G, E> {
+impl<T, G: Getter<T, E>, E: Clone + Debug> TimeGetter<E> for TimeGetterFromGetter<T, G, E> {
     fn get(&self) -> TimeOutput<E> {
         match self.getter.get() {
             Err(error) => Err(error),
@@ -299,7 +299,7 @@ impl<T, G: Getter<T, E>, E: Copy + Debug> TimeGetter<E> for TimeGetterFromGetter
         }
     }
 }
-impl<T, G: Getter<T, E>, E: Copy + Debug> Updatable<E> for TimeGetterFromGetter<T, G, E> {
+impl<T, G: Getter<T, E>, E: Clone + Debug> Updatable<E> for TimeGetterFromGetter<T, G, E> {
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
     }
@@ -307,12 +307,12 @@ impl<T, G: Getter<T, E>, E: Copy + Debug> Updatable<E> for TimeGetterFromGetter<
 ///As histories return values at times, we can ask them to return values at the time of now or now
 ///with a delta. This makes that much easier and is the recommended way of following
 ///[`MotionProfile`]s.
-pub struct GetterFromHistory<'a, G, TG: TimeGetter<E>, E: Copy + Debug> {
+pub struct GetterFromHistory<'a, G, TG: TimeGetter<E>, E: Clone + Debug> {
     history: &'a mut dyn History<G, E>,
     time_getter: Reference<TG>,
     time_delta: Time,
 }
-impl<'a, G, TG: TimeGetter<E>, E: Copy + Debug> GetterFromHistory<'a, G, TG, E> {
+impl<'a, G, TG: TimeGetter<E>, E: Clone + Debug> GetterFromHistory<'a, G, TG, E> {
     ///Constructor such that the time in the request to the history will be directly that returned
     ///from the [`TimeGetter`] with no delta.
     pub fn new_no_delta(history: &'a mut impl History<G, E>, time_getter: Reference<TG>) -> Self {
@@ -373,14 +373,14 @@ impl<'a, G, TG: TimeGetter<E>, E: Copy + Debug> GetterFromHistory<'a, G, TG, E> 
         Ok(())
     }
 }
-impl<G, TG: TimeGetter<E>, E: Copy + Debug> Updatable<E> for GetterFromHistory<'_, G, TG, E> {
+impl<G, TG: TimeGetter<E>, E: Clone + Debug> Updatable<E> for GetterFromHistory<'_, G, TG, E> {
     fn update(&mut self) -> NothingOrError<E> {
         self.history.update()?;
         self.time_getter.borrow_mut().update()?;
         Ok(())
     }
 }
-impl<G, TG: TimeGetter<E>, E: Copy + Debug> Getter<G, E> for GetterFromHistory<'_, G, TG, E> {
+impl<G, TG: TimeGetter<E>, E: Clone + Debug> Getter<G, E> for GetterFromHistory<'_, G, TG, E> {
     fn get(&self) -> Output<G, E> {
         let time = self.time_getter.borrow().get()?;
         Ok(match self.history.get(time + self.time_delta) {
@@ -394,7 +394,7 @@ pub struct ConstantGetter<T, TG, E>
 where
     T: Clone,
     TG: TimeGetter<E>,
-    E: Copy + Debug,
+    E: Clone + Debug,
 {
     time_getter: TG,
     value: T,
@@ -404,7 +404,7 @@ impl<T, TG, E> ConstantGetter<T, TG, E>
 where
     T: Clone,
     TG: TimeGetter<E>,
-    E: Copy + Debug,
+    E: Clone + Debug,
 {
     ///Constructor for [`ConstantGetter`].
     pub const fn new(time_getter: TG, value: T) -> Self {
@@ -419,7 +419,7 @@ impl<T, TG, E> Getter<T, E> for ConstantGetter<T, TG, E>
 where
     T: Clone,
     TG: TimeGetter<E>,
-    E: Copy + Debug,
+    E: Clone + Debug,
 {
     fn get(&self) -> Output<T, E> {
         let time = self.time_getter.get()?;
@@ -430,7 +430,7 @@ impl<T, TG, E> Settable<T, E> for ConstantGetter<T, TG, E>
 where
     T: Clone,
     TG: TimeGetter<E>,
-    E: Copy + Debug,
+    E: Clone + Debug,
 {
     fn set(&mut self, value: T) -> NothingOrError<E> {
         self.value = value;
@@ -441,7 +441,7 @@ impl<T, TG, E> Updatable<E> for ConstantGetter<T, TG, E>
 where
     T: Clone,
     TG: TimeGetter<E>,
-    E: Copy + Debug,
+    E: Clone + Debug,
 {
     ///This does not need to be called.
     fn update(&mut self) -> NothingOrError<E> {
@@ -457,35 +457,35 @@ impl NoneGetter {
         Self
     }
 }
-impl<T, E: Copy + Debug> Getter<T, E> for NoneGetter {
+impl<T, E: Clone + Debug> Getter<T, E> for NoneGetter {
     fn get(&self) -> Output<T, E> {
         Ok(None)
     }
 }
-impl<E: Copy + Debug> Updatable<E> for NoneGetter {
+impl<E: Clone + Debug> Updatable<E> for NoneGetter {
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
     }
 }
-impl<E: Copy + Debug> TimeGetter<E> for Time {
+impl<E: Clone + Debug> TimeGetter<E> for Time {
     fn get(&self) -> TimeOutput<E> {
         Ok(*self)
     }
 }
-impl<E: Copy + Debug> Updatable<E> for Time {
+impl<E: Clone + Debug> Updatable<E> for Time {
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
     }
 }
 ///A place where a device can connect to another.
 #[cfg(feature = "devices")]
-pub struct Terminal<'a, E: Copy + Debug> {
+pub struct Terminal<'a, E: Clone + Debug> {
     last_request_state: Option<Datum<State>>,
     last_request_command: Option<Datum<Command>>,
     other: Option<&'a RefCell<Terminal<'a, E>>>,
 }
 #[cfg(feature = "devices")]
-impl<E: Copy + Debug> Terminal<'_, E> {
+impl<E: Clone + Debug> Terminal<'_, E> {
     ///Direct constructor for a [`Terminal`]. You almost always actually want [`RefCell<Terminal>`]
     ///however, in which case you should call [`new`](Terminal::new), which returns [`RefCell<Terminal>`].
     pub const fn new_raw() -> Self {
@@ -515,21 +515,21 @@ impl<E: Copy + Debug> Terminal<'_, E> {
     }
 }
 #[cfg(feature = "devices")]
-impl<E: Copy + Debug> Settable<Datum<State>, E> for Terminal<'_, E> {
+impl<E: Clone + Debug> Settable<Datum<State>, E> for Terminal<'_, E> {
     fn set(&mut self, state: Datum<State>) -> NothingOrError<E> {
         self.last_request_state = Some(state);
         Ok(())
     }
 }
 #[cfg(feature = "devices")]
-impl<E: Copy + Debug> Settable<Datum<Command>, E> for Terminal<'_, E> {
+impl<E: Clone + Debug> Settable<Datum<Command>, E> for Terminal<'_, E> {
     fn set(&mut self, command: Datum<Command>) -> NothingOrError<E> {
         self.last_request_command = Some(command);
         Ok(())
     }
 }
 #[cfg(feature = "devices")]
-impl<E: Copy + Debug> Getter<State, E> for Terminal<'_, E> {
+impl<E: Clone + Debug> Getter<State, E> for Terminal<'_, E> {
     fn get(&self) -> Output<State, E> {
         let mut addends: [core::mem::MaybeUninit<Datum<State>>; 2] =
             [core::mem::MaybeUninit::uninit(); 2];
@@ -566,7 +566,7 @@ impl<E: Copy + Debug> Getter<State, E> for Terminal<'_, E> {
     }
 }
 #[cfg(feature = "devices")]
-impl<E: Copy + Debug> Getter<Command, E> for Terminal<'_, E> {
+impl<E: Clone + Debug> Getter<Command, E> for Terminal<'_, E> {
     fn get(&self) -> Output<Command, E> {
         let mut maybe_command: Option<Datum<Command>> = None;
         match self.last_request_command {
@@ -595,7 +595,7 @@ impl<E: Copy + Debug> Getter<Command, E> for Terminal<'_, E> {
     }
 }
 #[cfg(feature = "devices")]
-impl<E: Copy + Debug> Getter<TerminalData, E> for Terminal<'_, E> {
+impl<E: Clone + Debug> Getter<TerminalData, E> for Terminal<'_, E> {
     fn get(&self) -> Output<TerminalData, E> {
         let command = self.get().expect("Terminal get cannot return Err");
         let state = self.get().expect("Terminal get cannot return Err");
@@ -624,7 +624,7 @@ impl<E: Copy + Debug> Getter<TerminalData, E> for Terminal<'_, E> {
     }
 }
 #[cfg(feature = "devices")]
-impl<E: Copy + Debug> Updatable<E> for Terminal<'_, E> {
+impl<E: Clone + Debug> Updatable<E> for Terminal<'_, E> {
     ///This does not need to be called.
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
@@ -635,7 +635,7 @@ impl<E: Copy + Debug> Updatable<E> for Terminal<'_, E> {
 ///are connected. You can manually disconnect terminals by calling the
 ///[`disconnect`](Terminal::disconnect) method on either of them.
 #[cfg(feature = "devices")]
-pub fn connect<'a, E: Copy + Debug>(
+pub fn connect<'a, E: Clone + Debug>(
     term1: &'a RefCell<Terminal<'a, E>>,
     term2: &'a RefCell<Terminal<'a, E>>,
 ) {
@@ -679,7 +679,7 @@ impl TryFrom<TerminalData> for Datum<State> {
 }
 ///A mechanical device.
 #[cfg(feature = "devices")]
-pub trait Device<E: Copy + Debug>: Updatable<E> {
+pub trait Device<E: Clone + Debug>: Updatable<E> {
     ///Call only the [`update`](Terminal::update) methods of owned terminals and do not update anything else with the
     ///device.
     fn update_terminals(&mut self) -> NothingOrError<E>;

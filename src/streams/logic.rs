@@ -36,7 +36,7 @@ pub struct AndStream<G1, G2, E>
 where
     G1: Getter<bool, E>,
     G2: Getter<bool, E>,
-    E: Copy + Debug,
+    E: Clone + Debug,
 {
     input1: G1,
     input2: G2,
@@ -46,7 +46,7 @@ impl<G1, G2, E> AndStream<G1, G2, E>
 where
     G1: Getter<bool, E>,
     G2: Getter<bool, E>,
-    E: Copy + Debug,
+    E: Clone + Debug,
 {
     ///Constructor for [`AndStream`].
     pub const fn new(input1: G1, input2: G2) -> Self {
@@ -61,7 +61,7 @@ impl<G1, G2, E> Getter<bool, E> for AndStream<G1, G2, E>
 where
     G1: Getter<bool, E>,
     G2: Getter<bool, E>,
-    E: Copy + Debug,
+    E: Clone + Debug,
 {
     fn get(&self) -> Output<bool, E> {
         let gotten1 = self.input1.get()?;
@@ -116,7 +116,7 @@ impl<G1, G2, E> Updatable<E> for AndStream<G1, G2, E>
 where
     G1: Getter<bool, E>,
     G2: Getter<bool, E>,
-    E: Copy + Debug,
+    E: Clone + Debug,
 {
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
@@ -154,7 +154,7 @@ pub struct OrStream<G1, G2, E>
 where
     G1: Getter<bool, E>,
     G2: Getter<bool, E>,
-    E: Copy + Debug,
+    E: Clone + Debug,
 {
     input1: G1,
     input2: G2,
@@ -164,7 +164,7 @@ impl<G1, G2, E> OrStream<G1, G2, E>
 where
     G1: Getter<bool, E>,
     G2: Getter<bool, E>,
-    E: Copy + Debug,
+    E: Clone + Debug,
 {
     ///Constructor for [`OrStream`].
     pub const fn new(input1: G1, input2: G2) -> Self {
@@ -179,7 +179,7 @@ impl<G1, G2, E> Getter<bool, E> for OrStream<G1, G2, E>
 where
     G1: Getter<bool, E>,
     G2: Getter<bool, E>,
-    E: Copy + Debug,
+    E: Clone + Debug,
 {
     fn get(&self) -> Output<bool, E> {
         let gotten1 = self.input1.get()?;
@@ -230,18 +230,18 @@ impl<G1, G2, E> Updatable<E> for OrStream<G1, G2, E>
 where
     G1: Getter<bool, E>,
     G2: Getter<bool, E>,
-    E: Copy + Debug,
+    E: Clone + Debug,
 {
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
     }
 }
 ///Performs a not operation on a boolean getter.
-pub struct NotStream<G: Getter<bool, E>, E: Copy + Debug> {
+pub struct NotStream<G: Getter<bool, E>, E: Clone + Debug> {
     input: G,
     phantom_e: PhantomData<E>,
 }
-impl<G: Getter<bool, E>, E: Copy + Debug> NotStream<G, E> {
+impl<G: Getter<bool, E>, E: Clone + Debug> NotStream<G, E> {
     ///Constructor for [`NotStream`].
     pub const fn new(input: G) -> Self {
         Self {
@@ -250,7 +250,7 @@ impl<G: Getter<bool, E>, E: Copy + Debug> NotStream<G, E> {
         }
     }
 }
-impl<G: Getter<bool, E>, E: Copy + Debug> Getter<bool, E> for NotStream<G, E> {
+impl<G: Getter<bool, E>, E: Clone + Debug> Getter<bool, E> for NotStream<G, E> {
     fn get(&self) -> Output<bool, E> {
         match self.input.get() {
             Ok(Some(datum)) => Ok(Some(!datum)),
@@ -259,7 +259,7 @@ impl<G: Getter<bool, E>, E: Copy + Debug> Getter<bool, E> for NotStream<G, E> {
         }
     }
 }
-impl<G: Getter<bool, E>, E: Copy + Debug> Updatable<E> for NotStream<G, E> {
+impl<G: Getter<bool, E>, E: Clone + Debug> Updatable<E> for NotStream<G, E> {
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
     }

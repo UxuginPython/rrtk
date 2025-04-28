@@ -10,10 +10,10 @@ pub mod flow;
 pub mod logic;
 pub mod math;
 ///Returns the output of whichever input has the latest time.
-pub struct Latest<T, const C: usize, E: Copy + Debug> {
+pub struct Latest<T, const C: usize, E: Clone + Debug> {
     inputs: [Reference<dyn Getter<T, E>>; C],
 }
-impl<T, const C: usize, E: Copy + Debug> Latest<T, C, E> {
+impl<T, const C: usize, E: Clone + Debug> Latest<T, C, E> {
     ///Constructor for [`Latest`].
     pub const fn new(inputs: [Reference<dyn Getter<T, E>>; C]) -> Self {
         if C < 1 {
@@ -22,7 +22,7 @@ impl<T, const C: usize, E: Copy + Debug> Latest<T, C, E> {
         Self { inputs: inputs }
     }
 }
-impl<T, const C: usize, E: Copy + Debug> Getter<T, E> for Latest<T, C, E> {
+impl<T, const C: usize, E: Clone + Debug> Getter<T, E> for Latest<T, C, E> {
     fn get(&self) -> Output<T, E> {
         let mut output: Option<Datum<T>> = None;
         for i in &self.inputs {
@@ -44,7 +44,7 @@ impl<T, const C: usize, E: Copy + Debug> Getter<T, E> for Latest<T, C, E> {
         Ok(output)
     }
 }
-impl<T, const C: usize, E: Copy + Debug> Updatable<E> for Latest<T, C, E> {
+impl<T, const C: usize, E: Clone + Debug> Updatable<E> for Latest<T, C, E> {
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
     }
@@ -54,7 +54,7 @@ pub struct Expirer<T, G, TG, E>
 where
     G: Getter<T, E>,
     TG: TimeGetter<E>,
-    E: Copy + Debug,
+    E: Clone + Debug,
 {
     input: G,
     time_getter: TG,
@@ -66,7 +66,7 @@ impl<T, G, TG, E> Expirer<T, G, TG, E>
 where
     G: Getter<T, E>,
     TG: TimeGetter<E>,
-    E: Copy + Debug,
+    E: Clone + Debug,
 {
     ///Constructor for [`Expirer`].
     pub const fn new(input: G, time_getter: TG, max_time_delta: Time) -> Self {
@@ -83,7 +83,7 @@ impl<T, G, TG, E> Getter<T, E> for Expirer<T, G, TG, E>
 where
     G: Getter<T, E>,
     TG: TimeGetter<E>,
-    E: Copy + Debug,
+    E: Clone + Debug,
 {
     fn get(&self) -> Output<T, E> {
         let output = match self.input.get()? {
@@ -101,7 +101,7 @@ impl<T, G, TG, E> Updatable<E> for Expirer<T, G, TG, E>
 where
     G: Getter<T, E>,
     TG: TimeGetter<E>,
-    E: Copy + Debug,
+    E: Clone + Debug,
 {
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())

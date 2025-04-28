@@ -8,7 +8,7 @@ use alloc::collections::vec_deque::VecDeque;
 //and readability would suggest doing it this way, but 8 bytes could technically be saved here if
 //needed in the future. The difference is extremely minimal.
 ///A PID controller for use with the stream system.
-pub struct PIDControllerStream<G: Getter<f32, E>, E: Copy + Debug> {
+pub struct PIDControllerStream<G: Getter<f32, E>, E: Clone + Debug> {
     input: G,
     setpoint: f32,
     kvals: PIDKValues,
@@ -16,7 +16,7 @@ pub struct PIDControllerStream<G: Getter<f32, E>, E: Copy + Debug> {
     int_error: f32,
     output: Output<f32, E>,
 }
-impl<G: Getter<f32, E>, E: Copy + Debug> PIDControllerStream<G, E> {
+impl<G: Getter<f32, E>, E: Clone + Debug> PIDControllerStream<G, E> {
     ///Constructor for `PIDControllerStream`.
     pub const fn new(input: G, setpoint: f32, kvals: PIDKValues) -> Self {
         Self {
@@ -35,12 +35,12 @@ impl<G: Getter<f32, E>, E: Copy + Debug> PIDControllerStream<G, E> {
         self.output = Ok(None);
     }
 }
-impl<G: Getter<f32, E>, E: Copy + Debug> Getter<f32, E> for PIDControllerStream<G, E> {
+impl<G: Getter<f32, E>, E: Clone + Debug> Getter<f32, E> for PIDControllerStream<G, E> {
     fn get(&self) -> Output<f32, E> {
         self.output.clone()
     }
 }
-impl<G: Getter<f32, E>, E: Copy + Debug> Updatable<E> for PIDControllerStream<G, E> {
+impl<G: Getter<f32, E>, E: Clone + Debug> Updatable<E> for PIDControllerStream<G, E> {
     fn update(&mut self) -> NothingOrError<E> {
         let process = self.input.get();
         let process = match process {
@@ -97,13 +97,13 @@ mod command_pid {
     ///Automatically integrates the command variable of a PID controller based on the position
     ///derivative of a [`Command`]. Designed to make it easier to use a standard DC motor and an encoder
     ///as a de facto servo.
-    pub struct CommandPID<G: Getter<State, E>, E: Copy + Debug> {
+    pub struct CommandPID<G: Getter<State, E>, E: Clone + Debug> {
         input: G,
         command: Command,
         kvals: PositionDerivativeDependentPIDKValues,
         update_state: Result<Option<Update0>, E>,
     }
-    impl<G: Getter<State, E>, E: Copy + Debug> CommandPID<G, E> {
+    impl<G: Getter<State, E>, E: Clone + Debug> CommandPID<G, E> {
         ///Constructor for `CommandPID`.
         pub const fn new(
             input: G,
@@ -126,7 +126,7 @@ mod command_pid {
             self.update_state = Ok(None);
         }
     }
-    impl<G: Getter<State, E>, E: Copy + Debug> Settable<Command, E> for CommandPID<G, E> {
+    impl<G: Getter<State, E>, E: Clone + Debug> Settable<Command, E> for CommandPID<G, E> {
         fn set(&mut self, command: Command) -> NothingOrError<E> {
             if command != self.command {
                 self.reset();
@@ -135,7 +135,7 @@ mod command_pid {
             Ok(())
         }
     }
-    impl<G: Getter<State, E>, E: Copy + Debug> Getter<f32, E> for CommandPID<G, E> {
+    impl<G: Getter<State, E>, E: Clone + Debug> Getter<f32, E> for CommandPID<G, E> {
         fn get(&self) -> Output<f32, E> {
             match &self.update_state {
                 Err(error) => Err(*error),
@@ -163,7 +163,7 @@ mod command_pid {
             }
         }
     }
-    impl<G: Getter<State, E>, E: Copy + Debug> Updatable<E> for CommandPID<G, E> {
+    impl<G: Getter<State, E>, E: Clone + Debug> Updatable<E> for CommandPID<G, E> {
         fn update(&mut self) -> NothingOrError<E> {
             let raw_get = self.input.get();
             let datum_state = match raw_get {
@@ -270,7 +270,7 @@ where
     //Actually, preferably, "expand" it like Sum2 etc., but that's a lot harder here.
     T: Clone + Add<Output = T>,
     G: Getter<T, E>,
-    E: Copy + Debug,
+    E: Clone + Debug,
 {
     input: G,
     //As data may not come in at regular intervals as is assumed by a standard EWMA, this value
@@ -284,7 +284,7 @@ impl<T, G, E> EWMAStream<T, G, E>
 where
     T: Clone + Add<Output = T>,
     G: Getter<T, E>,
-    E: Copy + Debug,
+    E: Clone + Debug,
 {
     ///Constructor for [`EWMAStream`].
     pub const fn new(input: G, smoothing_constant: f32) -> Self {
@@ -302,7 +302,7 @@ where
     EWMAStream<T, G, E>: Updatable<E>,
     T: Clone + Add<Output = T>,
     G: Getter<T, E>,
-    E: Copy + Debug,
+    E: Clone + Debug,
 {
     fn get(&self) -> Output<T, E> {
         self.value.clone()
@@ -313,7 +313,7 @@ impl<T, G, E> Updatable<E> for EWMAStream<T, G, E>
 where
     T: Clone + Add<Output = T> + Mul<f32, Output = T>,
     G: Getter<T, E>,
-    E: Copy + Debug,
+    E: Clone + Debug,
 {
     fn update(&mut self) -> NothingOrError<E> {
         let output = self.input.get();
@@ -355,7 +355,7 @@ where
     }
 }
 #[cfg(feature = "internal_enhanced_float")]
-impl<G: Getter<Quantity, E>, E: Copy + Debug> Updatable<E> for EWMAStream<Quantity, G, E> {
+impl<G: Getter<Quantity, E>, E: Clone + Debug> Updatable<E> for EWMAStream<Quantity, G, E> {
     fn update(&mut self) -> NothingOrError<E> {
         let output = self.input.get();
         let output = match output {
@@ -398,14 +398,14 @@ impl<G: Getter<Quantity, E>, E: Copy + Debug> Updatable<E> for EWMAStream<Quanti
 }
 ///A moving average stream for use with the stream system.
 #[cfg(feature = "alloc")]
-pub struct MovingAverageStream<T, G: Getter<T, E>, E: Copy + Debug> {
+pub struct MovingAverageStream<T, G: Getter<T, E>, E: Clone + Debug> {
     input: G,
     window: Time,
     value: Output<T, E>,
     input_values: VecDeque<Datum<T>>,
 }
 #[cfg(feature = "alloc")]
-impl<T, G: Getter<T, E>, E: Copy + Debug> MovingAverageStream<T, G, E> {
+impl<T, G: Getter<T, E>, E: Clone + Debug> MovingAverageStream<T, G, E> {
     ///Constructor for [`MovingAverageStream`].
     pub const fn new(input: G, window: Time) -> Self {
         Self {
@@ -417,7 +417,7 @@ impl<T, G: Getter<T, E>, E: Copy + Debug> MovingAverageStream<T, G, E> {
     }
 }
 #[cfg(feature = "alloc")]
-impl<T: Clone, G: Getter<T, E>, E: Copy + Debug> Getter<T, E> for MovingAverageStream<T, G, E>
+impl<T: Clone, G: Getter<T, E>, E: Clone + Debug> Getter<T, E> for MovingAverageStream<T, G, E>
 where
     MovingAverageStream<T, G, E>: Updatable<E>,
 {
@@ -431,7 +431,7 @@ where
     T: Clone + Mul<Time, Output = N1>,
     N1: Default + AddAssign + Div<Time, Output = T>,
     G: Getter<T, E>,
-    E: Copy + Debug,
+    E: Clone + Debug,
 {
     fn update(&mut self) -> NothingOrError<E> {
         let output = self.input.get();
@@ -484,7 +484,9 @@ where
     }
 }
 #[cfg(feature = "alloc")]
-impl<G: Getter<Quantity, E>, E: Copy + Debug> Updatable<E> for MovingAverageStream<Quantity, G, E> {
+impl<G: Getter<Quantity, E>, E: Clone + Debug> Updatable<E>
+    for MovingAverageStream<Quantity, G, E>
+{
     fn update(&mut self) -> NothingOrError<E> {
         let output = self.input.get();
         let output = match output {

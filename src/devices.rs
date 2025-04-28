@@ -9,11 +9,11 @@ pub mod wrappers;
 ///A device such that positive for one terminal is negative for the other.
 ///As this device has only one degree of freedom, it propagates [`Command`]s given to its terminals
 ///as well as [`State`]s.
-pub struct Invert<'a, E: Copy + Debug> {
+pub struct Invert<'a, E: Clone + Debug> {
     term1: RefCell<Terminal<'a, E>>,
     term2: RefCell<Terminal<'a, E>>,
 }
-impl<'a, E: Copy + Debug> Invert<'a, E> {
+impl<'a, E: Clone + Debug> Invert<'a, E> {
     ///Constructor for [`Invert`].
     pub const fn new() -> Self {
         Self {
@@ -34,7 +34,7 @@ impl<'a, E: Copy + Debug> Invert<'a, E> {
         unsafe { &*(&self.term2 as *const RefCell<Terminal<'a, E>>) }
     }
 }
-impl<E: Copy + Debug> Updatable<E> for Invert<'_, E> {
+impl<E: Clone + Debug> Updatable<E> for Invert<'_, E> {
     fn update(&mut self) -> NothingOrError<E> {
         self.update_terminals()?;
         let get1: Option<Datum<State>> = self
@@ -103,7 +103,7 @@ impl<E: Copy + Debug> Updatable<E> for Invert<'_, E> {
         Ok(())
     }
 }
-impl<E: Copy + Debug> Device<E> for Invert<'_, E> {
+impl<E: Clone + Debug> Device<E> for Invert<'_, E> {
     fn update_terminals(&mut self) -> NothingOrError<E> {
         self.term1.borrow_mut().update()?;
         self.term2.borrow_mut().update()?;
@@ -113,12 +113,12 @@ impl<E: Copy + Debug> Device<E> for Invert<'_, E> {
 ///A gear train, a mechanism consisting of a two or more gears meshed together.
 ///As this device has only one degree of freedom, it propagates [`Command`]s given to its terminals
 ///as well as [`State`]s.
-pub struct GearTrain<'a, E: Copy + Debug> {
+pub struct GearTrain<'a, E: Clone + Debug> {
     term1: RefCell<Terminal<'a, E>>,
     term2: RefCell<Terminal<'a, E>>,
     ratio: f32,
 }
-impl<'a, E: Copy + Debug> GearTrain<'a, E> {
+impl<'a, E: Clone + Debug> GearTrain<'a, E> {
     ///Construct a [`GearTrain`] with the ratio as an `f32`.
     pub const fn with_ratio_raw(ratio: f32) -> Self {
         Self {
@@ -151,7 +151,7 @@ impl<'a, E: Copy + Debug> GearTrain<'a, E> {
         unsafe { &*(&self.term2 as *const RefCell<Terminal<'a, E>>) }
     }
 }
-impl<E: Copy + Debug> Updatable<E> for GearTrain<'_, E> {
+impl<E: Clone + Debug> Updatable<E> for GearTrain<'_, E> {
     fn update(&mut self) -> NothingOrError<E> {
         self.update_terminals()?;
         let get1: Option<Datum<State>> = self
@@ -232,7 +232,7 @@ impl<E: Copy + Debug> Updatable<E> for GearTrain<'_, E> {
         Ok(())
     }
 }
-impl<E: Copy + Debug> Device<E> for GearTrain<'_, E> {
+impl<E: Clone + Debug> Device<E> for GearTrain<'_, E> {
     fn update_terminals(&mut self) -> NothingOrError<E> {
         self.term1.borrow_mut().update()?;
         self.term2.borrow_mut().update()?;
@@ -249,10 +249,10 @@ impl<E: Copy + Debug> Device<E> for GearTrain<'_, E> {
 ///no legitimate use for this.)
 ///As this device has only one degree of freedom, it propagates [`Command`]s given to its terminals
 ///as well as [`State`]s.
-pub struct Axle<'a, const N: usize, E: Copy + Debug> {
+pub struct Axle<'a, const N: usize, E: Clone + Debug> {
     inputs: [RefCell<Terminal<'a, E>>; N],
 }
-impl<'a, const N: usize, E: Copy + Debug> Axle<'a, N, E> {
+impl<'a, const N: usize, E: Clone + Debug> Axle<'a, N, E> {
     ///Constructor for [`Axle`].
     pub fn new() -> Self {
         let mut inputs: [core::mem::MaybeUninit<RefCell<Terminal<'a, E>>>; N] =
@@ -274,7 +274,7 @@ impl<'a, const N: usize, E: Copy + Debug> Axle<'a, N, E> {
         unsafe { &*(&self.inputs[terminal] as *const RefCell<Terminal<'a, E>>) }
     }
 }
-impl<const N: usize, E: Copy + Debug> Updatable<E> for Axle<'_, N, E> {
+impl<const N: usize, E: Clone + Debug> Updatable<E> for Axle<'_, N, E> {
     fn update(&mut self) -> NothingOrError<E> {
         self.update_terminals()?;
         let mut count = 0u16;
@@ -306,7 +306,7 @@ impl<const N: usize, E: Copy + Debug> Updatable<E> for Axle<'_, N, E> {
         Ok(())
     }
 }
-impl<const N: usize, E: Copy + Debug> Device<E> for Axle<'_, N, E> {
+impl<const N: usize, E: Clone + Debug> Device<E> for Axle<'_, N, E> {
     fn update_terminals(&mut self) -> NothingOrError<E> {
         for i in &self.inputs {
             i.borrow_mut().update()?;
@@ -333,13 +333,13 @@ pub enum DifferentialDistrust {
 ///A mechanical differential mechanism.
 ///As this device has two degrees of freedom, it is not able to propagate [`Command`]s given to its
 ///terminals as it does with [`State`]s.
-pub struct Differential<'a, E: Copy + Debug> {
+pub struct Differential<'a, E: Clone + Debug> {
     side1: RefCell<Terminal<'a, E>>,
     side2: RefCell<Terminal<'a, E>>,
     sum: RefCell<Terminal<'a, E>>,
     distrust: DifferentialDistrust,
 }
-impl<'a, E: Copy + Debug> Differential<'a, E> {
+impl<'a, E: Clone + Debug> Differential<'a, E> {
     ///Constructor for [`Differential`]. Trusts all branches equally.
     pub const fn new() -> Self {
         Self {
@@ -371,7 +371,7 @@ impl<'a, E: Copy + Debug> Differential<'a, E> {
         unsafe { &*(&self.sum as *const RefCell<Terminal<'a, E>>) }
     }
 }
-impl<E: Copy + Debug> Updatable<E> for Differential<'_, E> {
+impl<E: Clone + Debug> Updatable<E> for Differential<'_, E> {
     fn update(&mut self) -> NothingOrError<E> {
         self.update_terminals()?;
         match self.distrust {
@@ -440,7 +440,7 @@ impl<E: Copy + Debug> Updatable<E> for Differential<'_, E> {
         Ok(())
     }
 }
-impl<E: Copy + Debug> Device<E> for Differential<'_, E> {
+impl<E: Clone + Debug> Device<E> for Differential<'_, E> {
     fn update_terminals(&mut self) -> NothingOrError<E> {
         self.side1.borrow_mut().update()?;
         self.side2.borrow_mut().update()?;
