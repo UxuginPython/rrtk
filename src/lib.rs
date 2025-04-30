@@ -689,6 +689,8 @@ pub fn latest<T>(dat1: Datum<T>, dat2: Datum<T>) -> Datum<T> {
     if dat1.time >= dat2.time { dat1 } else { dat2 }
 }
 //TODO: Decide if this should be pub trait.
+//XXX: Does this even work outside of RRTK if it's not pub trait? Don't you need the trait in
+//scope? Or does that not apply to bounds?
 trait Half {
     fn half(self) -> Self;
 }
@@ -721,5 +723,33 @@ impl Half for f32 {
 impl Half for f64 {
     fn half(self) -> Self {
         self / 2.0
+    }
+}
+//Could these have a nice naming scheme? UnwrapDeref, UnwrapPointer, UnwrapRefCell, UnwrapMutex, UnwrapRwLock or something?
+//Or could it even be just one struct called Inner or something with a lot of impls?
+//Would this unwrapper idea even work at all with nested stuff like Rc<RefCell>?
+//Why not just implement Getter etc. for RefCell etc. themselves? A raw pointer's the only one
+//where I really don't want to do that.
+pub struct PointerDereferencer<T: ?Sized> {
+    pointer: *mut T,
+}
+impl<T: ?Sized> PointerDereferencer<T> {
+    pub const unsafe fn new(pointer: *mut T) -> Self {
+        Self { pointer: pointer }
+    }
+}
+impl<U: ?Sized + Updatable<E>, E: Copy + Debug> Updatable<E> for PointerDereferencer<U> {
+    fn update(&mut self) -> NothingOrError<E> {
+        unsafe { (*self.pointer).update() }
+    }
+}
+impl<T, G: ?Sized + Getter<T, E>, E: Copy + Debug> Getter<T, E> for PointerDereferencer<G> {
+    fn get(&self) -> Output<T, E> {
+        unsafe { (*self.pointer).get() }
+    }
+}
+impl<T, S: ?Sized + Settable<T, E>, E: Copy + Debug> Settable<T, E> for PointerDereferencer<S> {
+    fn set(&mut self, value: T) -> NothingOrError<E> {
+        unsafe { (*self.pointer).set(value) }
     }
 }
