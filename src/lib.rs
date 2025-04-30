@@ -17,7 +17,7 @@
 //!
 //!RRTK prefers **`std`** over **`libm`** and `libm` over **`micromath`** when multiple are
 //!available.
-#![warn(missing_docs)]
+//#![warn(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
 #[cfg(all(
     feature = "internal_enhanced_float",
@@ -771,3 +771,53 @@ impl<S: Settable<T, E>, T, E: Copy + Debug> Settable<T, E> for Rc<RefCell<S>> {
         self.borrow_mut().set(value)
     }
 }
+#[cfg(feature = "std")]
+impl<U: Updatable<E>, E: Copy + Debug> Updatable<E> for Arc<RwLock<U>> {
+    fn update(&mut self) -> NothingOrError<E> {
+        self.write()
+            .expect("RRTK failed to acquire RwLock write lock for Updatable")
+            .update()
+    }
+}
+#[cfg(feature = "std")]
+impl<G: Getter<T, E>, T, E: Copy + Debug> Getter<T, E> for Arc<RwLock<G>> {
+    fn get(&self) -> Output<T, E> {
+        self.read()
+            .expect("RRTK failed to acquire RwLock read lock for Getter")
+            .get()
+    }
+}
+#[cfg(feature = "std")]
+impl<S: Settable<T, E>, T, E: Copy + Debug> Settable<T, E> for Arc<RwLock<S>> {
+    fn set(&mut self, value: T) -> NothingOrError<E> {
+        self.write()
+            .expect("RRTK failed to acquire RwLock write lock for Settable")
+            .set(value)
+    }
+}
+#[cfg(feature = "std")]
+impl<U: Updatable<E>, E: Copy + Debug> Updatable<E> for Arc<Mutex<U>> {
+    fn update(&mut self) -> NothingOrError<E> {
+        self.lock()
+            .expect("RRTK failed to acquire Mutex lock for Updatable")
+            .update()
+    }
+}
+#[cfg(feature = "std")]
+impl<G: Getter<T, E>, T, E: Copy + Debug> Getter<T, E> for Arc<Mutex<G>> {
+    fn get(&self) -> Output<T, E> {
+        self.lock()
+            .expect("RRTK failed to acquire Mutex lock for Getter")
+            .get()
+    }
+}
+#[cfg(feature = "std")]
+impl<S: Settable<T, E>, T, E: Copy + Debug> Settable<T, E> for Arc<Mutex<S>> {
+    fn set(&mut self, value: T) -> NothingOrError<E> {
+        self.lock()
+            .expect("RRTK failed to acquire Mutex lock for Settable")
+            .set(value)
+    }
+}
+//Not quite sure what to do about *const RwLock and *const Mutex though. They'll probably each need
+//something like PointerDereferencer.
