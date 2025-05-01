@@ -754,6 +754,24 @@ impl<T, S: ?Sized + Settable<T, E>, E: Copy + Debug> Settable<T, E> for PointerD
     }
 }
 #[cfg(feature = "alloc")]
+impl<U: Updatable<E>, E: Copy + Debug> Updatable<E> for Box<U> {
+    fn update(&mut self) -> NothingOrError<E> {
+        (**self).update()
+    }
+}
+#[cfg(feature = "alloc")]
+impl<G: Getter<T, E>, T, E: Copy + Debug> Getter<T, E> for Box<G> {
+    fn get(&self) -> Output<T, E> {
+        (**self).get()
+    }
+}
+#[cfg(feature = "alloc")]
+impl<S: Settable<T, E>, T, E: Copy + Debug> Settable<T, E> for Box<S> {
+    fn set(&mut self, value: T) -> NothingOrError<E> {
+        (**self).set(value)
+    }
+}
+#[cfg(feature = "alloc")]
 impl<U: Updatable<E>, E: Copy + Debug> Updatable<E> for Rc<RefCell<U>> {
     fn update(&mut self) -> NothingOrError<E> {
         self.borrow_mut().update()
