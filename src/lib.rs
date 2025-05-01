@@ -732,25 +732,27 @@ impl Half for f64 {
 //Would this unwrapper idea even work at all with nested stuff like Rc<RefCell>?
 //Why not just implement Getter etc. for RefCell etc. themselves? A raw pointer's the only one
 //where I really don't want to do that.
-pub struct PointerDereferencer<T: ?Sized> {
-    pointer: *mut T,
+pub struct PointerDereferencer<P> {
+    pointer: P,
 }
-impl<T: ?Sized> PointerDereferencer<T> {
-    pub const unsafe fn new(pointer: *mut T) -> Self {
+impl<P> PointerDereferencer<P> {
+    pub const unsafe fn new(pointer: P) -> Self {
         Self { pointer: pointer }
     }
 }
-impl<U: ?Sized + Updatable<E>, E: Copy + Debug> Updatable<E> for PointerDereferencer<U> {
+impl<U: ?Sized + Updatable<E>, E: Copy + Debug> Updatable<E> for PointerDereferencer<*mut U> {
     fn update(&mut self) -> NothingOrError<E> {
         unsafe { (*self.pointer).update() }
     }
 }
-impl<T, G: ?Sized + Getter<T, E>, E: Copy + Debug> Getter<T, E> for PointerDereferencer<G> {
+impl<T, G: ?Sized + Getter<T, E>, E: Copy + Debug> Getter<T, E> for PointerDereferencer<*mut G> {
     fn get(&self) -> Output<T, E> {
         unsafe { (*self.pointer).get() }
     }
 }
-impl<T, S: ?Sized + Settable<T, E>, E: Copy + Debug> Settable<T, E> for PointerDereferencer<S> {
+impl<T, S: ?Sized + Settable<T, E>, E: Copy + Debug> Settable<T, E>
+    for PointerDereferencer<*mut S>
+{
     fn set(&mut self, value: T) -> NothingOrError<E> {
         unsafe { (*self.pointer).set(value) }
     }
