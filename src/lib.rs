@@ -740,17 +740,17 @@ impl<P> PointerDereferencer<P> {
         Self { pointer: pointer }
     }
 }
-impl<U: ?Sized + Updatable<E>, E: Copy + Debug> Updatable<E> for PointerDereferencer<*mut U> {
+impl<U: ?Sized + Updatable<E>, E: Clone + Debug> Updatable<E> for PointerDereferencer<*mut U> {
     fn update(&mut self) -> NothingOrError<E> {
         unsafe { (*self.pointer).update() }
     }
 }
-impl<T, G: ?Sized + Getter<T, E>, E: Copy + Debug> Getter<T, E> for PointerDereferencer<*mut G> {
+impl<T, G: ?Sized + Getter<T, E>, E: Clone + Debug> Getter<T, E> for PointerDereferencer<*mut G> {
     fn get(&self) -> Output<T, E> {
         unsafe { (*self.pointer).get() }
     }
 }
-impl<T, S: ?Sized + Settable<T, E>, E: Copy + Debug> Settable<T, E>
+impl<T, S: ?Sized + Settable<T, E>, E: Clone + Debug> Settable<T, E>
     for PointerDereferencer<*mut S>
 {
     fn set(&mut self, value: T) -> NothingOrError<E> {
@@ -758,7 +758,7 @@ impl<T, S: ?Sized + Settable<T, E>, E: Copy + Debug> Settable<T, E>
     }
 }
 #[cfg(feature = "std")]
-impl<U: ?Sized + Updatable<E>, E: Copy + Debug> Updatable<E>
+impl<U: ?Sized + Updatable<E>, E: Clone + Debug> Updatable<E>
     for PointerDereferencer<*const RwLock<U>>
 {
     fn update(&mut self) -> NothingOrError<E> {
@@ -771,7 +771,7 @@ impl<U: ?Sized + Updatable<E>, E: Copy + Debug> Updatable<E>
     }
 }
 #[cfg(feature = "std")]
-impl<G: ?Sized + Getter<T, E>, T, E: Copy + Debug> Getter<T, E>
+impl<G: ?Sized + Getter<T, E>, T, E: Clone + Debug> Getter<T, E>
     for PointerDereferencer<*const RwLock<G>>
 {
     fn get(&self) -> Output<T, E> {
@@ -784,7 +784,7 @@ impl<G: ?Sized + Getter<T, E>, T, E: Copy + Debug> Getter<T, E>
     }
 }
 #[cfg(feature = "std")]
-impl<S: ?Sized + Settable<T, E>, T, E: Copy + Debug> Settable<T, E>
+impl<S: ?Sized + Settable<T, E>, T, E: Clone + Debug> Settable<T, E>
     for PointerDereferencer<*const RwLock<S>>
 {
     fn set(&mut self, value: T) -> NothingOrError<E> {
@@ -797,7 +797,7 @@ impl<S: ?Sized + Settable<T, E>, T, E: Copy + Debug> Settable<T, E>
     }
 }
 #[cfg(feature = "std")]
-impl<U: ?Sized + Updatable<E>, E: Copy + Debug> Updatable<E>
+impl<U: ?Sized + Updatable<E>, E: Clone + Debug> Updatable<E>
     for PointerDereferencer<*const Mutex<U>>
 {
     fn update(&mut self) -> NothingOrError<E> {
@@ -810,7 +810,7 @@ impl<U: ?Sized + Updatable<E>, E: Copy + Debug> Updatable<E>
     }
 }
 #[cfg(feature = "std")]
-impl<G: ?Sized + Getter<T, E>, T, E: Copy + Debug> Getter<T, E>
+impl<G: ?Sized + Getter<T, E>, T, E: Clone + Debug> Getter<T, E>
     for PointerDereferencer<*const Mutex<G>>
 {
     fn get(&self) -> Output<T, E> {
@@ -823,7 +823,7 @@ impl<G: ?Sized + Getter<T, E>, T, E: Copy + Debug> Getter<T, E>
     }
 }
 #[cfg(feature = "std")]
-impl<S: ?Sized + Settable<T, E>, T, E: Copy + Debug> Settable<T, E>
+impl<S: ?Sized + Settable<T, E>, T, E: Clone + Debug> Settable<T, E>
     for PointerDereferencer<*const Mutex<S>>
 {
     fn set(&mut self, value: T) -> NothingOrError<E> {
@@ -836,43 +836,43 @@ impl<S: ?Sized + Settable<T, E>, T, E: Copy + Debug> Settable<T, E>
     }
 }
 #[cfg(feature = "alloc")]
-impl<U: ?Sized + Updatable<E>, E: Copy + Debug> Updatable<E> for Box<U> {
+impl<U: ?Sized + Updatable<E>, E: Clone + Debug> Updatable<E> for Box<U> {
     fn update(&mut self) -> NothingOrError<E> {
         (**self).update()
     }
 }
 #[cfg(feature = "alloc")]
-impl<G: ?Sized + Getter<T, E>, T, E: Copy + Debug> Getter<T, E> for Box<G> {
+impl<G: ?Sized + Getter<T, E>, T, E: Clone + Debug> Getter<T, E> for Box<G> {
     fn get(&self) -> Output<T, E> {
         (**self).get()
     }
 }
 #[cfg(feature = "alloc")]
-impl<S: ?Sized + Settable<T, E>, T, E: Copy + Debug> Settable<T, E> for Box<S> {
+impl<S: ?Sized + Settable<T, E>, T, E: Clone + Debug> Settable<T, E> for Box<S> {
     fn set(&mut self, value: T) -> NothingOrError<E> {
         (**self).set(value)
     }
 }
 #[cfg(feature = "alloc")]
-impl<U: ?Sized + Updatable<E>, E: Copy + Debug> Updatable<E> for Rc<RefCell<U>> {
+impl<U: ?Sized + Updatable<E>, E: Clone + Debug> Updatable<E> for Rc<RefCell<U>> {
     fn update(&mut self) -> NothingOrError<E> {
         self.borrow_mut().update()
     }
 }
 #[cfg(feature = "alloc")]
-impl<G: ?Sized + Getter<T, E>, T, E: Copy + Debug> Getter<T, E> for Rc<RefCell<G>> {
+impl<G: ?Sized + Getter<T, E>, T, E: Clone + Debug> Getter<T, E> for Rc<RefCell<G>> {
     fn get(&self) -> Output<T, E> {
         self.borrow().get()
     }
 }
 #[cfg(feature = "alloc")]
-impl<S: ?Sized + Settable<T, E>, T, E: Copy + Debug> Settable<T, E> for Rc<RefCell<S>> {
+impl<S: ?Sized + Settable<T, E>, T, E: Clone + Debug> Settable<T, E> for Rc<RefCell<S>> {
     fn set(&mut self, value: T) -> NothingOrError<E> {
         self.borrow_mut().set(value)
     }
 }
 #[cfg(feature = "std")]
-impl<U: ?Sized + Updatable<E>, E: Copy + Debug> Updatable<E> for Arc<RwLock<U>> {
+impl<U: ?Sized + Updatable<E>, E: Clone + Debug> Updatable<E> for Arc<RwLock<U>> {
     fn update(&mut self) -> NothingOrError<E> {
         self.write()
             .expect("RRTK failed to acquire RwLock write lock for Updatable")
@@ -880,7 +880,7 @@ impl<U: ?Sized + Updatable<E>, E: Copy + Debug> Updatable<E> for Arc<RwLock<U>> 
     }
 }
 #[cfg(feature = "std")]
-impl<G: ?Sized + Getter<T, E>, T, E: Copy + Debug> Getter<T, E> for Arc<RwLock<G>> {
+impl<G: ?Sized + Getter<T, E>, T, E: Clone + Debug> Getter<T, E> for Arc<RwLock<G>> {
     fn get(&self) -> Output<T, E> {
         self.read()
             .expect("RRTK failed to acquire RwLock read lock for Getter")
@@ -888,7 +888,7 @@ impl<G: ?Sized + Getter<T, E>, T, E: Copy + Debug> Getter<T, E> for Arc<RwLock<G
     }
 }
 #[cfg(feature = "std")]
-impl<S: ?Sized + Settable<T, E>, T, E: Copy + Debug> Settable<T, E> for Arc<RwLock<S>> {
+impl<S: ?Sized + Settable<T, E>, T, E: Clone + Debug> Settable<T, E> for Arc<RwLock<S>> {
     fn set(&mut self, value: T) -> NothingOrError<E> {
         self.write()
             .expect("RRTK failed to acquire RwLock write lock for Settable")
@@ -896,7 +896,7 @@ impl<S: ?Sized + Settable<T, E>, T, E: Copy + Debug> Settable<T, E> for Arc<RwLo
     }
 }
 #[cfg(feature = "std")]
-impl<U: ?Sized + Updatable<E>, E: Copy + Debug> Updatable<E> for Arc<Mutex<U>> {
+impl<U: ?Sized + Updatable<E>, E: Clone + Debug> Updatable<E> for Arc<Mutex<U>> {
     fn update(&mut self) -> NothingOrError<E> {
         self.lock()
             .expect("RRTK failed to acquire Mutex lock for Updatable")
@@ -904,7 +904,7 @@ impl<U: ?Sized + Updatable<E>, E: Copy + Debug> Updatable<E> for Arc<Mutex<U>> {
     }
 }
 #[cfg(feature = "std")]
-impl<G: ?Sized + Getter<T, E>, T, E: Copy + Debug> Getter<T, E> for Arc<Mutex<G>> {
+impl<G: ?Sized + Getter<T, E>, T, E: Clone + Debug> Getter<T, E> for Arc<Mutex<G>> {
     fn get(&self) -> Output<T, E> {
         self.lock()
             .expect("RRTK failed to acquire Mutex lock for Getter")
@@ -912,7 +912,7 @@ impl<G: ?Sized + Getter<T, E>, T, E: Copy + Debug> Getter<T, E> for Arc<Mutex<G>
     }
 }
 #[cfg(feature = "std")]
-impl<S: ?Sized + Settable<T, E>, T, E: Copy + Debug> Settable<T, E> for Arc<Mutex<S>> {
+impl<S: ?Sized + Settable<T, E>, T, E: Clone + Debug> Settable<T, E> for Arc<Mutex<S>> {
     fn set(&mut self, value: T) -> NothingOrError<E> {
         self.lock()
             .expect("RRTK failed to acquire Mutex lock for Settable")
