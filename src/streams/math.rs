@@ -22,7 +22,7 @@ impl<T: AddAssign + Copy, const N: usize, E> SumStream<T, N, E> {
         Self { addends: addends }
     }
 }
-impl<T: AddAssign + Copy, const N: usize, E: Copy + Debug> Getter<T, E> for SumStream<T, N, E> {
+impl<T: AddAssign + Copy, const N: usize, E: Clone + Debug> Getter<T, E> for SumStream<T, N, E> {
     fn get(&self) -> Output<T, E> {
         //Err(...) -> return Err immediately
         //Ok(None) -> skip
@@ -52,7 +52,7 @@ impl<T: AddAssign + Copy, const N: usize, E: Copy + Debug> Getter<T, E> for SumS
         }
     }
 }
-impl<T: AddAssign + Copy, const N: usize, E: Copy + Debug> Updatable<E> for SumStream<T, N, E> {
+impl<T: AddAssign + Copy, const N: usize, E: Clone + Debug> Updatable<E> for SumStream<T, N, E> {
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
     }
@@ -67,7 +67,7 @@ where
     T1: Add<T2>,
     G1: Getter<T1, E>,
     G2: Getter<T2, E>,
-    E: Copy + Debug,
+    E: Clone + Debug,
 {
     addend1: G1,
     addend2: G2,
@@ -80,7 +80,7 @@ where
     T1: Add<T2>,
     G1: Getter<T1, E>,
     G2: Getter<T2, E>,
-    E: Copy + Debug,
+    E: Clone + Debug,
 {
     ///Constructor for [`Sum2`].
     pub const fn new(addend1: G1, addend2: G2) -> Self {
@@ -98,7 +98,7 @@ where
     T1: Add<T2, Output = TO>,
     G1: Getter<T1, E>,
     G2: Getter<T2, E>,
-    E: Copy + Debug,
+    E: Clone + Debug,
 {
     fn get(&self) -> Output<TO, E> {
         let x = self.addend1.get()?;
@@ -124,7 +124,7 @@ where
     T1: Add<T2>,
     G1: Getter<T1, E>,
     G2: Getter<T2, E>,
-    E: Copy + Debug,
+    E: Clone + Debug,
 {
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
@@ -137,7 +137,7 @@ where
     TM: Sub<TS>,
     GM: Getter<TM, E>,
     GS: Getter<TS, E>,
-    E: Copy + Debug,
+    E: Clone + Debug,
 {
     minuend: GM,
     subtrahend: GS,
@@ -150,7 +150,7 @@ where
     TM: Sub<TS>,
     GM: Getter<TM, E>,
     GS: Getter<TS, E>,
-    E: Copy + Debug,
+    E: Clone + Debug,
 {
     ///Constructor for [`DifferenceStream`].
     pub const fn new(minuend: GM, subtrahend: GS) -> Self {
@@ -168,7 +168,7 @@ where
     TM: Sub<TS, Output = TO>,
     GM: Getter<TM, E>,
     GS: Getter<TS, E>,
-    E: Copy + Debug,
+    E: Clone + Debug,
 {
     fn get(&self) -> Output<TO, E> {
         let minuend_output = self.minuend.get()?;
@@ -201,7 +201,7 @@ where
     TM: Sub<TS>,
     GM: Getter<TM, E>,
     GS: Getter<TS, E>,
-    E: Copy + Debug,
+    E: Clone + Debug,
 {
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
@@ -224,7 +224,9 @@ impl<T: MulAssign + Copy, const N: usize, E> ProductStream<T, N, E> {
         Self { factors: factors }
     }
 }
-impl<T: MulAssign + Copy, const N: usize, E: Copy + Debug> Getter<T, E> for ProductStream<T, N, E> {
+impl<T: MulAssign + Copy, const N: usize, E: Clone + Debug> Getter<T, E>
+    for ProductStream<T, N, E>
+{
     fn get(&self) -> Output<T, E> {
         let mut outputs = [MaybeUninit::uninit(); N];
         let mut outputs_filled = 0;
@@ -249,7 +251,9 @@ impl<T: MulAssign + Copy, const N: usize, E: Copy + Debug> Getter<T, E> for Prod
         }
     }
 }
-impl<T: MulAssign + Copy, const N: usize, E: Copy + Debug> Updatable<E> for ProductStream<T, N, E> {
+impl<T: MulAssign + Copy, const N: usize, E: Clone + Debug> Updatable<E>
+    for ProductStream<T, N, E>
+{
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
     }
@@ -263,7 +267,7 @@ where
     T1: Mul<T2>,
     G1: Getter<T1, E>,
     G2: Getter<T2, E>,
-    E: Copy + Debug,
+    E: Clone + Debug,
 {
     addend1: G1,
     addend2: G2,
@@ -276,7 +280,7 @@ where
     T1: Mul<T2>,
     G1: Getter<T1, E>,
     G2: Getter<T2, E>,
-    E: Copy + Debug,
+    E: Clone + Debug,
 {
     ///Constructor for [`Product2`].
     pub const fn new(addend1: G1, addend2: G2) -> Self {
@@ -294,7 +298,7 @@ where
     T1: Mul<T2, Output = TO>,
     G1: Getter<T1, E>,
     G2: Getter<T2, E>,
-    E: Copy + Debug,
+    E: Clone + Debug,
 {
     fn get(&self) -> Output<TO, E> {
         let x = self.addend1.get()?;
@@ -318,7 +322,7 @@ where
     T1: Mul<T2>,
     G1: Getter<T1, E>,
     G2: Getter<T2, E>,
-    E: Copy + Debug,
+    E: Clone + Debug,
 {
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
@@ -331,7 +335,7 @@ where
     TD: Div<TS>,
     GD: Getter<TD, E>,
     GS: Getter<TS, E>,
-    E: Copy + Debug,
+    E: Clone + Debug,
 {
     dividend: GD,
     divisor: GS,
@@ -344,7 +348,7 @@ where
     TD: Div<TS>,
     GD: Getter<TD, E>,
     GS: Getter<TS, E>,
-    E: Copy + Debug,
+    E: Clone + Debug,
 {
     ///Constructor for [`QuotientStream`].
     pub const fn new(dividend: GD, divisor: GS) -> Self {
@@ -362,7 +366,7 @@ where
     TD: Div<TS, Output = TO>,
     GD: Getter<TD, E>,
     GS: Getter<TS, E>,
-    E: Copy + Debug,
+    E: Clone + Debug,
 {
     fn get(&self) -> Output<TO, E> {
         let dividend_output = self.dividend.get()?;
@@ -395,7 +399,7 @@ where
     TD: Div<TS>,
     GD: Getter<TD, E>,
     GS: Getter<TS, E>,
-    E: Copy + Debug,
+    E: Clone + Debug,
 {
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
@@ -408,7 +412,7 @@ pub struct ExponentStream<GB, GE, E>
 where
     GB: Getter<f32, E>,
     GE: Getter<f32, E>,
-    E: Copy + Debug,
+    E: Clone + Debug,
 {
     base: GB,
     exponent: GE,
@@ -419,7 +423,7 @@ impl<GB, GE, E> ExponentStream<GB, GE, E>
 where
     GB: Getter<f32, E>,
     GE: Getter<f32, E>,
-    E: Copy + Debug,
+    E: Clone + Debug,
 {
     ///Constructor for [`ExponentStream`].
     pub const fn new(base: GB, exponent: GE) -> Self {
@@ -435,7 +439,7 @@ impl<GB, GE, E> Getter<f32, E> for ExponentStream<GB, GE, E>
 where
     GB: Getter<f32, E>,
     GE: Getter<f32, E>,
-    E: Copy + Debug,
+    E: Clone + Debug,
 {
     fn get(&self) -> Output<f32, E> {
         let base_output = self.base.get()?;
@@ -468,20 +472,20 @@ impl<GB, GE, E> Updatable<E> for ExponentStream<GB, GE, E>
 where
     GB: Getter<f32, E>,
     GE: Getter<f32, E>,
-    E: Copy + Debug,
+    E: Clone + Debug,
 {
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
     }
 }
 ///A stream that computes the numerical derivative of its input.
-pub struct DerivativeStream<T, O, G: Getter<T, E>, E: Copy + Debug> {
+pub struct DerivativeStream<T, O, G: Getter<T, E>, E: Clone + Debug> {
     input: G,
     value: Output<O, E>,
     //doesn't matter if this is an Err or Ok(None) - we can't use it either way if it's not Some
     prev_output: Option<Datum<T>>,
 }
-impl<T, O, G: Getter<T, E>, E: Copy + Debug> DerivativeStream<T, O, G, E> {
+impl<T, O, G: Getter<T, E>, E: Clone + Debug> DerivativeStream<T, O, G, E> {
     ///Constructor for [`DerivativeStream`].
     pub const fn new(input: G) -> Self {
         Self {
@@ -496,7 +500,7 @@ where
     DerivativeStream<T, O, G, E>: Updatable<E>,
     O: Clone,
     G: Getter<T, E>,
-    E: Copy + Debug,
+    E: Clone + Debug,
 {
     fn get(&self) -> Output<O, E> {
         self.value.clone()
@@ -507,14 +511,16 @@ where
     T: Copy + Sub<Output = N1>,
     N1: Div<Time, Output = O>,
     G: Getter<T, E>,
-    E: Copy + Debug,
+    E: Clone + Debug,
 {
     fn update(&mut self) -> NothingOrError<E> {
         let output = self.input.get();
         let output = match output {
             Ok(ok) => ok,
             Err(error) => {
-                self.value = Err(error);
+                //XXX: This may change when you standardize when Updatable::update errors.
+                //Remove this clone if you don't return the error.
+                self.value = Err(error.clone());
                 self.prev_output = None;
                 return Err(error);
             }
@@ -541,12 +547,12 @@ where
     }
 }
 ///A stream that computes the trapezoidal numerical integral of its input.
-pub struct IntegralStream<T, O, G: Getter<T, E>, E: Copy + Debug> {
+pub struct IntegralStream<T, O, G: Getter<T, E>, E: Clone + Debug> {
     input: G,
     value: Output<O, E>,
     prev_output: Option<Datum<T>>,
 }
-impl<T, O, G: Getter<T, E>, E: Copy + Debug> IntegralStream<T, O, G, E> {
+impl<T, O, G: Getter<T, E>, E: Clone + Debug> IntegralStream<T, O, G, E> {
     ///Constructor for [`IntegralStream`].
     pub const fn new(input: G) -> Self {
         Self {
@@ -561,7 +567,7 @@ where
     IntegralStream<T, O, G, E>: Updatable<E>,
     O: Clone,
     G: Getter<T, E>,
-    E: Copy + Debug,
+    E: Clone + Debug,
 {
     fn get(&self) -> Output<O, E> {
         self.value.clone()
@@ -573,14 +579,16 @@ where
     Time: Mul<N1, Output = O>,
     O: Copy + Half + Add<O, Output = O>,
     G: Getter<T, E>,
-    E: Copy + Debug,
+    E: Clone + Debug,
 {
     fn update(&mut self) -> NothingOrError<E> {
         let output = self.input.get();
         let output = match output {
             Ok(ok) => ok,
             Err(error) => {
-                self.value = Err(error);
+                //XXX: This may change when you standardize when Updatable::update errors.
+                //Remove this clone if you don't return the error.
+                self.value = Err(error.clone());
                 self.prev_output = None;
                 return Err(error);
             }

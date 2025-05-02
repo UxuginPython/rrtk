@@ -8,7 +8,7 @@ pub struct IfStream<T, GC, GI, E>
 where
     GC: Getter<bool, E>,
     GI: Getter<T, E>,
-    E: Copy + Debug,
+    E: Clone + Debug,
 {
     condition: GC,
     input: GI,
@@ -19,7 +19,7 @@ impl<T, GC, GI, E> IfStream<T, GC, GI, E>
 where
     GC: Getter<bool, E>,
     GI: Getter<T, E>,
-    E: Copy + Debug,
+    E: Clone + Debug,
 {
     ///Constructor for [`IfStream`].
     pub const fn new(condition: GC, input: GI) -> Self {
@@ -35,7 +35,7 @@ impl<T, GC, GI, E> Getter<T, E> for IfStream<T, GC, GI, E>
 where
     GC: Getter<bool, E>,
     GI: Getter<T, E>,
-    E: Copy + Debug,
+    E: Clone + Debug,
 {
     fn get(&self) -> Output<T, E> {
         let condition = match self.condition.get()? {
@@ -53,7 +53,7 @@ impl<T, GC, GI, E> Updatable<E> for IfStream<T, GC, GI, E>
 where
     GC: Getter<bool, E>,
     GI: Getter<T, E>,
-    E: Copy + Debug,
+    E: Clone + Debug,
 {
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
@@ -66,7 +66,7 @@ where
     GC: Getter<bool, E>,
     GT: Getter<T, E>,
     GF: Getter<T, E>,
-    E: Copy + Debug,
+    E: Clone + Debug,
 {
     condition: GC,
     true_output: GT,
@@ -74,7 +74,7 @@ where
     phantom_t: PhantomData<T>,
     phantom_e: PhantomData<E>,
 }
-impl<T, GC: Getter<bool, E>, GT: Getter<T, E>, GF: Getter<T, E>, E: Copy + Debug>
+impl<T, GC: Getter<bool, E>, GT: Getter<T, E>, GF: Getter<T, E>, E: Clone + Debug>
     IfElseStream<T, GC, GT, GF, E>
 {
     ///Constructor for [`IfElseStream`].
@@ -93,7 +93,7 @@ where
     GC: Getter<bool, E>,
     GT: Getter<T, E>,
     GF: Getter<T, E>,
-    E: Copy + Debug,
+    E: Clone + Debug,
 {
     fn get(&self) -> Output<T, E> {
         let condition = match self.condition.get()? {
@@ -112,7 +112,7 @@ where
     GC: Getter<bool, E>,
     GT: Getter<T, E>,
     GF: Getter<T, E>,
-    E: Copy + Debug,
+    E: Clone + Debug,
 {
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
@@ -125,7 +125,7 @@ where
     T: Clone,
     GC: Getter<bool, E>,
     GI: Getter<T, E>,
-    E: Copy + Debug,
+    E: Clone + Debug,
 {
     condition: GC,
     input: GI,
@@ -136,7 +136,7 @@ where
     T: Clone,
     GC: Getter<bool, E>,
     GI: Getter<T, E>,
-    E: Copy + Debug,
+    E: Clone + Debug,
 {
     ///Constructor for [`FreezeStream`].
     pub const fn new(condition: GC, input: GI) -> Self {
@@ -152,7 +152,7 @@ where
     T: Clone,
     GC: Getter<bool, E>,
     GI: Getter<T, E>,
-    E: Copy + Debug,
+    E: Clone + Debug,
 {
     fn get(&self) -> Output<T, E> {
         self.freeze_value.clone()
@@ -163,12 +163,14 @@ where
     T: Clone,
     GC: Getter<bool, E>,
     GI: Getter<T, E>,
-    E: Copy + Debug,
+    E: Clone + Debug,
 {
     fn update(&mut self) -> NothingOrError<E> {
         let condition = match self.condition.get() {
             Err(error) => {
-                self.freeze_value = Err(error);
+                //XXX: This may change when you standardize when Updatable::update errors.
+                //Remove this clone if you don't return the error.
+                self.freeze_value = Err(error.clone());
                 return Err(error);
             }
             Ok(None) => {

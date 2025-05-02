@@ -26,7 +26,7 @@ pub struct MotionProfile {
     max_acc: Quantity,
     end_command: Command,
 }
-impl<E: Copy + Debug> History<Command, E> for MotionProfile {
+impl<E: Clone + Debug> History<Command, E> for MotionProfile {
     fn get(&self, time: Time) -> Option<Datum<Command>> {
         let mode = match self.get_mode(time) {
             Some(value) => value,
@@ -48,7 +48,7 @@ impl<E: Copy + Debug> History<Command, E> for MotionProfile {
         Some(Datum::new(time, Command::new(mode, value.into())))
     }
 }
-impl<E: Copy + Debug> Updatable<E> for MotionProfile {
+impl<E: Clone + Debug> Updatable<E> for MotionProfile {
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
     }

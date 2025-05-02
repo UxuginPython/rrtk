@@ -5,11 +5,11 @@
 use crate::*;
 ///Connect a [`Settable<Command, E>`] to a [`Terminal<E>`] for use as a servo motor in the device
 ///system.
-pub struct ActuatorWrapper<'a, T: Settable<TerminalData, E>, E: Copy + Debug> {
+pub struct ActuatorWrapper<'a, T: Settable<TerminalData, E>, E: Clone + Debug> {
     inner: T,
     terminal: RefCell<Terminal<'a, E>>,
 }
-impl<'a, T: Settable<TerminalData, E>, E: Copy + Debug> ActuatorWrapper<'a, T, E> {
+impl<'a, T: Settable<TerminalData, E>, E: Clone + Debug> ActuatorWrapper<'a, T, E> {
     ///Constructor for [`ActuatorWrapper`].
     pub const fn new(inner: T) -> Self {
         Self {
@@ -22,13 +22,13 @@ impl<'a, T: Settable<TerminalData, E>, E: Copy + Debug> ActuatorWrapper<'a, T, E
         unsafe { &*(&self.terminal as *const RefCell<Terminal<'a, E>>) }
     }
 }
-impl<T: Settable<TerminalData, E>, E: Copy + Debug> Device<E> for ActuatorWrapper<'_, T, E> {
+impl<T: Settable<TerminalData, E>, E: Clone + Debug> Device<E> for ActuatorWrapper<'_, T, E> {
     fn update_terminals(&mut self) -> NothingOrError<E> {
         self.terminal.borrow_mut().update()?;
         Ok(())
     }
 }
-impl<T: Settable<TerminalData, E>, E: Copy + Debug> Updatable<E> for ActuatorWrapper<'_, T, E> {
+impl<T: Settable<TerminalData, E>, E: Clone + Debug> Updatable<E> for ActuatorWrapper<'_, T, E> {
     fn update(&mut self) -> NothingOrError<E> {
         self.update_terminals()?;
         match self
@@ -45,11 +45,11 @@ impl<T: Settable<TerminalData, E>, E: Copy + Debug> Updatable<E> for ActuatorWra
     }
 }
 ///Connect a [`Getter<State, E>`] to a [`Terminal<E>`] for use as an encoder in the device system.
-pub struct GetterStateDeviceWrapper<'a, T: Getter<State, E>, E: Copy + Debug> {
+pub struct GetterStateDeviceWrapper<'a, T: Getter<State, E>, E: Clone + Debug> {
     inner: T,
     terminal: RefCell<Terminal<'a, E>>,
 }
-impl<'a, T: Getter<State, E>, E: Copy + Debug> GetterStateDeviceWrapper<'a, T, E> {
+impl<'a, T: Getter<State, E>, E: Clone + Debug> GetterStateDeviceWrapper<'a, T, E> {
     ///Constructor for [`GetterStateDeviceWrapper`].
     pub const fn new(inner: T) -> Self {
         Self {
@@ -62,13 +62,13 @@ impl<'a, T: Getter<State, E>, E: Copy + Debug> GetterStateDeviceWrapper<'a, T, E
         unsafe { &*(&self.terminal as *const RefCell<Terminal<'a, E>>) }
     }
 }
-impl<T: Getter<State, E>, E: Copy + Debug> Device<E> for GetterStateDeviceWrapper<'_, T, E> {
+impl<T: Getter<State, E>, E: Clone + Debug> Device<E> for GetterStateDeviceWrapper<'_, T, E> {
     fn update_terminals(&mut self) -> NothingOrError<E> {
         self.terminal.borrow_mut().update()?;
         Ok(())
     }
 }
-impl<T: Getter<State, E>, E: Copy + Debug> Updatable<E> for GetterStateDeviceWrapper<'_, T, E> {
+impl<T: Getter<State, E>, E: Clone + Debug> Updatable<E> for GetterStateDeviceWrapper<'_, T, E> {
     fn update(&mut self) -> NothingOrError<E> {
         self.inner.update()?;
         self.update_terminals()?;
@@ -84,7 +84,7 @@ impl<T: Getter<State, E>, E: Copy + Debug> Updatable<E> for GetterStateDeviceWra
 ///[`CommandPID`](streams::control::CommandPID). See
 ///[`streams::control::CommandPID`] documentation for more information about how this works.
 #[cfg(feature = "alloc")]
-pub struct PIDWrapper<'a, T: Settable<f32, E>, E: Copy + Debug + 'static> {
+pub struct PIDWrapper<'a, T: Settable<f32, E>, E: Clone + Debug + 'static> {
     terminal: RefCell<Terminal<'a, E>>,
     time: Reference<Time>,
     state: Reference<ConstantGetter<State, Reference<Time>, E>>,
@@ -97,7 +97,7 @@ pub struct PIDWrapper<'a, T: Settable<f32, E>, E: Copy + Debug + 'static> {
     >,
 }
 #[cfg(feature = "alloc")]
-impl<'a, T: Settable<f32, E>, E: Copy + Debug + 'static> PIDWrapper<'a, T, E> {
+impl<'a, T: Settable<f32, E>, E: Clone + Debug + 'static> PIDWrapper<'a, T, E> {
     ///Constructor for [`PIDWrapper`].
     pub fn new(
         inner: T,
@@ -132,14 +132,14 @@ impl<'a, T: Settable<f32, E>, E: Copy + Debug + 'static> PIDWrapper<'a, T, E> {
     }
 }
 #[cfg(feature = "alloc")]
-impl<T: Settable<f32, E>, E: Copy + Debug + 'static> Device<E> for PIDWrapper<'_, T, E> {
+impl<T: Settable<f32, E>, E: Clone + Debug + 'static> Device<E> for PIDWrapper<'_, T, E> {
     fn update_terminals(&mut self) -> NothingOrError<E> {
         self.terminal.borrow_mut().update()?;
         Ok(())
     }
 }
 #[cfg(feature = "alloc")]
-impl<T: Settable<f32, E>, E: Copy + Debug + 'static> Updatable<E> for PIDWrapper<'_, T, E> {
+impl<T: Settable<f32, E>, E: Clone + Debug + 'static> Updatable<E> for PIDWrapper<'_, T, E> {
     fn update(&mut self) -> NothingOrError<E> {
         self.update_terminals()?;
         let terminal_data: Option<Datum<TerminalData>> =

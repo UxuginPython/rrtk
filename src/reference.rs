@@ -325,22 +325,22 @@ impl<T: ?Sized> Clone for Reference<T> {
         Self(self.0.clone())
     }
 }
-impl<U: ?Sized + Updatable<E>, E: Copy + Debug> Updatable<E> for Reference<U> {
+impl<U: ?Sized + Updatable<E>, E: Clone + Debug> Updatable<E> for Reference<U> {
     fn update(&mut self) -> NothingOrError<E> {
         self.borrow_mut().update()
     }
 }
-impl<G: ?Sized + Getter<T, E>, T, E: Copy + Debug> Getter<T, E> for Reference<G> {
+impl<G: ?Sized + Getter<T, E>, T, E: Clone + Debug> Getter<T, E> for Reference<G> {
     fn get(&self) -> Output<T, E> {
         self.borrow().get()
     }
 }
-impl<TG: ?Sized + TimeGetter<E>, E: Copy + Debug> TimeGetter<E> for Reference<TG> {
+impl<TG: ?Sized + TimeGetter<E>, E: Clone + Debug> TimeGetter<E> for Reference<TG> {
     fn get(&self) -> TimeOutput<E> {
         self.borrow().get()
     }
 }
-impl<T, S: ?Sized + Settable<T, E>, E: Copy + Debug> Settable<T, E> for Reference<S> {
+impl<T, S: ?Sized + Settable<T, E>, E: Clone + Debug> Settable<T, E> for Reference<S> {
     fn set(&mut self, value: T) -> NothingOrError<E> {
         self.borrow_mut().set(value)
     }
