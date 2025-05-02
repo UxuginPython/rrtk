@@ -713,12 +713,12 @@ impl<TI, G: Getter<TI, E>, E: Clone + Debug> Updatable<E> for IntoConverter<TI, 
 }
 ///Converts errors returned by a getter to another type through [`Into`]. Leaves `Ok` values
 ///unchanged.
-pub struct ErrorIntoConverter<T, G: Getter<T, EI>, EI: Copy + Debug> {
+pub struct ErrorIntoConverter<T, G: Getter<T, EI>, EI: Clone + Debug> {
     input: G,
     phantom_t: PhantomData<T>,
     phantom_ei: PhantomData<EI>,
 }
-impl<T, G: Getter<T, EI>, EI: Copy + Debug> ErrorIntoConverter<T, G, EI> {
+impl<T, G: Getter<T, EI>, EI: Clone + Debug> ErrorIntoConverter<T, G, EI> {
     ///Constructor for `ErrorIntoConverter`.
     pub const fn new(input: G) -> Self {
         Self {
@@ -731,14 +731,14 @@ impl<T, G: Getter<T, EI>, EI: Copy + Debug> ErrorIntoConverter<T, G, EI> {
 impl<T, G, EI, EO> Getter<T, EO> for ErrorIntoConverter<T, G, EI>
 where
     G: Getter<T, EI>,
-    EI: Copy + Debug + Into<EO>,
-    EO: Copy + Debug,
+    EI: Clone + Debug + Into<EO>,
+    EO: Clone + Debug,
 {
     fn get(&self) -> Output<T, EO> {
         self.input.get().map_err(|error| error.into())
     }
 }
-impl<T, G: Getter<T, EI>, EI: Copy + Debug + Into<EO>, EO: Copy + Debug> Updatable<EO>
+impl<T, G: Getter<T, EI>, EI: Clone + Debug + Into<EO>, EO: Clone + Debug> Updatable<EO>
     for ErrorIntoConverter<T, G, EI>
 {
     ///This does not need to be called.
