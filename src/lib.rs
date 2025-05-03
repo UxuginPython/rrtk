@@ -755,12 +755,9 @@ impl<U: ?Sized + Updatable<E>, E: Clone + Debug> Updatable<E>
     for PointerDereferencer<*const RwLock<U>>
 {
     fn update(&mut self) -> NothingOrError<E> {
-        unsafe {
-            (*self.pointer)
-                .write()
-                .expect("RRTK failed to acquire RwLock write lock for Updatable")
-                .update()
-        }
+        unsafe { (*self.pointer).write() }
+            .expect("RRTK failed to acquire RwLock write lock for Updatable")
+            .update()
     }
 }
 #[cfg(feature = "std")]
@@ -768,12 +765,9 @@ impl<G: ?Sized + Getter<T, E>, T, E: Clone + Debug> Getter<T, E>
     for PointerDereferencer<*const RwLock<G>>
 {
     fn get(&self) -> Output<T, E> {
-        unsafe {
-            (*self.pointer)
-                .read()
-                .expect("RRTK failed to acquire RwLock read lock for Getter")
-                .get()
-        }
+        unsafe { (*self.pointer).read() }
+            .expect("RRTK failed to acquire RwLock read lock for Getter")
+            .get()
     }
 }
 #[cfg(feature = "std")]
@@ -781,12 +775,9 @@ impl<S: ?Sized + Settable<T, E>, T, E: Clone + Debug> Settable<T, E>
     for PointerDereferencer<*const RwLock<S>>
 {
     fn set(&mut self, value: T) -> NothingOrError<E> {
-        unsafe {
-            (*self.pointer)
-                .write()
-                .expect("RRTK failed to acquire RwLock write lock for Settable")
-                .set(value)
-        }
+        unsafe { (*self.pointer).write() }
+            .expect("RRTK failed to acquire RwLock write lock for Settable")
+            .set(value)
     }
 }
 #[cfg(feature = "std")]
@@ -794,12 +785,9 @@ impl<U: ?Sized + Updatable<E>, E: Clone + Debug> Updatable<E>
     for PointerDereferencer<*const Mutex<U>>
 {
     fn update(&mut self) -> NothingOrError<E> {
-        unsafe {
-            (*self.pointer)
-                .lock()
-                .expect("RRTK failed to acquire Mutex lock for Updatable")
-                .update()
-        }
+        unsafe { (*self.pointer).lock() }
+            .expect("RRTK failed to acquire Mutex lock for Updatable")
+            .update()
     }
 }
 #[cfg(feature = "std")]
@@ -807,12 +795,9 @@ impl<G: ?Sized + Getter<T, E>, T, E: Clone + Debug> Getter<T, E>
     for PointerDereferencer<*const Mutex<G>>
 {
     fn get(&self) -> Output<T, E> {
-        unsafe {
-            (*self.pointer)
-                .lock()
-                .expect("RRTK failed to acquire Mutex lock for Getter")
-                .get()
-        }
+        unsafe { (*self.pointer).lock() }
+            .expect("RRTK failed to acquire Mutex lock for Getter")
+            .get()
     }
 }
 #[cfg(feature = "std")]
@@ -820,12 +805,9 @@ impl<S: ?Sized + Settable<T, E>, T, E: Clone + Debug> Settable<T, E>
     for PointerDereferencer<*const Mutex<S>>
 {
     fn set(&mut self, value: T) -> NothingOrError<E> {
-        unsafe {
-            (*self.pointer)
-                .lock()
-                .expect("RRTK failed to acquire Mutex lock for Settable")
-                .set(value)
-        }
+        unsafe { (*self.pointer).lock() }
+            .expect("RRTK failed to acquire Mutex lock for Settable")
+            .set(value)
     }
 }
 #[cfg(feature = "alloc")]
