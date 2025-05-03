@@ -44,9 +44,7 @@ use alloc::vec::Vec;
 use core::cell::RefCell;
 use core::fmt;
 use core::marker::PhantomData;
-use core::ops::{
-    Add, AddAssign, Deref, DerefMut, Div, DivAssign, Mul, MulAssign, Neg, Not, Sub, SubAssign,
-};
+use core::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Not, Sub, SubAssign};
 use fmt::Debug;
 mod command;
 pub mod compile_time_dimensions;
@@ -59,7 +57,6 @@ pub mod dimensions;
 mod enhanced_float;
 pub use dimensions::*;
 mod motion_profile;
-pub mod reference;
 mod state;
 pub mod streams;
 pub use command::*;
@@ -67,11 +64,6 @@ pub use datum::*;
 #[cfg(feature = "internal_enhanced_float")]
 use enhanced_float::*;
 pub use motion_profile::*;
-pub use reference::Reference;
-#[cfg(feature = "alloc")]
-pub use reference::rc_ref_cell_reference;
-#[cfg(feature = "std")]
-pub use reference::{arc_mutex_reference, arc_rw_lock_reference};
 pub use state::*;
 ///The error type used when a `TryFrom` fails.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -311,13 +303,13 @@ impl<T, G: Getter<T, E>, E: Clone + Debug> Updatable<E> for TimeGetterFromGetter
 ///[`MotionProfile`]s.
 pub struct GetterFromHistory<'a, G, TG: TimeGetter<E>, E: Clone + Debug> {
     history: &'a mut dyn History<G, E>,
-    time_getter: Reference<TG>,
+    time_getter: TG,
     time_delta: Time,
 }
 impl<'a, G, TG: TimeGetter<E>, E: Clone + Debug> GetterFromHistory<'a, G, TG, E> {
     ///Constructor such that the time in the request to the history will be directly that returned
     ///from the [`TimeGetter`] with no delta.
-    pub fn new_no_delta(history: &'a mut impl History<G, E>, time_getter: Reference<TG>) -> Self {
+    pub fn new_no_delta(history: &'a mut impl History<G, E>, time_getter: TG) -> Self {
         Self {
             history: history,
             time_getter: time_getter,
@@ -328,9 +320,9 @@ impl<'a, G, TG: TimeGetter<E>, E: Clone + Debug> GetterFromHistory<'a, G, TG, E>
     ///is the moment this constructor is called.
     pub fn new_start_at_zero(
         history: &'a mut impl History<G, E>,
-        time_getter: Reference<TG>,
+        time_getter: TG,
     ) -> Result<Self, E> {
-        let time_delta = -time_getter.borrow().get()?;
+        let time_delta = -time_getter.get()?;
         Ok(Self {
             history: history,
             time_getter: time_getter,
@@ -341,10 +333,10 @@ impl<'a, G, TG: TimeGetter<E>, E: Clone + Debug> GetterFromHistory<'a, G, TG, E>
     ///that time defined as the moment of construction.
     pub fn new_custom_start(
         history: &'a mut impl History<G, E>,
-        time_getter: Reference<TG>,
+        time_getter: TG,
         start: Time,
     ) -> Result<Self, E> {
-        let time_delta = start - time_getter.borrow().get()?;
+        let time_delta = start - time_getter.get()?;
         Ok(Self {
             history: history,
             time_getter: time_getter,
@@ -354,7 +346,7 @@ impl<'a, G, TG: TimeGetter<E>, E: Clone + Debug> GetterFromHistory<'a, G, TG, E>
     ///Constructor with a custom time delta.
     pub fn new_custom_delta(
         history: &'a mut impl History<G, E>,
-        time_getter: Reference<TG>,
+        time_getter: TG,
         time_delta: Time,
     ) -> Self {
         Self {
@@ -370,7 +362,7 @@ impl<'a, G, TG: TimeGetter<E>, E: Clone + Debug> GetterFromHistory<'a, G, TG, E>
     ///Define now as a given time in the history. Mostly used when construction and use are far
     ///apart in time.
     pub fn set_time(&mut self, time: Time) -> NothingOrError<E> {
-        let time_delta = time - self.time_getter.borrow().get()?;
+        let time_delta = time - self.time_getter.get()?;
         self.time_delta = time_delta;
         Ok(())
     }
@@ -378,13 +370,13 @@ impl<'a, G, TG: TimeGetter<E>, E: Clone + Debug> GetterFromHistory<'a, G, TG, E>
 impl<G, TG: TimeGetter<E>, E: Clone + Debug> Updatable<E> for GetterFromHistory<'_, G, TG, E> {
     fn update(&mut self) -> NothingOrError<E> {
         self.history.update()?;
-        self.time_getter.borrow_mut().update()?;
+        self.time_getter.update()?;
         Ok(())
     }
 }
 impl<G, TG: TimeGetter<E>, E: Clone + Debug> Getter<G, E> for GetterFromHistory<'_, G, TG, E> {
     fn get(&self) -> Output<G, E> {
-        let time = self.time_getter.borrow().get()?;
+        let time = self.time_getter.get()?;
         Ok(match self.history.get(time + self.time_delta) {
             Some(datum) => Some(Datum::new(time, datum.value)),
             None => None,
