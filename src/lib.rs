@@ -17,7 +17,7 @@
 //!
 //!RRTK prefers **`std`** over **`libm`** and `libm` over **`micromath`** when multiple are
 //!available.
-//#![warn(missing_docs)]
+#![warn(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
 #[cfg(all(
     feature = "internal_enhanced_float",
@@ -717,10 +717,18 @@ impl Half for f64 {
         self / 2.0
     }
 }
+///[`Updatable`], [`Getter`], [`Settable`], and [`TimeGetter`] are passed through `Box`,
+///`Rc<RefCell<T>>`, `Arc<RwLock<T>>`, and `Arc<Mutex<T>>`, but this cannot be done safely for
+///references involving raw pointer dereferencing. This is a wrapper struct that provides this
+///functionality for `*mut T`, `*const RwLock<T>`, and `*const Mutex<T>`. It's constructor is
+///`unsafe fn`, so this is considered sound.
 pub struct PointerDereferencer<P> {
     pointer: P,
 }
 impl<P> PointerDereferencer<P> {
+    ///The constructor for `PointerDereferencer`. Although this constructor itself does not run any
+    ///unsafe code, it is `unsafe fn` since this type inherently performs unsafe functions. See the
+    ///[type documentation](`PointerDereferencer`) for more information.
     pub const unsafe fn new(pointer: P) -> Self {
         Self { pointer: pointer }
     }
