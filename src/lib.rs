@@ -691,8 +691,6 @@ pub fn latest<T>(dat1: Datum<T>, dat2: Datum<T>) -> Datum<T> {
     if dat1.time >= dat2.time { dat1 } else { dat2 }
 }
 //TODO: Decide if this should be pub trait.
-//XXX: Does this even work outside of RRTK if it's not pub trait? Don't you need the trait in
-//scope? Or does that not apply to bounds?
 trait Half {
     fn half(self) -> Self;
 }
@@ -727,11 +725,6 @@ impl Half for f64 {
         self / 2.0
     }
 }
-//Could these have a nice naming scheme? UnwrapDeref, UnwrapPointer, UnwrapRefCell, UnwrapMutex, UnwrapRwLock or something?
-//Or could it even be just one struct called Inner or something with a lot of impls?
-//Would this unwrapper idea even work at all with nested stuff like Rc<RefCell>?
-//Why not just implement Getter etc. for RefCell etc. themselves? A raw pointer's the only one
-//where I really don't want to do that.
 pub struct PointerDereferencer<P> {
     pointer: P,
 }
@@ -919,5 +912,3 @@ impl<S: ?Sized + Settable<T, E>, T, E: Clone + Debug> Settable<T, E> for Arc<Mut
             .set(value)
     }
 }
-//Not quite sure what to do about *const RwLock and *const Mutex though. They'll probably each need
-//something like PointerDereferencer.
