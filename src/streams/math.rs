@@ -241,26 +241,34 @@ where
 ///behavior, use [`rrtk::streams::converters::NoneToValue`](streams::converters::NoneToValue) or
 ///[`rrtk::streams::converters::NoneToError`](streams::converters::NoneToError). [`Product2`] may
 ///also be a bit faster if you are only multiplying the outputs of two streams.
-pub struct ProductStream<T: MulAssign + Copy, const N: usize, E> {
-    factors: [Reference<dyn Getter<T, E>>; N],
+pub struct ProductStream<T: MulAssign + Copy, const N: usize, G: Getter<T, E>, E: Clone + Debug> {
+    factors: [G; N],
+    phantom_t: PhantomData<T>,
+    phantom_e: PhantomData<E>,
 }
-impl<T: MulAssign + Copy, const N: usize, E> ProductStream<T, N, E> {
+impl<T: MulAssign + Copy, const N: usize, G: Getter<T, E>, E: Clone + Debug>
+    ProductStream<T, N, G, E>
+{
     ///Constructor for [`ProductStream`].
-    pub const fn new(factors: [Reference<dyn Getter<T, E>>; N]) -> Self {
+    pub const fn new(factors: [G; N]) -> Self {
         if N < 1 {
             panic!("rrtk::streams::ProductStream must have at least one input stream");
         }
-        Self { factors: factors }
+        Self {
+            factors: factors,
+            phantom_t: PhantomData,
+            phantom_e: PhantomData,
+        }
     }
 }
-impl<T: MulAssign + Copy, const N: usize, E: Clone + Debug> Getter<T, E>
-    for ProductStream<T, N, E>
+impl<T: MulAssign + Copy, const N: usize, G: Getter<T, E>, E: Clone + Debug> Getter<T, E>
+    for ProductStream<T, N, G, E>
 {
     fn get(&self) -> Output<T, E> {
         let mut outputs = [MaybeUninit::uninit(); N];
         let mut outputs_filled = 0;
         for i in &self.factors {
-            match i.borrow().get()? {
+            match i.get()? {
                 Some(x) => {
                     outputs[outputs_filled].write(x);
                     outputs_filled += 1;
@@ -280,8 +288,8 @@ impl<T: MulAssign + Copy, const N: usize, E: Clone + Debug> Getter<T, E>
         }
     }
 }
-impl<T: MulAssign + Copy, const N: usize, E: Clone + Debug> Updatable<E>
-    for ProductStream<T, N, E>
+impl<T: MulAssign + Copy, const N: usize, G: Getter<T, E>, E: Clone + Debug> Updatable<E>
+    for ProductStream<T, N, G, E>
 {
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
