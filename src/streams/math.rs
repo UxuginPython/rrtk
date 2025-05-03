@@ -10,19 +10,30 @@ use core::mem::MaybeUninit;
 ///return `Ok(None)`, returns `Ok(None)`. If this is not the desired behavior, use
 ///[`NoneToValue`](converters::NoneToValue) or [`NoneToError`](converters::NoneToError).
 ///[`Sum2`] may also be a bit faster if you are only adding the outputs of two streams.
-pub struct SumStream<T: AddAssign + Copy, const N: usize, E> {
-    addends: [Reference<dyn Getter<T, E>>; N],
+pub struct SumStream<T: AddAssign + Copy, const N: usize, G: Getter<T, E>, E: Clone + Debug> {
+    addends: [G; N],
+    //TODO: If you do decide to remove a bunch of bounds, including G: Getter<T, E>, the T and E
+    //parameters may be able to be removed from the struct itself. Do note that there may be others
+    //for which this is the case that may not have a note like this.
+    phantom_t: PhantomData<T>,
+    phantom_e: PhantomData<E>,
 }
-impl<T: AddAssign + Copy, const N: usize, E> SumStream<T, N, E> {
+impl<T: AddAssign + Copy, const N: usize, G: Getter<T, E>, E: Clone + Debug> SumStream<T, N, G, E> {
     ///Constructor for [`SumStream`].
-    pub const fn new(addends: [Reference<dyn Getter<T, E>>; N]) -> Self {
+    pub const fn new(addends: [G; N]) -> Self {
         if N < 1 {
             panic!("rrtk::streams::SumStream must have at least one input stream");
         }
-        Self { addends: addends }
+        Self {
+            addends: addends,
+            phantom_t: PhantomData,
+            phantom_e: PhantomData,
+        }
     }
 }
-impl<T: AddAssign + Copy, const N: usize, E: Clone + Debug> Getter<T, E> for SumStream<T, N, E> {
+impl<T: AddAssign + Copy, const N: usize, G: Getter<T, E>, E: Clone + Debug> Getter<T, E>
+    for SumStream<T, N, G, E>
+{
     fn get(&self) -> Output<T, E> {
         //Err(...) -> return Err immediately
         //Ok(None) -> skip
@@ -31,7 +42,7 @@ impl<T: AddAssign + Copy, const N: usize, E: Clone + Debug> Getter<T, E> for Sum
         //This is always equal to the index of the next uninitialized slot if there is one.
         let mut outputs_filled = 0;
         for i in &self.addends {
-            match i.borrow().get()? {
+            match i.get()? {
                 Some(x) => {
                     outputs[outputs_filled].write(x);
                     outputs_filled += 1;
@@ -52,7 +63,9 @@ impl<T: AddAssign + Copy, const N: usize, E: Clone + Debug> Getter<T, E> for Sum
         }
     }
 }
-impl<T: AddAssign + Copy, const N: usize, E: Clone + Debug> Updatable<E> for SumStream<T, N, E> {
+impl<T: AddAssign + Copy, const N: usize, G: Getter<T, E>, E: Clone + Debug> Updatable<E>
+    for SumStream<T, N, G, E>
+{
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
     }
