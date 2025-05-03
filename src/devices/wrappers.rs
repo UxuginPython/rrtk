@@ -80,18 +80,19 @@ impl<T: Getter<State, E>, E: Clone + Debug> Updatable<E> for GetterStateDeviceWr
         Ok(())
     }
 }
+//TODO: Hopefully figure out a way to make this less alloc-y.
 ///Connect a [`Settable<f32, E>`] motor to the device system through a
 ///[`CommandPID`](streams::control::CommandPID). See
 ///[`streams::control::CommandPID`] documentation for more information about how this works.
 #[cfg(feature = "alloc")]
 pub struct PIDWrapper<'a, T: Settable<f32, E>, E: Clone + Debug + 'static> {
     terminal: RefCell<Terminal<'a, E>>,
-    time: Reference<Time>,
-    state: Reference<ConstantGetter<State, Reference<Time>, E>>,
-    command: Reference<ConstantGetter<Command, Reference<Time>, E>>,
+    time: Rc<RefCell<Time>>,
+    state: Rc<RefCell<ConstantGetter<State, Rc<RefCell<Time>>, E>>>,
+    command: Rc<RefCell<ConstantGetter<Command, Rc<RefCell<Time>>, E>>>,
     feeder: Feeder<
         f32,
-        streams::control::CommandPID<Reference<ConstantGetter<State, Reference<Time>, E>>, E>,
+        streams::control::CommandPID<Rc<RefCell<ConstantGetter<State, Rc<RefCell<Time>>, E>>>, E>,
         T,
         E,
     >,
@@ -107,15 +108,15 @@ impl<'a, T: Settable<f32, E>, E: Clone + Debug + 'static> PIDWrapper<'a, T, E> {
         kvalues: PositionDerivativeDependentPIDKValues,
     ) -> Self {
         let terminal = Terminal::new();
-        let time = Reference::from_rc_ref_cell(Rc::new(RefCell::new(initial_time)));
-        let state = Reference::from_rc_ref_cell(Rc::new(RefCell::new(ConstantGetter::new(
+        let time = Rc::new(RefCell::new(initial_time));
+        let state = Rc::new(RefCell::new(ConstantGetter::new(
             time.clone(),
             initial_state,
-        ))));
-        let command = Reference::from_rc_ref_cell(Rc::new(RefCell::new(ConstantGetter::new(
+        )));
+        let command = Rc::new(RefCell::new(ConstantGetter::new(
             time.clone(),
             initial_command,
-        ))));
+        )));
         let pid = streams::control::CommandPID::new(state.clone(), initial_command, kvalues);
         let feeder = Feeder::new(pid, inner);
         Self {
