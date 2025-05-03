@@ -10,7 +10,12 @@ use core::mem::MaybeUninit;
 ///return `Ok(None)`, returns `Ok(None)`. If this is not the desired behavior, use
 ///[`NoneToValue`](converters::NoneToValue) or [`NoneToError`](converters::NoneToError).
 ///[`Sum2`] may also be a bit faster if you are only adding the outputs of two streams.
-pub struct SumStream<T: AddAssign + Copy, const N: usize, G: Getter<T, E>, E: Clone + Debug> {
+pub struct SumStream<T, const N: usize, G, E>
+where
+    T: AddAssign + Copy,
+    G: Getter<T, E>,
+    E: Clone + Debug,
+{
     addends: [G; N],
     //TODO: If you do decide to remove a bunch of bounds, including G: Getter<T, E>, the T and E
     //parameters may be able to be removed from the struct itself. Do note that there may be others
@@ -18,7 +23,12 @@ pub struct SumStream<T: AddAssign + Copy, const N: usize, G: Getter<T, E>, E: Cl
     phantom_t: PhantomData<T>,
     phantom_e: PhantomData<E>,
 }
-impl<T: AddAssign + Copy, const N: usize, G: Getter<T, E>, E: Clone + Debug> SumStream<T, N, G, E> {
+impl<T, const N: usize, G, E> SumStream<T, N, G, E>
+where
+    T: AddAssign + Copy,
+    G: Getter<T, E>,
+    E: Clone + Debug,
+{
     ///Constructor for [`SumStream`].
     pub const fn new(addends: [G; N]) -> Self {
         if N < 1 {
@@ -31,8 +41,11 @@ impl<T: AddAssign + Copy, const N: usize, G: Getter<T, E>, E: Clone + Debug> Sum
         }
     }
 }
-impl<T: AddAssign + Copy, const N: usize, G: Getter<T, E>, E: Clone + Debug> Getter<T, E>
-    for SumStream<T, N, G, E>
+impl<T, const N: usize, G, E> Getter<T, E> for SumStream<T, N, G, E>
+where
+    T: AddAssign + Copy,
+    G: Getter<T, E>,
+    E: Clone + Debug,
 {
     fn get(&self) -> Output<T, E> {
         //Err(...) -> return Err immediately
@@ -63,8 +76,11 @@ impl<T: AddAssign + Copy, const N: usize, G: Getter<T, E>, E: Clone + Debug> Get
         }
     }
 }
-impl<T: AddAssign + Copy, const N: usize, G: Getter<T, E>, E: Clone + Debug> Updatable<E>
-    for SumStream<T, N, G, E>
+impl<T, const N: usize, G, E> Updatable<E> for SumStream<T, N, G, E>
+where
+    T: AddAssign + Copy,
+    G: Getter<T, E>,
+    E: Clone + Debug,
 {
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
