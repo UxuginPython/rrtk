@@ -241,13 +241,21 @@ where
 ///behavior, use [`rrtk::streams::converters::NoneToValue`](streams::converters::NoneToValue) or
 ///[`rrtk::streams::converters::NoneToError`](streams::converters::NoneToError). [`Product2`] may
 ///also be a bit faster if you are only multiplying the outputs of two streams.
-pub struct ProductStream<T: MulAssign + Copy, const N: usize, G: Getter<T, E>, E: Clone + Debug> {
+pub struct ProductStream<T, const N: usize, G, E>
+where
+    T: MulAssign + Copy,
+    G: Getter<T, E>,
+    E: Clone + Debug,
+{
     factors: [G; N],
     phantom_t: PhantomData<T>,
     phantom_e: PhantomData<E>,
 }
-impl<T: MulAssign + Copy, const N: usize, G: Getter<T, E>, E: Clone + Debug>
-    ProductStream<T, N, G, E>
+impl<T, const N: usize, G, E> ProductStream<T, N, G, E>
+where
+    T: MulAssign + Copy,
+    G: Getter<T, E>,
+    E: Clone + Debug,
 {
     ///Constructor for [`ProductStream`].
     pub const fn new(factors: [G; N]) -> Self {
@@ -261,8 +269,11 @@ impl<T: MulAssign + Copy, const N: usize, G: Getter<T, E>, E: Clone + Debug>
         }
     }
 }
-impl<T: MulAssign + Copy, const N: usize, G: Getter<T, E>, E: Clone + Debug> Getter<T, E>
-    for ProductStream<T, N, G, E>
+impl<T, const N: usize, G, E> Getter<T, E> for ProductStream<T, N, G, E>
+where
+    T: MulAssign + Copy,
+    G: Getter<T, E>,
+    E: Clone + Debug,
 {
     fn get(&self) -> Output<T, E> {
         let mut outputs = [MaybeUninit::uninit(); N];
@@ -288,8 +299,11 @@ impl<T: MulAssign + Copy, const N: usize, G: Getter<T, E>, E: Clone + Debug> Get
         }
     }
 }
-impl<T: MulAssign + Copy, const N: usize, G: Getter<T, E>, E: Clone + Debug> Updatable<E>
-    for ProductStream<T, N, G, E>
+impl<T, const N: usize, G, E> Updatable<E> for ProductStream<T, N, G, E>
+where
+    T: MulAssign + Copy,
+    G: Getter<T, E>,
+    E: Clone + Debug,
 {
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
