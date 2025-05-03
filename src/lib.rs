@@ -750,6 +750,11 @@ impl<T, S: ?Sized + Settable<T, E>, E: Clone + Debug> Settable<T, E>
         unsafe { (*self.pointer).set(value) }
     }
 }
+impl<TG: ?Sized + TimeGetter<E>, E: Clone + Debug> TimeGetter<E> for PointerDereferencer<*mut TG> {
+    fn get(&self) -> TimeOutput<E> {
+        unsafe { (*self.pointer).get() }
+    }
+}
 #[cfg(feature = "std")]
 impl<U: ?Sized + Updatable<E>, E: Clone + Debug> Updatable<E>
     for PointerDereferencer<*const RwLock<U>>
@@ -778,6 +783,16 @@ impl<S: ?Sized + Settable<T, E>, T, E: Clone + Debug> Settable<T, E>
         unsafe { (*self.pointer).write() }
             .expect("RRTK failed to acquire RwLock write lock for Settable")
             .set(value)
+    }
+}
+#[cfg(feature = "std")]
+impl<TG: ?Sized + TimeGetter<E>, E: Clone + Debug> TimeGetter<E>
+    for PointerDereferencer<*const RwLock<TG>>
+{
+    fn get(&self) -> TimeOutput<E> {
+        unsafe { (*self.pointer).read() }
+            .expect("RRTK failed to acquire RwLock read lock for TimeGetter")
+            .get()
     }
 }
 #[cfg(feature = "std")]
@@ -810,6 +825,16 @@ impl<S: ?Sized + Settable<T, E>, T, E: Clone + Debug> Settable<T, E>
             .set(value)
     }
 }
+#[cfg(feature = "std")]
+impl<TG: ?Sized + TimeGetter<E>, E: Clone + Debug> TimeGetter<E>
+    for PointerDereferencer<*const Mutex<TG>>
+{
+    fn get(&self) -> TimeOutput<E> {
+        unsafe { (*self.pointer).lock() }
+            .expect("RRTK failed to acquire Mutex lock for TimeGetter")
+            .get()
+    }
+}
 #[cfg(feature = "alloc")]
 impl<U: ?Sized + Updatable<E>, E: Clone + Debug> Updatable<E> for Box<U> {
     fn update(&mut self) -> NothingOrError<E> {
@@ -829,6 +854,12 @@ impl<S: ?Sized + Settable<T, E>, T, E: Clone + Debug> Settable<T, E> for Box<S> 
     }
 }
 #[cfg(feature = "alloc")]
+impl<TG: ?Sized + TimeGetter<E>, E: Clone + Debug> TimeGetter<E> for Box<TG> {
+    fn get(&self) -> TimeOutput<E> {
+        (**self).get()
+    }
+}
+#[cfg(feature = "alloc")]
 impl<U: ?Sized + Updatable<E>, E: Clone + Debug> Updatable<E> for Rc<RefCell<U>> {
     fn update(&mut self) -> NothingOrError<E> {
         self.borrow_mut().update()
@@ -844,6 +875,12 @@ impl<G: ?Sized + Getter<T, E>, T, E: Clone + Debug> Getter<T, E> for Rc<RefCell<
 impl<S: ?Sized + Settable<T, E>, T, E: Clone + Debug> Settable<T, E> for Rc<RefCell<S>> {
     fn set(&mut self, value: T) -> NothingOrError<E> {
         self.borrow_mut().set(value)
+    }
+}
+#[cfg(feature = "alloc")]
+impl<TG: ?Sized + TimeGetter<E>, E: Clone + Debug> TimeGetter<E> for Rc<RefCell<TG>> {
+    fn get(&self) -> TimeOutput<E> {
+        self.borrow().get()
     }
 }
 #[cfg(feature = "std")]
@@ -871,6 +908,14 @@ impl<S: ?Sized + Settable<T, E>, T, E: Clone + Debug> Settable<T, E> for Arc<RwL
     }
 }
 #[cfg(feature = "std")]
+impl<TG: ?Sized + TimeGetter<E>, E: Clone + Debug> TimeGetter<E> for Arc<RwLock<TG>> {
+    fn get(&self) -> TimeOutput<E> {
+        self.read()
+            .expect("RRTK failed to acquire RwLock read lock for TimeGetter")
+            .get()
+    }
+}
+#[cfg(feature = "std")]
 impl<U: ?Sized + Updatable<E>, E: Clone + Debug> Updatable<E> for Arc<Mutex<U>> {
     fn update(&mut self) -> NothingOrError<E> {
         self.lock()
@@ -892,5 +937,13 @@ impl<S: ?Sized + Settable<T, E>, T, E: Clone + Debug> Settable<T, E> for Arc<Mut
         self.lock()
             .expect("RRTK failed to acquire Mutex lock for Settable")
             .set(value)
+    }
+}
+#[cfg(feature = "std")]
+impl<TG: ?Sized + TimeGetter<E>, E: Clone + Debug> TimeGetter<E> for Arc<Mutex<TG>> {
+    fn get(&self) -> TimeOutput<E> {
+        self.lock()
+            .expect("RRTK failed to acquire Mutex lock for TimeGetter")
+            .get()
     }
 }
