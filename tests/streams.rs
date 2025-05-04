@@ -438,7 +438,7 @@ fn sum_stream_all_none() {
 #[test]
 #[should_panic]
 fn empty_sum_stream() {
-    let _: SumStream<f32, 0, ()> = SumStream::new([]);
+    let _: SumStream<f32, 0, NoneGetter, ()> = SumStream::new([]);
 }
 #[test]
 fn sum2() {
@@ -692,7 +692,7 @@ fn product_stream_all_none() {
 #[test]
 #[should_panic]
 fn empty_product_stream() {
-    let _: ProductStream<f32, 0, ()> = ProductStream::new([]);
+    let _: ProductStream<f32, 0, NoneGetter, ()> = ProductStream::new([]);
 }
 #[test]
 fn product2() {
@@ -1505,7 +1505,7 @@ fn latest() {
 #[test]
 #[should_panic]
 fn empty_latest() {
-    let _: Latest<(), 0, ()> = Latest::new([]);
+    let _: Latest<(), 0, NoneGetter, ()> = Latest::new([]);
 }
 #[test]
 fn and_stream() {
