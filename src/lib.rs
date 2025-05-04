@@ -17,7 +17,7 @@
 //!
 //!RRTK prefers **`std`** over **`libm`** and `libm` over **`micromath`** when multiple are
 //!available.
-//#![warn(missing_docs)]
+#![warn(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
 #[cfg(all(
     feature = "internal_enhanced_float",
@@ -766,7 +766,10 @@ impl<P: Copy> PointerDereferencer<P> {
     }
 }
 macro_rules! as_dyn_updatable {
-    ($return_type:ty) => {
+    ($docs:literal, $return_type:ty) => {
+        //The way documentation for these function has to work is unfortunate, but there's not
+        //really a better way.
+        #[doc = $docs]
         #[inline]
         pub fn as_dyn_updatable<E: Clone + Debug>(&self) -> PointerDereferencer<$return_type>
         where
@@ -814,21 +817,30 @@ macro_rules! as_dyn_time_getter {
     };
 }
 impl<T> PointerDereferencer<*mut T> {
-    as_dyn_updatable!(*mut dyn Updatable<E>);
+    as_dyn_updatable!(
+        "Gets a `PointerDereferencer<*mut dyn Updatable<E>>` from a `PointerDereferencer<*mut T>` where `T: Updatable<E>`. Because raw pointers are `Copy`, this only requires `&self` and does not consume the original `PointerDereferencer`.",
+        *mut dyn Updatable<E>
+    );
     as_dyn_getter!(*mut dyn Getter<U, E>);
     as_dyn_settable!(*mut dyn Settable<U, E>);
     as_dyn_time_getter!(*mut dyn TimeGetter<E>);
 }
 #[cfg(feature = "std")]
 impl<T> PointerDereferencer<*const RwLock<T>> {
-    as_dyn_updatable!(*const RwLock<dyn Updatable<E>>);
+    as_dyn_updatable!(
+        "Gets a `PointerDereferencer<*const RwLock<dyn Updatable<E>>>` from a `PointerDereferencer<*const RwLock<T>>` where `T: Updatable<E>`. Because raw pointers are `Copy`, this only requires `&self` and does not consume the original `PointerDereferencer`.",
+        *const RwLock<dyn Updatable<E>>
+    );
     as_dyn_getter!(*const RwLock<dyn Getter<U, E>>);
     as_dyn_settable!(*const RwLock<dyn Settable<U, E>>);
     as_dyn_time_getter!(*const RwLock<dyn TimeGetter<E>>);
 }
 #[cfg(feature = "std")]
 impl<T> PointerDereferencer<*const Mutex<T>> {
-    as_dyn_updatable!(*const Mutex<dyn Updatable<E>>);
+    as_dyn_updatable!(
+        "Gets a `PointerDereferencer<*const Mutex<dyn Updatable<E>>>` from a `PointerDereferencer<*const Mutex<T>>` where `T: Updatable<E>`. Because raw pointers are `Copy`, this only requires `&self` and does not consume the original `PointerDereferencer`.",
+        *const Mutex<dyn Updatable<E>>
+    );
     as_dyn_getter!(*const Mutex<dyn Getter<U, E>>);
     as_dyn_settable!(*const Mutex<dyn Settable<U, E>>);
     as_dyn_time_getter!(*const Mutex<dyn TimeGetter<E>>);
