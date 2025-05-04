@@ -725,8 +725,7 @@ impl Half for f64 {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[repr(transparent)]
 pub struct PointerDereferencer<P> {
-    ///The pointer.
-    pub pointer: P,
+    pointer: P,
 }
 impl<P> PointerDereferencer<P> {
     ///The constructor for `PointerDereferencer`. Although this constructor itself does not run any
