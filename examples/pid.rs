@@ -1,6 +1,12 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // Copyright 2024-2025 UxuginPython
 #[cfg(feature = "alloc")]
+extern crate alloc;
+#[cfg(feature = "alloc")]
+use alloc::rc::Rc;
+#[cfg(feature = "alloc")]
+use core::cell::RefCell;
+#[cfg(feature = "alloc")]
 use rrtk::streams::converters::*;
 #[cfg(feature = "alloc")]
 use rrtk::streams::math::*;
@@ -19,35 +25,41 @@ struct StreamPID {
     //performance boost.
     //Also note that you should almost always use a more specific error type than (). This example
     //is not focused on error handling.
-    int: Reference<dyn Getter<Quantity, ()>>,
-    drv: Reference<dyn Getter<Quantity, ()>>,
-    pro_float_maker: Reference<dyn Getter<f32, ()>>,
-    int_float_maker: Reference<dyn Getter<f32, ()>>,
-    drv_float_maker: Reference<dyn Getter<f32, ()>>,
-    output: SumStream<f32, 3, ()>,
+    int: Rc<RefCell<dyn Getter<Quantity, ()>>>,
+    drv: Rc<RefCell<dyn Getter<Quantity, ()>>>,
+    pro_float_maker: Rc<RefCell<dyn Getter<f32, ()>>>,
+    int_float_maker: Rc<RefCell<dyn Getter<f32, ()>>>,
+    drv_float_maker: Rc<RefCell<dyn Getter<f32, ()>>>,
+    output: SumStream<f32, 3, Rc<RefCell<dyn Getter<f32, ()>>>, ()>,
 }
 #[cfg(feature = "alloc")]
 impl StreamPID {
     pub fn new(
-        input: Reference<dyn Getter<Quantity, ()>>,
+        //One would generally prefer to use a type parameter to Rc<RefCell<dyn Getter<_, _>>>. This
+        //example uses the latter for simplicity.
+        input: Rc<RefCell<dyn Getter<Quantity, ()>>>,
         setpoint: Quantity,
         kp: Quantity,
         ki: Quantity,
         kd: Quantity,
     ) -> Self {
-        let time_getter = rc_ref_cell_reference(TimeGetterFromGetter::new(input.clone(), ()));
+        let time_getter = Rc::new(RefCell::new(TimeGetterFromGetter::new(input.clone(), ())));
         let setpoint = ConstantGetter::new(time_getter.clone(), setpoint);
         let kp = ConstantGetter::new(time_getter.clone(), kp);
         let ki = ConstantGetter::new(time_getter.clone(), ki);
         let kd = ConstantGetter::new(time_getter.clone(), kd);
-        let error = rc_ref_cell_reference(DifferenceStream::new(setpoint, input.clone()));
-        //Notice how one can directly use a Getter as an input for a stream OR put it in a
-        //Reference first if multiple things need access to it. Reference passes through the Getter
-        //implementation of its referent. Using a Reference to a Getter as a stream input is often
-        //necessary and not discouraged, but where possible, directly using the Getter will be
-        //slightly faster.
-        let int = rc_ref_cell_reference(IntegralStream::new(error.clone()));
-        let drv = rc_ref_cell_reference(DerivativeStream::new(error.clone()));
+        let error = Rc::new(RefCell::new(DifferenceStream::new(setpoint, input.clone())));
+        //Notice how one can directly use a Getter as an input for a stream OR put it in an
+        //Rc<RefCell<T>> first if multiple things need access to it. Rc<RefCell<T>> passes through
+        //the Getter implementation of its referent. Using an Rc<RefCell>> or similar to a getter
+        //as a stream input is often necessary and not discouraged, but where possible, directly
+        //using the getter will be slightly faster.
+        //Rc<RefCell<T>>, Arc<RwLock<T>>, and Arc<Mutex<T>> all have this functionality, and
+        //similar functionality can be achieved with *mut T, *const RwLock<T>, and *const Mutex<T>
+        //through PointerDereferencer. There are also implementations for Updatable (which is
+        //required for Getter), Settable, and TimeGetter.
+        let int = Rc::new(RefCell::new(IntegralStream::new(error.clone())));
+        let drv = Rc::new(RefCell::new(DerivativeStream::new(error.clone())));
         //`ProductStream`'s behavior is to treat all `None` values as 1.0 so that it's as if they
         //were not included. However, this is not what we want with the coefficient. `NoneToValue`
         //is used to convert all `None` values to `Some(0.0)` to effectively exlude them from the
@@ -66,22 +78,22 @@ impl StreamPID {
         //The way a PID controller works necessitates that it adds quantities of different units.
         //Thus, QuantityToFloat streams are required to keep the dimensional analysis system from
         //stopping this.
-        let pro_float_maker = rc_ref_cell_reference(QuantityToFloat::new(kp_mul));
+        let pro_float_maker = Rc::new(RefCell::new(QuantityToFloat::new(kp_mul)));
         let ki_mul = Product2::new(ki, int_zeroer);
-        let int_float_maker = rc_ref_cell_reference(QuantityToFloat::new(ki_mul));
+        let int_float_maker = Rc::new(RefCell::new(QuantityToFloat::new(ki_mul)));
         let kd_mul = Product2::new(kd, drv_zeroer);
-        let drv_float_maker = rc_ref_cell_reference(QuantityToFloat::new(kd_mul));
+        let drv_float_maker = Rc::new(RefCell::new(QuantityToFloat::new(kd_mul)));
         let output = SumStream::new([
-            to_dyn!(Getter<f32, ()>, pro_float_maker.clone()),
-            to_dyn!(Getter<f32, ()>, int_float_maker.clone()),
-            to_dyn!(Getter<f32, ()>, drv_float_maker.clone()),
+            Rc::clone(&pro_float_maker) as Rc<RefCell<dyn Getter<f32, ()>>>,
+            Rc::clone(&int_float_maker) as Rc<RefCell<dyn Getter<f32, ()>>>,
+            Rc::clone(&drv_float_maker) as Rc<RefCell<dyn Getter<f32, ()>>>,
         ]);
         Self {
-            int: to_dyn!(Getter<Quantity, ()>, int),
-            drv: to_dyn!(Getter<Quantity, ()>, drv),
-            pro_float_maker: to_dyn!(Getter<f32, ()>, pro_float_maker),
-            int_float_maker: to_dyn!(Getter<f32, ()>, int_float_maker),
-            drv_float_maker: to_dyn!(Getter<f32, ()>, drv_float_maker),
+            int: int as Rc<RefCell<dyn Getter<Quantity, ()>>>,
+            drv: drv as Rc<RefCell<dyn Getter<Quantity, ()>>>,
+            pro_float_maker: pro_float_maker as Rc<RefCell<dyn Getter<f32, ()>>>,
+            int_float_maker: int_float_maker as Rc<RefCell<dyn Getter<f32, ()>>>,
+            drv_float_maker: drv_float_maker as Rc<RefCell<dyn Getter<f32, ()>>>,
             output: output,
         }
     }
@@ -148,7 +160,7 @@ fn main() {
         "kp = {:?}; ki = {:?}; kd = {:?}",
         KP.value, KI.value, KD.value
     );
-    let input = to_dyn!(Getter<Quantity, ()>, rc_ref_cell_reference(MyStream::new()));
+    let input = Rc::new(RefCell::new(MyStream::new())) as Rc<RefCell<dyn Getter<Quantity, ()>>>;
     let mut stream = StreamPID::new(input.clone(), SETPOINT, KP, KI, KD);
     stream.update().unwrap();
     println!(
