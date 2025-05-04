@@ -875,6 +875,16 @@ impl<TG: ?Sized + TimeGetter<E>, E: Clone + Debug> TimeGetter<E>
             .get()
     }
 }
+#[macro_export]
+macro_rules! to_dyn {
+    //TODO: You may want to switch the order of these.
+    ($trait_:path, $was:expr) => {{
+        let ptr = $was.copy_inner() as *mut dyn $trait_;
+        //TODO: Make sure the scoping is OK. (Does this still work if we only have rrtk in scope
+        //and not rrtk::PointerDereferencer?)
+        unsafe { PointerDereferencer::new(ptr) }
+    }};
+}
 #[cfg(feature = "alloc")]
 impl<U: ?Sized + Updatable<E>, E: Clone + Debug> Updatable<E> for Box<U> {
     fn update(&mut self) -> NothingOrError<E> {
