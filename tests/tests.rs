@@ -768,13 +768,13 @@ fn time_getter_from_stream() {
     }
     unsafe {
         static mut STREAM: Stream = Stream::new();
-        let stream = Reference::from_ptr(core::ptr::addr_of_mut!(STREAM));
+        let mut stream = PointerDereferencer::new(core::ptr::addr_of_mut!(STREAM));
         let mut time_getter = TimeGetterFromGetter::new(stream.clone(), Error::GetterNone);
         time_getter.update().unwrap(); //This should do nothing.
         assert_eq!(time_getter.get(), Ok(Time::ZERO));
-        stream.borrow_mut().update().unwrap();
+        stream.update().unwrap();
         assert_eq!(time_getter.get(), Err(Error::GetterNone));
-        stream.borrow_mut().update().unwrap();
+        stream.update().unwrap();
         assert_eq!(time_getter.get(), Err(Error::GetterError));
     }
 }
@@ -873,7 +873,7 @@ fn getter_from_history() {
     let mut my_history = MyHistory::new();
     unsafe {
         static mut TIME_GETTER: MyTimeGetter = MyTimeGetter::new();
-        let my_time_getter = Reference::from_ptr(core::ptr::addr_of_mut!(TIME_GETTER));
+        let mut my_time_getter = PointerDereferencer::new(core::ptr::addr_of_mut!(TIME_GETTER));
 
         {
             let no_delta = GetterFromHistory::new_no_delta(&mut my_history, my_time_getter.clone());
@@ -881,7 +881,7 @@ fn getter_from_history() {
                 no_delta.get().unwrap().unwrap(),
                 Datum::new(Time::from_nanoseconds(5), 5)
             );
-            my_time_getter.borrow_mut().update().unwrap();
+            my_time_getter.update().unwrap();
             assert_eq!(
                 no_delta.get().unwrap().unwrap(),
                 Datum::new(Time::from_nanoseconds(6), 6)
@@ -896,7 +896,7 @@ fn getter_from_history() {
                 start_at_zero.get().unwrap().unwrap(),
                 Datum::new(Time::from_nanoseconds(6), 0)
             );
-            my_time_getter.borrow_mut().update().unwrap();
+            my_time_getter.update().unwrap();
             assert_eq!(
                 start_at_zero.get().unwrap().unwrap(),
                 Datum::new(Time::from_nanoseconds(7), 1)
@@ -914,7 +914,7 @@ fn getter_from_history() {
                 custom_start.get().unwrap().unwrap(),
                 Datum::new(Time::from_nanoseconds(7), 10)
             );
-            my_time_getter.borrow_mut().update().unwrap();
+            my_time_getter.update().unwrap();
             assert_eq!(
                 custom_start.get().unwrap().unwrap(),
                 Datum::new(Time::from_nanoseconds(8), 11)
@@ -931,7 +931,7 @@ fn getter_from_history() {
                 custom_delta.get().unwrap().unwrap(),
                 Datum::new(Time::from_nanoseconds(8), 13)
             );
-            my_time_getter.borrow_mut().update().unwrap();
+            my_time_getter.update().unwrap();
             assert_eq!(
                 custom_delta.get().unwrap().unwrap(),
                 Datum::new(Time::from_nanoseconds(9), 14)
@@ -995,7 +995,7 @@ fn constant_getter() {
     unsafe {
         static mut MY_TIME_GETTER: MyTimeGetter = MyTimeGetter;
         let mut constant_getter = ConstantGetter::new(
-            Reference::from_ptr(core::ptr::addr_of_mut!(MY_TIME_GETTER)),
+            PointerDereferencer::new(core::ptr::addr_of_mut!(MY_TIME_GETTER)),
             10,
         );
         assert_eq!(constant_getter.get().unwrap().unwrap().value, 10);
