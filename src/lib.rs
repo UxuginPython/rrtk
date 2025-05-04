@@ -722,6 +722,8 @@ impl Half for f64 {
 ///references involving raw pointer dereferencing. This is a wrapper struct that provides this
 ///functionality for `*mut T`, `*const RwLock<T>`, and `*const Mutex<T>`. It's constructor is
 ///`unsafe fn`, so this is considered sound.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[repr(transparent)]
 pub struct PointerDereferencer<P> {
     pointer: P,
 }
