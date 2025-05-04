@@ -8,8 +8,8 @@ use rrtk::streams::logic::*;
 use rrtk::streams::math::*;
 use rrtk::streams::*;
 use rrtk::*;
-//TODO: Some of these PointerDereferencers probably aren't needed, and nearly all unsafe blocks can
-//be shrunk.
+//TODO: Some of these PointerDereferencers probably aren't needed, nearly all unsafe blocks can be
+//be shrunk, and some clone calls are unnecessary for Copy types.
 #[test]
 fn expirer() {
     struct DummyStream;
@@ -395,12 +395,12 @@ fn sum_stream() {
     }
     unsafe {
         static mut ERRORING: ErroringStream = ErroringStream::new();
-        let erroring = PointerDereferencer::new(core::ptr::addr_of_mut!(ERRORING));
+        let mut erroring = PointerDereferencer::new(core::ptr::addr_of_mut!(ERRORING));
         static mut NORMAL: NormalStream = NormalStream::new();
         let normal = PointerDereferencer::new(core::ptr::addr_of_mut!(NORMAL));
         let stream = SumStream::new([
-            to_dyn!(Getter<f32, _>, erroring.clone()),
-            to_dyn!(Getter<f32, _>, normal.clone()),
+            erroring.clone().as_dyn_getter(),
+            normal.clone().as_dyn_getter(),
         ]);
         assert!(stream.get().is_err());
         //normal does not need update
@@ -431,8 +431,7 @@ fn sum_stream_all_none() {
             Ok(())
         }
     }
-    let input = static_reference!(Input, Input);
-    let sum_stream = SumStream::new([to_dyn!(Getter<f32, ()>, input)]);
+    let sum_stream = SumStream::new([Input]);
     assert_eq!(sum_stream.get(), Ok(None));
 }
 #[test]
@@ -649,12 +648,12 @@ fn product_stream() {
     }
     unsafe {
         static mut ERRORING: ErroringStream = ErroringStream::new();
-        let erroring = PointerDereferencer::new(core::ptr::addr_of_mut!(ERRORING));
+        let mut erroring = PointerDereferencer::new(core::ptr::addr_of_mut!(ERRORING));
         static mut NORMAL: NormalStream = NormalStream::new();
         let normal = PointerDereferencer::new(core::ptr::addr_of_mut!(NORMAL));
         let stream = ProductStream::new([
-            to_dyn!(Getter<f32, _>, erroring.clone()),
-            to_dyn!(Getter<f32, _>, normal.clone()),
+            erroring.clone().as_dyn_getter(),
+            normal.clone().as_dyn_getter(),
         ]);
         assert!(stream.get().is_err());
         //normal does not need update
@@ -685,8 +684,7 @@ fn product_stream_all_none() {
             Ok(())
         }
     }
-    let input = static_reference!(Input, Input);
-    let product_stream = ProductStream::new([to_dyn!(Getter<f32, ()>, input)]);
+    let product_stream = ProductStream::new([Input]);
     assert_eq!(product_stream.get(), Ok(None));
 }
 #[test]
@@ -1467,12 +1465,12 @@ fn latest() {
     }
     unsafe {
         static mut STREAM_1: Stream1 = Stream1::new();
-        let stream1 = PointerDereferencer::new(core::ptr::addr_of_mut!(STREAM_1));
+        let mut stream1 = PointerDereferencer::new(core::ptr::addr_of_mut!(STREAM_1));
         static mut STREAM_2: Stream2 = Stream2::new();
-        let stream2 = PointerDereferencer::new(core::ptr::addr_of_mut!(STREAM_2));
+        let mut stream2 = PointerDereferencer::new(core::ptr::addr_of_mut!(STREAM_2));
         let mut latest = Latest::new([
-            to_dyn!(Getter<u8, _>, stream1.clone()),
-            to_dyn!(Getter<u8, _>, stream2.clone()),
+            stream1.clone().as_dyn_getter(),
+            stream2.clone().as_dyn_getter(),
         ]);
         latest.update().unwrap(); //This should do nothing.
         assert_eq!(
