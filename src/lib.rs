@@ -731,10 +731,48 @@ impl<P> PointerDereferencer<P> {
     ///The constructor for `PointerDereferencer`. Although this constructor itself does not run any
     ///unsafe code, it is `unsafe fn` since this type inherently performs unsafe functions. See the
     ///[type documentation](`PointerDereferencer`) for more information.
+    ///
+    ///Although it is technically possible to construct a `PointerDereferencer<P>` where `P` is not
+    ///a raw pointer, there is no valid reason to do so and the object would be entirely useless.
     pub const unsafe fn new(pointer: P) -> Self {
         Self { pointer: pointer }
     }
+    //XXX: Is it clear that *_inner means the pointer and not the target of the pointer, or should
+    //these functions be renamed?
+    ///Returns the inner pointer that the wrapper contains by consuming it. Due to the fact that
+    ///pointers are `Copy`, [`copy_inner`](Self::copy_inner), which does not consume `self` and is
+    ///`const fn`, is preferred in almost all cases however.
+    pub fn into_inner(self) -> P {
+        self.pointer
+    }
 }
+impl<P: Clone> PointerDereferencer<P> {
+    ///Clones and returns the inner pointer that the wrapper contains. Due to the fact that
+    ///pointers are `Copy`, [`copy_inner`](Self::copy_inner) is nearly always preferred both for
+    ///clarity and because it is `const fn` however.
+    pub fn clone_inner(&self) -> P {
+        self.pointer.clone()
+    }
+}
+impl<P: Copy> PointerDereferencer<P> {
+    ///This function is be identical to [`clone_inner`](Self::clone_inner) when `P: Copy`. However,
+    ///`copy_inner` should be preferred where possible because, unlike `clone_inner`, it is
+    ///`const fn`. It is also clearer that the clone is very light.
+    pub const fn copy_inner(&self) -> P {
+        self.pointer
+    }
+}
+//FIXME: Make one of these work if you can, preferably From since it implies Into.
+/*impl<P> From<PointerDereferencer<P>> for P {
+    fn from(was: PointerDereferencer<P>) -> Self {
+        was.into_inner()
+    }
+}*/
+/*impl<P> Into<P> for PointerDereferencer<P> {
+    fn into(self) -> P {
+        self.into_inner()
+    }
+}*/
 impl<U: ?Sized + Updatable<E>, E: Clone + Debug> Updatable<E> for PointerDereferencer<*mut U> {
     fn update(&mut self) -> NothingOrError<E> {
         unsafe { (*self.pointer).update() }
