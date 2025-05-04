@@ -17,7 +17,7 @@
 //!
 //!RRTK prefers **`std`** over **`libm`** and `libm` over **`micromath`** when multiple are
 //!available.
-#![warn(missing_docs)]
+//#![warn(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
 #[cfg(all(
     feature = "internal_enhanced_float",
@@ -742,6 +742,7 @@ impl<P> PointerDereferencer<P> {
     ///Returns the inner pointer that the wrapper contains by consuming it. Due to the fact that
     ///pointers are `Copy`, [`copy_inner`](Self::copy_inner), which does not consume `self` and is
     ///`const fn`, is preferred in almost all cases however.
+    #[inline]
     pub fn into_inner(self) -> P {
         self.pointer
     }
@@ -750,6 +751,7 @@ impl<P: Clone> PointerDereferencer<P> {
     ///Clones and returns the inner pointer that the wrapper contains. Due to the fact that
     ///pointers are `Copy`, [`copy_inner`](Self::copy_inner) is nearly always preferred both for
     ///clarity and because it is `const fn` however.
+    #[inline]
     pub fn clone_inner(&self) -> P {
         self.pointer.clone()
     }
@@ -758,8 +760,47 @@ impl<P: Copy> PointerDereferencer<P> {
     ///This function is be identical to [`clone_inner`](Self::clone_inner) when `P: Copy`. However,
     ///`copy_inner` should be preferred where possible because, unlike `clone_inner`, it is
     ///`const fn`. It is also clearer that the clone is very light.
+    #[inline]
     pub const fn copy_inner(&self) -> P {
         self.pointer
+    }
+}
+impl<T> PointerDereferencer<*mut T> {
+    #[inline]
+    pub fn as_dyn_updatable<E: Clone + Debug>(&self) -> PointerDereferencer<*mut dyn Updatable<E>>
+    where
+        T: Updatable<E>,
+    {
+        let ptr = self.copy_inner() as *mut dyn Updatable<E>;
+        unsafe { PointerDereferencer::new(ptr) }
+    }
+    #[inline]
+    pub fn as_dyn_getter<U, E: Clone + Debug>(&self) -> PointerDereferencer<*mut dyn Getter<U, E>>
+    where
+        T: Getter<U, E>,
+    {
+        let ptr = self.copy_inner() as *mut dyn Getter<U, E>;
+        unsafe { PointerDereferencer::new(ptr) }
+    }
+    #[inline]
+    pub fn as_dyn_settable<U, E: Clone + Debug>(
+        &self,
+    ) -> PointerDereferencer<*mut dyn Settable<U, E>>
+    where
+        T: Settable<U, E>,
+    {
+        let ptr = self.copy_inner() as *mut dyn Settable<U, E>;
+        unsafe { PointerDereferencer::new(ptr) }
+    }
+    #[inline]
+    pub fn as_dyn_time_getter<E: Clone + Debug>(
+        &self,
+    ) -> PointerDereferencer<*mut dyn TimeGetter<E>>
+    where
+        T: TimeGetter<E>,
+    {
+        let ptr = self.copy_inner() as *mut dyn TimeGetter<E>;
+        unsafe { PointerDereferencer::new(ptr) }
     }
 }
 //FIXME: Make one of these work if you can, preferably From since it implies Into.
@@ -874,16 +915,6 @@ impl<TG: ?Sized + TimeGetter<E>, E: Clone + Debug> TimeGetter<E>
             .expect("RRTK failed to acquire Mutex lock for TimeGetter")
             .get()
     }
-}
-#[macro_export]
-macro_rules! to_dyn {
-    //TODO: You may want to switch the order of these.
-    ($trait_:path, $was:expr) => {{
-        let ptr = $was.copy_inner() as *mut dyn $trait_;
-        //TODO: Make sure the scoping is OK. (Does this still work if we only have rrtk in scope
-        //and not rrtk::PointerDereferencer?)
-        unsafe { PointerDereferencer::new(ptr) }
-    }};
 }
 #[cfg(feature = "alloc")]
 impl<U: ?Sized + Updatable<E>, E: Clone + Debug> Updatable<E> for Box<U> {
