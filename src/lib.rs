@@ -765,43 +765,73 @@ impl<P: Copy> PointerDereferencer<P> {
         self.pointer
     }
 }
+macro_rules! as_dyn_updatable {
+    ($return_type:ty) => {
+        #[inline]
+        pub fn as_dyn_updatable<E: Clone + Debug>(&self) -> PointerDereferencer<$return_type>
+        where
+            T: Updatable<E>,
+        {
+            let ptr = self.copy_inner() as $return_type;
+            unsafe { PointerDereferencer::new(ptr) }
+        }
+    };
+}
+macro_rules! as_dyn_getter {
+    ($return_type:ty) => {
+        #[inline]
+        pub fn as_dyn_getter<U, E: Clone + Debug>(&self) -> PointerDereferencer<$return_type>
+        where
+            T: Getter<U, E>,
+        {
+            let ptr = self.copy_inner() as $return_type;
+            unsafe { PointerDereferencer::new(ptr) }
+        }
+    };
+}
+macro_rules! as_dyn_settable {
+    ($return_type:ty) => {
+        #[inline]
+        pub fn as_dyn_settable<U, E: Clone + Debug>(&self) -> PointerDereferencer<$return_type>
+        where
+            T: Settable<U, E>,
+        {
+            let ptr = self.copy_inner() as $return_type;
+            unsafe { PointerDereferencer::new(ptr) }
+        }
+    };
+}
+macro_rules! as_dyn_time_getter {
+    ($return_type:ty) => {
+        #[inline]
+        pub fn as_dyn_time_getter<E: Clone + Debug>(&self) -> PointerDereferencer<$return_type>
+        where
+            T: TimeGetter<E>,
+        {
+            let ptr = self.copy_inner() as $return_type;
+            unsafe { PointerDereferencer::new(ptr) }
+        }
+    };
+}
 impl<T> PointerDereferencer<*mut T> {
-    #[inline]
-    pub fn as_dyn_updatable<E: Clone + Debug>(&self) -> PointerDereferencer<*mut dyn Updatable<E>>
-    where
-        T: Updatable<E>,
-    {
-        let ptr = self.copy_inner() as *mut dyn Updatable<E>;
-        unsafe { PointerDereferencer::new(ptr) }
-    }
-    #[inline]
-    pub fn as_dyn_getter<U, E: Clone + Debug>(&self) -> PointerDereferencer<*mut dyn Getter<U, E>>
-    where
-        T: Getter<U, E>,
-    {
-        let ptr = self.copy_inner() as *mut dyn Getter<U, E>;
-        unsafe { PointerDereferencer::new(ptr) }
-    }
-    #[inline]
-    pub fn as_dyn_settable<U, E: Clone + Debug>(
-        &self,
-    ) -> PointerDereferencer<*mut dyn Settable<U, E>>
-    where
-        T: Settable<U, E>,
-    {
-        let ptr = self.copy_inner() as *mut dyn Settable<U, E>;
-        unsafe { PointerDereferencer::new(ptr) }
-    }
-    #[inline]
-    pub fn as_dyn_time_getter<E: Clone + Debug>(
-        &self,
-    ) -> PointerDereferencer<*mut dyn TimeGetter<E>>
-    where
-        T: TimeGetter<E>,
-    {
-        let ptr = self.copy_inner() as *mut dyn TimeGetter<E>;
-        unsafe { PointerDereferencer::new(ptr) }
-    }
+    as_dyn_updatable!(*mut dyn Updatable<E>);
+    as_dyn_getter!(*mut dyn Getter<U, E>);
+    as_dyn_settable!(*mut dyn Settable<U, E>);
+    as_dyn_time_getter!(*mut dyn TimeGetter<E>);
+}
+#[cfg(feature = "std")]
+impl<T> PointerDereferencer<*const RwLock<T>> {
+    as_dyn_updatable!(*const RwLock<dyn Updatable<E>>);
+    as_dyn_getter!(*const RwLock<dyn Getter<U, E>>);
+    as_dyn_settable!(*const RwLock<dyn Settable<U, E>>);
+    as_dyn_time_getter!(*const RwLock<dyn TimeGetter<E>>);
+}
+#[cfg(feature = "std")]
+impl<T> PointerDereferencer<*const Mutex<T>> {
+    as_dyn_updatable!(*const Mutex<dyn Updatable<E>>);
+    as_dyn_getter!(*const Mutex<dyn Getter<U, E>>);
+    as_dyn_settable!(*const Mutex<dyn Settable<U, E>>);
+    as_dyn_time_getter!(*const Mutex<dyn TimeGetter<E>>);
 }
 //FIXME: Make one of these work if you can, preferably From since it implies Into.
 /*impl<P> From<PointerDereferencer<P>> for P {
