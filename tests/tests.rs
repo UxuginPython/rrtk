@@ -867,14 +867,12 @@ fn getter_from_history() {
             Ok(())
         }
     }
-
     let mut my_history = MyHistory::new();
     static mut TIME_GETTER: MyTimeGetter = MyTimeGetter::new();
     let mut my_time_getter =
         unsafe { PointerDereferencer::new(core::ptr::addr_of_mut!(TIME_GETTER)) };
-
     {
-        let no_delta = GetterFromHistory::new_no_delta(&mut my_history, my_time_getter.clone());
+        let no_delta = GetterFromHistory::new_no_delta(&mut my_history, my_time_getter);
         assert_eq!(
             no_delta.get().unwrap().unwrap(),
             Datum::new(Time::from_nanoseconds(5), 5)
@@ -885,10 +883,9 @@ fn getter_from_history() {
             Datum::new(Time::from_nanoseconds(6), 6)
         );
     }
-
     {
         let start_at_zero =
-            GetterFromHistory::new_start_at_zero(&mut my_history, my_time_getter.clone()).unwrap();
+            GetterFromHistory::new_start_at_zero(&mut my_history, my_time_getter).unwrap();
         assert_eq!(
             start_at_zero.get().unwrap().unwrap(),
             Datum::new(Time::from_nanoseconds(6), 0)
@@ -899,11 +896,10 @@ fn getter_from_history() {
             Datum::new(Time::from_nanoseconds(7), 1)
         );
     }
-
     {
         let custom_start = GetterFromHistory::new_custom_start(
             &mut my_history,
-            my_time_getter.clone(),
+            my_time_getter,
             Time::from_nanoseconds(10),
         )
         .unwrap();
@@ -917,11 +913,10 @@ fn getter_from_history() {
             Datum::new(Time::from_nanoseconds(8), 11)
         );
     }
-
     {
         let custom_delta = GetterFromHistory::new_custom_delta(
             &mut my_history,
-            my_time_getter.clone(),
+            my_time_getter,
             Time::from_nanoseconds(5),
         );
         assert_eq!(
@@ -934,9 +929,8 @@ fn getter_from_history() {
             Datum::new(Time::from_nanoseconds(9), 14)
         );
     }
-
     {
-        let mut getter = GetterFromHistory::new_no_delta(&mut my_history, my_time_getter.clone());
+        let mut getter = GetterFromHistory::new_no_delta(&mut my_history, my_time_getter);
         assert_eq!(
             getter.get().unwrap().unwrap(),
             Datum::new(Time::from_nanoseconds(9), 9)
@@ -952,10 +946,9 @@ fn getter_from_history() {
             Datum::new(Time::from_nanoseconds(9), 20)
         );
     }
-
     {
         my_history.set_update_test();
-        let mut getter = GetterFromHistory::new_no_delta(&mut my_history, my_time_getter.clone());
+        let mut getter = GetterFromHistory::new_no_delta(&mut my_history, my_time_getter);
         assert_eq!(
             getter.get().unwrap().unwrap(),
             Datum::new(Time::from_nanoseconds(9), 9)
@@ -966,10 +959,9 @@ fn getter_from_history() {
             Datum::new(Time::from_nanoseconds(10), 30)
         );
     }
-
     {
         my_history.set_none_test();
-        let getter = GetterFromHistory::new_no_delta(&mut my_history, my_time_getter.clone());
+        let getter = GetterFromHistory::new_no_delta(&mut my_history, my_time_getter);
         assert_eq!(getter.get().unwrap(), None);
     }
 }
