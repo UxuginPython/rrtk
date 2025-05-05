@@ -766,10 +766,10 @@ impl<P: Copy> PointerDereferencer<P> {
     }
 }
 macro_rules! as_dyn_updatable {
-    ($docs:literal, $return_type:ty) => {
+    ($return_type:ty) => {
         //The way documentation for these function has to work is unfortunate, but there's not
         //really a better way.
-        #[doc = $docs]
+        #[allow(missing_docs)]
         #[inline]
         pub fn as_dyn_updatable<E: Clone + Debug>(&self) -> PointerDereferencer<$return_type>
         where
@@ -782,6 +782,7 @@ macro_rules! as_dyn_updatable {
 }
 macro_rules! as_dyn_getter {
     ($return_type:ty) => {
+        #[allow(missing_docs)]
         #[inline]
         pub fn as_dyn_getter<U, E: Clone + Debug>(&self) -> PointerDereferencer<$return_type>
         where
@@ -794,6 +795,7 @@ macro_rules! as_dyn_getter {
 }
 macro_rules! as_dyn_settable {
     ($return_type:ty) => {
+        #[allow(missing_docs)]
         #[inline]
         pub fn as_dyn_settable<U, E: Clone + Debug>(&self) -> PointerDereferencer<$return_type>
         where
@@ -806,6 +808,7 @@ macro_rules! as_dyn_settable {
 }
 macro_rules! as_dyn_time_getter {
     ($return_type:ty) => {
+        #[allow(missing_docs)]
         #[inline]
         pub fn as_dyn_time_getter<E: Clone + Debug>(&self) -> PointerDereferencer<$return_type>
         where
@@ -816,31 +819,34 @@ macro_rules! as_dyn_time_getter {
         }
     };
 }
+///These functions get a `PointerDereferencer<*mut dyn Trait>` from a `PointerDereferencer<*mut T>`
+///where `T: Trait`. Because raw pointers are `Copy`, they only require `&self` and do not consume
+///the original `PointerDereferencer`. Unfortunately `T` currently must be `Sized` due to language
+///limitations.
 impl<T> PointerDereferencer<*mut T> {
-    as_dyn_updatable!(
-        "Gets a `PointerDereferencer<*mut dyn Updatable<E>>` from a `PointerDereferencer<*mut T>` where `T: Updatable<E>`. Because raw pointers are `Copy`, this only requires `&self` and does not consume the original `PointerDereferencer`.",
-        *mut dyn Updatable<E>
-    );
+    as_dyn_updatable!(*mut dyn Updatable<E>);
     as_dyn_getter!(*mut dyn Getter<U, E>);
     as_dyn_settable!(*mut dyn Settable<U, E>);
     as_dyn_time_getter!(*mut dyn TimeGetter<E>);
 }
+///These functions get a `PointerDereferencer<*const RwLock<dyn Trait>>` from a
+///`PointerDereferencer<*const RwLock<T>>` where `T: Trait`. Because raw pointers are `Copy`, they
+///only require `&self` and do not consume the original `PointerDereferencer`. Unfortunately `T`
+///currently must be `Sized` due to language limitations.
 #[cfg(feature = "std")]
 impl<T> PointerDereferencer<*const RwLock<T>> {
-    as_dyn_updatable!(
-        "Gets a `PointerDereferencer<*const RwLock<dyn Updatable<E>>>` from a `PointerDereferencer<*const RwLock<T>>` where `T: Updatable<E>`. Because raw pointers are `Copy`, this only requires `&self` and does not consume the original `PointerDereferencer`.",
-        *const RwLock<dyn Updatable<E>>
-    );
+    as_dyn_updatable!(*const RwLock<dyn Updatable<E>>);
     as_dyn_getter!(*const RwLock<dyn Getter<U, E>>);
     as_dyn_settable!(*const RwLock<dyn Settable<U, E>>);
     as_dyn_time_getter!(*const RwLock<dyn TimeGetter<E>>);
 }
+///These functions get a `PointerDereferencer<*const Mutex<dyn Trait>>` from a
+///`PointerDereferencer<*const Mutex<T>>` where `T: Trait`. Because raw pointers are `Copy`, they
+///only require `&self` and do not consume the original `PointerDereferencer`. Unfortunately `T`
+///currently must be `Sized` due to language limitations.
 #[cfg(feature = "std")]
 impl<T> PointerDereferencer<*const Mutex<T>> {
-    as_dyn_updatable!(
-        "Gets a `PointerDereferencer<*const Mutex<dyn Updatable<E>>>` from a `PointerDereferencer<*const Mutex<T>>` where `T: Updatable<E>`. Because raw pointers are `Copy`, this only requires `&self` and does not consume the original `PointerDereferencer`.",
-        *const Mutex<dyn Updatable<E>>
-    );
+    as_dyn_updatable!(*const Mutex<dyn Updatable<E>>);
     as_dyn_getter!(*const Mutex<dyn Getter<U, E>>);
     as_dyn_settable!(*const Mutex<dyn Settable<U, E>>);
     as_dyn_time_getter!(*const Mutex<dyn TimeGetter<E>>);
