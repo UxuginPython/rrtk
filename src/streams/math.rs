@@ -6,6 +6,7 @@ use core::mem::MaybeUninit;
 //TODO: The behavior of SumStream and friends in relation to Ok(None) is maximally unhelpful for
 //everyone. Either require Default and return that when all inputs return Ok(None) or return
 //Ok(None) when any input returns Ok(None). This is the worst possible combination.
+//Probably make them return Ok(None) if any inputs do to match Sum2 etc.
 ///A stream that adds all its inputs. If one input returns `Ok(None)`, it is excluded. If all inputs
 ///return `Ok(None)`, returns `Ok(None)`. If this is not the desired behavior, use
 ///[`NoneToValue`](converters::NoneToValue) or [`NoneToError`](converters::NoneToError).
@@ -86,11 +87,9 @@ where
         Ok(())
     }
 }
-//TODO: fix docs
 ///A stream that adds two inputs. This should be a bit faster than [`SumStream`], which adds any
-///number of inputs. If one inputs returns `Ok(None)`, the other input's output is returned. If
-///both inputs return `Ok(None)`, returns `Ok(None)`. If this is not the desired behavior, use
-///[`NoneToValue`](converters::NoneToValue) or [`NoneToError`](converters::NoneToError).
+///number of inputs. Returns `Ok(None)` if either input does. If this is not the desired behavior,
+///[`NoneToValue`](converters::NoneToValue) may be of interest.
 pub struct Sum2<T1, T2, G1, G2, E>
 where
     T1: Add<T2>,
@@ -159,8 +158,9 @@ where
         Ok(())
     }
 }
-///A stream that subtracts one of its inputs from the other. If the subtrahend stream returns
-///`Ok(None)`, the minuend's value will be returned directly.
+///A stream that subtracts one of its inputs from the other. Returns `Ok(None)` if either input
+///does. [`NoneToValue`](converters::NoneToValue) may be of interest if this is not the desired
+///behavior.
 pub struct DifferenceStream<TM, TS, GM, GS, E>
 where
     TM: Sub<TS>,
@@ -310,9 +310,8 @@ where
     }
 }
 ///A stream that multiplies two inputs. It should be a bit faster than [`ProductStream`], which
-///adds any number of inputs. If one input returns `Ok(None)`, returns the other input's output. If
-///both inputs return `Ok(None)`, returns `Ok(None)`. If this is not the desired behavior, use
-///[`NoneToValue`](converters::NoneToValue) or [`NoneToError`](converters::NoneToError).
+///adds any number of inputs. Returns `Ok(None)` if either of its inputs does. If this is not the
+///desired behavior, [`NoneToValue`](converters::NoneToValue) may be of interest.
 pub struct Product2<T1, T2, G1, G2, E>
 where
     T1: Mul<T2>,
@@ -379,8 +378,7 @@ where
         Ok(())
     }
 }
-///A stream that divides one if its inputs by the other. If the divisor returns `Ok(None)`, the
-///dividend's value is returned directly.
+///A stream that divides one if its inputs by the other. Returns `Ok(None)` if either input does.
 pub struct QuotientStream<TD, TS, GD, GS, E>
 where
     TD: Div<TS>,
