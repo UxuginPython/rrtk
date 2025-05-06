@@ -3,11 +3,11 @@
 
 [package]
 name = "rrtk"
-version = "0.7.0-alpha.4"
+version = "0.7.0-alpha.5"
 license = "BSD-3-Clause"
 edition = "2024"
 authors = ["UxuginPython <uxugin at uxugin dot com>"]
-homepage = "http://rrtk.org"
+homepage = "http://rrtk.org/crate/rrtk"
 repository = "https://github.com/UxuginPython/rrtk"
 description = "Rust Robotics ToolKit"
 keywords = ["robotics", "control"]

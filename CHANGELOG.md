@@ -257,3 +257,15 @@ Remove `Error` enum:
 - Add `Feeder` to replace `Settable`'s removed following functionality.
 - Remove `Settable`'s now-unnecessary `Clone` bound.
 - Pass `Settable` through `Reference` as `Updatable` and `Getter` are.
+## 0.7.0-alpha.5
+- Add `streams::converters::IntoConverter` and `streams::converters::ErrorIntoConverter`. `IntoConverter` uses the `Into` trait to convert an `Ok(Some(_))` value to a new type, and `ErrorIntoConverter` does likewise for `Err(_)`.
+- Add `streams::converters::NoneToDefault`, which is exactly like `NoneToValue` except that it uses `T::default()` instead of holding a value of `T` and requiring that `T: Clone`.
+- Only require `Clone + Debug` for errors instead of `Copy + Debug`.
+- Allow `Sum2`, `DifferenceStream`, `Product2`, and `QuotientStream` to use different types for their two inputs and output.
+- Make `Datum` `core::ops` impls more generic by using a `NotDatum` trait as a specialization workaround.
+- Pass `Updatable`, `Getter`, `Settable`, and `TimeGetter` through `Rc<RefCell<T>>`, `Arc<RwLock<T>>`, `Arc<Mutex<T>>`, and `Box<T>`.
+- Add `PointerDereferencer` which passes through the above traits for `*mut T`, `*const RwLock<T>`, and `*const Mutex<T>`. They cannot be directly passed through due to soundness reasons.
+- Remove `Reference` and related items. Use the above new implementations instead of it.
+- Make `DimensionAdder` and `DimensionRemover` constructors `const fn`.
+- Use where clauses instead of standard bounds in many places to improve readability.
+- Make some tests cleaner using `Result::is_err` and `Option::is_none`.
