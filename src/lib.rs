@@ -437,8 +437,8 @@ where
     TG: TimeGetter<E>,
     E: Clone + Debug,
 {
-    ///This does not need to be called.
     fn update(&mut self) -> NothingOrError<E> {
+        self.time_getter.update()?;
         Ok(())
     }
 }
