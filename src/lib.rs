@@ -127,11 +127,7 @@ pub struct PIDKValues {
 impl PIDKValues {
     ///Constructor for [`PIDKValues`].
     pub const fn new(kp: f32, ki: f32, kd: f32) -> Self {
-        Self {
-            kp,
-            ki,
-            kd,
-        }
+        Self { kp, ki, kd }
     }
     ///Calculate the control variable using the coefficients given error, its integral, and its
     ///derivative.
@@ -259,7 +255,9 @@ where
         //TODO: Currently, this just returns if anything fails, which can skip settable.update. Do
         //      you really want this?
         self.getter.update()?;
-        if let Some(datum) = self.getter.get()? { self.settable.set(datum.value)? };
+        if let Some(datum) = self.getter.get()? {
+            self.settable.set(datum.value)?
+        };
         self.settable.update()?;
         Ok(())
     }

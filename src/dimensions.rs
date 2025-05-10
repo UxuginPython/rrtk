@@ -693,10 +693,7 @@ pub struct Quantity {
 impl Quantity {
     ///Constructor for [`Quantity`].
     pub const fn new(value: f32, unit: Unit) -> Self {
-        Self {
-            value,
-            unit,
-        }
+        Self { value, unit }
     }
     ///Constructor for dimensionless [`Quantity`] objects that does not require a dimension to be
     ///provided.

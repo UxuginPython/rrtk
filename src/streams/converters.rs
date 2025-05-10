@@ -40,12 +40,8 @@ where
     fn get(&self) -> Output<T, E> {
         let output = self.input.get()?;
         match output {
-            Some(_) => {
-                Ok(output)
-            }
-            None => {
-                Err(self.from_none.clone())
-            }
+            Some(_) => Ok(output),
+            None => Err(self.from_none.clone()),
         }
     }
 }
@@ -100,15 +96,11 @@ where
     fn get(&self) -> Output<T, E> {
         let output = self.input.get()?;
         match output {
-            Some(_) => {
-                Ok(output)
-            }
-            None => {
-                Ok(Some(Datum::new(
-                    self.time_getter.get()?,
-                    self.none_value.clone(),
-                )))
-            }
+            Some(_) => Ok(output),
+            None => Ok(Some(Datum::new(
+                self.time_getter.get()?,
+                self.none_value.clone(),
+            ))),
         }
     }
 }
@@ -344,11 +336,7 @@ mod velocity_to_state {
                 Some(update_0) => match &update_0.update_1 {
                     Some(update_1) => Ok(Some(Datum::new(
                         update_0.last_update_time,
-                        State::new(
-                            update_1.pos,
-                            update_0.vel,
-                            update_1.acc,
-                        ),
+                        State::new(update_1.pos, update_0.vel, update_1.acc),
                     ))),
                     None => Ok(None),
                 },
@@ -360,50 +348,52 @@ mod velocity_to_state {
         fn update(&mut self) -> NothingOrError<E> {
             self.vel.update()?;
             match self.vel.get() {
-                Ok(gotten) => if let Some(new_vel_datum) = gotten {
-                    let new_time = new_vel_datum.time;
-                    let new_vel = new_vel_datum.value;
-                    new_vel.unit.assert_eq_assume_ok(&MILLIMETER_PER_SECOND);
-                    match &self.update {
-                        Some(update_0) => {
-                            let old_time = update_0.last_update_time;
-                            let delta_time = Quantity::from(new_time - old_time);
-                            let old_vel = update_0.vel;
-                            let new_acc = (new_vel - old_vel) / delta_time;
-                            let pos_addend =
-                                (old_vel + new_vel) / Quantity::dimensionless(2.0) * delta_time;
-                            match &update_0.update_1 {
-                                Some(update_1) => {
-                                    self.update = Some(Update0 {
-                                        last_update_time: new_time,
-                                        vel: new_vel,
-                                        update_1: Some(Update1 {
-                                            acc: new_acc,
-                                            pos: update_1.pos + pos_addend,
-                                        }),
-                                    });
-                                }
-                                None => {
-                                    self.update = Some(Update0 {
-                                        last_update_time: new_time,
-                                        vel: new_vel,
-                                        update_1: Some(Update1 {
-                                            acc: new_acc,
-                                            pos: pos_addend,
-                                        }),
-                                    });
+                Ok(gotten) => {
+                    if let Some(new_vel_datum) = gotten {
+                        let new_time = new_vel_datum.time;
+                        let new_vel = new_vel_datum.value;
+                        new_vel.unit.assert_eq_assume_ok(&MILLIMETER_PER_SECOND);
+                        match &self.update {
+                            Some(update_0) => {
+                                let old_time = update_0.last_update_time;
+                                let delta_time = Quantity::from(new_time - old_time);
+                                let old_vel = update_0.vel;
+                                let new_acc = (new_vel - old_vel) / delta_time;
+                                let pos_addend =
+                                    (old_vel + new_vel) / Quantity::dimensionless(2.0) * delta_time;
+                                match &update_0.update_1 {
+                                    Some(update_1) => {
+                                        self.update = Some(Update0 {
+                                            last_update_time: new_time,
+                                            vel: new_vel,
+                                            update_1: Some(Update1 {
+                                                acc: new_acc,
+                                                pos: update_1.pos + pos_addend,
+                                            }),
+                                        });
+                                    }
+                                    None => {
+                                        self.update = Some(Update0 {
+                                            last_update_time: new_time,
+                                            vel: new_vel,
+                                            update_1: Some(Update1 {
+                                                acc: new_acc,
+                                                pos: pos_addend,
+                                            }),
+                                        });
+                                    }
                                 }
                             }
-                        }
-                        None => {
-                            self.update = Some(Update0 {
-                                last_update_time: new_time,
-                                vel: new_vel,
-                                update_1: None,
-                            });
+                            None => {
+                                self.update = Some(Update0 {
+                                    last_update_time: new_time,
+                                    vel: new_vel,
+                                    update_1: None,
+                                });
+                            }
                         }
                     }
-                },
+                }
                 Err(error) => {
                     self.update = None;
                     return Err(error);
@@ -462,50 +452,52 @@ mod position_to_state {
         fn update(&mut self) -> NothingOrError<E> {
             self.pos.update()?;
             match self.pos.get() {
-                Ok(gotten) => if let Some(new_pos_datum) = gotten {
-                    let new_time = new_pos_datum.time;
-                    let new_pos = new_pos_datum.value;
-                    new_pos.unit.assert_eq_assume_ok(&MILLIMETER);
-                    match &self.update {
-                        Some(update_0) => {
-                            let old_time = update_0.last_update_time;
-                            let delta_time = Quantity::from(new_time - old_time);
-                            let old_pos = update_0.pos;
-                            let new_vel = (new_pos - old_pos) / delta_time;
-                            match &update_0.update_1 {
-                                Some(update_1) => {
-                                    let old_vel = update_1.vel;
-                                    let new_acc = (new_vel - old_vel) / delta_time;
-                                    self.update = Some(Update0 {
-                                        last_update_time: new_time,
-                                        pos: new_pos,
-                                        update_1: Some(Update1 {
-                                            vel: new_vel,
-                                            update_2: Some(new_acc),
-                                        }),
-                                    });
-                                }
-                                None => {
-                                    self.update = Some(Update0 {
-                                        last_update_time: new_time,
-                                        pos: new_pos,
-                                        update_1: Some(Update1 {
-                                            vel: new_vel,
-                                            update_2: None,
-                                        }),
-                                    });
+                Ok(gotten) => {
+                    if let Some(new_pos_datum) = gotten {
+                        let new_time = new_pos_datum.time;
+                        let new_pos = new_pos_datum.value;
+                        new_pos.unit.assert_eq_assume_ok(&MILLIMETER);
+                        match &self.update {
+                            Some(update_0) => {
+                                let old_time = update_0.last_update_time;
+                                let delta_time = Quantity::from(new_time - old_time);
+                                let old_pos = update_0.pos;
+                                let new_vel = (new_pos - old_pos) / delta_time;
+                                match &update_0.update_1 {
+                                    Some(update_1) => {
+                                        let old_vel = update_1.vel;
+                                        let new_acc = (new_vel - old_vel) / delta_time;
+                                        self.update = Some(Update0 {
+                                            last_update_time: new_time,
+                                            pos: new_pos,
+                                            update_1: Some(Update1 {
+                                                vel: new_vel,
+                                                update_2: Some(new_acc),
+                                            }),
+                                        });
+                                    }
+                                    None => {
+                                        self.update = Some(Update0 {
+                                            last_update_time: new_time,
+                                            pos: new_pos,
+                                            update_1: Some(Update1 {
+                                                vel: new_vel,
+                                                update_2: None,
+                                            }),
+                                        });
+                                    }
                                 }
                             }
-                        }
-                        None => {
-                            self.update = Some(Update0 {
-                                last_update_time: new_time,
-                                pos: new_pos,
-                                update_1: None,
-                            });
+                            None => {
+                                self.update = Some(Update0 {
+                                    last_update_time: new_time,
+                                    pos: new_pos,
+                                    update_1: None,
+                                });
+                            }
                         }
                     }
-                },
+                }
                 Err(error) => {
                     self.update = None;
                     return Err(error);

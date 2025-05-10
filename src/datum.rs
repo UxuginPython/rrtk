@@ -12,10 +12,7 @@ pub struct Datum<T> {
 impl<T> Datum<T> {
     ///Constructor for [`Datum`] type.
     pub const fn new(time: Time, value: T) -> Datum<T> {
-        Datum {
-            time,
-            value,
-        }
+        Datum { time, value }
     }
     ///Replaces `self` with `maybe_replace_with` if `maybe_replace_with`'s timestamp is newer than
     ///`self`'s. Returns true if `self` was replaced and false otherwise.

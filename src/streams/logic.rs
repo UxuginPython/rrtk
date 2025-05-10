@@ -12,7 +12,9 @@ enum AndState {
 impl AndState {
     #[inline]
     fn none(&mut self) {
-        if let AndState::ReturnableTrue = self { *self = AndState::MaybeTrue }
+        if let AndState::ReturnableTrue = self {
+            *self = AndState::MaybeTrue
+        }
     }
 }
 ///Performs an and operation on two boolean getters. This will return [`None`] if it can't verify
@@ -130,7 +132,9 @@ enum OrState {
 impl OrState {
     #[inline]
     fn none(&mut self) {
-        if let OrState::ReturnableFalse = self { *self = OrState::MaybeFalse }
+        if let OrState::ReturnableFalse = self {
+            *self = OrState::MaybeFalse
+        }
     }
 }
 ///Performs an or operation on two boolean getters. This will return [`None`] if it can't verify that
