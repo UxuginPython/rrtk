@@ -329,8 +329,8 @@ where
     G2: Getter<T2, E>,
     E: Clone + Debug,
 {
-    addend1: G1,
-    addend2: G2,
+    factor1: G1,
+    factor2: G2,
     phantom_t1: PhantomData<T1>,
     phantom_t2: PhantomData<T2>,
     phantom_e: PhantomData<E>,
@@ -343,10 +343,10 @@ where
     E: Clone + Debug,
 {
     ///Constructor for [`Product2`].
-    pub const fn new(addend1: G1, addend2: G2) -> Self {
+    pub const fn new(factor1: G1, factor2: G2) -> Self {
         Self {
-            addend1: addend1,
-            addend2: addend2,
+            factor1: factor1,
+            factor2: factor2,
             phantom_t1: PhantomData,
             phantom_t2: PhantomData,
             phantom_e: PhantomData,
@@ -361,12 +361,12 @@ where
     E: Clone + Debug,
 {
     fn get(&self) -> Output<TO, E> {
-        let x = self.addend1.get()?;
+        let x = self.factor1.get()?;
         let x = match x {
             Some(x) => x,
             None => return Ok(None),
         };
-        let y = self.addend2.get()?;
+        let y = self.factor2.get()?;
         let y = match y {
             Some(y) => y,
             None => return Ok(None),
@@ -385,8 +385,8 @@ where
     E: Clone + Debug,
 {
     fn update(&mut self) -> NothingOrError<E> {
-        self.addend1.update()?;
-        self.addend2.update()?;
+        self.factor1.update()?;
+        self.factor2.update()?;
         Ok(())
     }
 }
