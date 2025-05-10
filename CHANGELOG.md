@@ -269,3 +269,6 @@ Remove `Error` enum:
 - Make `DimensionAdder` and `DimensionRemover` constructors `const fn`.
 - Use where clauses instead of standard bounds in many places to improve readability.
 - Make some tests cleaner using `Result::is_err` and `Option::is_none`.
+## 0.7.0-alpha.6
+- Make all streams update their inputs and, if they have them, `TimeGetter`s. (`ConstantGetter` also updates its `TimeGetter` although it is not considered a stream.)
+- Fix struct field naming mistake in `Product2`.
