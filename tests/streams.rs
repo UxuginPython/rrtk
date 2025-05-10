@@ -1068,15 +1068,20 @@ fn pid_controller_stream() {
         let mut stream =
             PIDControllerStream::new(input.clone(), 5.0, PIDKValues::new(1.0, 0.01, 0.1));
         stream.update().unwrap();
-        assert_eq!(stream.get().unwrap().unwrap().time, Time::ZERO);
-        assert_eq!(stream.get().unwrap().unwrap().value, 5.0);
-        input.update().unwrap();
-        stream.update().unwrap();
         assert_eq!(
             stream.get().unwrap().unwrap().time,
             Time::from_nanoseconds(2_000_000_000)
         );
-        assert_eq!(stream.get().unwrap().unwrap().value, 4.04);
+        assert_eq!(stream.get().unwrap().unwrap().value, 4.0);
+        stream.update().unwrap();
+        assert_eq!(
+            stream.get().unwrap().unwrap().time,
+            Time::from_nanoseconds(4_000_000_000)
+        );
+        assert_eq!(
+            stream.get().unwrap().unwrap().value,
+            3.0 + 7.0 * 0.01 - 0.5 * 0.1
+        );
     }
 }
 //See note on exponent_stream test
