@@ -119,6 +119,8 @@ where
     E: Clone + Debug,
 {
     fn update(&mut self) -> NothingOrError<E> {
+        self.input1.update()?;
+        self.input2.update()?;
         Ok(())
     }
 }
@@ -233,6 +235,8 @@ where
     E: Clone + Debug,
 {
     fn update(&mut self) -> NothingOrError<E> {
+        self.input1.update()?;
+        self.input2.update()?;
         Ok(())
     }
 }
@@ -261,6 +265,7 @@ impl<G: Getter<bool, E>, E: Clone + Debug> Getter<bool, E> for NotStream<G, E> {
 }
 impl<G: Getter<bool, E>, E: Clone + Debug> Updatable<E> for NotStream<G, E> {
     fn update(&mut self) -> NothingOrError<E> {
+        self.input.update()?;
         Ok(())
     }
 }

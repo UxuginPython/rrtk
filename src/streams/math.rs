@@ -84,6 +84,9 @@ where
     E: Clone + Debug,
 {
     fn update(&mut self) -> NothingOrError<E> {
+        for getter in &mut self.addends {
+            getter.update()?;
+        }
         Ok(())
     }
 }
@@ -155,6 +158,8 @@ where
     E: Clone + Debug,
 {
     fn update(&mut self) -> NothingOrError<E> {
+        self.addend1.update()?;
+        self.addend2.update()?;
         Ok(())
     }
 }
@@ -233,6 +238,8 @@ where
     E: Clone + Debug,
 {
     fn update(&mut self) -> NothingOrError<E> {
+        self.minuend.update()?;
+        self.subtrahend.update()?;
         Ok(())
     }
 }
@@ -306,6 +313,9 @@ where
     E: Clone + Debug,
 {
     fn update(&mut self) -> NothingOrError<E> {
+        for getter in &mut self.factors {
+            getter.update()?;
+        }
         Ok(())
     }
 }
@@ -375,6 +385,8 @@ where
     E: Clone + Debug,
 {
     fn update(&mut self) -> NothingOrError<E> {
+        self.addend1.update()?;
+        self.addend2.update()?;
         Ok(())
     }
 }
@@ -451,6 +463,8 @@ where
     E: Clone + Debug,
 {
     fn update(&mut self) -> NothingOrError<E> {
+        self.dividend.update()?;
+        self.divisor.update()?;
         Ok(())
     }
 }
@@ -524,6 +538,8 @@ where
     E: Clone + Debug,
 {
     fn update(&mut self) -> NothingOrError<E> {
+        self.base.update()?;
+        self.exponent.update()?;
         Ok(())
     }
 }
@@ -563,6 +579,7 @@ where
     E: Clone + Debug,
 {
     fn update(&mut self) -> NothingOrError<E> {
+        self.input.update()?;
         let output = self.input.get();
         let output = match output {
             Ok(ok) => ok,
@@ -631,6 +648,7 @@ where
     E: Clone + Debug,
 {
     fn update(&mut self) -> NothingOrError<E> {
+        self.input.update()?;
         let output = self.input.get();
         let output = match output {
             Ok(ok) => ok,

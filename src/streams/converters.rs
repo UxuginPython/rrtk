@@ -55,8 +55,8 @@ where
     G: Getter<T, E>,
     E: Clone + Debug,
 {
-    ///This does not need to be called.
     fn update(&mut self) -> NothingOrError<E> {
+        self.input.update()?;
         Ok(())
     }
 }
@@ -120,6 +120,8 @@ where
     E: Clone + Debug,
 {
     fn update(&mut self) -> NothingOrError<E> {
+        self.time_getter.update()?;
+        self.input.update()?;
         Ok(())
     }
 }
@@ -175,6 +177,8 @@ where
     E: Clone + Debug,
 {
     fn update(&mut self) -> NothingOrError<E> {
+        self.time_getter.update()?;
+        self.input.update()?;
         Ok(())
     }
 }
@@ -226,6 +230,7 @@ mod acceleration_to_state {
     }
     impl<G: Getter<Quantity, E>, E: Clone + Debug> Updatable<E> for AccelerationToState<G, E> {
         fn update(&mut self) -> NothingOrError<E> {
+            self.acc.update()?;
             match self.acc.get() {
                 Ok(gotten) => match gotten {
                     Some(new_acc_datum) => {
@@ -353,6 +358,7 @@ mod velocity_to_state {
     }
     impl<G: Getter<Quantity, E>, E: Clone + Debug> Updatable<E> for VelocityToState<G, E> {
         fn update(&mut self) -> NothingOrError<E> {
+            self.vel.update()?;
             match self.vel.get() {
                 Ok(gotten) => match gotten {
                     Some(new_vel_datum) => {
@@ -457,6 +463,7 @@ mod position_to_state {
     }
     impl<G: Getter<Quantity, E>, E: Clone + Debug> Updatable<E> for PositionToState<G, E> {
         fn update(&mut self) -> NothingOrError<E> {
+            self.pos.update()?;
             match self.pos.get() {
                 Ok(gotten) => match gotten {
                     Some(new_pos_datum) => {
@@ -532,6 +539,7 @@ impl<G: Getter<f32, E>, E: Clone + Debug> FloatToQuantity<G, E> {
 }
 impl<G: Getter<f32, E>, E: Clone + Debug> Updatable<E> for FloatToQuantity<G, E> {
     fn update(&mut self) -> NothingOrError<E> {
+        self.input.update()?;
         Ok(())
     }
 }
@@ -567,6 +575,7 @@ impl<G: Getter<Quantity, E>, E: Clone + Debug> Getter<f32, E> for QuantityToFloa
 }
 impl<G: Getter<Quantity, E>, E: Clone + Debug> Updatable<E> for QuantityToFloat<G, E> {
     fn update(&mut self) -> NothingOrError<E> {
+        self.input.update()?;
         Ok(())
     }
 }
@@ -611,6 +620,7 @@ impl<T, MM: Integer, S: Integer, G: Getter<T, E>, E: Clone + Debug> Updatable<E>
     for DimensionAdder<T, MM, S, G, E>
 {
     fn update(&mut self) -> NothingOrError<E> {
+        self.input.update()?;
         Ok(())
     }
 }
@@ -672,6 +682,7 @@ impl<
 > Updatable<E> for DimensionRemover<T, MM, S, G, E>
 {
     fn update(&mut self) -> NothingOrError<E> {
+        self.input.update()?;
         Ok(())
     }
 }
@@ -706,8 +717,8 @@ where
     }
 }
 impl<TI, G: Getter<TI, E>, E: Clone + Debug> Updatable<E> for IntoConverter<TI, G, E> {
-    ///This does not need to be called.
     fn update(&mut self) -> NothingOrError<E> {
+        self.input.update()?;
         Ok(())
     }
 }
@@ -741,8 +752,8 @@ where
 impl<T, G: Getter<T, EI>, EI: Clone + Debug + Into<EO>, EO: Clone + Debug> Updatable<EO>
     for ErrorIntoConverter<T, G, EI>
 {
-    ///This does not need to be called.
     fn update(&mut self) -> NothingOrError<EO> {
+        self.input.update().map_err(|error| error.into())?;
         Ok(())
     }
 }

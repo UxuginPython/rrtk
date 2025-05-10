@@ -42,6 +42,7 @@ impl<G: Getter<f32, E>, E: Clone + Debug> Getter<f32, E> for PIDControllerStream
 }
 impl<G: Getter<f32, E>, E: Clone + Debug> Updatable<E> for PIDControllerStream<G, E> {
     fn update(&mut self) -> NothingOrError<E> {
+        self.input.update()?;
         let process = self.input.get();
         let process = match process {
             Ok(Some(value)) => value,
@@ -167,6 +168,7 @@ mod command_pid {
     }
     impl<G: Getter<State, E>, E: Clone + Debug> Updatable<E> for CommandPID<G, E> {
         fn update(&mut self) -> NothingOrError<E> {
+            self.input.update()?;
             let raw_get = self.input.get();
             let datum_state = match raw_get {
                 Ok(Some(value)) => value,
@@ -320,6 +322,7 @@ where
     E: Clone + Debug,
 {
     fn update(&mut self) -> NothingOrError<E> {
+        self.input.update()?;
         let output = self.input.get();
         let output = match output {
             Err(error) => {
@@ -363,6 +366,7 @@ where
 #[cfg(feature = "internal_enhanced_float")]
 impl<G: Getter<Quantity, E>, E: Clone + Debug> Updatable<E> for EWMAStream<Quantity, G, E> {
     fn update(&mut self) -> NothingOrError<E> {
+        self.input.update()?;
         let output = self.input.get();
         let output = match output {
             Err(error) => {
@@ -442,6 +446,7 @@ where
     E: Clone + Debug,
 {
     fn update(&mut self) -> NothingOrError<E> {
+        self.input.update()?;
         let output = self.input.get();
         let output = match output {
             Ok(Some(thing)) => thing,
@@ -498,6 +503,7 @@ impl<G: Getter<Quantity, E>, E: Clone + Debug> Updatable<E>
     for MovingAverageStream<Quantity, G, E>
 {
     fn update(&mut self) -> NothingOrError<E> {
+        self.input.update()?;
         let output = self.input.get();
         let output = match output {
             Ok(Some(thing)) => thing,

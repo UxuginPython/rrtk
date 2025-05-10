@@ -33,8 +33,8 @@ impl<T, const C: usize, G: Getter<T, E>, E: Clone + Debug> Latest<T, C, G, E> {
 impl<T, const C: usize, G: Getter<T, E>, E: Clone + Debug> Getter<T, E> for Latest<T, C, G, E> {
     fn get(&self) -> Output<T, E> {
         let mut output: Option<Datum<T>> = None;
-        for i in &self.inputs {
-            let gotten = i.get();
+        for getter in &self.inputs {
+            let gotten = getter.get();
             match gotten {
                 Ok(Some(gotten)) => match &output {
                     Some(thing) => {
@@ -54,6 +54,9 @@ impl<T, const C: usize, G: Getter<T, E>, E: Clone + Debug> Getter<T, E> for Late
 }
 impl<T, const C: usize, G: Getter<T, E>, E: Clone + Debug> Updatable<E> for Latest<T, C, G, E> {
     fn update(&mut self) -> NothingOrError<E> {
+        for getter in &mut self.inputs {
+            getter.update()?;
+        }
         Ok(())
     }
 }
@@ -112,6 +115,8 @@ where
     E: Clone + Debug,
 {
     fn update(&mut self) -> NothingOrError<E> {
+        self.time_getter.update()?;
+        self.input.update()?;
         Ok(())
     }
 }

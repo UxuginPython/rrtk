@@ -56,6 +56,8 @@ where
     E: Clone + Debug,
 {
     fn update(&mut self) -> NothingOrError<E> {
+        self.input.update()?;
+        self.condition.update()?;
         Ok(())
     }
 }
@@ -115,11 +117,15 @@ where
     E: Clone + Debug,
 {
     fn update(&mut self) -> NothingOrError<E> {
+        self.true_output.update()?;
+        self.false_output.update()?;
+        self.condition.update()?;
         Ok(())
     }
 }
 ///Returns the last value that a getter returned while another getter, a boolean, returned false.
-///Passes the getter's value through if the boolean getter is false.
+///Passes the getter's value through if the boolean getter is false. Still updates its input
+///regardless if it's frozen.
 pub struct FreezeStream<T, GC, GI, E>
 where
     T: Clone,
@@ -166,6 +172,8 @@ where
     E: Clone + Debug,
 {
     fn update(&mut self) -> NothingOrError<E> {
+        self.input.update()?;
+        self.condition.update()?;
         let condition = match self.condition.get() {
             Err(error) => {
                 //XXX: This may change when you standardize when Updatable::update errors.
