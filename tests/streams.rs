@@ -42,7 +42,7 @@ fn expirer() {
         let stream = PointerDereferencer::new(core::ptr::addr_of_mut!(STREAM));
         static mut TIME_GETTER: DummyTimeGetter = DummyTimeGetter { time: Time::ZERO };
         let mut time_getter = PointerDereferencer::new(core::ptr::addr_of_mut!(TIME_GETTER));
-        let mut expirer = Expirer::new(stream, time_getter.clone(), Time::from_nanoseconds(10));
+        let expirer = Expirer::new(stream, time_getter.clone(), Time::from_nanoseconds(10));
         assert_eq!(expirer.get(), Ok(Some(Datum::new(Time::ZERO, 0.0))));
         time_getter.update().unwrap();
         assert_eq!(expirer.get(), Ok(Some(Datum::new(Time::ZERO, 0.0))));
@@ -120,7 +120,7 @@ fn none_to_error() {
     unsafe {
         static mut INPUT: DummyStream = DummyStream::new();
         let mut input = PointerDereferencer::new(core::ptr::addr_of_mut!(INPUT));
-        let mut stream = NoneToError::new(input.clone(), Error::FromNone);
+        let stream = NoneToError::new(input.clone(), Error::FromNone);
         assert!(stream.get().unwrap().is_some());
         input.update().unwrap();
         if let Err(Error::FromNone) = stream.get() {
@@ -186,7 +186,7 @@ fn none_to_value() {
         let mut input = PointerDereferencer::new(core::ptr::addr_of_mut!(INPUT));
         static mut TIME_GETTER: DummyTimeGetter = DummyTimeGetter::new();
         let time_getter = PointerDereferencer::new(core::ptr::addr_of_mut!(TIME_GETTER));
-        let mut stream = NoneToValue::new(input.clone(), time_getter, 2.0);
+        let stream = NoneToValue::new(input.clone(), time_getter, 2.0);
         assert_eq!(stream.get().unwrap().unwrap().value, 1.0);
         input.update().unwrap();
         assert_eq!(stream.get().unwrap().unwrap().value, 2.0);
@@ -220,7 +220,7 @@ fn acceleration_to_state() {
     }
     unsafe {
         static mut ACC_GETTER: AccGetter = AccGetter::new();
-        let mut acc_getter = PointerDereferencer::new(core::ptr::addr_of_mut!(ACC_GETTER));
+        let acc_getter = PointerDereferencer::new(core::ptr::addr_of_mut!(ACC_GETTER));
         let mut state_getter = AccelerationToState::new(acc_getter.clone());
         let output = state_getter.get();
         assert!(output.unwrap().is_none());
@@ -270,7 +270,7 @@ fn velocity_to_state() {
     }
     unsafe {
         static mut VEL_GETTER: VelGetter = VelGetter::new();
-        let mut vel_getter = PointerDereferencer::new(core::ptr::addr_of_mut!(VEL_GETTER));
+        let vel_getter = PointerDereferencer::new(core::ptr::addr_of_mut!(VEL_GETTER));
         let mut state_getter = VelocityToState::new(vel_getter.clone());
         let output = state_getter.get();
         assert!(output.unwrap().is_none());
@@ -316,7 +316,7 @@ fn position_to_state() {
     }
     unsafe {
         static mut POS_GETTER: PosGetter = PosGetter::new();
-        let mut pos_getter = PointerDereferencer::new(core::ptr::addr_of_mut!(POS_GETTER));
+        let pos_getter = PointerDereferencer::new(core::ptr::addr_of_mut!(POS_GETTER));
         let mut state_getter = PositionToState::new(pos_getter.clone());
         let output = state_getter.get();
         assert!(output.unwrap().is_none());
@@ -980,7 +980,7 @@ fn derivative_stream() {
     }
     unsafe {
         static mut INPUT: DummyStream = DummyStream::new();
-        let mut input = PointerDereferencer::new(core::ptr::addr_of_mut!(INPUT));
+        let input = PointerDereferencer::new(core::ptr::addr_of_mut!(INPUT));
         let mut stream = DerivativeStream::new(input.clone());
         stream.update().unwrap();
         stream.update().unwrap();
@@ -1022,7 +1022,7 @@ fn integral_stream() {
     }
     unsafe {
         static mut INPUT: DummyStream = DummyStream::new();
-        let mut input = PointerDereferencer::new(core::ptr::addr_of_mut!(INPUT));
+        let input = PointerDereferencer::new(core::ptr::addr_of_mut!(INPUT));
         let mut stream = IntegralStream::new(input.clone());
         stream.update().unwrap();
         stream.update().unwrap();
@@ -1064,7 +1064,7 @@ fn pid_controller_stream() {
     }
     unsafe {
         static mut INPUT: DummyStream = DummyStream::new();
-        let mut input = PointerDereferencer::new(core::ptr::addr_of_mut!(INPUT));
+        let input = PointerDereferencer::new(core::ptr::addr_of_mut!(INPUT));
         let mut stream =
             PIDControllerStream::new(input.clone(), 5.0, PIDKValues::new(1.0, 0.01, 0.1));
         stream.update().unwrap();
@@ -1122,7 +1122,7 @@ fn ewma_stream() {
     }
     unsafe {
         static mut INPUT: DummyStream = DummyStream::new();
-        let mut input = PointerDereferencer::new(core::ptr::addr_of_mut!(INPUT));
+        let input = PointerDereferencer::new(core::ptr::addr_of_mut!(INPUT));
         let mut stream = EWMAStream::new(input.clone(), 0.25);
         stream.update().unwrap();
         assert_eq!(stream.get().unwrap().unwrap().value, 110.0);
@@ -1184,7 +1184,7 @@ fn ewma_stream_quantity() {
     }
     unsafe {
         static mut INPUT: DummyStream = DummyStream::new();
-        let mut input = PointerDereferencer::new(core::ptr::addr_of_mut!(INPUT));
+        let input = PointerDereferencer::new(core::ptr::addr_of_mut!(INPUT));
         let mut stream = EWMAStream::new(input.clone(), 0.25);
         stream.update().unwrap();
         assert_eq!(
@@ -1266,7 +1266,7 @@ fn moving_average_stream() {
     }
     unsafe {
         static mut INPUT: DummyStream = DummyStream::new();
-        let mut input = PointerDereferencer::new(core::ptr::addr_of_mut!(INPUT));
+        let input = PointerDereferencer::new(core::ptr::addr_of_mut!(INPUT));
         let mut stream = MovingAverageStream::new(input.clone(), Time::from_nanoseconds(5));
         stream.update().unwrap();
         assert_eq!(stream.get().unwrap().unwrap().value, 110.0);
@@ -1323,7 +1323,7 @@ fn moving_average_stream_quantity() {
     }
     unsafe {
         static mut INPUT: DummyStream = DummyStream::new();
-        let mut input = PointerDereferencer::new(core::ptr::addr_of_mut!(INPUT));
+        let input = PointerDereferencer::new(core::ptr::addr_of_mut!(INPUT));
         let mut stream = MovingAverageStream::new(input.clone(), Time::from_nanoseconds(5));
         stream.update().unwrap();
         assert_eq!(
@@ -1423,9 +1423,9 @@ fn latest() {
     }
     unsafe {
         static mut STREAM_1: Stream1 = Stream1::new();
-        let mut stream1 = PointerDereferencer::new(core::ptr::addr_of_mut!(STREAM_1));
+        let stream1 = PointerDereferencer::new(core::ptr::addr_of_mut!(STREAM_1));
         static mut STREAM_2: Stream2 = Stream2::new();
-        let mut stream2 = PointerDereferencer::new(core::ptr::addr_of_mut!(STREAM_2));
+        let stream2 = PointerDereferencer::new(core::ptr::addr_of_mut!(STREAM_2));
         let mut latest = Latest::new([
             stream1.clone().as_dyn_getter(),
             stream2.clone().as_dyn_getter(),
@@ -1514,9 +1514,9 @@ fn and_stream() {
     }
     unsafe {
         static mut IN_1: In1 = In1::new();
-        let mut in1 = PointerDereferencer::new(core::ptr::addr_of_mut!(IN_1));
+        let in1 = PointerDereferencer::new(core::ptr::addr_of_mut!(IN_1));
         static mut IN_2: In2 = In2::new();
-        let mut in2 = PointerDereferencer::new(core::ptr::addr_of_mut!(IN_2));
+        let in2 = PointerDereferencer::new(core::ptr::addr_of_mut!(IN_2));
         let mut and = AndStream::new(in1.clone(), in2.clone());
         assert_eq!(and.get().unwrap().unwrap().value, false);
         and.update().unwrap();
@@ -1596,9 +1596,9 @@ fn or_stream() {
     }
     unsafe {
         static mut IN_1: In1 = In1::new();
-        let mut in1 = PointerDereferencer::new(core::ptr::addr_of_mut!(IN_1));
+        let in1 = PointerDereferencer::new(core::ptr::addr_of_mut!(IN_1));
         static mut IN_2: In2 = In2::new();
-        let mut in2 = PointerDereferencer::new(core::ptr::addr_of_mut!(IN_2));
+        let in2 = PointerDereferencer::new(core::ptr::addr_of_mut!(IN_2));
         let mut and = OrStream::new(in1.clone(), in2.clone());
         assert_eq!(and.get().unwrap().unwrap().value, false);
         and.update().unwrap();
@@ -1648,7 +1648,7 @@ fn not_stream() {
     }
     unsafe {
         static mut INPUT: In = In::new();
-        let mut input = PointerDereferencer::new(core::ptr::addr_of_mut!(INPUT));
+        let input = PointerDereferencer::new(core::ptr::addr_of_mut!(INPUT));
         let mut not = NotStream::new(input.clone());
         assert_eq!(not.get().unwrap().unwrap().value, true);
         not.update().unwrap();
@@ -1691,7 +1691,7 @@ fn if_stream() {
     }
     unsafe {
         static mut CONDITION: Condition = Condition { index: 0 };
-        let mut condition = PointerDereferencer::new(core::ptr::addr_of_mut!(CONDITION));
+        let condition = PointerDereferencer::new(core::ptr::addr_of_mut!(CONDITION));
         static mut INPUT: Input = Input;
         let input = PointerDereferencer::new(core::ptr::addr_of_mut!(INPUT));
         let mut if_stream = IfStream::new(condition.clone(), input.clone());
@@ -1747,7 +1747,7 @@ fn if_else_stream() {
     }
     unsafe {
         static mut CONDITION: Condition = Condition { index: 0 };
-        let mut condition = PointerDereferencer::new(core::ptr::addr_of_mut!(CONDITION));
+        let condition = PointerDereferencer::new(core::ptr::addr_of_mut!(CONDITION));
         static mut TRUE_INPUT: True = True;
         let true_input = PointerDereferencer::new(core::ptr::addr_of_mut!(TRUE_INPUT));
         static mut FALSE_INPUT: False = False;
@@ -1799,9 +1799,9 @@ fn freeze_stream() {
     }
     unsafe {
         static mut CONDITION: Condition = Condition { time: Time::ZERO };
-        let mut condition = PointerDereferencer::new(core::ptr::addr_of_mut!(CONDITION));
+        let condition = PointerDereferencer::new(core::ptr::addr_of_mut!(CONDITION));
         static mut INPUT: Input = Input { time: Time::ZERO };
-        let mut input = PointerDereferencer::new(core::ptr::addr_of_mut!(INPUT));
+        let input = PointerDereferencer::new(core::ptr::addr_of_mut!(INPUT));
         let mut freeze = FreezeStream::new(condition.clone(), input.clone());
         freeze.update().unwrap();
         assert_eq!(freeze.get().unwrap().unwrap().value, 1);
@@ -1847,7 +1847,7 @@ fn command_pid() {
         );
         {
             static mut INPUT: Input = Input { time: Time::ZERO };
-            let mut input = PointerDereferencer::new(core::ptr::addr_of_mut!(INPUT));
+            let input = PointerDereferencer::new(core::ptr::addr_of_mut!(INPUT));
             let mut pid = CommandPID::new(
                 input.clone(),
                 Command::new(PositionDerivative::Position, 5.0),
@@ -1866,7 +1866,7 @@ fn command_pid() {
 
         {
             static mut INPUT: Input = Input { time: Time::ZERO };
-            let mut input = PointerDereferencer::new(core::ptr::addr_of_mut!(INPUT));
+            let input = PointerDereferencer::new(core::ptr::addr_of_mut!(INPUT));
             let mut pid = CommandPID::new(
                 input.clone(),
                 Command::new(PositionDerivative::Velocity, 5.0),
@@ -1885,7 +1885,7 @@ fn command_pid() {
 
         {
             static mut INPUT: Input = Input { time: Time::ZERO };
-            let mut input = PointerDereferencer::new(core::ptr::addr_of_mut!(INPUT));
+            let input = PointerDereferencer::new(core::ptr::addr_of_mut!(INPUT));
             let mut pid = CommandPID::new(
                 input.clone(),
                 Command::new(PositionDerivative::Acceleration, 5.0),
