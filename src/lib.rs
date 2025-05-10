@@ -12,7 +12,7 @@
 //!- `dim_check_release` - Enable dimension checking in both debug mode and release mode. Requires `dim_check_debug` feature.
 //!- `libm` - Use [`libm`](https://crates.io/crates/libm) for float exponentiation when `std` is not available.
 //!- `micromath` - Use [`micromath`](https://crates.io/crates/micromath) for float exponentiation
-//!when `std` and `libm` are unavailable.
+//!  when `std` and `libm` are unavailable.
 //!- `internal_enhanced_float` - Do not enable this yourself.
 //!
 //!RRTK prefers **`std`** over **`libm`** and `libm` over **`micromath`** when multiple are
@@ -65,6 +65,10 @@ pub use datum::*;
 use enhanced_float::*;
 pub use motion_profile::*;
 pub use state::*;
+//TODO: DimensionMismatch should probably supersede CannotConvert, but it currently does not.
+///The error type used when an operation fails due to mismatched runtime dimensions.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct DimensionMismatch;
 ///The error type used when a `TryFrom` fails.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct CannotConvert;
