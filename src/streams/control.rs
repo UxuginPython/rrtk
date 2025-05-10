@@ -333,7 +333,7 @@ where
                 return Err(error);
             }
             Ok(None) => {
-                if let Err(_) = self.value {
+                if self.value.is_err() {
                     self.value = Ok(None);
                     self.update_time = None;
                 }
@@ -374,7 +374,7 @@ impl<G: Getter<Quantity, E>, E: Clone + Debug> Updatable<E> for EWMAStream<Quant
                 return Err(error);
             }
             Ok(None) => {
-                if let Err(_) = self.value {
+                if self.value.is_err() {
                     self.value = Ok(None);
                     self.update_time = None;
                 }
