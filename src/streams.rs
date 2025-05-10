@@ -24,7 +24,7 @@ impl<T, const C: usize, G: Getter<T, E>, E: Clone + Debug> Latest<T, C, G, E> {
             panic!("rrtk::streams::Latest C must be at least 1.");
         }
         Self {
-            inputs: inputs,
+            inputs,
             phantom_t: PhantomData,
             phantom_e: PhantomData,
         }
@@ -35,19 +35,16 @@ impl<T, const C: usize, G: Getter<T, E>, E: Clone + Debug> Getter<T, E> for Late
         let mut output: Option<Datum<T>> = None;
         for getter in &self.inputs {
             let gotten = getter.get();
-            match gotten {
-                Ok(Some(gotten)) => match &output {
-                    Some(thing) => {
-                        if gotten.time > thing.time {
-                            output = Some(gotten);
-                        }
-                    }
-                    None => {
+            if let Ok(Some(gotten)) = gotten { match &output {
+                Some(thing) => {
+                    if gotten.time > thing.time {
                         output = Some(gotten);
                     }
-                },
-                _ => {}
-            }
+                }
+                None => {
+                    output = Some(gotten);
+                }
+            } }
         }
         Ok(output)
     }
@@ -82,9 +79,9 @@ where
     ///Constructor for [`Expirer`].
     pub const fn new(input: G, time_getter: TG, max_time_delta: Time) -> Self {
         Self {
-            input: input,
-            time_getter: time_getter,
-            max_time_delta: max_time_delta,
+            input,
+            time_getter,
+            max_time_delta,
             phantom_t: PhantomData,
             phantom_e: PhantomData,
         }

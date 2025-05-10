@@ -128,9 +128,9 @@ impl PIDKValues {
     ///Constructor for [`PIDKValues`].
     pub const fn new(kp: f32, ki: f32, kd: f32) -> Self {
         Self {
-            kp: kp,
-            ki: ki,
-            kd: kd,
+            kp,
+            ki,
+            kd,
         }
     }
     ///Calculate the control variable using the coefficients given error, its integral, and its
@@ -154,9 +154,9 @@ impl PositionDerivativeDependentPIDKValues {
     ///Constructor for [`PositionDerivativeDependentPIDKValues`].
     pub const fn new(position: PIDKValues, velocity: PIDKValues, acceleration: PIDKValues) -> Self {
         Self {
-            position: position,
-            velocity: velocity,
-            acceleration: acceleration,
+            position,
+            velocity,
+            acceleration,
         }
     }
     ///Get the k-values for a specific position derivative.
@@ -242,8 +242,8 @@ where
     ///Constructor for `Feeder`.
     pub fn new(getter: G, settable: S) -> Self {
         Self {
-            getter: getter,
-            settable: settable,
+            getter,
+            settable,
             phantom_t: PhantomData,
             phantom_e: PhantomData,
         }
@@ -259,10 +259,7 @@ where
         //TODO: Currently, this just returns if anything fails, which can skip settable.update. Do
         //      you really want this?
         self.getter.update()?;
-        match self.getter.get()? {
-            Some(datum) => self.settable.set(datum.value)?,
-            None => {}
-        };
+        if let Some(datum) = self.getter.get()? { self.settable.set(datum.value)? };
         self.settable.update()?;
         Ok(())
     }
@@ -278,8 +275,8 @@ impl<T, G: Getter<T, E>, E: Clone + Debug> TimeGetterFromGetter<T, G, E> {
     ///Constructor for [`TimeGetterFromGetter`].
     pub const fn new(getter: G, none_error: E) -> Self {
         Self {
-            getter: getter,
-            none_error: none_error,
+            getter,
+            none_error,
             phantom_t: PhantomData,
         }
     }
@@ -311,8 +308,8 @@ impl<'a, G, TG: TimeGetter<E>, E: Clone + Debug> GetterFromHistory<'a, G, TG, E>
     ///from the [`TimeGetter`] with no delta.
     pub fn new_no_delta(history: &'a mut impl History<G, E>, time_getter: TG) -> Self {
         Self {
-            history: history,
-            time_getter: time_getter,
+            history,
+            time_getter,
             time_delta: Time::default(),
         }
     }
@@ -324,9 +321,9 @@ impl<'a, G, TG: TimeGetter<E>, E: Clone + Debug> GetterFromHistory<'a, G, TG, E>
     ) -> Result<Self, E> {
         let time_delta = -time_getter.get()?;
         Ok(Self {
-            history: history,
-            time_getter: time_getter,
-            time_delta: time_delta,
+            history,
+            time_getter,
+            time_delta,
         })
     }
     ///Constructor such that the times requested from the [`History`] will start at a given time with
@@ -338,9 +335,9 @@ impl<'a, G, TG: TimeGetter<E>, E: Clone + Debug> GetterFromHistory<'a, G, TG, E>
     ) -> Result<Self, E> {
         let time_delta = start - time_getter.get()?;
         Ok(Self {
-            history: history,
-            time_getter: time_getter,
-            time_delta: time_delta,
+            history,
+            time_getter,
+            time_delta,
         })
     }
     ///Constructor with a custom time delta.
@@ -350,9 +347,9 @@ impl<'a, G, TG: TimeGetter<E>, E: Clone + Debug> GetterFromHistory<'a, G, TG, E>
         time_delta: Time,
     ) -> Self {
         Self {
-            history: history,
-            time_getter: time_getter,
-            time_delta: time_delta,
+            history,
+            time_getter,
+            time_delta,
         }
     }
     ///Set the time delta.
@@ -403,8 +400,8 @@ where
     ///Constructor for [`ConstantGetter`].
     pub const fn new(time_getter: TG, value: T) -> Self {
         Self {
-            time_getter: time_getter,
-            value: value,
+            time_getter,
+            value,
             phantom_e: PhantomData,
         }
     }
@@ -444,6 +441,12 @@ where
 }
 ///Getter always returning `Ok(None)`.
 pub struct NoneGetter;
+impl Default for NoneGetter {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl NoneGetter {
     ///Constructor for [`NoneGetter`]. Since [`NoneGetter`] is a unit struct, you can use this or just
     ///the struct's name.
@@ -735,7 +738,7 @@ impl<P> PointerDereferencer<P> {
     ///Although it is technically possible to construct a `PointerDereferencer<P>` where `P` is not
     ///a raw pointer, there is no valid reason to do so and the object would be entirely useless.
     pub const unsafe fn new(pointer: P) -> Self {
-        Self { pointer: pointer }
+        Self { pointer }
     }
     //XXX: Is it clear that *_inner means the pointer and not the target of the pointer, or should
     //these functions be renamed?

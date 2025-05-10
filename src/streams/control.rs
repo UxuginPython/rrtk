@@ -20,9 +20,9 @@ impl<G: Getter<f32, E>, E: Clone + Debug> PIDControllerStream<G, E> {
     ///Constructor for `PIDControllerStream`.
     pub const fn new(input: G, setpoint: f32, kvals: PIDKValues) -> Self {
         Self {
-            input: input,
-            setpoint: setpoint,
-            kvals: kvals,
+            input,
+            setpoint,
+            kvals,
             prev_error: None,
             int_error: 0.0,
             output: Ok(None),
@@ -114,8 +114,8 @@ mod command_pid {
             kvalues: PositionDerivativeDependentPIDKValues,
         ) -> Self {
             Self {
-                input: input,
-                command: command,
+                input,
+                command,
                 kvals: kvalues,
                 update_state: Ok(None),
             }
@@ -190,8 +190,8 @@ mod command_pid {
                     let output = self.kvals.evaluate(self.command.into(), error, 0.0, 0.0);
                     self.update_state = Ok(Some(Update0 {
                         time: datum_state.time,
-                        output: output,
-                        error: error,
+                        output,
+                        error,
                         maybe_update_1: None,
                     }));
                 }
@@ -210,10 +210,10 @@ mod command_pid {
                             let output_int = (update_0.output + output) / 2.0 * delta_time;
                             self.update_state = Ok(Some(Update0 {
                                 time: datum_state.time,
-                                output: output,
-                                error: error,
+                                output,
+                                error,
                                 maybe_update_1: Some(Update1 {
-                                    output_int: output_int,
+                                    output_int,
                                     error_int: error_int_addend,
                                     output_int_int: None,
                                 }),
@@ -235,11 +235,11 @@ mod command_pid {
                                 None => {
                                     self.update_state = Ok(Some(Update0 {
                                         time: datum_state.time,
-                                        output: output,
-                                        error: error,
+                                        output,
+                                        error,
                                         maybe_update_1: Some(Update1 {
-                                            output_int: output_int,
-                                            error_int: error_int,
+                                            output_int,
+                                            error_int,
                                             output_int_int: Some(output_int_int_addend),
                                         }),
                                     }));
@@ -247,11 +247,11 @@ mod command_pid {
                                 Some(output_int_int) => {
                                     self.update_state = Ok(Some(Update0 {
                                         time: datum_state.time,
-                                        output: output,
-                                        error: error,
+                                        output,
+                                        error,
                                         maybe_update_1: Some(Update1 {
-                                            output_int: output_int,
-                                            error_int: error_int,
+                                            output_int,
+                                            error_int,
                                             output_int_int: Some(
                                                 output_int_int + output_int_int_addend,
                                             ),
@@ -295,8 +295,8 @@ where
     ///Constructor for [`EWMAStream`].
     pub const fn new(input: G, smoothing_constant: f32) -> Self {
         Self {
-            input: input,
-            smoothing_constant: smoothing_constant,
+            input,
+            smoothing_constant,
             value: Ok(None),
             update_time: None,
         }
@@ -333,12 +333,9 @@ where
                 return Err(error);
             }
             Ok(None) => {
-                match self.value {
-                    Err(_) => {
-                        self.value = Ok(None);
-                        self.update_time = None;
-                    }
-                    Ok(_) => {}
+                if let Err(_) = self.value {
+                    self.value = Ok(None);
+                    self.update_time = None;
                 }
                 return Ok(());
             }
@@ -377,23 +374,20 @@ impl<G: Getter<Quantity, E>, E: Clone + Debug> Updatable<E> for EWMAStream<Quant
                 return Err(error);
             }
             Ok(None) => {
-                match self.value {
-                    Err(_) => {
-                        self.value = Ok(None);
-                        self.update_time = None;
-                    }
-                    Ok(_) => {}
+                if let Err(_) = self.value {
+                    self.value = Ok(None);
+                    self.update_time = None;
                 }
                 return Ok(());
             }
             Ok(Some(some)) => some,
         };
         let prev_value = match &self.value {
-            Ok(Some(some)) => some.clone(),
+            Ok(Some(some)) => *some,
             _ => {
-                self.value = Ok(Some(output.clone()));
+                self.value = Ok(Some(output));
                 self.update_time = Some(output.time);
-                output.clone()
+                output
             }
         };
         let prev_time = self
@@ -421,8 +415,8 @@ impl<T, G: Getter<T, E>, E: Clone + Debug> MovingAverageStream<T, G, E> {
     ///Constructor for [`MovingAverageStream`].
     pub const fn new(input: G, window: Time) -> Self {
         Self {
-            input: input,
-            window: window,
+            input,
+            window,
             value: Ok(None),
             input_values: VecDeque::new(),
         }
@@ -471,7 +465,7 @@ where
             }
         };
         self.input_values.push_back(output.clone());
-        if self.input_values.len() == 0 {
+        if self.input_values.is_empty() {
             self.value = Ok(Some(output));
             return Ok(());
         }
@@ -527,8 +521,8 @@ impl<G: Getter<Quantity, E>, E: Clone + Debug> Updatable<E>
                 return Err(error);
             }
         };
-        self.input_values.push_back(output.clone());
-        if self.input_values.len() == 0 {
+        self.input_values.push_back(output);
+        if self.input_values.is_empty() {
             self.value = Ok(Some(output));
             return Ok(());
         }
@@ -546,9 +540,9 @@ impl<G: Getter<Quantity, E>, E: Clone + Debug> Updatable<E>
         for i in 0..self.input_values.len() {
             weights.push(Quantity::from(end_times[i] - start_times[i]));
         }
-        let mut value = self.input_values[0].value.clone() * weights[0];
+        let mut value = self.input_values[0].value * weights[0];
         for i in 1..self.input_values.len() {
-            value += self.input_values[i].value.clone() * weights[i];
+            value += self.input_values[i].value * weights[i];
         }
         value /= Quantity::from(self.window);
         self.value = Ok(Some(Datum::new(output.time, value)));

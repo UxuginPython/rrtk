@@ -24,8 +24,8 @@ where
     ///Constructor for [`IfStream`].
     pub const fn new(condition: GC, input: GI) -> Self {
         Self {
-            condition: condition,
-            input: input,
+            condition,
+            input,
             phantom_t: PhantomData,
             phantom_e: PhantomData,
         }
@@ -82,9 +82,9 @@ impl<T, GC: Getter<bool, E>, GT: Getter<T, E>, GF: Getter<T, E>, E: Clone + Debu
     ///Constructor for [`IfElseStream`].
     pub const fn new(condition: GC, true_output: GT, false_output: GF) -> Self {
         Self {
-            condition: condition,
-            true_output: true_output,
-            false_output: false_output,
+            condition,
+            true_output,
+            false_output,
             phantom_t: PhantomData,
             phantom_e: PhantomData,
         }
@@ -147,8 +147,8 @@ where
     ///Constructor for [`FreezeStream`].
     pub const fn new(condition: GC, input: GI) -> Self {
         Self {
-            condition: condition,
-            input: input,
+            condition,
+            input,
             freeze_value: Ok(None),
         }
     }

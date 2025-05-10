@@ -415,7 +415,7 @@ impl Mul<Quantity> for DimensionlessInteger {
 impl Div<Quantity> for DimensionlessInteger {
     type Output = Quantity;
     fn div(self, rhs: Quantity) -> Quantity {
-        Quantity::from(self) / Quantity::from(rhs)
+        Quantity::from(self) / rhs
     }
 }
 ///A unit of a quantity, like meters per second. Units can be represented as multiplied powers of
@@ -452,12 +452,12 @@ impl Unit {
                 feature = "dim_check_release",
                 all(debug_assertions, feature = "dim_check_debug")
             ))]
-            millimeter_exp: millimeter_exp,
+            millimeter_exp,
             #[cfg(any(
                 feature = "dim_check_release",
                 all(debug_assertions, feature = "dim_check_debug")
             ))]
-            second_exp: second_exp,
+            second_exp,
         }
     }
     ///`foo.const_eq(&bar)` works exactly like `foo == bar` except that it works in a `const`
@@ -694,8 +694,8 @@ impl Quantity {
     ///Constructor for [`Quantity`].
     pub const fn new(value: f32, unit: Unit) -> Self {
         Self {
-            value: value,
-            unit: unit,
+            value,
+            unit,
         }
     }
     ///Constructor for dimensionless [`Quantity`] objects that does not require a dimension to be

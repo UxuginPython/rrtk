@@ -36,7 +36,7 @@ where
             panic!("rrtk::streams::SumStream must have at least one input stream");
         }
         Self {
-            addends: addends,
+            addends,
             phantom_t: PhantomData,
             phantom_e: PhantomData,
         }
@@ -56,12 +56,9 @@ where
         //This is always equal to the index of the next uninitialized slot if there is one.
         let mut outputs_filled = 0;
         for i in &self.addends {
-            match i.get()? {
-                Some(x) => {
-                    outputs[outputs_filled].write(x);
-                    outputs_filled += 1;
-                }
-                None => (),
+            if let Some(x) = i.get()? {
+                outputs[outputs_filled].write(x);
+                outputs_filled += 1;
             }
         }
         if outputs_filled == 0 {
@@ -116,8 +113,8 @@ where
     ///Constructor for [`Sum2`].
     pub const fn new(addend1: G1, addend2: G2) -> Self {
         Self {
-            addend1: addend1,
-            addend2: addend2,
+            addend1,
+            addend2,
             phantom_t1: PhantomData,
             phantom_t2: PhantomData,
             phantom_e: PhantomData,
@@ -189,8 +186,8 @@ where
     ///Constructor for [`DifferenceStream`].
     pub const fn new(minuend: GM, subtrahend: GS) -> Self {
         Self {
-            minuend: minuend,
-            subtrahend: subtrahend,
+            minuend,
+            subtrahend,
             phantom_tm: PhantomData,
             phantom_ts: PhantomData,
             phantom_e: PhantomData,
@@ -270,7 +267,7 @@ where
             panic!("rrtk::streams::ProductStream must have at least one input stream");
         }
         Self {
-            factors: factors,
+            factors,
             phantom_t: PhantomData,
             phantom_e: PhantomData,
         }
@@ -286,12 +283,9 @@ where
         let mut outputs = [MaybeUninit::uninit(); N];
         let mut outputs_filled = 0;
         for i in &self.factors {
-            match i.get()? {
-                Some(x) => {
-                    outputs[outputs_filled].write(x);
-                    outputs_filled += 1;
-                }
-                None => (),
+            if let Some(x) = i.get()? {
+                outputs[outputs_filled].write(x);
+                outputs_filled += 1;
             }
         }
         if outputs_filled == 0 {
@@ -345,8 +339,8 @@ where
     ///Constructor for [`Product2`].
     pub const fn new(factor1: G1, factor2: G2) -> Self {
         Self {
-            factor1: factor1,
-            factor2: factor2,
+            factor1,
+            factor2,
             phantom_t1: PhantomData,
             phantom_t2: PhantomData,
             phantom_e: PhantomData,
@@ -414,8 +408,8 @@ where
     ///Constructor for [`QuotientStream`].
     pub const fn new(dividend: GD, divisor: GS) -> Self {
         Self {
-            dividend: dividend,
-            divisor: divisor,
+            dividend,
+            divisor,
             phantom_td: PhantomData,
             phantom_ts: PhantomData,
             phantom_e: PhantomData,
@@ -491,8 +485,8 @@ where
     ///Constructor for [`ExponentStream`].
     pub const fn new(base: GB, exponent: GE) -> Self {
         Self {
-            base: base,
-            exponent: exponent,
+            base,
+            exponent,
             phantom_e: PhantomData,
         }
     }
@@ -554,7 +548,7 @@ impl<T, O, G: Getter<T, E>, E: Clone + Debug> DerivativeStream<T, O, G, E> {
     ///Constructor for [`DerivativeStream`].
     pub const fn new(input: G) -> Self {
         Self {
-            input: input,
+            input,
             value: Ok(None),
             prev_output: None,
         }
@@ -622,7 +616,7 @@ impl<T, O, G: Getter<T, E>, E: Clone + Debug> IntegralStream<T, O, G, E> {
     ///Constructor for [`IntegralStream`].
     pub const fn new(input: G) -> Self {
         Self {
-            input: input,
+            input,
             value: Ok(None),
             prev_output: None,
         }
@@ -683,6 +677,6 @@ where
         };
         self.value = Ok(Some(Datum::new(output.time, value)));
         self.prev_output = Some(output);
-        return Ok(());
+        Ok(())
     }
 }

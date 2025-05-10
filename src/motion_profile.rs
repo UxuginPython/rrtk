@@ -98,14 +98,14 @@ impl MotionProfile {
             t3: Time::try_from(t3).expect(
                 "t3 must always be in seconds in max_vel and max_acc have correct dimensions",
             ),
-            max_acc: max_acc,
-            end_command: end_command,
+            max_acc,
+            end_command,
         }
     }
     ///Get the intended [`PositionDerivative`] at a given time.
     pub fn get_mode(&self, t: Time) -> Option<PositionDerivative> {
         if t < Time::default() {
-            return None;
+            None
         } else if t < self.t1 {
             return Some(PositionDerivative::Acceleration);
         } else if t < self.t2 {
@@ -119,7 +119,7 @@ impl MotionProfile {
     ///Get the [`MotionProfilePiece`] at a given time.
     pub fn get_piece(&self, t: Time) -> MotionProfilePiece {
         if t < Time::default() {
-            return MotionProfilePiece::BeforeStart;
+            MotionProfilePiece::BeforeStart
         } else if t < self.t1 {
             return MotionProfilePiece::InitialAcceleration;
         } else if t < self.t2 {
@@ -133,7 +133,7 @@ impl MotionProfile {
     ///Get the intended acceleration at a given time.
     pub fn get_acceleration(&self, t: Time) -> Option<Quantity> {
         if t < Time::default() {
-            return None;
+            None
         } else if t < self.t1 {
             return Some(self.max_acc);
         } else if t < self.t2 {
@@ -147,7 +147,7 @@ impl MotionProfile {
     ///Get the intended velocity at a given time.
     pub fn get_velocity(&self, t: Time) -> Option<Quantity> {
         if t < Time::default() {
-            return None;
+            None
         } else if t < self.t1 {
             return Some(self.max_acc * Quantity::from(t) + self.start_vel);
         } else if t < self.t2 {
@@ -161,7 +161,7 @@ impl MotionProfile {
     ///Get the intended position at a given time.
     pub fn get_position(&self, t: Time) -> Option<Quantity> {
         if t < Time::default() {
-            return None;
+            None
         } else if t < self.t1 {
             let t = Quantity::from(t);
             return Some(

@@ -13,8 +13,8 @@ impl<T> Datum<T> {
     ///Constructor for [`Datum`] type.
     pub const fn new(time: Time, value: T) -> Datum<T> {
         Datum {
-            time: time,
-            value: value,
+            time,
+            value,
         }
     }
     ///Replaces `self` with `maybe_replace_with` if `maybe_replace_with`'s timestamp is newer than

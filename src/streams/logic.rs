@@ -12,10 +12,7 @@ enum AndState {
 impl AndState {
     #[inline]
     fn none(&mut self) {
-        match self {
-            AndState::ReturnableTrue => *self = AndState::MaybeTrue,
-            _ => (),
-        }
+        if let AndState::ReturnableTrue = self { *self = AndState::MaybeTrue }
     }
 }
 ///Performs an and operation on two boolean getters. This will return [`None`] if it can't verify
@@ -51,8 +48,8 @@ where
     ///Constructor for [`AndStream`].
     pub const fn new(input1: G1, input2: G2) -> Self {
         Self {
-            input1: input1,
-            input2: input2,
+            input1,
+            input2,
             phantom_e: PhantomData,
         }
     }
@@ -133,10 +130,7 @@ enum OrState {
 impl OrState {
     #[inline]
     fn none(&mut self) {
-        match self {
-            OrState::ReturnableFalse => *self = OrState::MaybeFalse,
-            _ => (),
-        }
+        if let OrState::ReturnableFalse = self { *self = OrState::MaybeFalse }
     }
 }
 ///Performs an or operation on two boolean getters. This will return [`None`] if it can't verify that
@@ -171,8 +165,8 @@ where
     ///Constructor for [`OrStream`].
     pub const fn new(input1: G1, input2: G2) -> Self {
         Self {
-            input1: input1,
-            input2: input2,
+            input1,
+            input2,
             phantom_e: PhantomData,
         }
     }
@@ -249,7 +243,7 @@ impl<G: Getter<bool, E>, E: Clone + Debug> NotStream<G, E> {
     ///Constructor for [`NotStream`].
     pub const fn new(input: G) -> Self {
         Self {
-            input: input,
+            input,
             phantom_e: PhantomData,
         }
     }

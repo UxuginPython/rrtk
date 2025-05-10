@@ -56,12 +56,12 @@ impl From<State> for Command {
     fn from(state: State) -> Self {
         if state.acceleration == 0.0 {
             if state.velocity == 0.0 {
-                return Command::new(PositionDerivative::Position, state.position);
+                Command::new(PositionDerivative::Position, state.position)
             } else {
-                return Command::new(PositionDerivative::Velocity, state.velocity);
+                Command::new(PositionDerivative::Velocity, state.velocity)
             }
         } else {
-            return Command::new(PositionDerivative::Acceleration, state.acceleration);
+            Command::new(PositionDerivative::Acceleration, state.acceleration)
         }
     }
 }

@@ -25,8 +25,8 @@ where
     ///Constructor for [`NoneToError`].
     pub const fn new(input: G, from_none: E) -> Self {
         Self {
-            input: input,
-            from_none: from_none,
+            input,
+            from_none,
             phantom_t: PhantomData,
         }
     }
@@ -41,10 +41,10 @@ where
         let output = self.input.get()?;
         match output {
             Some(_) => {
-                return Ok(output);
+                Ok(output)
             }
             None => {
-                return Err(self.from_none.clone());
+                Err(self.from_none.clone())
             }
         }
     }
@@ -83,9 +83,9 @@ where
     ///Constructor for [`NoneToValue`].
     pub const fn new(input: G, time_getter: TG, none_value: T) -> Self {
         Self {
-            input: input,
-            time_getter: time_getter,
-            none_value: none_value,
+            input,
+            time_getter,
+            none_value,
             phantom_e: PhantomData,
         }
     }
@@ -101,13 +101,13 @@ where
         let output = self.input.get()?;
         match output {
             Some(_) => {
-                return Ok(output);
+                Ok(output)
             }
             None => {
-                return Ok(Some(Datum::new(
+                Ok(Some(Datum::new(
                     self.time_getter.get()?,
                     self.none_value.clone(),
-                )));
+                )))
             }
         }
     }
@@ -148,8 +148,8 @@ where
     ///Constructor for `NoneToDefault`.
     pub const fn new(input: G, time_getter: TG) -> Self {
         Self {
-            input: input,
-            time_getter: time_getter,
+            input,
+            time_getter,
             phantom_t: PhantomData,
             phantom_e: PhantomData,
         }
@@ -205,7 +205,7 @@ mod acceleration_to_state {
         ///Constructor for [`AccelerationToState`].
         pub const fn new(acc: G) -> Self {
             Self {
-                acc: acc,
+                acc,
                 update: None,
                 phantom_e: PhantomData,
             }
@@ -332,7 +332,7 @@ mod velocity_to_state {
         ///Constructor for [`VelocityToState`].
         pub const fn new(vel: G) -> Self {
             Self {
-                vel: vel,
+                vel,
                 update: None,
                 phantom_e: PhantomData,
             }
@@ -345,9 +345,9 @@ mod velocity_to_state {
                     Some(update_1) => Ok(Some(Datum::new(
                         update_0.last_update_time,
                         State::new(
-                            update_1.pos.into(),
-                            update_0.vel.into(),
-                            update_1.acc.into(),
+                            update_1.pos,
+                            update_0.vel,
+                            update_1.acc,
                         ),
                     ))),
                     None => Ok(None),
@@ -360,52 +360,49 @@ mod velocity_to_state {
         fn update(&mut self) -> NothingOrError<E> {
             self.vel.update()?;
             match self.vel.get() {
-                Ok(gotten) => match gotten {
-                    Some(new_vel_datum) => {
-                        let new_time = new_vel_datum.time;
-                        let new_vel = new_vel_datum.value;
-                        new_vel.unit.assert_eq_assume_ok(&MILLIMETER_PER_SECOND);
-                        match &self.update {
-                            Some(update_0) => {
-                                let old_time = update_0.last_update_time;
-                                let delta_time = Quantity::from(new_time - old_time);
-                                let old_vel = update_0.vel;
-                                let new_acc = (new_vel - old_vel) / delta_time;
-                                let pos_addend =
-                                    (old_vel + new_vel) / Quantity::dimensionless(2.0) * delta_time;
-                                match &update_0.update_1 {
-                                    Some(update_1) => {
-                                        self.update = Some(Update0 {
-                                            last_update_time: new_time,
-                                            vel: new_vel,
-                                            update_1: Some(Update1 {
-                                                acc: new_acc,
-                                                pos: update_1.pos + pos_addend,
-                                            }),
-                                        });
-                                    }
-                                    None => {
-                                        self.update = Some(Update0 {
-                                            last_update_time: new_time,
-                                            vel: new_vel,
-                                            update_1: Some(Update1 {
-                                                acc: new_acc,
-                                                pos: pos_addend,
-                                            }),
-                                        });
-                                    }
+                Ok(gotten) => if let Some(new_vel_datum) = gotten {
+                    let new_time = new_vel_datum.time;
+                    let new_vel = new_vel_datum.value;
+                    new_vel.unit.assert_eq_assume_ok(&MILLIMETER_PER_SECOND);
+                    match &self.update {
+                        Some(update_0) => {
+                            let old_time = update_0.last_update_time;
+                            let delta_time = Quantity::from(new_time - old_time);
+                            let old_vel = update_0.vel;
+                            let new_acc = (new_vel - old_vel) / delta_time;
+                            let pos_addend =
+                                (old_vel + new_vel) / Quantity::dimensionless(2.0) * delta_time;
+                            match &update_0.update_1 {
+                                Some(update_1) => {
+                                    self.update = Some(Update0 {
+                                        last_update_time: new_time,
+                                        vel: new_vel,
+                                        update_1: Some(Update1 {
+                                            acc: new_acc,
+                                            pos: update_1.pos + pos_addend,
+                                        }),
+                                    });
+                                }
+                                None => {
+                                    self.update = Some(Update0 {
+                                        last_update_time: new_time,
+                                        vel: new_vel,
+                                        update_1: Some(Update1 {
+                                            acc: new_acc,
+                                            pos: pos_addend,
+                                        }),
+                                    });
                                 }
                             }
-                            None => {
-                                self.update = Some(Update0 {
-                                    last_update_time: new_time,
-                                    vel: new_vel,
-                                    update_1: None,
-                                });
-                            }
+                        }
+                        None => {
+                            self.update = Some(Update0 {
+                                last_update_time: new_time,
+                                vel: new_vel,
+                                update_1: None,
+                            });
                         }
                     }
-                    None => (),
                 },
                 Err(error) => {
                     self.update = None;
@@ -438,7 +435,7 @@ mod position_to_state {
         ///Constructor for [`PositionToState`].
         pub const fn new(pos: G) -> Self {
             Self {
-                pos: pos,
+                pos,
                 update: None,
                 phantom_e: PhantomData,
             }
@@ -451,7 +448,7 @@ mod position_to_state {
                     Some(update_1) => match update_1.update_2 {
                         Some(acc) => Ok(Some(Datum::new(
                             update_0.last_update_time,
-                            State::new(update_0.pos.into(), update_1.vel.into(), acc.into()),
+                            State::new(update_0.pos, update_1.vel, acc),
                         ))),
                         None => Ok(None),
                     },
@@ -465,52 +462,49 @@ mod position_to_state {
         fn update(&mut self) -> NothingOrError<E> {
             self.pos.update()?;
             match self.pos.get() {
-                Ok(gotten) => match gotten {
-                    Some(new_pos_datum) => {
-                        let new_time = new_pos_datum.time;
-                        let new_pos = new_pos_datum.value;
-                        new_pos.unit.assert_eq_assume_ok(&MILLIMETER);
-                        match &self.update {
-                            Some(update_0) => {
-                                let old_time = update_0.last_update_time;
-                                let delta_time = Quantity::from(new_time - old_time);
-                                let old_pos = update_0.pos;
-                                let new_vel = (new_pos - old_pos) / delta_time;
-                                match &update_0.update_1 {
-                                    Some(update_1) => {
-                                        let old_vel = update_1.vel;
-                                        let new_acc = (new_vel - old_vel) / delta_time;
-                                        self.update = Some(Update0 {
-                                            last_update_time: new_time,
-                                            pos: new_pos,
-                                            update_1: Some(Update1 {
-                                                vel: new_vel,
-                                                update_2: Some(new_acc),
-                                            }),
-                                        });
-                                    }
-                                    None => {
-                                        self.update = Some(Update0 {
-                                            last_update_time: new_time,
-                                            pos: new_pos,
-                                            update_1: Some(Update1 {
-                                                vel: new_vel,
-                                                update_2: None,
-                                            }),
-                                        });
-                                    }
+                Ok(gotten) => if let Some(new_pos_datum) = gotten {
+                    let new_time = new_pos_datum.time;
+                    let new_pos = new_pos_datum.value;
+                    new_pos.unit.assert_eq_assume_ok(&MILLIMETER);
+                    match &self.update {
+                        Some(update_0) => {
+                            let old_time = update_0.last_update_time;
+                            let delta_time = Quantity::from(new_time - old_time);
+                            let old_pos = update_0.pos;
+                            let new_vel = (new_pos - old_pos) / delta_time;
+                            match &update_0.update_1 {
+                                Some(update_1) => {
+                                    let old_vel = update_1.vel;
+                                    let new_acc = (new_vel - old_vel) / delta_time;
+                                    self.update = Some(Update0 {
+                                        last_update_time: new_time,
+                                        pos: new_pos,
+                                        update_1: Some(Update1 {
+                                            vel: new_vel,
+                                            update_2: Some(new_acc),
+                                        }),
+                                    });
+                                }
+                                None => {
+                                    self.update = Some(Update0 {
+                                        last_update_time: new_time,
+                                        pos: new_pos,
+                                        update_1: Some(Update1 {
+                                            vel: new_vel,
+                                            update_2: None,
+                                        }),
+                                    });
                                 }
                             }
-                            None => {
-                                self.update = Some(Update0 {
-                                    last_update_time: new_time,
-                                    pos: new_pos,
-                                    update_1: None,
-                                });
-                            }
+                        }
+                        None => {
+                            self.update = Some(Update0 {
+                                last_update_time: new_time,
+                                pos: new_pos,
+                                update_1: None,
+                            });
                         }
                     }
-                    None => (),
                 },
                 Err(error) => {
                     self.update = None;
@@ -531,8 +525,8 @@ impl<G: Getter<f32, E>, E: Clone + Debug> FloatToQuantity<G, E> {
     ///Constructor for [`FloatToQuantity`].
     pub fn new(unit: Unit, input: G) -> Self {
         Self {
-            unit: unit,
-            input: input,
+            unit,
+            input,
             phantom_e: PhantomData,
         }
     }
@@ -560,7 +554,7 @@ impl<G: Getter<Quantity, E>, E: Clone + Debug> QuantityToFloat<G, E> {
     ///Constructor for [`QuantityToFloat`].
     pub fn new(input: G) -> Self {
         Self {
-            input: input,
+            input,
             phantom_e: PhantomData,
         }
     }
@@ -595,7 +589,7 @@ impl<T, MM: Integer, S: Integer, G: Getter<T, E>, E: Clone + Debug> DimensionAdd
     ///Constructor for `DimensionAdder`.
     pub const fn new(input: G) -> Self {
         Self {
-            input: input,
+            input,
             phantom_t: PhantomData,
             phantom_mm: PhantomData,
             phantom_s: PhantomData,
@@ -650,7 +644,7 @@ impl<
     ///Constructor for `DimensionRemover`.
     pub const fn new(input: G) -> Self {
         Self {
-            input: input,
+            input,
             phantom_t: PhantomData,
             phantom_mm: PhantomData,
             phantom_s: PhantomData,
@@ -697,7 +691,7 @@ impl<TI, G: Getter<TI, E>, E: Clone + Debug> IntoConverter<TI, G, E> {
     ///Constructor for `IntoConverter`.
     pub const fn new(input: G) -> Self {
         Self {
-            input: input,
+            input,
             phantom_ti: PhantomData,
             phantom_e: PhantomData,
         }
@@ -733,7 +727,7 @@ impl<T, G: Getter<T, EI>, EI: Clone + Debug> ErrorIntoConverter<T, G, EI> {
     ///Constructor for `ErrorIntoConverter`.
     pub const fn new(input: G) -> Self {
         Self {
-            input: input,
+            input,
             phantom_t: PhantomData,
             phantom_ei: PhantomData,
         }

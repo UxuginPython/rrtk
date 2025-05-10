@@ -28,9 +28,9 @@ impl State {
     ///Constructor for [`State`] using raw [`f32`]s for position, velocity, and acceleration.
     pub const fn new_raw(position: f32, velocity: f32, acceleration: f32) -> Self {
         State {
-            position: position,
-            velocity: velocity,
-            acceleration: acceleration,
+            position,
+            velocity,
+            acceleration,
         }
     }
     ///Calculate the future state assuming a constant acceleration.
