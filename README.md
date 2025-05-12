@@ -3,8 +3,6 @@
 
 It is almost entirely `no_std` and most things work without `alloc`. It does not currently integrate with any API directly. This may be added in the future, probably through another crate.
 
-**The [rrtk.org](http://rrtk.org) server has been being affected by brief power outages beginning on the evening of Sunday 2025-05-11. I'm sorry for any inconvenience.**
-
 ## License: BSD 3-Clause
 This basically means that you can do whatever you want as long as you give me attribution and you don't remove the license notices or use my name to endorse stuff I don't. Read the actual license for details though.
 
