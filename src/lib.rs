@@ -65,12 +65,16 @@ pub use datum::*;
 use enhanced_float::*;
 pub use motion_profile::*;
 pub use state::*;
-///The error type used when an operation fails due to mismatched runtime dimensions.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct UnitInvalid;
-///The error type used when a `TryFrom` fails.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct CannotConvert;
+///Error types used for various things in RRTK. Currently they are only zero-sized types, but this
+///may change.
+pub mod error {
+    ///The error type used when an operation fails due to mismatched runtime dimensions.
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    pub struct UnitInvalid;
+    ///The error type used when a `TryFrom` fails.
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    pub struct CannotConvert;
+}
 ///A derivative of position: position, velocity, or acceleration.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum PositionDerivative {
@@ -86,13 +90,13 @@ pub enum PositionDerivative {
     all(debug_assertions, feature = "dim_check_debug")
 ))]
 impl TryFrom<Unit> for PositionDerivative {
-    type Error = UnitInvalid;
-    fn try_from(was: Unit) -> Result<Self, UnitInvalid> {
+    type Error = error::UnitInvalid;
+    fn try_from(was: Unit) -> Result<Self, error::UnitInvalid> {
         Ok(match was {
             MILLIMETER => PositionDerivative::Position,
             MILLIMETER_PER_SECOND => PositionDerivative::Velocity,
             MILLIMETER_PER_SECOND_SQUARED => PositionDerivative::Acceleration,
-            _ => return Err(UnitInvalid),
+            _ => return Err(error::UnitInvalid),
         })
     }
 }
@@ -106,10 +110,12 @@ impl From<Command> for PositionDerivative {
     }
 }
 impl TryFrom<MotionProfilePiece> for PositionDerivative {
-    type Error = CannotConvert;
-    fn try_from(was: MotionProfilePiece) -> Result<Self, CannotConvert> {
+    type Error = error::CannotConvert;
+    fn try_from(was: MotionProfilePiece) -> Result<Self, error::CannotConvert> {
         match was {
-            MotionProfilePiece::BeforeStart | MotionProfilePiece::Complete => Err(CannotConvert),
+            MotionProfilePiece::BeforeStart | MotionProfilePiece::Complete => {
+                Err(error::CannotConvert)
+            }
             MotionProfilePiece::InitialAcceleration | MotionProfilePiece::EndAcceleration => {
                 Ok(PositionDerivative::Acceleration)
             }
@@ -657,21 +663,21 @@ pub struct TerminalData {
 }
 #[cfg(feature = "devices")]
 impl TryFrom<TerminalData> for Datum<Command> {
-    type Error = CannotConvert;
-    fn try_from(value: TerminalData) -> Result<Datum<Command>, CannotConvert> {
+    type Error = error::CannotConvert;
+    fn try_from(value: TerminalData) -> Result<Datum<Command>, error::CannotConvert> {
         match value.command {
             Some(command) => Ok(Datum::new(value.time, command)),
-            None => Err(CannotConvert),
+            None => Err(error::CannotConvert),
         }
     }
 }
 #[cfg(feature = "devices")]
 impl TryFrom<TerminalData> for Datum<State> {
-    type Error = CannotConvert;
-    fn try_from(value: TerminalData) -> Result<Datum<State>, CannotConvert> {
+    type Error = error::CannotConvert;
+    fn try_from(value: TerminalData) -> Result<Datum<State>, error::CannotConvert> {
         match value.state {
             Some(state) => Ok(Datum::new(value.time, state)),
-            None => Err(CannotConvert),
+            None => Err(error::CannotConvert),
         }
     }
 }

@@ -94,8 +94,8 @@ impl<T: ?Sized> NotDatum for RwLock<T> {}
 impl NotDatum for State {}
 impl NotDatum for Command {}
 impl NotDatum for PositionDerivative {}
-impl NotDatum for CannotConvert {}
-impl NotDatum for UnitInvalid {}
+impl NotDatum for error::CannotConvert {}
+impl NotDatum for error::UnitInvalid {}
 impl NotDatum for Time {}
 impl NotDatum for Quantity {}
 impl NotDatum for Unit {}
