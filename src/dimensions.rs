@@ -167,12 +167,12 @@ impl From<Time> for compile_time_dimensions::Quantity<f32, Zero, OnePlus<Zero>> 
 }
 //TODO: figure out for to use the Error enum with this
 impl TryFrom<Quantity> for Time {
-    type Error = CannotConvert;
-    fn try_from(was: Quantity) -> Result<Self, CannotConvert> {
+    type Error = UnitInvalid;
+    fn try_from(was: Quantity) -> Result<Self, UnitInvalid> {
         if was.unit.eq_assume_true(&SECOND) {
             Ok(Self((was.value * 1_000_000_000.0) as i64))
         } else {
-            Err(CannotConvert)
+            Err(UnitInvalid)
         }
     }
 }
@@ -318,12 +318,12 @@ impl From<DimensionlessInteger> for i64 {
     }
 }
 impl TryFrom<Quantity> for DimensionlessInteger {
-    type Error = CannotConvert;
-    fn try_from(was: Quantity) -> Result<Self, CannotConvert> {
+    type Error = UnitInvalid;
+    fn try_from(was: Quantity) -> Result<Self, UnitInvalid> {
         if was.unit.eq_assume_true(&DIMENSIONLESS) {
             Ok(Self(was.value as i64))
         } else {
-            Err(CannotConvert)
+            Err(UnitInvalid)
         }
     }
 }

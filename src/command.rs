@@ -70,13 +70,13 @@ impl From<State> for Command {
     all(debug_assertions, feature = "dim_check_debug")
 ))]
 impl TryFrom<Quantity> for Command {
-    type Error = CannotConvert;
-    fn try_from(was: Quantity) -> Result<Self, CannotConvert> {
+    type Error = UnitInvalid;
+    fn try_from(was: Quantity) -> Result<Self, UnitInvalid> {
         match was.unit {
             MILLIMETER => Ok(Self::Position(was.value)),
             MILLIMETER_PER_SECOND => Ok(Self::Velocity(was.value)),
             MILLIMETER_PER_SECOND_SQUARED => Ok(Self::Acceleration(was.value)),
-            _ => Err(CannotConvert),
+            _ => Err(UnitInvalid),
         }
     }
 }

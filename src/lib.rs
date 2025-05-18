@@ -65,7 +65,6 @@ pub use datum::*;
 use enhanced_float::*;
 pub use motion_profile::*;
 pub use state::*;
-//TODO: UnitInvalid should probably supersede CannotConvert, but it currently does not.
 ///The error type used when an operation fails due to mismatched runtime dimensions.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct UnitInvalid;
@@ -87,13 +86,13 @@ pub enum PositionDerivative {
     all(debug_assertions, feature = "dim_check_debug")
 ))]
 impl TryFrom<Unit> for PositionDerivative {
-    type Error = CannotConvert;
-    fn try_from(was: Unit) -> Result<Self, CannotConvert> {
+    type Error = UnitInvalid;
+    fn try_from(was: Unit) -> Result<Self, UnitInvalid> {
         Ok(match was {
             MILLIMETER => PositionDerivative::Position,
             MILLIMETER_PER_SECOND => PositionDerivative::Velocity,
             MILLIMETER_PER_SECOND_SQUARED => PositionDerivative::Acceleration,
-            _ => return Err(CannotConvert),
+            _ => return Err(UnitInvalid),
         })
     }
 }
