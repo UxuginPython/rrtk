@@ -65,10 +65,10 @@ pub use datum::*;
 use enhanced_float::*;
 pub use motion_profile::*;
 pub use state::*;
-//TODO: DimensionMismatch should probably supersede CannotConvert, but it currently does not.
+//TODO: UnitInvalid should probably supersede CannotConvert, but it currently does not.
 ///The error type used when an operation fails due to mismatched runtime dimensions.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct DimensionMismatch;
+pub struct UnitInvalid;
 ///The error type used when a `TryFrom` fails.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct CannotConvert;
