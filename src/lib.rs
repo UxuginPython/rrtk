@@ -829,19 +829,6 @@ macro_rules! as_dyn_time_getter {
         }
     };
 }
-macro_rules! as_dyn_chronology {
-    ($return_type:ty) => {
-        #[allow(missing_docs)]
-        #[inline]
-        pub fn as_dyn_chronology<U, E: Clone + Debug>(&self) -> PointerDereferencer<$return_type>
-        where
-            T: Chronology<U, E>,
-        {
-            let ptr = self.copy_inner() as $return_type;
-            unsafe { PointerDereferencer::new(ptr) }
-        }
-    };
-}
 ///These functions get a `PointerDereferencer<*mut dyn Trait>` from a `PointerDereferencer<*mut T>`
 ///where `T: Trait`. Because raw pointers are `Copy`, they only require `&self` and do not consume
 ///the original `PointerDereferencer`. Unfortunately `T` currently must be `Sized` due to language
@@ -851,7 +838,6 @@ impl<T> PointerDereferencer<*mut T> {
     as_dyn_getter!(*mut dyn Getter<U, E>);
     as_dyn_settable!(*mut dyn Settable<U, E>);
     as_dyn_time_getter!(*mut dyn TimeGetter<E>);
-    as_dyn_chronology!(*mut dyn Chronology<U, E>);
 }
 ///These functions get a `PointerDereferencer<*const RwLock<dyn Trait>>` from a
 ///`PointerDereferencer<*const RwLock<T>>` where `T: Trait`. Because raw pointers are `Copy`, they
@@ -863,7 +849,6 @@ impl<T> PointerDereferencer<*const RwLock<T>> {
     as_dyn_getter!(*const RwLock<dyn Getter<U, E>>);
     as_dyn_settable!(*const RwLock<dyn Settable<U, E>>);
     as_dyn_time_getter!(*const RwLock<dyn TimeGetter<E>>);
-    as_dyn_chronology!(*const RwLock<dyn Chronology<U, E>>);
 }
 ///These functions get a `PointerDereferencer<*const Mutex<dyn Trait>>` from a
 ///`PointerDereferencer<*const Mutex<T>>` where `T: Trait`. Because raw pointers are `Copy`, they
@@ -875,7 +860,6 @@ impl<T> PointerDereferencer<*const Mutex<T>> {
     as_dyn_getter!(*const Mutex<dyn Getter<U, E>>);
     as_dyn_settable!(*const Mutex<dyn Settable<U, E>>);
     as_dyn_time_getter!(*const Mutex<dyn TimeGetter<E>>);
-    as_dyn_chronology!(*const Mutex<dyn Chronology<U, E>>);
 }
 //FIXME: Make one of these work if you can, preferably From since it implies Into.
 /*impl<P> From<PointerDereferencer<P>> for P {
@@ -908,13 +892,6 @@ impl<T, S: ?Sized + Settable<T, E>, E: Clone + Debug> Settable<T, E>
 impl<TG: ?Sized + TimeGetter<E>, E: Clone + Debug> TimeGetter<E> for PointerDereferencer<*mut TG> {
     fn get(&self) -> TimeOutput<E> {
         unsafe { (*self.pointer).get() }
-    }
-}
-impl<T, C: ?Sized + Chronology<T, E>, E: Clone + Debug> Chronology<T, E>
-    for PointerDereferencer<*mut C>
-{
-    fn get(&self, time: Time) -> Option<Datum<T>> {
-        unsafe { (*self.pointer).get(time) }
     }
 }
 #[cfg(feature = "std")]
@@ -955,15 +932,6 @@ impl<TG: ?Sized + TimeGetter<E>, E: Clone + Debug> TimeGetter<E>
         unsafe { (*self.pointer).read() }
             .expect("RRTK failed to acquire RwLock read lock for TimeGetter")
             .get()
-    }
-}
-#[cfg(feature = "std")]
-impl<T, C: ?Sized + Chronology<T, E>, E: Clone + Debug> Chronology<T, E>
-    for PointerDereferencer<*const RwLock<C>>
-{
-    fn get(&self, time: Time) -> Option<Datum<T>> {
-        todo!();
-        //XXX: AAAAAAAAAAAAAAAAAAAAA
     }
 }
 #[cfg(feature = "std")]
