@@ -305,62 +305,56 @@ impl<T, G: Getter<T, E>, E: Clone + Debug> Updatable<E> for TimeGetterFromGetter
 ///As histories return values at times, we can ask them to return values at the time of now or now
 ///with a delta. This makes that much easier and is the recommended way of following
 ///[`MotionProfile`]s.
-pub struct GetterFromChronology<'a, T, TG: TimeGetter<E>, E: Clone + Debug> {
-    chronology: &'a mut dyn Chronology<T>,
+pub struct GetterFromChronology<T, C: Chronology<T>, TG: TimeGetter<E>, E: Clone + Debug> {
+    chronology: C,
     time_getter: TG,
     time_delta: Time,
+    phantom_t: PhantomData<T>,
     phantom_e: PhantomData<E>,
 }
-impl<'a, T, TG: TimeGetter<E>, E: Clone + Debug> GetterFromChronology<'a, T, TG, E> {
+impl<T, C: Chronology<T>, TG: TimeGetter<E>, E: Clone + Debug> GetterFromChronology<T, C, TG, E> {
     ///Constructor such that the time in the request to the chronology will be directly that returned
     ///from the [`TimeGetter`] with no delta.
-    pub fn new_no_delta(chronology: &'a mut impl Chronology<T>, time_getter: TG) -> Self {
+    pub fn new_no_delta(chronology: C, time_getter: TG) -> Self {
         Self {
             chronology,
             time_getter,
             time_delta: Time::default(),
+            phantom_t: PhantomData,
             phantom_e: PhantomData,
         }
     }
     ///Constructor such that the times requested from the [`Chronology`] will begin at zero where zero
     ///is the moment this constructor is called.
-    pub fn new_start_at_zero(
-        chronology: &'a mut impl Chronology<T>,
-        time_getter: TG,
-    ) -> Result<Self, E> {
+    pub fn new_start_at_zero(chronology: C, time_getter: TG) -> Result<Self, E> {
         let time_delta = -time_getter.get()?;
         Ok(Self {
             chronology,
             time_getter,
             time_delta,
+            phantom_t: PhantomData,
             phantom_e: PhantomData,
         })
     }
     ///Constructor such that the times requested from the [`Chronology`] will start at a given time with
     ///that time defined as the moment of construction.
-    pub fn new_custom_start(
-        chronology: &'a mut impl Chronology<T>,
-        time_getter: TG,
-        start: Time,
-    ) -> Result<Self, E> {
+    pub fn new_custom_start(chronology: C, time_getter: TG, start: Time) -> Result<Self, E> {
         let time_delta = start - time_getter.get()?;
         Ok(Self {
             chronology,
             time_getter,
             time_delta,
+            phantom_t: PhantomData,
             phantom_e: PhantomData,
         })
     }
     ///Constructor with a custom time delta.
-    pub fn new_custom_delta(
-        chronology: &'a mut impl Chronology<T>,
-        time_getter: TG,
-        time_delta: Time,
-    ) -> Self {
+    pub fn new_custom_delta(chronology: C, time_getter: TG, time_delta: Time) -> Self {
         Self {
             chronology,
             time_getter,
             time_delta,
+            phantom_t: PhantomData,
             phantom_e: PhantomData,
         }
     }
@@ -381,14 +375,18 @@ impl<'a, T, TG: TimeGetter<E>, E: Clone + Debug> GetterFromChronology<'a, T, TG,
 //stayed around for so long: It's easier to force empty impls every once in a while than to figure
 //out a really wierd specialization thing. Overall, though, you almost never actually need an
 //Updatable Chronology anyway, so the bound really doesn't make that much sense in the first place.
-impl<G, TG: TimeGetter<E>, E: Clone + Debug> Updatable<E> for GetterFromChronology<'_, G, TG, E> {
+impl<T, C: Chronology<T>, TG: TimeGetter<E>, E: Clone + Debug> Updatable<E>
+    for GetterFromChronology<T, C, TG, E>
+{
     fn update(&mut self) -> NothingOrError<E> {
         self.time_getter.update()?;
         Ok(())
     }
 }
-impl<G, TG: TimeGetter<E>, E: Clone + Debug> Getter<G, E> for GetterFromChronology<'_, G, TG, E> {
-    fn get(&self) -> Output<G, E> {
+impl<T, C: Chronology<T>, TG: TimeGetter<E>, E: Clone + Debug> Getter<T, E>
+    for GetterFromChronology<T, C, TG, E>
+{
+    fn get(&self) -> Output<T, E> {
         let time = self.time_getter.get()?;
         Ok(match self.chronology.get(time + self.time_delta) {
             Some(datum) => Some(Datum::new(time, datum.value)),
