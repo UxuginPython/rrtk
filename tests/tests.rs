@@ -803,37 +803,29 @@ fn settable() {
 }
 #[test]
 fn getter_from_chronology() {
-    enum UpdateTestState {
-        Unneeded,
+    enum TestState {
+        Standard,
         ReturnNone,
     }
     struct MyChronology {
-        update_test_state: UpdateTestState,
+        test_state: TestState,
     }
     impl MyChronology {
         fn new() -> Self {
             Self {
-                update_test_state: UpdateTestState::Unneeded,
+                test_state: TestState::Standard,
             }
         }
         fn set_none_test(&mut self) {
-            self.update_test_state = UpdateTestState::ReturnNone;
+            self.test_state = TestState::ReturnNone;
         }
     }
     impl Chronology<i64> for MyChronology {
         fn get(&self, time: Time) -> Option<Datum<i64>> {
-            match self.update_test_state {
-                UpdateTestState::Unneeded => Some(Datum::new(time, time.as_nanoseconds())),
-                UpdateTestState::ReturnNone => None,
+            match self.test_state {
+                TestState::Standard => Some(Datum::new(time, time.as_nanoseconds())),
+                TestState::ReturnNone => None,
             }
-        }
-    }
-    impl Updatable<()> for MyChronology {
-        fn update(&mut self) -> NothingOrError<()> {
-            match self.update_test_state {
-                _ => (),
-            }
-            Ok(())
         }
     }
     struct MyTimeGetter {
