@@ -26,7 +26,7 @@ pub struct MotionProfile {
     max_acc: Quantity,
     end_command: Command,
 }
-impl<E: Clone + Debug> Chronology<Command, E> for MotionProfile {
+impl Chronology<Command> for MotionProfile {
     fn get(&self, time: Time) -> Option<Datum<Command>> {
         let mode = match self.get_mode(time) {
             Some(value) => value,
@@ -46,11 +46,6 @@ impl<E: Clone + Debug> Chronology<Command, E> for MotionProfile {
                 .expect("If mode is Acceleration, this should be Some."),
         };
         Some(Datum::new(time, Command::new(mode, value.into())))
-    }
-}
-impl<E: Clone + Debug> Updatable<E> for MotionProfile {
-    fn update(&mut self) -> NothingOrError<E> {
-        Ok(())
     }
 }
 impl MotionProfile {

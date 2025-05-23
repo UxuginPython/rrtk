@@ -200,7 +200,7 @@ pub trait TimeGetter<E: Clone + Debug>: Updatable<E> {
     fn get(&self) -> TimeOutput<E>;
 }
 ///An object that can return a value, like a [`Getter`], for a given time.
-pub trait Chronology<T, E: Clone + Debug>: Updatable<E> {
+pub trait Chronology<T> {
     ///Get a value at a time.
     fn get(&self, time: Time) -> Option<Datum<T>>;
 }
@@ -305,25 +305,27 @@ impl<T, G: Getter<T, E>, E: Clone + Debug> Updatable<E> for TimeGetterFromGetter
 ///As histories return values at times, we can ask them to return values at the time of now or now
 ///with a delta. This makes that much easier and is the recommended way of following
 ///[`MotionProfile`]s.
-pub struct GetterFromChronology<'a, G, TG: TimeGetter<E>, E: Clone + Debug> {
-    chronology: &'a mut dyn Chronology<G, E>,
+pub struct GetterFromChronology<'a, T, TG: TimeGetter<E>, E: Clone + Debug> {
+    chronology: &'a mut dyn Chronology<T>,
     time_getter: TG,
     time_delta: Time,
+    phantom_e: PhantomData<E>,
 }
-impl<'a, G, TG: TimeGetter<E>, E: Clone + Debug> GetterFromChronology<'a, G, TG, E> {
+impl<'a, T, TG: TimeGetter<E>, E: Clone + Debug> GetterFromChronology<'a, T, TG, E> {
     ///Constructor such that the time in the request to the chronology will be directly that returned
     ///from the [`TimeGetter`] with no delta.
-    pub fn new_no_delta(chronology: &'a mut impl Chronology<G, E>, time_getter: TG) -> Self {
+    pub fn new_no_delta(chronology: &'a mut impl Chronology<T>, time_getter: TG) -> Self {
         Self {
             chronology,
             time_getter,
             time_delta: Time::default(),
+            phantom_e: PhantomData,
         }
     }
     ///Constructor such that the times requested from the [`Chronology`] will begin at zero where zero
     ///is the moment this constructor is called.
     pub fn new_start_at_zero(
-        chronology: &'a mut impl Chronology<G, E>,
+        chronology: &'a mut impl Chronology<T>,
         time_getter: TG,
     ) -> Result<Self, E> {
         let time_delta = -time_getter.get()?;
@@ -331,12 +333,13 @@ impl<'a, G, TG: TimeGetter<E>, E: Clone + Debug> GetterFromChronology<'a, G, TG,
             chronology,
             time_getter,
             time_delta,
+            phantom_e: PhantomData,
         })
     }
     ///Constructor such that the times requested from the [`Chronology`] will start at a given time with
     ///that time defined as the moment of construction.
     pub fn new_custom_start(
-        chronology: &'a mut impl Chronology<G, E>,
+        chronology: &'a mut impl Chronology<T>,
         time_getter: TG,
         start: Time,
     ) -> Result<Self, E> {
@@ -345,11 +348,12 @@ impl<'a, G, TG: TimeGetter<E>, E: Clone + Debug> GetterFromChronology<'a, G, TG,
             chronology,
             time_getter,
             time_delta,
+            phantom_e: PhantomData,
         })
     }
     ///Constructor with a custom time delta.
     pub fn new_custom_delta(
-        chronology: &'a mut impl Chronology<G, E>,
+        chronology: &'a mut impl Chronology<T>,
         time_getter: TG,
         time_delta: Time,
     ) -> Self {
@@ -357,6 +361,7 @@ impl<'a, G, TG: TimeGetter<E>, E: Clone + Debug> GetterFromChronology<'a, G, TG,
             chronology,
             time_getter,
             time_delta,
+            phantom_e: PhantomData,
         }
     }
     ///Set the time delta.
@@ -371,9 +376,13 @@ impl<'a, G, TG: TimeGetter<E>, E: Clone + Debug> GetterFromChronology<'a, G, TG,
         Ok(())
     }
 }
+//TODO: Maybe one day with specialization, it will be possible to update self.chronology only if it
+//implements it. I think that's really the only reason that Chronology: Updatable (then History: Updatable)
+//stayed around for so long: It's easier to force empty impls every once in a while than to figure
+//out a really wierd specialization thing. Overall, though, you almost never actually need an
+//Updatable Chronology anyway, so the bound really doesn't make that much sense in the first place.
 impl<G, TG: TimeGetter<E>, E: Clone + Debug> Updatable<E> for GetterFromChronology<'_, G, TG, E> {
     fn update(&mut self) -> NothingOrError<E> {
-        self.chronology.update()?;
         self.time_getter.update()?;
         Ok(())
     }
