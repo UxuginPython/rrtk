@@ -875,7 +875,6 @@ impl<T> PointerDereferencer<*const RwLock<T>> {
     as_dyn_getter!(*const RwLock<dyn Getter<U, E>>);
     as_dyn_settable!(*const RwLock<dyn Settable<U, E>>);
     as_dyn_time_getter!(*const RwLock<dyn TimeGetter<E>>);
-    as_dyn_chronology!(*const RwLock<dyn Chronology<U>>);
 }
 ///These functions get a `PointerDereferencer<*const Mutex<dyn Trait>>` from a
 ///`PointerDereferencer<*const Mutex<T>>` where `T: Trait`. Because raw pointers are `Copy`, they
@@ -887,7 +886,12 @@ impl<T> PointerDereferencer<*const Mutex<T>> {
     as_dyn_getter!(*const Mutex<dyn Getter<U, E>>);
     as_dyn_settable!(*const Mutex<dyn Settable<U, E>>);
     as_dyn_time_getter!(*const Mutex<dyn TimeGetter<E>>);
-    as_dyn_chronology!(*const Mutex<dyn Chronology<U>>);
+}
+//There are Chronology impls for RwLock<C> and Mutex<C> where C: Chronology. It is necessary to
+//implement Updatable etc. for *const RwLock<T> and *const Mutex<T> directly rather than doing it
+//more generically like for Chronology because they require mutability.
+impl<T> PointerDereferencer<*const T> {
+    as_dyn_chronology!(*const dyn Chronology<U>);
 }
 //FIXME: Make one of these work if you can, preferably From since it implies Into.
 /*impl<P> From<PointerDereferencer<P>> for P {
@@ -920,6 +924,16 @@ impl<T, S: ?Sized + Settable<T, E>, E: Clone + Debug> Settable<T, E>
 impl<TG: ?Sized + TimeGetter<E>, E: Clone + Debug> TimeGetter<E> for PointerDereferencer<*mut TG> {
     fn get(&self) -> TimeOutput<E> {
         unsafe { (*self.pointer).get() }
+    }
+}
+impl<T, C: ?Sized + Chronology<T>> Chronology<T> for PointerDereferencer<*mut C> {
+    fn get(&self, time: Time) -> Option<Datum<T>> {
+        unsafe { (*self.pointer).get(time) }
+    }
+}
+impl<T, C: ?Sized + Chronology<T>> Chronology<T> for PointerDereferencer<*const C> {
+    fn get(&self, time: Time) -> Option<Datum<T>> {
+        unsafe { (*self.pointer).get(time) }
     }
 }
 #[cfg(feature = "std")]
@@ -1027,6 +1041,12 @@ impl<TG: ?Sized + TimeGetter<E>, E: Clone + Debug> TimeGetter<E> for Box<TG> {
     }
 }
 #[cfg(feature = "alloc")]
+impl<T, C: ?Sized + Chronology<T>> Chronology<T> for Box<C> {
+    fn get(&self, time: Time) -> Option<Datum<T>> {
+        (**self).get(time)
+    }
+}
+#[cfg(feature = "alloc")]
 impl<U: ?Sized + Updatable<E>, E: Clone + Debug> Updatable<E> for Rc<RefCell<U>> {
     fn update(&mut self) -> NothingOrError<E> {
         self.borrow_mut().update()
@@ -1112,5 +1132,36 @@ impl<TG: ?Sized + TimeGetter<E>, E: Clone + Debug> TimeGetter<E> for Arc<Mutex<T
         self.lock()
             .expect("RRTK failed to acquire Mutex lock for TimeGetter")
             .get()
+    }
+}
+#[cfg(feature = "alloc")]
+impl<T, C: ?Sized + Chronology<T>> Chronology<T> for Rc<C> {
+    fn get(&self, time: Time) -> Option<Datum<T>> {
+        (**self).get(time)
+    }
+}
+#[cfg(feature = "std")]
+impl<T, C: ?Sized + Chronology<T>> Chronology<T> for Arc<C> {
+    fn get(&self, time: Time) -> Option<Datum<T>> {
+        (**self).get(time)
+    }
+}
+impl<T, C: ?Sized + Chronology<T>> Chronology<T> for RefCell<C> {
+    fn get(&self, time: Time) -> Option<Datum<T>> {
+        self.borrow().get(time)
+    }
+}
+impl<T, C: ?Sized + Chronology<T>> Chronology<T> for RwLock<C> {
+    fn get(&self, time: Time) -> Option<Datum<T>> {
+        self.read()
+            .expect("RRTK failed to acquire RwLock read lock for Chronology")
+            .get(time)
+    }
+}
+impl<T, C: ?Sized + Chronology<T>> Chronology<T> for Mutex<C> {
+    fn get(&self, time: Time) -> Option<Datum<T>> {
+        self.lock()
+            .expect("RRTK failed to acquire Mutex lock for Chronology")
+            .get(time)
     }
 }
