@@ -603,8 +603,7 @@ fn motion_profile_chronology() {
         Quantity::new(0.1, MILLIMETER_PER_SECOND),
         Quantity::new(0.01, MILLIMETER_PER_SECOND_SQUARED),
     );
-    let mut motion_profile = Box::new(motion_profile) as Box<dyn Chronology<Command, ()>>;
-    let _ = motion_profile.update().unwrap(); //This should do nothing.
+    let motion_profile = Box::new(motion_profile) as Box<dyn Chronology<Command>>;
     assert_eq!(
         motion_profile.get(Time::from_nanoseconds(-20_000_000_000)),
         None
@@ -806,8 +805,6 @@ fn settable() {
 fn getter_from_chronology() {
     enum UpdateTestState {
         Unneeded,
-        Waiting,
-        Updated,
         ReturnNone,
     }
     struct MyChronology {
@@ -819,20 +816,14 @@ fn getter_from_chronology() {
                 update_test_state: UpdateTestState::Unneeded,
             }
         }
-        fn set_update_test(&mut self) {
-            self.update_test_state = UpdateTestState::Waiting;
-        }
         fn set_none_test(&mut self) {
             self.update_test_state = UpdateTestState::ReturnNone;
         }
     }
-    impl Chronology<i64, ()> for MyChronology {
+    impl Chronology<i64> for MyChronology {
         fn get(&self, time: Time) -> Option<Datum<i64>> {
             match self.update_test_state {
-                UpdateTestState::Unneeded | UpdateTestState::Waiting => {
-                    Some(Datum::new(time, time.as_nanoseconds()))
-                }
-                UpdateTestState::Updated => Some(Datum::new(time, 30)),
+                UpdateTestState::Unneeded => Some(Datum::new(time, time.as_nanoseconds())),
                 UpdateTestState::ReturnNone => None,
             }
         }
@@ -840,7 +831,6 @@ fn getter_from_chronology() {
     impl Updatable<()> for MyChronology {
         fn update(&mut self) -> NothingOrError<()> {
             match self.update_test_state {
-                UpdateTestState::Waiting => self.update_test_state = UpdateTestState::Updated,
                 _ => (),
             }
             Ok(())
@@ -944,19 +934,6 @@ fn getter_from_chronology() {
         assert_eq!(
             getter.get().unwrap().unwrap(),
             Datum::new(Time::from_nanoseconds(9), 20)
-        );
-    }
-    {
-        my_chronology.set_update_test();
-        let mut getter = GetterFromChronology::new_no_delta(&mut my_chronology, my_time_getter);
-        assert_eq!(
-            getter.get().unwrap().unwrap(),
-            Datum::new(Time::from_nanoseconds(9), 9)
-        );
-        getter.update().unwrap();
-        assert_eq!(
-            getter.get().unwrap().unwrap(),
-            Datum::new(Time::from_nanoseconds(10), 30)
         );
     }
     {
