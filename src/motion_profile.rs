@@ -26,7 +26,7 @@ pub struct MotionProfile {
     max_acc: Quantity,
     end_command: Command,
 }
-impl<E: Clone + Debug> History<Command, E> for MotionProfile {
+impl<E: Clone + Debug> Chronology<Command, E> for MotionProfile {
     fn get(&self, time: Time) -> Option<Datum<Command>> {
         let mode = match self.get_mode(time) {
             Some(value) => value,

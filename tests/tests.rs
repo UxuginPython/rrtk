@@ -596,14 +596,14 @@ fn motion_profile_get_position_3() {
     );
 }
 #[test]
-fn motion_profile_history() {
+fn motion_profile_chronology() {
     let motion_profile = MotionProfile::new(
         State::new_raw(0.0, 0.0, 0.0),
         State::new_raw(3.0, 0.0, 0.0),
         Quantity::new(0.1, MILLIMETER_PER_SECOND),
         Quantity::new(0.01, MILLIMETER_PER_SECOND_SQUARED),
     );
-    let mut motion_profile = Box::new(motion_profile) as Box<dyn History<Command, ()>>;
+    let mut motion_profile = Box::new(motion_profile) as Box<dyn Chronology<Command, ()>>;
     let _ = motion_profile.update().unwrap(); //This should do nothing.
     assert_eq!(
         motion_profile.get(Time::from_nanoseconds(-20_000_000_000)),
@@ -803,17 +803,17 @@ fn settable() {
     assert_eq!(my_settable.last_request, Some(3));
 }
 #[test]
-fn getter_from_history() {
+fn getter_from_chronology() {
     enum UpdateTestState {
         Unneeded,
         Waiting,
         Updated,
         ReturnNone,
     }
-    struct MyHistory {
+    struct MyChronology {
         update_test_state: UpdateTestState,
     }
-    impl MyHistory {
+    impl MyChronology {
         fn new() -> Self {
             Self {
                 update_test_state: UpdateTestState::Unneeded,
@@ -826,7 +826,7 @@ fn getter_from_history() {
             self.update_test_state = UpdateTestState::ReturnNone;
         }
     }
-    impl History<i64, ()> for MyHistory {
+    impl Chronology<i64, ()> for MyChronology {
         fn get(&self, time: Time) -> Option<Datum<i64>> {
             match self.update_test_state {
                 UpdateTestState::Unneeded | UpdateTestState::Waiting => {
@@ -837,7 +837,7 @@ fn getter_from_history() {
             }
         }
     }
-    impl Updatable<()> for MyHistory {
+    impl Updatable<()> for MyChronology {
         fn update(&mut self) -> NothingOrError<()> {
             match self.update_test_state {
                 UpdateTestState::Waiting => self.update_test_state = UpdateTestState::Updated,
@@ -867,12 +867,12 @@ fn getter_from_history() {
             Ok(())
         }
     }
-    let mut my_history = MyHistory::new();
+    let mut my_chronology = MyChronology::new();
     static mut TIME_GETTER: MyTimeGetter = MyTimeGetter::new();
     let mut my_time_getter =
         unsafe { PointerDereferencer::new(core::ptr::addr_of_mut!(TIME_GETTER)) };
     {
-        let no_delta = GetterFromHistory::new_no_delta(&mut my_history, my_time_getter);
+        let no_delta = GetterFromChronology::new_no_delta(&mut my_chronology, my_time_getter);
         assert_eq!(
             no_delta.get().unwrap().unwrap(),
             Datum::new(Time::from_nanoseconds(5), 5)
@@ -885,7 +885,7 @@ fn getter_from_history() {
     }
     {
         let start_at_zero =
-            GetterFromHistory::new_start_at_zero(&mut my_history, my_time_getter).unwrap();
+            GetterFromChronology::new_start_at_zero(&mut my_chronology, my_time_getter).unwrap();
         assert_eq!(
             start_at_zero.get().unwrap().unwrap(),
             Datum::new(Time::from_nanoseconds(6), 0)
@@ -897,8 +897,8 @@ fn getter_from_history() {
         );
     }
     {
-        let custom_start = GetterFromHistory::new_custom_start(
-            &mut my_history,
+        let custom_start = GetterFromChronology::new_custom_start(
+            &mut my_chronology,
             my_time_getter,
             Time::from_nanoseconds(10),
         )
@@ -914,8 +914,8 @@ fn getter_from_history() {
         );
     }
     {
-        let custom_delta = GetterFromHistory::new_custom_delta(
-            &mut my_history,
+        let custom_delta = GetterFromChronology::new_custom_delta(
+            &mut my_chronology,
             my_time_getter,
             Time::from_nanoseconds(5),
         );
@@ -930,7 +930,7 @@ fn getter_from_history() {
         );
     }
     {
-        let mut getter = GetterFromHistory::new_no_delta(&mut my_history, my_time_getter);
+        let mut getter = GetterFromChronology::new_no_delta(&mut my_chronology, my_time_getter);
         assert_eq!(
             getter.get().unwrap().unwrap(),
             Datum::new(Time::from_nanoseconds(9), 9)
@@ -947,8 +947,8 @@ fn getter_from_history() {
         );
     }
     {
-        my_history.set_update_test();
-        let mut getter = GetterFromHistory::new_no_delta(&mut my_history, my_time_getter);
+        my_chronology.set_update_test();
+        let mut getter = GetterFromChronology::new_no_delta(&mut my_chronology, my_time_getter);
         assert_eq!(
             getter.get().unwrap().unwrap(),
             Datum::new(Time::from_nanoseconds(9), 9)
@@ -960,8 +960,8 @@ fn getter_from_history() {
         );
     }
     {
-        my_history.set_none_test();
-        let getter = GetterFromHistory::new_no_delta(&mut my_history, my_time_getter);
+        my_chronology.set_none_test();
+        let getter = GetterFromChronology::new_no_delta(&mut my_chronology, my_time_getter);
         assert_eq!(getter.get().unwrap(), None);
     }
 }

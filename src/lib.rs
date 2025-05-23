@@ -200,7 +200,7 @@ pub trait TimeGetter<E: Clone + Debug>: Updatable<E> {
     fn get(&self) -> TimeOutput<E>;
 }
 ///An object that can return a value, like a [`Getter`], for a given time.
-pub trait History<T, E: Clone + Debug>: Updatable<E> {
+pub trait Chronology<T, E: Clone + Debug>: Updatable<E> {
     ///Get a value at a time.
     fn get(&self, time: Time) -> Option<Datum<T>>;
 }
@@ -305,56 +305,56 @@ impl<T, G: Getter<T, E>, E: Clone + Debug> Updatable<E> for TimeGetterFromGetter
 ///As histories return values at times, we can ask them to return values at the time of now or now
 ///with a delta. This makes that much easier and is the recommended way of following
 ///[`MotionProfile`]s.
-pub struct GetterFromHistory<'a, G, TG: TimeGetter<E>, E: Clone + Debug> {
-    history: &'a mut dyn History<G, E>,
+pub struct GetterFromChronology<'a, G, TG: TimeGetter<E>, E: Clone + Debug> {
+    chronology: &'a mut dyn Chronology<G, E>,
     time_getter: TG,
     time_delta: Time,
 }
-impl<'a, G, TG: TimeGetter<E>, E: Clone + Debug> GetterFromHistory<'a, G, TG, E> {
-    ///Constructor such that the time in the request to the history will be directly that returned
+impl<'a, G, TG: TimeGetter<E>, E: Clone + Debug> GetterFromChronology<'a, G, TG, E> {
+    ///Constructor such that the time in the request to the chronology will be directly that returned
     ///from the [`TimeGetter`] with no delta.
-    pub fn new_no_delta(history: &'a mut impl History<G, E>, time_getter: TG) -> Self {
+    pub fn new_no_delta(chronology: &'a mut impl Chronology<G, E>, time_getter: TG) -> Self {
         Self {
-            history,
+            chronology,
             time_getter,
             time_delta: Time::default(),
         }
     }
-    ///Constructor such that the times requested from the [`History`] will begin at zero where zero
+    ///Constructor such that the times requested from the [`Chronology`] will begin at zero where zero
     ///is the moment this constructor is called.
     pub fn new_start_at_zero(
-        history: &'a mut impl History<G, E>,
+        chronology: &'a mut impl Chronology<G, E>,
         time_getter: TG,
     ) -> Result<Self, E> {
         let time_delta = -time_getter.get()?;
         Ok(Self {
-            history,
+            chronology,
             time_getter,
             time_delta,
         })
     }
-    ///Constructor such that the times requested from the [`History`] will start at a given time with
+    ///Constructor such that the times requested from the [`Chronology`] will start at a given time with
     ///that time defined as the moment of construction.
     pub fn new_custom_start(
-        history: &'a mut impl History<G, E>,
+        chronology: &'a mut impl Chronology<G, E>,
         time_getter: TG,
         start: Time,
     ) -> Result<Self, E> {
         let time_delta = start - time_getter.get()?;
         Ok(Self {
-            history,
+            chronology,
             time_getter,
             time_delta,
         })
     }
     ///Constructor with a custom time delta.
     pub fn new_custom_delta(
-        history: &'a mut impl History<G, E>,
+        chronology: &'a mut impl Chronology<G, E>,
         time_getter: TG,
         time_delta: Time,
     ) -> Self {
         Self {
-            history,
+            chronology,
             time_getter,
             time_delta,
         }
@@ -363,7 +363,7 @@ impl<'a, G, TG: TimeGetter<E>, E: Clone + Debug> GetterFromHistory<'a, G, TG, E>
     pub fn set_delta(&mut self, time_delta: Time) {
         self.time_delta = time_delta;
     }
-    ///Define now as a given time in the history. Mostly used when construction and use are far
+    ///Define now as a given time in the chronology. Mostly used when construction and use are far
     ///apart in time.
     pub fn set_time(&mut self, time: Time) -> NothingOrError<E> {
         let time_delta = time - self.time_getter.get()?;
@@ -371,17 +371,17 @@ impl<'a, G, TG: TimeGetter<E>, E: Clone + Debug> GetterFromHistory<'a, G, TG, E>
         Ok(())
     }
 }
-impl<G, TG: TimeGetter<E>, E: Clone + Debug> Updatable<E> for GetterFromHistory<'_, G, TG, E> {
+impl<G, TG: TimeGetter<E>, E: Clone + Debug> Updatable<E> for GetterFromChronology<'_, G, TG, E> {
     fn update(&mut self) -> NothingOrError<E> {
-        self.history.update()?;
+        self.chronology.update()?;
         self.time_getter.update()?;
         Ok(())
     }
 }
-impl<G, TG: TimeGetter<E>, E: Clone + Debug> Getter<G, E> for GetterFromHistory<'_, G, TG, E> {
+impl<G, TG: TimeGetter<E>, E: Clone + Debug> Getter<G, E> for GetterFromChronology<'_, G, TG, E> {
     fn get(&self) -> Output<G, E> {
         let time = self.time_getter.get()?;
-        Ok(match self.history.get(time + self.time_delta) {
+        Ok(match self.chronology.get(time + self.time_delta) {
             Some(datum) => Some(Datum::new(time, datum.value)),
             None => None,
         })
