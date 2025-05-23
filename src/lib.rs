@@ -838,6 +838,22 @@ macro_rules! as_dyn_time_getter {
         }
     };
 }
+//TODO: Chronology is different because it's not always Updatable and so probably isn't mutable.
+//Figure out what to do about that. (Currently, as_dyn_chronology only works for mutable references
+//and there are no impls for Rc<RefCell>, etc., either mutable or immutable.)
+macro_rules! as_dyn_chronology {
+    ($return_type:ty) => {
+        #[allow(missing_docs)]
+        #[inline]
+        pub fn as_dyn_chronology<U>(&self) -> PointerDereferencer<$return_type>
+        where
+            T: Chronology<U>,
+        {
+            let ptr = self.copy_inner() as $return_type;
+            unsafe { PointerDereferencer::new(ptr) }
+        }
+    };
+}
 ///These functions get a `PointerDereferencer<*mut dyn Trait>` from a `PointerDereferencer<*mut T>`
 ///where `T: Trait`. Because raw pointers are `Copy`, they only require `&self` and do not consume
 ///the original `PointerDereferencer`. Unfortunately `T` currently must be `Sized` due to language
@@ -847,6 +863,7 @@ impl<T> PointerDereferencer<*mut T> {
     as_dyn_getter!(*mut dyn Getter<U, E>);
     as_dyn_settable!(*mut dyn Settable<U, E>);
     as_dyn_time_getter!(*mut dyn TimeGetter<E>);
+    as_dyn_chronology!(*mut dyn Chronology<U>);
 }
 ///These functions get a `PointerDereferencer<*const RwLock<dyn Trait>>` from a
 ///`PointerDereferencer<*const RwLock<T>>` where `T: Trait`. Because raw pointers are `Copy`, they
@@ -858,6 +875,7 @@ impl<T> PointerDereferencer<*const RwLock<T>> {
     as_dyn_getter!(*const RwLock<dyn Getter<U, E>>);
     as_dyn_settable!(*const RwLock<dyn Settable<U, E>>);
     as_dyn_time_getter!(*const RwLock<dyn TimeGetter<E>>);
+    as_dyn_chronology!(*const RwLock<dyn Chronology<U>>);
 }
 ///These functions get a `PointerDereferencer<*const Mutex<dyn Trait>>` from a
 ///`PointerDereferencer<*const Mutex<T>>` where `T: Trait`. Because raw pointers are `Copy`, they
@@ -869,6 +887,7 @@ impl<T> PointerDereferencer<*const Mutex<T>> {
     as_dyn_getter!(*const Mutex<dyn Getter<U, E>>);
     as_dyn_settable!(*const Mutex<dyn Settable<U, E>>);
     as_dyn_time_getter!(*const Mutex<dyn TimeGetter<E>>);
+    as_dyn_chronology!(*const Mutex<dyn Chronology<U>>);
 }
 //FIXME: Make one of these work if you can, preferably From since it implies Into.
 /*impl<P> From<PointerDereferencer<P>> for P {
