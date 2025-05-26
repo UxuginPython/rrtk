@@ -849,12 +849,12 @@ fn getter_from_chronology() {
             Ok(())
         }
     }
-    let mut my_chronology = MyChronology::new();
     static mut TIME_GETTER: MyTimeGetter = MyTimeGetter::new();
     let mut my_time_getter =
         unsafe { PointerDereferencer::new(core::ptr::addr_of_mut!(TIME_GETTER)) };
     {
-        let no_delta = GetterFromChronology::new_no_delta(&mut my_chronology, my_time_getter);
+        let my_chronology = MyChronology::new();
+        let no_delta = GetterFromChronology::new_no_delta(my_chronology, my_time_getter);
         assert_eq!(
             no_delta.get().unwrap().unwrap(),
             Datum::new(Time::from_nanoseconds(5), 5)
@@ -866,8 +866,9 @@ fn getter_from_chronology() {
         );
     }
     {
+        let my_chronology = MyChronology::new();
         let start_at_zero =
-            GetterFromChronology::new_start_at_zero(&mut my_chronology, my_time_getter).unwrap();
+            GetterFromChronology::new_start_at_zero(my_chronology, my_time_getter).unwrap();
         assert_eq!(
             start_at_zero.get().unwrap().unwrap(),
             Datum::new(Time::from_nanoseconds(6), 0)
@@ -879,8 +880,9 @@ fn getter_from_chronology() {
         );
     }
     {
+        let my_chronology = MyChronology::new();
         let custom_start = GetterFromChronology::new_custom_start(
-            &mut my_chronology,
+            my_chronology,
             my_time_getter,
             Time::from_nanoseconds(10),
         )
@@ -896,8 +898,9 @@ fn getter_from_chronology() {
         );
     }
     {
+        let my_chronology = MyChronology::new();
         let custom_delta = GetterFromChronology::new_custom_delta(
-            &mut my_chronology,
+            my_chronology,
             my_time_getter,
             Time::from_nanoseconds(5),
         );
@@ -912,7 +915,8 @@ fn getter_from_chronology() {
         );
     }
     {
-        let mut getter = GetterFromChronology::new_no_delta(&mut my_chronology, my_time_getter);
+        let my_chronology = MyChronology::new();
+        let mut getter = GetterFromChronology::new_no_delta(my_chronology, my_time_getter);
         assert_eq!(
             getter.get().unwrap().unwrap(),
             Datum::new(Time::from_nanoseconds(9), 9)
@@ -929,8 +933,9 @@ fn getter_from_chronology() {
         );
     }
     {
+        let mut my_chronology = MyChronology::new();
         my_chronology.set_none_test();
-        let getter = GetterFromChronology::new_no_delta(&mut my_chronology, my_time_getter);
+        let getter = GetterFromChronology::new_no_delta(my_chronology, my_time_getter);
         assert_eq!(getter.get().unwrap(), None);
     }
 }
