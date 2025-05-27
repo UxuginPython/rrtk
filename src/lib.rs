@@ -38,9 +38,6 @@ use alloc::boxed::Box;
 use alloc::rc::Rc;
 #[cfg(feature = "alloc")]
 use alloc::vec::Vec;
-//There is nothing preventing this from being used without any features; we just don't currently,
-//and it makes Cargo show a warning since there's an unused use.
-#[cfg(any(feature = "alloc", feature = "devices"))]
 use core::cell::RefCell;
 use core::fmt;
 use core::marker::PhantomData;
@@ -1149,6 +1146,7 @@ impl<T, C: ?Sized + Chronology<T>> Chronology<T> for RefCell<C> {
         self.borrow().get(time)
     }
 }
+#[cfg(feature = "std")]
 impl<T, C: ?Sized + Chronology<T>> Chronology<T> for RwLock<C> {
     fn get(&self, time: Time) -> Option<Datum<T>> {
         self.read()
@@ -1156,6 +1154,7 @@ impl<T, C: ?Sized + Chronology<T>> Chronology<T> for RwLock<C> {
             .get(time)
     }
 }
+#[cfg(feature = "std")]
 impl<T, C: ?Sized + Chronology<T>> Chronology<T> for Mutex<C> {
     fn get(&self, time: Time) -> Option<Datum<T>> {
         self.lock()
