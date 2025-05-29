@@ -272,3 +272,9 @@ Remove `Error` enum:
 ## 0.7.0-alpha.6
 - Make all streams update their inputs and, if they have them, `TimeGetter`s. (`ConstantGetter` also updates its `TimeGetter` although it is not considered a stream.)
 - Fix struct field naming mistake in `Product2`.
+## 0.7.0-alpha.7
+- Add new `error` module containing two unit structs: `CannotConvert` and `UnitInvalid`.
+- Rename `History` to `Chronology`.
+- Remove `Updatable` bound from `Chronology`.
+- Make `Chronology` work decently nicely with `PointerDereferencer`.
+- Make `GetterFromChronology` (formerly `GetterFromHistory`) use a type parameter `C: Chronology<T>` similarly to streams using `G: Getter<T, E>`.
