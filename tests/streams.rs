@@ -1603,25 +1603,25 @@ fn or_stream() {
         let in2 = PointerDereferencer::new(core::ptr::addr_of_mut!(IN_2));
         //TODO: Maybe revise this test to better suit the new OrStream. This is a pretty patchy
         //fix.
-        let mut and = OrStream::new([in1.clone().as_dyn_getter(), in2.clone().as_dyn_getter()]);
-        assert_eq!(and.get().unwrap().unwrap().value, false);
-        and.update().unwrap();
-        assert_eq!(and.get().unwrap(), None);
-        and.update().unwrap();
-        assert_eq!(and.get().unwrap().unwrap().value, true);
-        and.update().unwrap();
-        assert_eq!(and.get().unwrap(), None);
-        and.update().unwrap();
-        assert_eq!(and.get().unwrap(), None);
-        and.update().unwrap();
-        assert_eq!(and.get().unwrap().unwrap().value, true);
-        and.update().unwrap();
-        assert_eq!(and.get().unwrap().unwrap().value, true);
-        and.update().unwrap();
-        assert_eq!(and.get().unwrap().unwrap().value, true);
-        and.update().unwrap();
-        assert_eq!(and.get().unwrap().unwrap().value, true);
-        and.update().unwrap();
+        let mut or = OrStream::new([in1.clone().as_dyn_getter(), in2.clone().as_dyn_getter()]);
+        assert_eq!(or.get().unwrap().unwrap().value, false);
+        or.update().unwrap();
+        assert_eq!(or.get().unwrap(), None);
+        or.update().unwrap();
+        assert_eq!(or.get().unwrap().unwrap().value, true);
+        or.update().unwrap();
+        assert_eq!(or.get().unwrap(), None);
+        or.update().unwrap();
+        assert_eq!(or.get().unwrap(), None);
+        or.update().unwrap();
+        assert_eq!(or.get().unwrap().unwrap().value, true);
+        or.update().unwrap();
+        assert_eq!(or.get().unwrap().unwrap().value, true);
+        or.update().unwrap();
+        assert_eq!(or.get().unwrap().unwrap().value, true);
+        or.update().unwrap();
+        assert_eq!(or.get().unwrap().unwrap().value, true);
+        or.update().unwrap();
     }
 }
 #[test]
@@ -1687,25 +1687,25 @@ fn or2() {
         let in2 = PointerDereferencer::new(core::ptr::addr_of_mut!(IN_2));
         //TODO: Maybe revise this test to better suit the new OrStream. This is a pretty patchy
         //fix.
-        let mut and = Or2::new(in1.clone(), in2.clone());
-        assert_eq!(and.get().unwrap().unwrap().value, false);
-        and.update().unwrap();
-        assert_eq!(and.get().unwrap(), None);
-        and.update().unwrap();
-        assert_eq!(and.get().unwrap().unwrap().value, true);
-        and.update().unwrap();
-        assert_eq!(and.get().unwrap(), None);
-        and.update().unwrap();
-        assert_eq!(and.get().unwrap(), None);
-        and.update().unwrap();
-        assert_eq!(and.get().unwrap().unwrap().value, true);
-        and.update().unwrap();
-        assert_eq!(and.get().unwrap().unwrap().value, true);
-        and.update().unwrap();
-        assert_eq!(and.get().unwrap().unwrap().value, true);
-        and.update().unwrap();
-        assert_eq!(and.get().unwrap().unwrap().value, true);
-        and.update().unwrap();
+        let mut or = Or2::new(in1.clone(), in2.clone());
+        assert_eq!(or.get().unwrap().unwrap().value, false);
+        or.update().unwrap();
+        assert_eq!(or.get().unwrap(), None);
+        or.update().unwrap();
+        assert_eq!(or.get().unwrap().unwrap().value, true);
+        or.update().unwrap();
+        assert_eq!(or.get().unwrap(), None);
+        or.update().unwrap();
+        assert_eq!(or.get().unwrap(), None);
+        or.update().unwrap();
+        assert_eq!(or.get().unwrap().unwrap().value, true);
+        or.update().unwrap();
+        assert_eq!(or.get().unwrap().unwrap().value, true);
+        or.update().unwrap();
+        assert_eq!(or.get().unwrap().unwrap().value, true);
+        or.update().unwrap();
+        assert_eq!(or.get().unwrap().unwrap().value, true);
+        or.update().unwrap();
     }
 }
 #[test]
