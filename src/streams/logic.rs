@@ -22,11 +22,11 @@ impl LogicState {
         }
     }
 }
-pub struct GoodAndStream<const N: usize, G: Getter<bool, E>, E: Clone + Debug> {
+pub struct AndStream<const N: usize, G: Getter<bool, E>, E: Clone + Debug> {
     inputs: [G; N],
     phantom_e: PhantomData<E>,
 }
-impl<const N: usize, G: Getter<bool, E>, E: Clone + Debug> GoodAndStream<N, G, E> {
+impl<const N: usize, G: Getter<bool, E>, E: Clone + Debug> AndStream<N, G, E> {
     pub const fn new(inputs: [G; N]) -> Self {
         Self {
             inputs,
@@ -34,7 +34,7 @@ impl<const N: usize, G: Getter<bool, E>, E: Clone + Debug> GoodAndStream<N, G, E
         }
     }
 }
-impl<const N: usize, G: Getter<bool, E>, E: Clone + Debug> Updatable<E> for GoodAndStream<N, G, E> {
+impl<const N: usize, G: Getter<bool, E>, E: Clone + Debug> Updatable<E> for AndStream<N, G, E> {
     fn update(&mut self) -> NothingOrError<E> {
         for getter in &mut self.inputs {
             getter.update()?;
@@ -43,7 +43,7 @@ impl<const N: usize, G: Getter<bool, E>, E: Clone + Debug> Updatable<E> for Good
     }
 }
 impl<const N: usize, G: Getter<bool, E>, E: Clone + Debug> Getter<bool, E>
-    for GoodAndStream<N, G, E>
+    for AndStream<N, G, E>
 {
     fn get(&self) -> Output<bool, E> {
         let mut logic_state = LogicState::ReturnableTrue;
@@ -68,11 +68,11 @@ impl<const N: usize, G: Getter<bool, E>, E: Clone + Debug> Getter<bool, E>
         }
     }
 }
-pub struct GoodOrStream<const N: usize, G: Getter<bool, E>, E: Clone + Debug> {
+pub struct OrStream<const N: usize, G: Getter<bool, E>, E: Clone + Debug> {
     inputs: [G; N],
     phantom_e: PhantomData<E>,
 }
-impl<const N: usize, G: Getter<bool, E>, E: Clone + Debug> GoodOrStream<N, G, E> {
+impl<const N: usize, G: Getter<bool, E>, E: Clone + Debug> OrStream<N, G, E> {
     pub const fn new(inputs: [G; N]) -> Self {
         Self {
             inputs,
@@ -80,7 +80,7 @@ impl<const N: usize, G: Getter<bool, E>, E: Clone + Debug> GoodOrStream<N, G, E>
         }
     }
 }
-impl<const N: usize, G: Getter<bool, E>, E: Clone + Debug> Updatable<E> for GoodOrStream<N, G, E> {
+impl<const N: usize, G: Getter<bool, E>, E: Clone + Debug> Updatable<E> for OrStream<N, G, E> {
     fn update(&mut self) -> NothingOrError<E> {
         for getter in &mut self.inputs {
             getter.update()?;
@@ -89,7 +89,7 @@ impl<const N: usize, G: Getter<bool, E>, E: Clone + Debug> Updatable<E> for Good
     }
 }
 impl<const N: usize, G: Getter<bool, E>, E: Clone + Debug> Getter<bool, E>
-    for GoodOrStream<N, G, E>
+    for OrStream<N, G, E>
 {
     fn get(&self) -> Output<bool, E> {
         let mut logic_state = LogicState::ReturnableFalse;
