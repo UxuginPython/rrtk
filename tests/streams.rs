@@ -1541,6 +1541,88 @@ fn and_stream() {
     }
 }
 #[test]
+fn and2() {
+    struct In1 {
+        index: u8,
+    }
+    impl In1 {
+        const fn new() -> Self {
+            Self { index: 0 }
+        }
+    }
+    impl Getter<bool, ()> for In1 {
+        fn get(&self) -> Output<bool, ()> {
+            Ok(match self.index {
+                0 => Some(Datum::new(Time::ZERO, false)),
+                1 => None,
+                2 => Some(Datum::new(Time::ZERO, true)),
+                3 => Some(Datum::new(Time::ZERO, false)),
+                4 => None,
+                5 => Some(Datum::new(Time::ZERO, true)),
+                6 => Some(Datum::new(Time::ZERO, false)),
+                7 => None,
+                8 => Some(Datum::new(Time::ZERO, true)),
+                _ => unimplemented!(),
+            })
+        }
+    }
+    impl Updatable<()> for In1 {
+        fn update(&mut self) -> NothingOrError<()> {
+            self.index += 1;
+            Ok(())
+        }
+    }
+    struct In2 {
+        index: u8,
+    }
+    impl In2 {
+        const fn new() -> Self {
+            Self { index: 0 }
+        }
+    }
+    impl Getter<bool, ()> for In2 {
+        fn get(&self) -> Output<bool, ()> {
+            Ok(match self.index {
+                0..=2 => Some(Datum::new(Time::ZERO, false)),
+                3..=5 => None,
+                6..=8 => Some(Datum::new(Time::ZERO, true)),
+                _ => unimplemented!(),
+            })
+        }
+    }
+    impl Updatable<()> for In2 {
+        fn update(&mut self) -> NothingOrError<()> {
+            self.index += 1;
+            Ok(())
+        }
+    }
+    unsafe {
+        static mut IN_1: In1 = In1::new();
+        let in1 = PointerDereferencer::new(core::ptr::addr_of_mut!(IN_1));
+        static mut IN_2: In2 = In2::new();
+        let in2 = PointerDereferencer::new(core::ptr::addr_of_mut!(IN_2));
+        let mut and = And2::new(in1.clone(), in2.clone());
+        assert_eq!(and.get().unwrap().unwrap().value, false);
+        and.update().unwrap();
+        assert_eq!(and.get().unwrap().unwrap().value, false);
+        and.update().unwrap();
+        assert_eq!(and.get().unwrap().unwrap().value, false);
+        and.update().unwrap();
+        assert_eq!(and.get().unwrap().unwrap().value, false);
+        and.update().unwrap();
+        assert_eq!(and.get().unwrap(), None);
+        and.update().unwrap();
+        assert_eq!(and.get().unwrap(), None);
+        and.update().unwrap();
+        assert_eq!(and.get().unwrap().unwrap().value, false);
+        and.update().unwrap();
+        assert_eq!(and.get().unwrap(), None);
+        and.update().unwrap();
+        assert_eq!(and.get().unwrap().unwrap().value, true);
+        and.update().unwrap();
+    }
+}
+#[test]
 fn or_stream() {
     struct In1 {
         index: u8,
@@ -1685,8 +1767,6 @@ fn or2() {
         let in1 = PointerDereferencer::new(core::ptr::addr_of_mut!(IN_1));
         static mut IN_2: In2 = In2::new();
         let in2 = PointerDereferencer::new(core::ptr::addr_of_mut!(IN_2));
-        //TODO: Maybe revise this test to better suit the new OrStream. This is a pretty patchy
-        //fix.
         let mut or = Or2::new(in1.clone(), in2.clone());
         assert_eq!(or.get().unwrap().unwrap().value, false);
         or.update().unwrap();
