@@ -1517,7 +1517,9 @@ fn and_stream() {
         let in1 = PointerDereferencer::new(core::ptr::addr_of_mut!(IN_1));
         static mut IN_2: In2 = In2::new();
         let in2 = PointerDereferencer::new(core::ptr::addr_of_mut!(IN_2));
-        let mut and = AndStream::new(in1.clone(), in2.clone());
+        //TODO: Maybe revise this test to better suit the new AndStream. This is a pretty patchy
+        //fix.
+        let mut and = AndStream::new([in1.clone().as_dyn_getter(), in2.clone().as_dyn_getter()]);
         assert_eq!(and.get().unwrap().unwrap().value, false);
         and.update().unwrap();
         assert_eq!(and.get().unwrap().unwrap().value, false);
@@ -1599,7 +1601,9 @@ fn or_stream() {
         let in1 = PointerDereferencer::new(core::ptr::addr_of_mut!(IN_1));
         static mut IN_2: In2 = In2::new();
         let in2 = PointerDereferencer::new(core::ptr::addr_of_mut!(IN_2));
-        let mut and = OrStream::new(in1.clone(), in2.clone());
+        //TODO: Maybe revise this test to better suit the new OrStream. This is a pretty patchy
+        //fix.
+        let mut and = OrStream::new([in1.clone().as_dyn_getter(), in2.clone().as_dyn_getter()]);
         assert_eq!(and.get().unwrap().unwrap().value, false);
         and.update().unwrap();
         assert_eq!(and.get().unwrap(), None);
