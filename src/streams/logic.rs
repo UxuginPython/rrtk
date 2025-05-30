@@ -43,6 +43,7 @@ impl<const N: usize, G: Getter<bool, E>, E: Clone + Debug> Updatable<E> for AndS
     }
 }
 impl<const N: usize, G: Getter<bool, E>, E: Clone + Debug> Getter<bool, E> for AndStream<N, G, E> {
+    //FIXME: Define what happens with 0 inputs.
     fn get(&self) -> Output<bool, E> {
         let mut logic_state = LogicState::ReturnableTrue;
         let mut time = Time::ZERO;
@@ -56,6 +57,61 @@ impl<const N: usize, G: Getter<bool, E>, E: Clone + Debug> Getter<bool, E> for A
                     if !datum.value {
                         logic_state = LogicState::ReturnableFalse;
                     }
+                }
+            }
+        }
+        Ok(match logic_state {
+            LogicState::ReturnableTrue => Some(Datum::new(time, true)),
+            LogicState::ReturnableFalse => Some(Datum::new(time, false)),
+            LogicState::NeitherReturnable => None,
+        })
+    }
+}
+pub struct And2<G1: Getter<bool, E>, G2: Getter<bool, E>, E: Clone + Debug> {
+    input1: G1,
+    input2: G2,
+    phantom_e: PhantomData<E>,
+}
+impl<G1: Getter<bool, E>, G2: Getter<bool, E>, E: Clone + Debug> And2<G1, G2, E> {
+    pub const fn new(input1: G1, input2: G2) -> Self {
+        Self {
+            input1,
+            input2,
+            phantom_e: PhantomData,
+        }
+    }
+}
+impl<G1: Getter<bool, E>, G2: Getter<bool, E>, E: Clone + Debug> Updatable<E> for And2<G1, G2, E> {
+    fn update(&mut self) -> NothingOrError<E> {
+        self.input1.update()?;
+        self.input2.update()?;
+        Ok(())
+    }
+}
+impl<G1: Getter<bool, E>, G2: Getter<bool, E>, E: Clone + Debug> Getter<bool, E>
+    for And2<G1, G2, E>
+{
+    fn get(&self) -> Output<bool, E> {
+        let mut logic_state = LogicState::ReturnableTrue;
+        let mut time = Time::ZERO;
+        //TODO: See if there's a way to repeat less code.
+        match self.input1.get()? {
+            None => logic_state.not_returnable_true(),
+            Some(datum) => {
+                time = datum.time;
+                if !datum.value {
+                    logic_state = LogicState::ReturnableFalse;
+                }
+            }
+        }
+        match self.input2.get()? {
+            None => logic_state.not_returnable_true(),
+            Some(datum) => {
+                if datum.time > time {
+                    time = datum.time;
+                }
+                if !datum.value {
+                    logic_state = LogicState::ReturnableFalse;
                 }
             }
         }
@@ -87,6 +143,7 @@ impl<const N: usize, G: Getter<bool, E>, E: Clone + Debug> Updatable<E> for OrSt
     }
 }
 impl<const N: usize, G: Getter<bool, E>, E: Clone + Debug> Getter<bool, E> for OrStream<N, G, E> {
+    //FIXME: Define what happens with 0 inputs.
     fn get(&self) -> Output<bool, E> {
         let mut logic_state = LogicState::ReturnableFalse;
         let mut time = Time::ZERO;
@@ -100,6 +157,61 @@ impl<const N: usize, G: Getter<bool, E>, E: Clone + Debug> Getter<bool, E> for O
                     if datum.value {
                         logic_state = LogicState::ReturnableTrue;
                     }
+                }
+            }
+        }
+        Ok(match logic_state {
+            LogicState::ReturnableTrue => Some(Datum::new(time, true)),
+            LogicState::ReturnableFalse => Some(Datum::new(time, false)),
+            LogicState::NeitherReturnable => None,
+        })
+    }
+}
+pub struct Or2<G1: Getter<bool, E>, G2: Getter<bool, E>, E: Clone + Debug> {
+    input1: G1,
+    input2: G2,
+    phantom_e: PhantomData<E>,
+}
+impl<G1: Getter<bool, E>, G2: Getter<bool, E>, E: Clone + Debug> Or2<G1, G2, E> {
+    pub const fn new(input1: G1, input2: G2) -> Self {
+        Self {
+            input1,
+            input2,
+            phantom_e: PhantomData,
+        }
+    }
+}
+impl<G1: Getter<bool, E>, G2: Getter<bool, E>, E: Clone + Debug> Updatable<E> for Or2<G1, G2, E> {
+    fn update(&mut self) -> NothingOrError<E> {
+        self.input1.update()?;
+        self.input2.update()?;
+        Ok(())
+    }
+}
+impl<G1: Getter<bool, E>, G2: Getter<bool, E>, E: Clone + Debug> Getter<bool, E>
+    for Or2<G1, G2, E>
+{
+    fn get(&self) -> Output<bool, E> {
+        let mut logic_state = LogicState::ReturnableFalse;
+        let mut time = Time::ZERO;
+        //TODO: See if there's a way to repeat less code.
+        match self.input1.get()? {
+            None => logic_state.not_returnable_false(),
+            Some(datum) => {
+                time = datum.time;
+                if datum.value {
+                    logic_state = LogicState::ReturnableTrue;
+                }
+            }
+        }
+        match self.input2.get()? {
+            None => logic_state.not_returnable_false(),
+            Some(datum) => {
+                if datum.time > time {
+                    time = datum.time;
+                }
+                if !datum.value {
+                    logic_state = LogicState::ReturnableTrue;
                 }
             }
         }
