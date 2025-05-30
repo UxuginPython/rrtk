@@ -22,11 +22,18 @@ impl LogicState {
         }
     }
 }
+///Performs a logical "and" operation on an arbitrary number of inputs. More specifically, follows
+///these rules, starting at the top and proceeding as needed:
+///1. If an input returns an error, return the error.
+///2. If no input returns an error, if an input returns false, return false.
+///3. If no input returns false, if an input returns None, return None.
+///4. If no input returns None, return true.
 pub struct AndStream<const N: usize, G: Getter<bool, E>, E: Clone + Debug> {
     inputs: [G; N],
     phantom_e: PhantomData<E>,
 }
 impl<const N: usize, G: Getter<bool, E>, E: Clone + Debug> AndStream<N, G, E> {
+    ///Constructor for `AndStream`.
     pub const fn new(inputs: [G; N]) -> Self {
         Self {
             inputs,
@@ -67,6 +74,12 @@ impl<const N: usize, G: Getter<bool, E>, E: Clone + Debug> Getter<bool, E> for A
         })
     }
 }
+///Performs a logical "and" operation on two input getters which can be of different types. More
+///specifically, follows these rules, starting at the top and proceeding as needed:
+///1. If an input returns an error, return the error.
+///2. If neither input returns an error, if an input returns false, return false.
+///3. If neither input returns false, if an input returns None, return None.
+///4. If neither input returns None, return true.
 pub struct And2<G1: Getter<bool, E>, G2: Getter<bool, E>, E: Clone + Debug> {
     input1: G1,
     input2: G2,
