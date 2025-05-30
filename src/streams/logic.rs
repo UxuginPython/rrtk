@@ -210,7 +210,7 @@ impl<G1: Getter<bool, E>, G2: Getter<bool, E>, E: Clone + Debug> Getter<bool, E>
                 if datum.time > time {
                     time = datum.time;
                 }
-                if !datum.value {
+                if datum.value {
                     logic_state = LogicState::ReturnableTrue;
                 }
             }
