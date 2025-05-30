@@ -27,7 +27,7 @@ impl LogicState {
 ///1. If an input returns an error, return the error.
 ///2. If no input returns an error, if an input returns false, return false.
 ///3. If no input returns false, if an input returns None, return None.
-///4. If no input returns None, return true.
+///4. If no input returns None (all returned true), return true.
 ///
 ///Returns the latest timestamp of any input (if not Err or None).
 ///
@@ -84,7 +84,7 @@ impl<const N: usize, G: Getter<bool, E>, E: Clone + Debug> Getter<bool, E> for A
 ///1. If an input returns an error, return the error.
 ///2. If neither input returns an error, if an input returns false, return false.
 ///3. If neither input returns false, if an input returns None, return None.
-///4. If neither input returns None, return true.
+///4. If neither input returns None (both returned true), return true.
 ///
 ///Returns the later timestamp of the two inputs if they both return Some.
 ///
@@ -146,11 +146,23 @@ impl<G1: Getter<bool, E>, G2: Getter<bool, E>, E: Clone + Debug> Getter<bool, E>
         })
     }
 }
+///Performs a logical "or" operation on an arbitrary number of inputs. More specifically, follows
+///these rules, starting at the top and proceeding as needed:
+///1. If an input returns an error, return the error.
+///2. If no input returns an error, if an input returns true, return true.
+///3. If no input returns true, if an input returns None, return None.
+///4. If no input returns None (all returned false), return false.
+///
+///Returns the latest timestamp of any input (if not Err or None).
+///
+///If you only need two inputs, you should probably use [`Or2`] instead, which may be slightly
+///faster and allows its inputs to have different types.
 pub struct OrStream<const N: usize, G: Getter<bool, E>, E: Clone + Debug> {
     inputs: [G; N],
     phantom_e: PhantomData<E>,
 }
 impl<const N: usize, G: Getter<bool, E>, E: Clone + Debug> OrStream<N, G, E> {
+    ///Constructor for `OrStream`.
     pub const fn new(inputs: [G; N]) -> Self {
         Self {
             inputs,
@@ -191,12 +203,24 @@ impl<const N: usize, G: Getter<bool, E>, E: Clone + Debug> Getter<bool, E> for O
         })
     }
 }
+///Performs a logical "or" operation on two input getters which can be of different types. More
+///specifically, follows these rules, starting at the top and proceeding as needed:
+///1. If an input returns an error, return the error.
+///2. If neither input returns an error, if an input returns true, return true.
+///3. If neither input returns true, if an input returns None, return None.
+///4. If neither input returns None (both returned false), return false.
+///
+///Returns the later timestamp of the two inputs if they both return Some.
+///
+///If you need more than two inputs, you may consider using [`OrStream`] instead of a chain of
+///`Or2`, especially if the inputs are of the same type.
 pub struct Or2<G1: Getter<bool, E>, G2: Getter<bool, E>, E: Clone + Debug> {
     input1: G1,
     input2: G2,
     phantom_e: PhantomData<E>,
 }
 impl<G1: Getter<bool, E>, G2: Getter<bool, E>, E: Clone + Debug> Or2<G1, G2, E> {
+    ///Constructor for `Or2`. Unlike [`OrStream`], its inputs can be of different types.
     pub const fn new(input1: G1, input2: G2) -> Self {
         Self {
             input1,
