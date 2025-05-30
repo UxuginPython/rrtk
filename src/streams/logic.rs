@@ -130,11 +130,10 @@ impl<G: Getter<bool, E>, E: Clone + Debug> NotStream<G, E> {
 }
 impl<G: Getter<bool, E>, E: Clone + Debug> Getter<bool, E> for NotStream<G, E> {
     fn get(&self) -> Output<bool, E> {
-        match self.input.get() {
-            Ok(Some(datum)) => Ok(Some(!datum)),
-            Ok(None) => Ok(None),
-            Err(error) => Err(error),
-        }
+        Ok(match self.input.get()? {
+            Some(datum) => Some(!datum),
+            None => None,
+        })
     }
 }
 impl<G: Getter<bool, E>, E: Clone + Debug> Updatable<E> for NotStream<G, E> {
