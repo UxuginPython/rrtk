@@ -68,6 +68,57 @@ impl<const N: usize, G: Getter<bool, E>, E: Clone + Debug> Getter<bool, E>
         Ok(None)
     }
 }
+pub struct GoodOrStream<const N: usize, G: Getter<bool, E>, E: Clone + Debug> {
+    inputs: [G; N],
+    phantom_e: PhantomData<E>,
+}
+impl<const N: usize, G: Getter<bool, E>, E: Clone + Debug> GoodOrStream<N, G, E> {
+    pub const fn new(inputs: [G; N]) -> Self {
+        Self {
+            inputs,
+            phantom_e: PhantomData,
+        }
+    }
+}
+impl<const N: usize, G: Getter<bool, E>, E: Clone + Debug> Updatable<E> for GoodOrStream<N, G, E> {
+    fn update(&mut self) -> NothingOrError<E> {
+        for getter in &mut self.inputs {
+            getter.update()?;
+        }
+        Ok(())
+    }
+}
+impl<const N: usize, G: Getter<bool, E>, E: Clone + Debug> Getter<bool, E>
+    for GoodOrStream<N, G, E>
+{
+    fn get(&self) -> Output<bool, E> {
+        let mut have_returnable_false = true;
+        let mut have_returnable_true = false;
+        let mut time = Time::ZERO;
+        for getter in &self.inputs {
+            match getter.get()? {
+                None => have_returnable_false = false,
+                Some(datum) => {
+                    if datum.time > time {
+                        time = datum.time;
+                    }
+                    if datum.value {
+                        have_returnable_false = false;
+                        have_returnable_true = true;
+                    }
+                }
+            }
+        }
+        debug_assert!(!(have_returnable_true && have_returnable_false));
+        if have_returnable_true {
+            return Ok(Some(Datum::new(time, true)));
+        }
+        if have_returnable_false {
+            return Ok(Some(Datum::new(time, false)));
+        }
+        Ok(None)
+    }
+}
 ///Performs an and operation on two boolean getters. This will return [`None`] if it can't verify
 ///that the result should be [`true`] or [`false`]. This is caused by inputs returning [`None`]. It's a
 ///bit difficult to state exactly how this is determined, so here's a truth table:
