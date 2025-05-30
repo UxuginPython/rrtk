@@ -42,9 +42,7 @@ impl<const N: usize, G: Getter<bool, E>, E: Clone + Debug> Updatable<E> for AndS
         Ok(())
     }
 }
-impl<const N: usize, G: Getter<bool, E>, E: Clone + Debug> Getter<bool, E>
-    for AndStream<N, G, E>
-{
+impl<const N: usize, G: Getter<bool, E>, E: Clone + Debug> Getter<bool, E> for AndStream<N, G, E> {
     fn get(&self) -> Output<bool, E> {
         let mut logic_state = LogicState::ReturnableTrue;
         let mut time = Time::ZERO;
@@ -61,11 +59,11 @@ impl<const N: usize, G: Getter<bool, E>, E: Clone + Debug> Getter<bool, E>
                 }
             }
         }
-        match logic_state {
-            LogicState::ReturnableTrue => Ok(Some(Datum::new(time, true))),
-            LogicState::ReturnableFalse => Ok(Some(Datum::new(time, false))),
-            LogicState::NeitherReturnable => Ok(None),
-        }
+        Ok(match logic_state {
+            LogicState::ReturnableTrue => Some(Datum::new(time, true)),
+            LogicState::ReturnableFalse => Some(Datum::new(time, false)),
+            LogicState::NeitherReturnable => None,
+        })
     }
 }
 pub struct OrStream<const N: usize, G: Getter<bool, E>, E: Clone + Debug> {
@@ -88,9 +86,7 @@ impl<const N: usize, G: Getter<bool, E>, E: Clone + Debug> Updatable<E> for OrSt
         Ok(())
     }
 }
-impl<const N: usize, G: Getter<bool, E>, E: Clone + Debug> Getter<bool, E>
-    for OrStream<N, G, E>
-{
+impl<const N: usize, G: Getter<bool, E>, E: Clone + Debug> Getter<bool, E> for OrStream<N, G, E> {
     fn get(&self) -> Output<bool, E> {
         let mut logic_state = LogicState::ReturnableFalse;
         let mut time = Time::ZERO;
@@ -107,11 +103,11 @@ impl<const N: usize, G: Getter<bool, E>, E: Clone + Debug> Getter<bool, E>
                 }
             }
         }
-        match logic_state {
-            LogicState::ReturnableTrue => Ok(Some(Datum::new(time, true))),
-            LogicState::ReturnableFalse => Ok(Some(Datum::new(time, false))),
-            LogicState::NeitherReturnable => Ok(None),
-        }
+        Ok(match logic_state {
+            LogicState::ReturnableTrue => Some(Datum::new(time, true)),
+            LogicState::ReturnableFalse => Some(Datum::new(time, false)),
+            LogicState::NeitherReturnable => None,
+        })
     }
 }
 ///Performs a not operation on a boolean getter.
