@@ -28,6 +28,11 @@ impl LogicState {
 ///2. If no input returns an error, if an input returns false, return false.
 ///3. If no input returns false, if an input returns None, return None.
 ///4. If no input returns None, return true.
+///
+///Returns the latest timestamp of any input (if not Err or None).
+///
+///If you only need two inputs, you should probably use [`And2`] instead, which may be slightly
+///faster and allows its inputs to have different types.
 pub struct AndStream<const N: usize, G: Getter<bool, E>, E: Clone + Debug> {
     inputs: [G; N],
     phantom_e: PhantomData<E>,
@@ -80,12 +85,18 @@ impl<const N: usize, G: Getter<bool, E>, E: Clone + Debug> Getter<bool, E> for A
 ///2. If neither input returns an error, if an input returns false, return false.
 ///3. If neither input returns false, if an input returns None, return None.
 ///4. If neither input returns None, return true.
+///
+///Returns the later timestamp of the two inputs if they both return Some.
+///
+///If you need more than two inputs, you may consider using [`AndStream`] instead of a chain of
+///`And2`, especially if the inputs are of the same type.
 pub struct And2<G1: Getter<bool, E>, G2: Getter<bool, E>, E: Clone + Debug> {
     input1: G1,
     input2: G2,
     phantom_e: PhantomData<E>,
 }
 impl<G1: Getter<bool, E>, G2: Getter<bool, E>, E: Clone + Debug> And2<G1, G2, E> {
+    ///Constructor for `And2`. Unlike [`AndStream`], its inputs can be of different types.
     pub const fn new(input1: G1, input2: G2) -> Self {
         Self {
             input1,
