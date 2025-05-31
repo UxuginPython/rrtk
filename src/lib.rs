@@ -17,7 +17,7 @@
 //!
 //!RRTK prefers **`std`** over **`libm`** and `libm` over **`micromath`** when multiple are
 //!available.
-#![warn(missing_docs)]
+//#![warn(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
 #[cfg(all(
     feature = "internal_enhanced_float",
@@ -1159,5 +1159,63 @@ impl<T, C: ?Sized + Chronology<T>> Chronology<T> for Mutex<C> {
         self.lock()
             .expect("RRTK failed to acquire Mutex lock for Chronology")
             .get(time)
+    }
+}
+pub trait Process<E: Clone + Debug>: Updatable<E> {
+    fn get_meanness(&self) -> u8;
+}
+struct ProcessWithInfo<E: Clone + Debug> {
+    process: Box<dyn Process<E>>,
+    time_used: Time,
+}
+impl<E: Clone + Debug> ProcessWithInfo<E> {
+    fn want(&self, total_time: Time, total_meanness: f32) -> f32 {
+        self.process.get_meanness() as f32 / total_meanness
+            - self.time_used.as_seconds() / total_time.as_seconds()
+    }
+}
+#[cfg(feature = "alloc")]
+pub struct ProcessManager<TG: TimeGetter<E>, E: Clone + Debug> {
+    processes: Vec<ProcessWithInfo<E>>,
+    time_getter: TG,
+}
+#[cfg(feature = "alloc")]
+impl<TG: TimeGetter<E>, E: Clone + Debug> ProcessManager<TG, E> {
+    fn get_total_time(&self) -> Time {
+        let mut output = Time::ZERO;
+        for process_with_info in &self.processes {
+            output += process_with_info.time_used;
+        }
+        output
+    }
+    fn get_total_meanness(&self) -> u32 {
+        let mut output = 0;
+        for process_with_info in &self.processes {
+            output += process_with_info.process.get_meanness() as u32;
+        }
+        output
+    }
+}
+#[cfg(feature = "alloc")]
+impl<TG: TimeGetter<E>, E: Clone + Debug> Updatable<E> for ProcessManager<TG, E> {
+    fn update(&mut self) -> NothingOrError<E> {
+        let total_time = self.get_total_time();
+        let total_meanness = self.get_total_meanness() as f32;
+        let index = (&self.processes)
+            .into_iter()
+            //Get an iterator of the "wants" in the same order.
+            .map(|process_with_info| process_with_info.want(total_time, total_meanness))
+            //Enumerate it.
+            .enumerate()
+            //Get the maximum "want," ignoring all of the mess between f32 and iterator.
+            .max_by(|a, b| a.1.partial_cmp(&b.1).unwrap())
+            .unwrap()
+            //Since this is a tuple (usize, f32), we throw out the "want" and only take the index.
+            .0;
+        let start_time = self.time_getter.get().unwrap();
+        self.processes[index].process.update()?;
+        let end_time = self.time_getter.get().unwrap();
+        self.processes[index].time_used += end_time - start_time;
+        Ok(())
     }
 }
