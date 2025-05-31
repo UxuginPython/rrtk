@@ -10,13 +10,13 @@ enum LogicState {
 }
 impl LogicState {
     #[inline]
-    fn not_returnable_true(&mut self) {
+    const fn not_returnable_true(&mut self) {
         if let Self::ReturnableTrue = self {
             *self = Self::NeitherReturnable;
         }
     }
     #[inline]
-    fn not_returnable_false(&mut self) {
+    const fn not_returnable_false(&mut self) {
         if let Self::ReturnableFalse = self {
             *self = Self::NeitherReturnable;
         }

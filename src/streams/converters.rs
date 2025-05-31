@@ -515,7 +515,7 @@ pub struct FloatToQuantity<G: Getter<f32, E>, E: Clone + Debug> {
 }
 impl<G: Getter<f32, E>, E: Clone + Debug> FloatToQuantity<G, E> {
     ///Constructor for [`FloatToQuantity`].
-    pub fn new(unit: Unit, input: G) -> Self {
+    pub const fn new(unit: Unit, input: G) -> Self {
         Self {
             unit,
             input,
@@ -544,7 +544,7 @@ pub struct QuantityToFloat<G: Getter<Quantity, E>, E: Clone + Debug> {
 }
 impl<G: Getter<Quantity, E>, E: Clone + Debug> QuantityToFloat<G, E> {
     ///Constructor for [`QuantityToFloat`].
-    pub fn new(input: G) -> Self {
+    pub const fn new(input: G) -> Self {
         Self {
             input,
             phantom_e: PhantomData,
