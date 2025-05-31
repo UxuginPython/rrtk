@@ -22,7 +22,7 @@ impl Command {
     }
     ///Get the commanded constant position if there is one. If the position derivative is
     ///velocity or acceleration, this will return `None` as there is not a constant position.
-    pub fn get_position(&self) -> Option<Quantity> {
+    pub const fn get_position(&self) -> Option<Quantity> {
         match self {
             Self::Position(pos) => Some(Quantity::new(*pos, MILLIMETER)),
             _ => None,
@@ -32,7 +32,7 @@ impl Command {
     ///acceleration, this will return `None` as there is not a constant
     ///velocity. If the position derivative is position, this will return 0 as
     ///velocity should be zero with a constant position.
-    pub fn get_velocity(&self) -> Option<Quantity> {
+    pub const fn get_velocity(&self) -> Option<Quantity> {
         match self {
             Self::Position(_) => Some(Quantity::new(0.0, MILLIMETER_PER_SECOND)),
             Self::Velocity(vel) => Some(Quantity::new(*vel, MILLIMETER_PER_SECOND)),
@@ -42,7 +42,7 @@ impl Command {
     ///Get the commanded constant acceleration. If the position derivative is not
     ///acceleration, this will return 0 as acceleration should be zero with a constant velocity or
     ///position.
-    pub fn get_acceleration(&self) -> Quantity {
+    pub const fn get_acceleration(&self) -> Quantity {
         Quantity::new(
             match self {
                 Self::Acceleration(acc) => *acc,
