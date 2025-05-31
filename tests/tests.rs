@@ -966,3 +966,52 @@ fn none_getter() {
     <NoneGetter as Updatable<()>>::update(&mut getter).unwrap();
     assert_eq!(<NoneGetter as Getter<(), ()>>::get(&getter), Ok(None));
 }
+#[test]
+fn process() {
+    //This test tests different meannesses, but it does NOT currently test differences in execution
+    //time.
+    use core::cell::RefCell;
+    use core::fmt::Debug;
+    use std::rc::Rc;
+    let sample = Rc::new(RefCell::new(Vec::new()));
+    let time = Rc::new(RefCell::new(Time::ZERO));
+    struct MyProcess {
+        meanness: u8,
+        id: u8,
+        sample_rc: Rc<RefCell<Vec<u8>>>,
+        time_rc: Rc<RefCell<Time>>,
+    }
+    impl<E: Clone + Debug> Updatable<E> for MyProcess {
+        fn update(&mut self) -> NothingOrError<E> {
+            //I'm not quite sure how this works or if it needs to look like this.
+            let time: Time = { *self.time_rc.borrow() };
+            *self.time_rc.borrow_mut() = time + Time::from_nanoseconds(1);
+            self.sample_rc.borrow_mut().push(self.id);
+            Ok(())
+        }
+    }
+    impl<E: Clone + Debug> Process<E> for MyProcess {
+        fn get_meanness(&self) -> u8 {
+            self.meanness
+        }
+    }
+    let process_a = MyProcess {
+        meanness: 1,
+        id: 0,
+        sample_rc: Rc::clone(&sample),
+        time_rc: Rc::clone(&time),
+    };
+    let process_b = MyProcess {
+        meanness: 3,
+        id: 1,
+        sample_rc: Rc::clone(&sample),
+        time_rc: Rc::clone(&time),
+    };
+    let mut manager: ProcessManager<_, ()> = ProcessManager::new(time);
+    manager.add_process(process_a);
+    manager.add_process(process_b);
+    for _ in 0..4 {
+        manager.update().unwrap();
+    }
+    assert_eq!(sample.borrow().clone(), vec![1, 0, 1, 1]);
+}

@@ -1171,6 +1171,12 @@ struct ProcessWithInfo<E: Clone + Debug> {
 }
 #[cfg(feature = "alloc")]
 impl<E: Clone + Debug> ProcessWithInfo<E> {
+    fn new<P: Process<E> + 'static>(process: P) -> Self {
+        Self {
+            process: Box::new(process) as Box<dyn Process<E>>,
+            time_used: Time::ZERO,
+        }
+    }
     fn want(&self, total_time: Time, total_meanness: f32) -> f32 {
         self.process.get_meanness() as f32 / total_meanness
             - self.time_used.as_seconds() / total_time.as_seconds()
@@ -1183,6 +1189,19 @@ pub struct ProcessManager<TG: TimeGetter<E>, E: Clone + Debug> {
 }
 #[cfg(feature = "alloc")]
 impl<TG: TimeGetter<E>, E: Clone + Debug> ProcessManager<TG, E> {
+    pub fn new(time_getter: TG) -> Self {
+        Self {
+            processes: Vec::new(),
+            time_getter,
+        }
+    }
+    //FIXME: This completely ignores the fact that if a process is added after the ProcessManager
+    //has been running for a while, the process will begin with no recorded time and immediately
+    //have an extremely high "want" until it makes up all the time it was not being executed
+    //before.
+    pub fn add_process<P: Process<E> + 'static>(&mut self, process: P) {
+        self.processes.push(ProcessWithInfo::new(process));
+    }
     fn get_total_time(&self) -> Time {
         let mut output = Time::ZERO;
         for process_with_info in &self.processes {
