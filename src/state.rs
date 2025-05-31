@@ -33,6 +33,7 @@ impl State {
             acceleration,
         }
     }
+    //TODO: This can probably become const fn once it doesn't use runtime Quantity.
     ///Calculate the future state assuming a constant acceleration.
     pub fn update(&mut self, delta_time: Time) {
         let delta_time = Quantity::from(delta_time);
@@ -133,7 +134,7 @@ impl State {
     }
     ///State contains a position, velocity, and acceleration. This gets the respective field of a
     ///given position derivative.
-    pub fn get_value(&self, position_derivative: PositionDerivative) -> Quantity {
+    pub const fn get_value(&self, position_derivative: PositionDerivative) -> Quantity {
         match position_derivative {
             PositionDerivative::Position => self.get_position(),
             PositionDerivative::Velocity => self.get_velocity(),
