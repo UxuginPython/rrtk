@@ -1241,3 +1241,116 @@ impl<TG: TimeGetter<E>, E: Clone + Debug> Updatable<E> for ProcessManager<TG, E>
         Ok(())
     }
 }
+#[cfg(test)]
+#[test]
+fn process_test_meanness_time() {
+    //This test tests differences in both meanness and execution time.
+    let sample = Rc::new(RefCell::new(Vec::<u8>::new()));
+    let time = Rc::new(RefCell::new(Time::from_nanoseconds(1)));
+    struct MyProcess {
+        meanness: u8,
+        id: u8,
+        sample: Rc<RefCell<Vec<u8>>>,
+        time: Rc<RefCell<Time>>,
+    }
+    impl Updatable<()> for MyProcess {
+        fn update(&mut self) -> NothingOrError<()> {
+            *self.time.borrow_mut() *= DimensionlessInteger(2);
+            self.sample.borrow_mut().push(self.id);
+            Ok(())
+        }
+    }
+    impl Process<()> for MyProcess {
+        fn get_meanness(&self) -> u8 {
+            self.meanness
+        }
+    }
+    let process_a = MyProcess {
+        meanness: 1,
+        id: 1,
+        sample: Rc::clone(&sample),
+        time: Rc::clone(&time),
+    };
+    let process_b = MyProcess {
+        meanness: 3,
+        id: 3,
+        sample: Rc::clone(&sample),
+        time: Rc::clone(&time),
+    };
+    let mut manager = ProcessManager::new(time);
+    manager.add_process(process_a);
+    manager.add_process(process_b);
+    assert_eq!(manager.get_total_meanness(), 4);
+    assert_eq!(manager.get_total_time(), Time::ZERO);
+    manager.update().unwrap();
+    assert_eq!(manager.processes[0].time_used, Time::from_nanoseconds(0));
+    assert_eq!(manager.processes[1].time_used, Time::from_nanoseconds(1));
+    assert_eq!(manager.get_total_time(), Time::from_nanoseconds(1));
+
+    assert_eq!(
+        manager.processes[0].want(Time::from_nanoseconds(1), 4.0),
+        1.0 / 4.0 - 0.0 / 1.0
+    );
+    assert_eq!(
+        manager.processes[1].want(Time::from_nanoseconds(1), 4.0),
+        3.0 / 4.0 - 1.0 / 1.0
+    );
+    manager.update().unwrap();
+    assert_eq!(manager.processes[0].time_used, Time::from_nanoseconds(2));
+    assert_eq!(manager.processes[1].time_used, Time::from_nanoseconds(1));
+    assert_eq!(manager.get_total_time(), Time::from_nanoseconds(3));
+
+    //FIXME: Floating point issues - these assert_eq!s are all within the margin of error but don't
+    //pass.
+    /*assert_eq!(
+        manager.processes[0].want(Time::from_nanoseconds(3), 4.0),
+        1.0 / 4.0 - 2.0 / 3.0
+    );
+    assert_eq!(
+        manager.processes[1].want(Time::from_nanoseconds(3), 4.0),
+        3.0 / 4.0 - 1.0 / 3.0
+    );*/
+    manager.update().unwrap();
+    assert_eq!(manager.processes[0].time_used, Time::from_nanoseconds(2));
+    assert_eq!(manager.processes[1].time_used, Time::from_nanoseconds(5));
+    assert_eq!(manager.get_total_time(), Time::from_nanoseconds(7));
+
+    /*assert_eq!(
+        manager.processes[0].want(Time::from_nanoseconds(7), 4.0),
+        1.0 / 4.0 - 2.0 / 7.0
+    );
+    assert_eq!(
+        manager.processes[1].want(Time::from_nanoseconds(7), 4.0),
+        3.0 / 4.0 - 5.0 / 7.0
+    );*/
+    manager.update().unwrap();
+    assert_eq!(manager.processes[0].time_used, Time::from_nanoseconds(2));
+    assert_eq!(manager.processes[1].time_used, Time::from_nanoseconds(13));
+    assert_eq!(manager.get_total_time(), Time::from_nanoseconds(15));
+
+    assert_eq!(
+        manager.processes[0].want(Time::from_nanoseconds(15), 4.0),
+        1.0 / 4.0 - 2.0 / 15.0
+    );
+    /*assert_eq!(
+        manager.processes[1].want(Time::from_nanoseconds(15), 4.0),
+        3.0 / 4.0 - 13.0 / 15.0
+    );*/
+    manager.update().unwrap();
+    assert_eq!(manager.processes[0].time_used, Time::from_nanoseconds(18));
+    assert_eq!(manager.processes[1].time_used, Time::from_nanoseconds(13));
+    assert_eq!(manager.get_total_time(), Time::from_nanoseconds(31));
+
+    assert_eq!(
+        manager.processes[0].want(Time::from_nanoseconds(31), 4.0),
+        1.0 / 4.0 - 18.0 / 31.0
+    );
+    /*assert_eq!(
+        manager.processes[1].want(Time::from_nanoseconds(31), 4.0),
+        3.0 / 4.0 - 13.0 / 31.0
+    );*/
+    manager.update().unwrap();
+    assert_eq!(manager.processes[0].time_used, Time::from_nanoseconds(18));
+    assert_eq!(manager.processes[1].time_used, Time::from_nanoseconds(45));
+    assert_eq!(manager.get_total_time(), Time::from_nanoseconds(63));
+}

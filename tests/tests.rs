@@ -967,9 +967,9 @@ fn none_getter() {
     assert_eq!(<NoneGetter as Getter<(), ()>>::get(&getter), Ok(None));
 }
 #[test]
-fn process() {
-    //This test tests different meannesses, but it does NOT currently test differences in execution
-    //time.
+fn process_meanness() {
+    //This test tests different meannesses, but it does NOT test differences in execution time.
+    //process_test_meanness_time in lib.rs tests both.
     use core::cell::RefCell;
     use core::fmt::Debug;
     use std::rc::Rc;
