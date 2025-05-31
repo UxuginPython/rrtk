@@ -1164,10 +1164,12 @@ impl<T, C: ?Sized + Chronology<T>> Chronology<T> for Mutex<C> {
 pub trait Process<E: Clone + Debug>: Updatable<E> {
     fn get_meanness(&self) -> u8;
 }
+#[cfg(feature = "alloc")]
 struct ProcessWithInfo<E: Clone + Debug> {
     process: Box<dyn Process<E>>,
     time_used: Time,
 }
+#[cfg(feature = "alloc")]
 impl<E: Clone + Debug> ProcessWithInfo<E> {
     fn want(&self, total_time: Time, total_meanness: f32) -> f32 {
         self.process.get_meanness() as f32 / total_meanness
