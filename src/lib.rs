@@ -138,7 +138,7 @@ impl PIDKValues {
     ///Calculate the control variable using the coefficients given error, its integral, and its
     ///derivative.
     #[inline]
-    pub fn evaluate(&self, error: f32, error_integral: f32, error_derivative: f32) -> f32 {
+    pub const fn evaluate(&self, error: f32, error_integral: f32, error_derivative: f32) -> f32 {
         self.kp * error + self.ki * error_integral + self.kd * error_derivative
     }
 }
@@ -163,7 +163,7 @@ impl PositionDerivativeDependentPIDKValues {
     }
     ///Get the k-values for a specific position derivative.
     #[inline]
-    pub fn get_k_values(&self, position_derivative: PositionDerivative) -> PIDKValues {
+    pub const fn get_k_values(&self, position_derivative: PositionDerivative) -> PIDKValues {
         match position_derivative {
             PositionDerivative::Position => self.position,
             PositionDerivative::Velocity => self.velocity,
@@ -173,7 +173,7 @@ impl PositionDerivativeDependentPIDKValues {
     ///Calculate the control variable using the coefficients for a given position derivative given
     ///error, its integral, and its derivative.
     #[inline]
-    pub fn evaluate(
+    pub const fn evaluate(
         &self,
         position_derivative: PositionDerivative,
         error: f32,
@@ -242,7 +242,7 @@ where
     E: Clone + Debug,
 {
     ///Constructor for `Feeder`.
-    pub fn new(getter: G, settable: S) -> Self {
+    pub const fn new(getter: G, settable: S) -> Self {
         Self {
             getter,
             settable,
@@ -312,11 +312,11 @@ pub struct GetterFromChronology<T, C: Chronology<T>, TG: TimeGetter<E>, E: Clone
 impl<T, C: Chronology<T>, TG: TimeGetter<E>, E: Clone + Debug> GetterFromChronology<T, C, TG, E> {
     ///Constructor such that the time in the request to the chronology will be directly that returned
     ///from the [`TimeGetter`] with no delta.
-    pub fn new_no_delta(chronology: C, time_getter: TG) -> Self {
+    pub const fn new_no_delta(chronology: C, time_getter: TG) -> Self {
         Self {
             chronology,
             time_getter,
-            time_delta: Time::default(),
+            time_delta: Time::ZERO,
             phantom_t: PhantomData,
             phantom_e: PhantomData,
         }
@@ -346,7 +346,7 @@ impl<T, C: Chronology<T>, TG: TimeGetter<E>, E: Clone + Debug> GetterFromChronol
         })
     }
     ///Constructor with a custom time delta.
-    pub fn new_custom_delta(chronology: C, time_getter: TG, time_delta: Time) -> Self {
+    pub const fn new_custom_delta(chronology: C, time_getter: TG, time_delta: Time) -> Self {
         Self {
             chronology,
             time_getter,
@@ -356,7 +356,7 @@ impl<T, C: Chronology<T>, TG: TimeGetter<E>, E: Clone + Debug> GetterFromChronol
         }
     }
     ///Set the time delta.
-    pub fn set_delta(&mut self, time_delta: Time) {
+    pub const fn set_delta(&mut self, time_delta: Time) {
         self.time_delta = time_delta;
     }
     ///Define now as a given time in the chronology. Mostly used when construction and use are far
@@ -451,16 +451,11 @@ where
     }
 }
 ///Getter always returning `Ok(None)`.
+#[derive(Default)]
 pub struct NoneGetter;
-impl Default for NoneGetter {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl NoneGetter {
-    ///Constructor for [`NoneGetter`]. Since [`NoneGetter`] is a unit struct, you can use this or just
-    ///the struct's name.
+    ///Constructor for [`NoneGetter`]. Since [`NoneGetter`] is a unit struct, you can use this, its
+    ///[`Default`] implementation, or just the struct's name.
     pub const fn new() -> Self {
         Self
     }
@@ -692,6 +687,7 @@ pub trait Device<E: Clone + Debug>: Updatable<E> {
     ///device.
     fn update_terminals(&mut self) -> NothingOrError<E>;
 }
+//TODO: Figure out how to make this const fn.
 ///Get the newer of two [`Datum`] objects.
 pub fn latest<T>(dat1: Datum<T>, dat2: Datum<T>) -> Datum<T> {
     if dat1.time >= dat2.time { dat1 } else { dat2 }
@@ -785,7 +781,7 @@ macro_rules! as_dyn_updatable {
         //really a better way.
         #[allow(missing_docs)]
         #[inline]
-        pub fn as_dyn_updatable<E: Clone + Debug>(&self) -> PointerDereferencer<$return_type>
+        pub const fn as_dyn_updatable<E: Clone + Debug>(&self) -> PointerDereferencer<$return_type>
         where
             T: Updatable<E>,
         {
@@ -798,7 +794,7 @@ macro_rules! as_dyn_getter {
     ($return_type:ty) => {
         #[allow(missing_docs)]
         #[inline]
-        pub fn as_dyn_getter<U, E: Clone + Debug>(&self) -> PointerDereferencer<$return_type>
+        pub const fn as_dyn_getter<U, E: Clone + Debug>(&self) -> PointerDereferencer<$return_type>
         where
             T: Getter<U, E>,
         {
@@ -811,7 +807,9 @@ macro_rules! as_dyn_settable {
     ($return_type:ty) => {
         #[allow(missing_docs)]
         #[inline]
-        pub fn as_dyn_settable<U, E: Clone + Debug>(&self) -> PointerDereferencer<$return_type>
+        pub const fn as_dyn_settable<U, E: Clone + Debug>(
+            &self,
+        ) -> PointerDereferencer<$return_type>
         where
             T: Settable<U, E>,
         {
@@ -824,7 +822,9 @@ macro_rules! as_dyn_time_getter {
     ($return_type:ty) => {
         #[allow(missing_docs)]
         #[inline]
-        pub fn as_dyn_time_getter<E: Clone + Debug>(&self) -> PointerDereferencer<$return_type>
+        pub const fn as_dyn_time_getter<E: Clone + Debug>(
+            &self,
+        ) -> PointerDereferencer<$return_type>
         where
             T: TimeGetter<E>,
         {
@@ -840,7 +840,7 @@ macro_rules! as_dyn_chronology {
     ($return_type:ty) => {
         #[allow(missing_docs)]
         #[inline]
-        pub fn as_dyn_chronology<U>(&self) -> PointerDereferencer<$return_type>
+        pub const fn as_dyn_chronology<U>(&self) -> PointerDereferencer<$return_type>
         where
             T: Chronology<U>,
         {
