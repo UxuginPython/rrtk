@@ -278,3 +278,8 @@ Remove `Error` enum:
 - Remove `Updatable` bound from `Chronology`.
 - Make `Chronology` work decently nicely with `PointerDereferencer`.
 - Make `GetterFromChronology` (formerly `GetterFromHistory`) use a type parameter `C: Chronology<T>` similarly to streams using `G: Getter<T, E>`.
+## 0.7.0-alpha.8
+- Give `AndStream` and `OrStream` arbitrary numbers of inputs.
+- Add `And2` and `Or2` to still allow "and" and "or" operations on two getters of different types.
+- Make several more functions `const fn`. See the diff for details.
+- Minor documentation improvements.
