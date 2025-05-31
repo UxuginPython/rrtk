@@ -983,8 +983,7 @@ fn process() {
     }
     impl<E: Clone + Debug> Updatable<E> for MyProcess {
         fn update(&mut self) -> NothingOrError<E> {
-            //I'm not quite sure how this works or if it needs to look like this.
-            let time: Time = { *self.time_rc.borrow() };
+            let time: Time = *self.time_rc.borrow();
             *self.time_rc.borrow_mut() = time + Time::from_nanoseconds(1);
             self.sample_rc.borrow_mut().push(self.id);
             Ok(())
