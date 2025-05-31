@@ -702,7 +702,7 @@ impl Quantity {
     }
     ///Take the absolute value of the quantity.
     #[inline]
-    pub fn abs(self) -> Self {
+    pub const fn abs(self) -> Self {
         Self::new(
             #[cfg(feature = "std")]
             self.value.abs(),

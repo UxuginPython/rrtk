@@ -687,7 +687,6 @@ pub trait Device<E: Clone + Debug>: Updatable<E> {
     ///device.
     fn update_terminals(&mut self) -> NothingOrError<E>;
 }
-//TODO: Figure out how to make this const fn.
 ///Get the newer of two [`Datum`] objects.
 pub fn latest<T>(dat1: Datum<T>, dat2: Datum<T>) -> Datum<T> {
     if dat1.time >= dat2.time { dat1 } else { dat2 }
