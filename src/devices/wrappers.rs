@@ -18,7 +18,7 @@ impl<'a, T: Settable<TerminalData, E>, E: Clone + Debug> ActuatorWrapper<'a, T, 
         }
     }
     ///Get a reference to this wrapper's terminal.
-    pub fn get_terminal(&self) -> &'a RefCell<Terminal<'a, E>> {
+    pub const fn get_terminal(&self) -> &'a RefCell<Terminal<'a, E>> {
         unsafe { &*(&self.terminal as *const RefCell<Terminal<'a, E>>) }
     }
 }
@@ -58,7 +58,7 @@ impl<'a, T: Getter<State, E>, E: Clone + Debug> GetterStateDeviceWrapper<'a, T, 
         }
     }
     ///Get a reference to this wrapper's terminal.
-    pub fn get_terminal(&self) -> &'a RefCell<Terminal<'a, E>> {
+    pub const fn get_terminal(&self) -> &'a RefCell<Terminal<'a, E>> {
         unsafe { &*(&self.terminal as *const RefCell<Terminal<'a, E>>) }
     }
 }
@@ -128,7 +128,7 @@ impl<'a, T: Settable<f32, E>, E: Clone + Debug + 'static> PIDWrapper<'a, T, E> {
         }
     }
     ///Get a reference to this wrapper's terminal.
-    pub fn get_terminal(&self) -> &'a RefCell<Terminal<'a, E>> {
+    pub const fn get_terminal(&self) -> &'a RefCell<Terminal<'a, E>> {
         unsafe { &*(&self.terminal as *const RefCell<Terminal<'a, E>>) }
     }
 }

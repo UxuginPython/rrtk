@@ -22,7 +22,7 @@ impl<'a, E: Clone + Debug> Invert<'a, E> {
         }
     }
     ///Get a reference to the side 1 terminal of the invert device.
-    pub fn get_terminal_1(&self) -> &'a RefCell<Terminal<'a, E>> {
+    pub const fn get_terminal_1(&self) -> &'a RefCell<Terminal<'a, E>> {
         //We don't want to extend the `&self` reference beyond the scope of the function, but we
         //need need the `term` reference to last for 'a, so we do this to get a reference with a
         //longer lifetime. This should be OK since both terminals are restricted to the 'a
@@ -30,7 +30,7 @@ impl<'a, E: Clone + Debug> Invert<'a, E> {
         unsafe { &*(&self.term1 as *const RefCell<Terminal<'a, E>>) }
     }
     ///Get a reference to the side 2 terminal of the invert device.
-    pub fn get_terminal_2(&self) -> &'a RefCell<Terminal<'a, E>> {
+    pub const fn get_terminal_2(&self) -> &'a RefCell<Terminal<'a, E>> {
         unsafe { &*(&self.term2 as *const RefCell<Terminal<'a, E>>) }
     }
 }
@@ -143,11 +143,11 @@ impl<'a, E: Clone + Debug> GearTrain<'a, E> {
         Self::with_ratio_raw(ratio)
     }
     ///Get a reference to the side 1 terminal of the device where (side 1) * ratio = (side 2).
-    pub fn get_terminal_1(&self) -> &'a RefCell<Terminal<'a, E>> {
+    pub const fn get_terminal_1(&self) -> &'a RefCell<Terminal<'a, E>> {
         unsafe { &*(&self.term1 as *const RefCell<Terminal<'a, E>>) }
     }
     ///Get a reference to the side 2 terminal of the device where (side 1) * ratio = (side 2).
-    pub fn get_terminal_2(&self) -> &'a RefCell<Terminal<'a, E>> {
+    pub const fn get_terminal_2(&self) -> &'a RefCell<Terminal<'a, E>> {
         unsafe { &*(&self.term2 as *const RefCell<Terminal<'a, E>>) }
     }
 }
@@ -270,7 +270,7 @@ impl<'a, const N: usize, E: Clone + Debug> Axle<'a, N, E> {
         Self { inputs: inputs }
     }
     ///Get a reference to one of the axle's terminals.
-    pub fn get_terminal(&self, terminal: usize) -> &'a RefCell<Terminal<'a, E>> {
+    pub const fn get_terminal(&self, terminal: usize) -> &'a RefCell<Terminal<'a, E>> {
         unsafe { &*(&self.inputs[terminal] as *const RefCell<Terminal<'a, E>>) }
     }
 }
@@ -350,7 +350,7 @@ impl<'a, E: Clone + Debug> Differential<'a, E> {
         }
     }
     ///Constructor for [`Differential`] where you choose what to distrust.
-    pub fn with_distrust(distrust: DifferentialDistrust) -> Self {
+    pub const fn with_distrust(distrust: DifferentialDistrust) -> Self {
         Self {
             side1: Terminal::new(),
             side2: Terminal::new(),
@@ -359,15 +359,15 @@ impl<'a, E: Clone + Debug> Differential<'a, E> {
         }
     }
     ///Get a reference to the side 1 terminal of the differential.
-    pub fn get_side_1(&self) -> &'a RefCell<Terminal<'a, E>> {
+    pub const fn get_side_1(&self) -> &'a RefCell<Terminal<'a, E>> {
         unsafe { &*(&self.side1 as *const RefCell<Terminal<'a, E>>) }
     }
     ///Get a reference to the side 2 terminal of the differential.
-    pub fn get_side_2(&self) -> &'a RefCell<Terminal<'a, E>> {
+    pub const fn get_side_2(&self) -> &'a RefCell<Terminal<'a, E>> {
         unsafe { &*(&self.side2 as *const RefCell<Terminal<'a, E>>) }
     }
     ///Get a reference to the sum terminal of the differential.
-    pub fn get_sum(&self) -> &'a RefCell<Terminal<'a, E>> {
+    pub const fn get_sum(&self) -> &'a RefCell<Terminal<'a, E>> {
         unsafe { &*(&self.sum as *const RefCell<Terminal<'a, E>>) }
     }
 }
