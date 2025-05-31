@@ -1201,7 +1201,7 @@ impl<TG: TimeGetter<E>, E: Clone + Debug> ProcessManager<TG, E> {
 #[cfg(feature = "alloc")]
 impl<TG: TimeGetter<E>, E: Clone + Debug> Updatable<E> for ProcessManager<TG, E> {
     fn update(&mut self) -> NothingOrError<E> {
-        let total_time = self.get_total_time();
+        let total_time = core::cmp::max(self.get_total_time(), Time::from_nanoseconds(1));
         let total_meanness = self.get_total_meanness() as f32;
         let index = (&self.processes)
             .into_iter()
