@@ -1161,7 +1161,18 @@ impl<T, C: ?Sized + Chronology<T>> Chronology<T> for Mutex<C> {
             .get(time)
     }
 }
-pub trait Process<E: Clone + Debug>: Updatable<E> {}
+pub enum ManagerSignal {
+    Quit,
+}
+pub enum ProcessSignal {
+    Die,
+}
+pub trait Process<E: Clone + Debug>: Updatable<E> {
+    fn handle_signal(&mut self, signal: ManagerSignal);
+    fn ask_manager(&self) -> Option<ProcessSignal> {
+        None
+    }
+}
 #[cfg(feature = "alloc")]
 struct ProcessWithInfo<E: Clone + Debug> {
     process: Box<dyn Process<E>>,
@@ -1220,6 +1231,19 @@ impl<TG: TimeGetter<E>, E: Clone + Debug> ProcessManager<TG, E> {
 #[cfg(feature = "alloc")]
 impl<TG: TimeGetter<E>, E: Clone + Debug> Updatable<E> for ProcessManager<TG, E> {
     fn update(&mut self) -> NothingOrError<E> {
+        let mut to_remove = Vec::new();
+        for (i, process_with_info) in (&self.processes).into_iter().enumerate() {
+            if let Some(ProcessSignal::Die) = process_with_info.process.ask_manager() {
+                to_remove.push(i);
+            }
+        }
+        for to_remove_index in to_remove.into_iter().rev() {
+            //swap_remove doesn't change the order of anything before the removed item, so it's OK.
+            self.processes.swap_remove(to_remove_index);
+        }
+        if self.processes.len() == 0 {
+            return Ok(());
+        }
         //Prevent division by zero issue.
         let total_time = core::cmp::max(self.get_total_time(), Time::from_nanoseconds(1));
         let total_meanness = self.get_total_meanness() as f32;
@@ -1241,7 +1265,7 @@ impl<TG: TimeGetter<E>, E: Clone + Debug> Updatable<E> for ProcessManager<TG, E>
         Ok(())
     }
 }
-#[cfg(test)]
+#[cfg(all(test, feature = "alloc"))]
 #[test]
 fn process_test_meanness_time() {
     //This test tests differences in both meanness and execution time.
@@ -1259,7 +1283,11 @@ fn process_test_meanness_time() {
             Ok(())
         }
     }
-    impl Process<()> for MyProcess {}
+    impl Process<()> for MyProcess {
+        fn handle_signal(&mut self, _signal: ManagerSignal) {
+            unimplemented!();
+        }
+    }
     let process_a = MyProcess {
         id: 1,
         sample: Rc::clone(&sample),

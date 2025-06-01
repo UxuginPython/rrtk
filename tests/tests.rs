@@ -966,6 +966,7 @@ fn none_getter() {
     <NoneGetter as Updatable<()>>::update(&mut getter).unwrap();
     assert_eq!(<NoneGetter as Getter<(), ()>>::get(&getter), Ok(None));
 }
+#[cfg(feature = "alloc")]
 #[test]
 fn process_meanness() {
     //This test tests different meannesses, but it does NOT test differences in execution time.
@@ -988,7 +989,11 @@ fn process_meanness() {
             Ok(())
         }
     }
-    impl<E: Clone + Debug> Process<E> for MyProcess {}
+    impl<E: Clone + Debug> Process<E> for MyProcess {
+        fn handle_signal(&mut self, _signal: ManagerSignal) {
+            unimplemented!();
+        }
+    }
     let process_a = MyProcess {
         id: 0,
         sample_rc: Rc::clone(&sample),
@@ -1006,4 +1011,45 @@ fn process_meanness() {
         manager.update().unwrap();
     }
     assert_eq!(sample.borrow().clone(), vec![1, 0, 1, 1]);
+}
+#[cfg(feature = "alloc")]
+#[test]
+fn process_die() {
+    extern crate alloc;
+    use alloc::rc::Rc;
+    use core::cell::Cell;
+    let update_count = Rc::new(Cell::new(0u8));
+    struct MyProcess {
+        update_count_ref: Rc<Cell<u8>>,
+        lifetime: u8,
+    }
+    impl Updatable<()> for MyProcess {
+        fn update(&mut self) -> NothingOrError<()> {
+            self.update_count_ref.set(self.update_count_ref.get() + 1);
+            self.lifetime -= 1;
+            Ok(())
+        }
+    }
+    impl Process<()> for MyProcess {
+        fn handle_signal(&mut self, _signal: ManagerSignal) {
+            unimplemented!();
+        }
+        fn ask_manager(&self) -> Option<ProcessSignal> {
+            if self.lifetime == 0 {
+                Some(ProcessSignal::Die)
+            } else {
+                None
+            }
+        }
+    }
+    let process = MyProcess {
+        update_count_ref: Rc::clone(&update_count),
+        lifetime: 4,
+    };
+    let mut manager = ProcessManager::new(Time::ZERO);
+    manager.add_process(process, 1);
+    for _ in 0..10 {
+        manager.update().unwrap();
+    }
+    assert_eq!(update_count.get(), 4);
 }
