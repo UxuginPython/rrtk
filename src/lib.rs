@@ -1211,7 +1211,7 @@ impl<TG: TimeGetter<E>, E: Clone + Debug> ProcessManager<TG, E> {
         //being started when the manager has already been going for a while and it basically keeps
         //stopwatches for every process.
         let start_time = Time::from_seconds(
-            meanness as f32 / (meanness as f32 + self.get_total_meanness() as f32)
+            meanness as f32 / (meanness as f32 + self.get_total_meanness())
                 * self.get_total_time().as_seconds(),
         );
         self.processes
@@ -1224,12 +1224,12 @@ impl<TG: TimeGetter<E>, E: Clone + Debug> ProcessManager<TG, E> {
         }
         output
     }
-    fn get_total_meanness(&self) -> u32 {
-        let mut output = 0;
+    fn get_total_meanness(&self) -> f32 {
+        let mut output = 0u32;
         for process_with_info in &self.processes {
             output += process_with_info.meanness as u32;
         }
-        output
+        output as f32
     }
 }
 #[cfg(feature = "alloc")]
@@ -1250,7 +1250,7 @@ impl<TG: TimeGetter<E>, E: Clone + Debug> Updatable<E> for ProcessManager<TG, E>
         }
         //Prevent division by zero issue.
         let total_time = core::cmp::max(self.get_total_time(), Time::from_nanoseconds(1));
-        let total_meanness = self.get_total_meanness() as f32;
+        let total_meanness = self.get_total_meanness();
         let index = (&self.processes)
             .into_iter()
             //Get an iterator of the "wants" in the same order.
@@ -1305,7 +1305,7 @@ fn process_test_meanness_time() {
     let mut manager = ProcessManager::new(time);
     manager.add_process(process_a, 1);
     manager.add_process(process_b, 3);
-    assert_eq!(manager.get_total_meanness(), 4);
+    assert_eq!(manager.get_total_meanness(), 4.0);
     assert_eq!(manager.get_total_time(), Time::ZERO);
     manager.update().unwrap();
     assert_eq!(manager.processes[0].time_used, Time::from_nanoseconds(0));
