@@ -976,7 +976,6 @@ fn process_meanness() {
     let sample = Rc::new(RefCell::new(Vec::new()));
     let time = Rc::new(RefCell::new(Time::ZERO));
     struct MyProcess {
-        meanness: u8,
         id: u8,
         sample_rc: Rc<RefCell<Vec<u8>>>,
         time_rc: Rc<RefCell<Time>>,
@@ -989,26 +988,20 @@ fn process_meanness() {
             Ok(())
         }
     }
-    impl<E: Clone + Debug> Process<E> for MyProcess {
-        fn get_meanness(&self) -> u8 {
-            self.meanness
-        }
-    }
+    impl<E: Clone + Debug> Process<E> for MyProcess {}
     let process_a = MyProcess {
-        meanness: 1,
         id: 0,
         sample_rc: Rc::clone(&sample),
         time_rc: Rc::clone(&time),
     };
     let process_b = MyProcess {
-        meanness: 3,
         id: 1,
         sample_rc: Rc::clone(&sample),
         time_rc: Rc::clone(&time),
     };
     let mut manager: ProcessManager<_, ()> = ProcessManager::new(time);
-    manager.add_process(process_a);
-    manager.add_process(process_b);
+    manager.add_process(process_a, 1);
+    manager.add_process(process_b, 3);
     for _ in 0..4 {
         manager.update().unwrap();
     }

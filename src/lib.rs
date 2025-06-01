@@ -1161,24 +1161,24 @@ impl<T, C: ?Sized + Chronology<T>> Chronology<T> for Mutex<C> {
             .get(time)
     }
 }
-pub trait Process<E: Clone + Debug>: Updatable<E> {
-    fn get_meanness(&self) -> u8;
-}
+pub trait Process<E: Clone + Debug>: Updatable<E> {}
 #[cfg(feature = "alloc")]
 struct ProcessWithInfo<E: Clone + Debug> {
     process: Box<dyn Process<E>>,
+    meanness: u8,
     time_used: Time,
 }
 #[cfg(feature = "alloc")]
 impl<E: Clone + Debug> ProcessWithInfo<E> {
-    fn new<P: Process<E> + 'static>(process: P) -> Self {
+    fn new<P: Process<E> + 'static>(process: P, meanness: u8) -> Self {
         Self {
             process: Box::new(process) as Box<dyn Process<E>>,
+            meanness,
             time_used: Time::ZERO,
         }
     }
     fn want(&self, total_time: Time, total_meanness: f32) -> f32 {
-        self.process.get_meanness() as f32 / total_meanness
+        self.meanness as f32 / total_meanness
             - self.time_used.as_seconds() / total_time.as_seconds()
     }
 }
@@ -1199,8 +1199,8 @@ impl<TG: TimeGetter<E>, E: Clone + Debug> ProcessManager<TG, E> {
     //has been running for a while, the process will begin with no recorded time and immediately
     //have an extremely high "want" until it makes up all the time it was not being executed
     //before.
-    pub fn add_process<P: Process<E> + 'static>(&mut self, process: P) {
-        self.processes.push(ProcessWithInfo::new(process));
+    pub fn add_process<P: Process<E> + 'static>(&mut self, process: P, meanness: u8) {
+        self.processes.push(ProcessWithInfo::new(process, meanness));
     }
     fn get_total_time(&self) -> Time {
         let mut output = Time::ZERO;
@@ -1212,7 +1212,7 @@ impl<TG: TimeGetter<E>, E: Clone + Debug> ProcessManager<TG, E> {
     fn get_total_meanness(&self) -> u32 {
         let mut output = 0;
         for process_with_info in &self.processes {
-            output += process_with_info.process.get_meanness() as u32;
+            output += process_with_info.meanness as u32;
         }
         output
     }
@@ -1248,7 +1248,6 @@ fn process_test_meanness_time() {
     let sample = Rc::new(RefCell::new(Vec::<u8>::new()));
     let time = Rc::new(RefCell::new(Time::from_nanoseconds(1)));
     struct MyProcess {
-        meanness: u8,
         id: u8,
         sample: Rc<RefCell<Vec<u8>>>,
         time: Rc<RefCell<Time>>,
@@ -1260,26 +1259,20 @@ fn process_test_meanness_time() {
             Ok(())
         }
     }
-    impl Process<()> for MyProcess {
-        fn get_meanness(&self) -> u8 {
-            self.meanness
-        }
-    }
+    impl Process<()> for MyProcess {}
     let process_a = MyProcess {
-        meanness: 1,
         id: 1,
         sample: Rc::clone(&sample),
         time: Rc::clone(&time),
     };
     let process_b = MyProcess {
-        meanness: 3,
         id: 3,
         sample: Rc::clone(&sample),
         time: Rc::clone(&time),
     };
     let mut manager = ProcessManager::new(time);
-    manager.add_process(process_a);
-    manager.add_process(process_b);
+    manager.add_process(process_a, 1);
+    manager.add_process(process_b, 3);
     assert_eq!(manager.get_total_meanness(), 4);
     assert_eq!(manager.get_total_time(), Time::ZERO);
     manager.update().unwrap();
