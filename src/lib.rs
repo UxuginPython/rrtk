@@ -1232,6 +1232,16 @@ impl<TG: TimeGetter<E>, E: Clone + Debug> ProcessManager<TG, E> {
             .process
             .handle_signal(ManagerSignal::Quit);
     }
+    pub fn kill(&mut self, id: u32) {
+        self.processes.swap_remove(
+            self.processes
+                .iter()
+                .enumerate()
+                .find(|process_with_info| process_with_info.1.id == id)
+                .unwrap()
+                .0,
+        );
+    }
     fn get_total_time(&self) -> Time {
         let mut output = Time::ZERO;
         for process_with_info in &self.processes {

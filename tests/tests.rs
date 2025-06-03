@@ -1091,3 +1091,37 @@ fn process_quit() {
     }
     assert_eq!(update_count.get(), 4);
 }
+#[cfg(feature = "alloc")]
+#[test]
+fn process_kill() {
+    extern crate alloc;
+    use alloc::rc::Rc;
+    use core::cell::Cell;
+    let update_count = Rc::new(Cell::new(0u8));
+    struct MyProcess(Rc<Cell<u8>>);
+    impl Updatable<()> for MyProcess {
+        fn update(&mut self) -> NothingOrError<()> {
+            self.0.set(self.0.get() + 1);
+            Ok(())
+        }
+    }
+    impl Process<()> for MyProcess {
+        fn handle_signal(&mut self, _signal: ManagerSignal) {
+            unimplemented!();
+        }
+        fn ask_manager(&self) -> Option<ProcessSignal> {
+            None
+        }
+    }
+    let process = MyProcess(Rc::clone(&update_count));
+    let mut manager = ProcessManager::new(Time::ZERO);
+    let id = manager.add_process(process, 1);
+    for _ in 0..4 {
+        manager.update().unwrap();
+    }
+    manager.kill(id);
+    for _ in 0..6 {
+        manager.update().unwrap();
+    }
+    assert_eq!(update_count.get(), 4);
+}
