@@ -1267,7 +1267,7 @@ impl<TG: TimeGetter<E>, E: Clone + Debug> ProcessManager<TG, E> {
 impl<TG: TimeGetter<E>, E: Clone + Debug> Updatable<E> for ProcessManager<TG, E> {
     fn update(&mut self) -> NothingOrError<E> {
         let mut to_remove = Vec::new();
-        for (i, process_with_info) in (&self.processes).into_iter().enumerate() {
+        for (i, process_with_info) in self.processes.iter().enumerate() {
             if let Some(ProcessSignal::Die) = process_with_info.process.ask_manager() {
                 to_remove.push(i);
             }
@@ -1276,14 +1276,15 @@ impl<TG: TimeGetter<E>, E: Clone + Debug> Updatable<E> for ProcessManager<TG, E>
             //swap_remove doesn't change the order of anything before the removed item, so it's OK.
             self.processes.swap_remove(to_remove_index);
         }
-        if self.processes.len() == 0 {
+        if self.processes.is_empty() {
             return Ok(());
         }
         //Prevent division by zero issue.
         let total_time = core::cmp::max(self.get_total_time(), Time::from_nanoseconds(1));
         let total_meanness = self.get_total_meanness();
-        let index = (&self.processes)
-            .into_iter()
+        let index = self
+            .processes
+            .iter()
             //Get an iterator of the "wants" in the same order.
             .map(|process_with_info| process_with_info.want(total_time, total_meanness))
             //Enumerate it.
