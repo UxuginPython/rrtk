@@ -1225,22 +1225,21 @@ impl<TG: TimeGetter<E>, E: Clone + Debug> ProcessManager<TG, E> {
         id
     }
     pub fn quit(&mut self, id: u32) {
-        (&mut self.processes)
-            .into_iter()
-            .find(|process_with_info| process_with_info.id == id)
-            .unwrap()
+        let index = self.get_index(id);
+        self.processes[index]
             .process
             .handle_signal(ManagerSignal::Quit);
     }
     pub fn kill(&mut self, id: u32) {
-        self.processes.swap_remove(
-            self.processes
-                .iter()
-                .enumerate()
-                .find(|process_with_info| process_with_info.1.id == id)
-                .unwrap()
-                .0,
-        );
+        self.processes.swap_remove(self.get_index(id));
+    }
+    fn get_index(&self, id: u32) -> usize {
+        self.processes
+            .iter()
+            .enumerate()
+            .find(|(_, process_with_info)| process_with_info.id == id)
+            .expect("TODO REMOVE THIS EXPECT")
+            .0
     }
     fn get_total_time(&self) -> Time {
         let mut output = Time::ZERO;
