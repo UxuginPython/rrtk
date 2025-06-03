@@ -1353,17 +1353,11 @@ impl<TG: TimeGetter<E>, E: Clone + Debug> Updatable<E> for ProcessManager<TG, E>
 #[test]
 fn process_test_meanness_time() {
     //This test tests differences in both meanness and execution time.
-    let sample = Rc::new(RefCell::new(Vec::<u8>::new()));
     let time = Rc::new(RefCell::new(Time::from_nanoseconds(1)));
-    struct MyProcess {
-        id: u8,
-        sample: Rc<RefCell<Vec<u8>>>,
-        time: Rc<RefCell<Time>>,
-    }
+    struct MyProcess(Rc<RefCell<Time>>);
     impl Updatable<()> for MyProcess {
         fn update(&mut self) -> NothingOrError<()> {
-            *self.time.borrow_mut() *= DimensionlessInteger(2);
-            self.sample.borrow_mut().push(self.id);
+            *self.0.borrow_mut() *= DimensionlessInteger(2);
             Ok(())
         }
     }
@@ -1372,16 +1366,8 @@ fn process_test_meanness_time() {
             unimplemented!();
         }
     }
-    let process_a = MyProcess {
-        id: 1,
-        sample: Rc::clone(&sample),
-        time: Rc::clone(&time),
-    };
-    let process_b = MyProcess {
-        id: 3,
-        sample: Rc::clone(&sample),
-        time: Rc::clone(&time),
-    };
+    let process_a = MyProcess(Rc::clone(&time));
+    let process_b = MyProcess(Rc::clone(&time));
     let mut manager = ProcessManager::new(time);
     manager.add_process(process_a, 1);
     manager.add_process(process_b, 3);
