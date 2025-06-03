@@ -1196,7 +1196,7 @@ impl<E: Clone + Debug> ProcessWithInfo<E> {
         Self {
             process,
             id,
-            parent: parent,
+            parent,
             meanness,
             time_used: start_time,
         }
@@ -1249,7 +1249,14 @@ impl<TG: TimeGetter<E>, E: Clone + Debug> ProcessManager<TG, E> {
         Ok(())
     }
     fn kill_index(&mut self, index: usize) {
-        //TODO: Make it so that parents get their meanness and time back when their children die.
+        if let Some(id_parent) = self.processes[index].parent {
+            if let Ok(index_parent) = self.get_index(id_parent) {
+                let meanness_dying_child = self.processes[index].meanness;
+                let time_dying_child = self.processes[index].time_used;
+                self.processes[index_parent].meanness += meanness_dying_child;
+                self.processes[index_parent].time_used += time_dying_child;
+            }
+        }
         self.processes.swap_remove(index);
     }
     fn get_index(&self, id: u32) -> Result<usize, error::NoSuchProcess> {
