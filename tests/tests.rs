@@ -1034,7 +1034,7 @@ fn process_die() {
         fn handle_signal(&mut self, _signal: ManagerSignal) {
             unimplemented!();
         }
-        fn ask_manager(&self) -> Option<ProcessSignal> {
+        fn ask_manager(&self) -> Option<ProcessSignal<()>> {
             if self.lifetime == 0 {
                 Some(ProcessSignal::Die)
             } else {
@@ -1071,7 +1071,7 @@ fn process_quit() {
         fn handle_signal(&mut self, _signal: ManagerSignal) {
             self.1 = false;
         }
-        fn ask_manager(&self) -> Option<ProcessSignal> {
+        fn ask_manager(&self) -> Option<ProcessSignal<()>> {
             if self.1 {
                 None
             } else {
@@ -1109,7 +1109,7 @@ fn process_kill() {
         fn handle_signal(&mut self, _signal: ManagerSignal) {
             unimplemented!();
         }
-        fn ask_manager(&self) -> Option<ProcessSignal> {
+        fn ask_manager(&self) -> Option<ProcessSignal<()>> {
             None
         }
     }

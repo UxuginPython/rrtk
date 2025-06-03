@@ -1186,15 +1186,15 @@ struct ProcessWithInfo<E: Clone + Debug> {
 }
 #[cfg(feature = "alloc")]
 impl<E: Clone + Debug> ProcessWithInfo<E> {
-    fn new<P: Process<E> + 'static>(
-        process: P,
+    fn new(
+        process: Box<dyn Process<E>>,
         meanness: u8,
         parent: Option<u32>,
         start_time: Time,
         id: u32,
     ) -> Self {
         Self {
-            process: Box::new(process) as Box<dyn Process<E>>,
+            process,
             id,
             parent: parent,
             meanness,
@@ -1221,12 +1221,7 @@ impl<TG: TimeGetter<E>, E: Clone + Debug> ProcessManager<TG, E> {
             next_id: 0,
         }
     }
-    pub fn add_process<P: Process<E> + 'static>(
-        &mut self,
-        process: P,
-        meanness: u8,
-        parent: Option<u32>,
-    ) -> u32 {
+    pub fn add_process<P: Process<E> + 'static>(&mut self, process: P, meanness: u8) -> u32 {
         //Pretend it's already been running for a time proportional to its meanness since it's
         //being started when the manager has already been going for a while and it basically keeps
         //stopwatches for every process.
@@ -1236,8 +1231,9 @@ impl<TG: TimeGetter<E>, E: Clone + Debug> ProcessManager<TG, E> {
         );
         let id = self.next_id;
         self.next_id += 1;
+        let process = Box::new(process) as Box<dyn Process<E>>;
         self.processes.push(ProcessWithInfo::new(
-            process, meanness, parent, start_time, id,
+            process, meanness, None, start_time, id,
         ));
         id
     }
@@ -1249,6 +1245,7 @@ impl<TG: TimeGetter<E>, E: Clone + Debug> ProcessManager<TG, E> {
         Ok(())
     }
     pub fn kill(&mut self, id: u32) -> Result<(), error::NoSuchProcess> {
+        //TODO: Make it so that parents get their meanness and time back when their children die.
         self.processes.swap_remove(self.get_index(id)?);
         Ok(())
     }
@@ -1280,13 +1277,34 @@ impl<TG: TimeGetter<E>, E: Clone + Debug> ProcessManager<TG, E> {
     fn converse(&mut self, index: usize) {
         if let Some(signal) = self.processes[index].process.ask_manager() {
             if let ProcessSignal::Die = signal {
+                //TODO: Make it so that parents get their meanness and time back when their children die.
                 self.processes.swap_remove(index);
                 return;
             }
-            if let ProcessSignal::AddChild(child, meanness) = signal {
-                self.processes[index].meanness -= meanness;
-                self.add_process(child, meanness, Some(self.processes[index].id));
+            if let ProcessSignal::AddChild(child, meanness_child) = signal {
+                let meanness_parent_old = self.processes[index].meanness;
+                let meanness_parent_new = meanness_parent_old - meanness_child;
+                let time_parent_old = self.processes[index].time_used;
+                let time_child = Time::from_seconds(
+                    meanness_child as f32 / meanness_parent_old as f32
+                        * time_parent_old.as_seconds(),
+                );
+                let time_parent_new = time_parent_old - time_child;
+                let id_parent = self.processes[index].id;
+                let id_child = self.next_id;
+                self.next_id += 1;
+                self.processes[index].meanness = meanness_parent_new;
+                self.processes[index].time_used = time_parent_new;
+                self.processes.push(ProcessWithInfo::new(
+                    child,
+                    meanness_child,
+                    Some(id_parent),
+                    time_child,
+                    id_child,
+                ));
             }
+            //Continue the "conversation" between the process and the manager until either
+            //Process::ask_manager() returns None or the process dies.
             self.converse(index);
         }
     }
@@ -1294,15 +1312,8 @@ impl<TG: TimeGetter<E>, E: Clone + Debug> ProcessManager<TG, E> {
 #[cfg(feature = "alloc")]
 impl<TG: TimeGetter<E>, E: Clone + Debug> Updatable<E> for ProcessManager<TG, E> {
     fn update(&mut self) -> NothingOrError<E> {
-        let mut to_remove = Vec::new();
-        for (i, process_with_info) in self.processes.iter().enumerate() {
-            if let Some(ProcessSignal::Die) = process_with_info.process.ask_manager() {
-                to_remove.push(i);
-            }
-        }
-        for to_remove_index in to_remove.into_iter().rev() {
-            //swap_remove doesn't change the order of anything before the removed item, so it's OK.
-            self.processes.swap_remove(to_remove_index);
+        for i in 0..self.processes.len() {
+            self.converse(i);
         }
         if self.processes.is_empty() {
             return Ok(());
