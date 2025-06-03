@@ -1163,6 +1163,7 @@ impl<T, C: ?Sized + Chronology<T>> Chronology<T> for Mutex<C> {
             .get(time)
     }
 }
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ManagerSignal {
     Quit,
 }
@@ -1444,4 +1445,29 @@ fn process_test_meanness_time() {
     assert_eq!(manager.processes[0].time_used, Time::from_nanoseconds(18));
     assert_eq!(manager.processes[1].time_used, Time::from_nanoseconds(45));
     assert_eq!(manager.get_total_time(), Time::from_nanoseconds(63));
+}
+#[cfg(all(test, feature = "alloc"))]
+#[test]
+fn process_test_child() {
+    let time = Rc::new(RefCell::new(Time::ZERO));
+    struct MyProcess {
+        time: Rc<RefCell<Time>>,
+        age: u8,
+        signal: Option<ProcessSignal<()>>,
+    }
+    impl Updatable<()> for MyProcess {
+        fn update(&mut self) -> NothingOrError<()> {
+            *self.time.borrow_mut() += Time::from_nanoseconds(1);
+            self.age += 1;
+            Ok(())
+        }
+    }
+    impl Process<()> for MyProcess {
+        fn handle_signal(&mut self, _signal: ManagerSignal) {
+            unimplemented!();
+        }
+        fn ask_manager(&self) -> Option<ProcessSignal<()>> {
+            self.signal
+        }
+    }
 }
