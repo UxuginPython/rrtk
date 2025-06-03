@@ -1245,9 +1245,12 @@ impl<TG: TimeGetter<E>, E: Clone + Debug> ProcessManager<TG, E> {
         Ok(())
     }
     pub fn kill(&mut self, id: u32) -> Result<(), error::NoSuchProcess> {
-        //TODO: Make it so that parents get their meanness and time back when their children die.
-        self.processes.swap_remove(self.get_index(id)?);
+        self.kill_index(self.get_index(id)?);
         Ok(())
+    }
+    fn kill_index(&mut self, index: usize) {
+        //TODO: Make it so that parents get their meanness and time back when their children die.
+        self.processes.swap_remove(index);
     }
     fn get_index(&self, id: u32) -> Result<usize, error::NoSuchProcess> {
         match self
@@ -1277,8 +1280,7 @@ impl<TG: TimeGetter<E>, E: Clone + Debug> ProcessManager<TG, E> {
     fn converse(&mut self, index: usize) {
         if let Some(signal) = self.processes[index].process.ask_manager() {
             if let ProcessSignal::Die = signal {
-                //TODO: Make it so that parents get their meanness and time back when their children die.
-                self.processes.swap_remove(index);
+                self.kill_index(index);
                 return;
             }
             if let ProcessSignal::AddChild(child, meanness_child) = signal {
