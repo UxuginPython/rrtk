@@ -1166,12 +1166,13 @@ impl<T, C: ?Sized + Chronology<T>> Chronology<T> for Mutex<C> {
 pub enum ManagerSignal {
     Quit,
 }
-pub enum ProcessSignal {
+pub enum ProcessSignal<E> {
     Die,
+    AddChild(Box<dyn Process<E>>, u8),
 }
 pub trait Process<E: Clone + Debug>: Updatable<E> {
     fn handle_signal(&mut self, signal: ManagerSignal);
-    fn ask_manager(&self) -> Option<ProcessSignal> {
+    fn ask_manager(&self) -> Option<ProcessSignal<E>> {
         None
     }
 }
@@ -1179,15 +1180,23 @@ pub trait Process<E: Clone + Debug>: Updatable<E> {
 struct ProcessWithInfo<E: Clone + Debug> {
     process: Box<dyn Process<E>>,
     id: u32,
+    parent: Option<u32>,
     meanness: u8,
     time_used: Time,
 }
 #[cfg(feature = "alloc")]
 impl<E: Clone + Debug> ProcessWithInfo<E> {
-    fn new<P: Process<E> + 'static>(process: P, meanness: u8, start_time: Time, id: u32) -> Self {
+    fn new<P: Process<E> + 'static>(
+        process: P,
+        meanness: u8,
+        parent: Option<u32>,
+        start_time: Time,
+        id: u32,
+    ) -> Self {
         Self {
             process: Box::new(process) as Box<dyn Process<E>>,
             id,
+            parent: parent,
             meanness,
             time_used: start_time,
         }
@@ -1212,7 +1221,12 @@ impl<TG: TimeGetter<E>, E: Clone + Debug> ProcessManager<TG, E> {
             next_id: 0,
         }
     }
-    pub fn add_process<P: Process<E> + 'static>(&mut self, process: P, meanness: u8) -> u32 {
+    pub fn add_process<P: Process<E> + 'static>(
+        &mut self,
+        process: P,
+        meanness: u8,
+        parent: Option<u32>,
+    ) -> u32 {
         //Pretend it's already been running for a time proportional to its meanness since it's
         //being started when the manager has already been going for a while and it basically keeps
         //stopwatches for every process.
@@ -1222,8 +1236,9 @@ impl<TG: TimeGetter<E>, E: Clone + Debug> ProcessManager<TG, E> {
         );
         let id = self.next_id;
         self.next_id += 1;
-        self.processes
-            .push(ProcessWithInfo::new(process, meanness, start_time, id));
+        self.processes.push(ProcessWithInfo::new(
+            process, meanness, parent, start_time, id,
+        ));
         id
     }
     pub fn quit(&mut self, id: u32) -> Result<(), error::NoSuchProcess> {
@@ -1261,6 +1276,19 @@ impl<TG: TimeGetter<E>, E: Clone + Debug> ProcessManager<TG, E> {
             output += process_with_info.meanness as u32;
         }
         output as f32
+    }
+    fn converse(&mut self, index: usize) {
+        if let Some(signal) = self.processes[index].process.ask_manager() {
+            if let ProcessSignal::Die = signal {
+                self.processes.swap_remove(index);
+                return;
+            }
+            if let ProcessSignal::AddChild(child, meanness) = signal {
+                self.processes[index].meanness -= meanness;
+                self.add_process(child, meanness, Some(self.processes[index].id));
+            }
+            self.converse(index);
+        }
     }
 }
 #[cfg(feature = "alloc")]
