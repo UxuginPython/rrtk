@@ -1167,14 +1167,24 @@ impl<T, C: ?Sized + Chronology<T>> Chronology<T> for Mutex<C> {
 pub enum ManagerSignal {
     Quit,
 }
-pub enum ProcessSignal<E> {
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ProcessSignal {
     Die,
-    AddChild(Box<dyn Process<E>>, u8),
+    AddChild,
 }
+#[cfg(feature = "alloc")]
 pub trait Process<E: Clone + Debug>: Updatable<E> {
     fn handle_signal(&mut self, signal: ManagerSignal);
-    fn ask_manager(&self) -> Option<ProcessSignal<E>> {
+    fn ask_manager(&self) -> Option<ProcessSignal> {
         None
+    }
+    //This is only ever called when ask_manager gives us the AddChild signal, so making this return
+    //Option is nonideal. Additionally, though, we don't want to force processes which won't make
+    //children to implement this - it really doesn't make sense otherwise - so we implement as
+    //unimplemented!(), which, although unorthodox, does solve both of these concerns. The child
+    //info can't be included in ProcessSignal itself because then it couldn't implement Clone, etc.
+    fn new_child_info(&self) -> (Box<dyn Process<E>>, u8) {
+        unimplemented!();
     }
 }
 #[cfg(feature = "alloc")]
@@ -1291,7 +1301,8 @@ impl<TG: TimeGetter<E>, E: Clone + Debug> ProcessManager<TG, E> {
                 self.kill_index(index);
                 return;
             }
-            if let ProcessSignal::AddChild(child, meanness_child) = signal {
+            if let ProcessSignal::AddChild = signal {
+                let (child, meanness_child) = self.processes[index].process.new_child_info();
                 let meanness_parent_old = self.processes[index].meanness;
                 let meanness_parent_new = meanness_parent_old - meanness_child;
                 let time_parent_old = self.processes[index].time_used;
@@ -1453,7 +1464,7 @@ fn process_test_child() {
     struct MyProcess {
         time: Rc<RefCell<Time>>,
         age: u8,
-        signal: Option<ProcessSignal<()>>,
+        signal: Option<ProcessSignal>,
     }
     impl Updatable<()> for MyProcess {
         fn update(&mut self) -> NothingOrError<()> {
@@ -1466,7 +1477,7 @@ fn process_test_child() {
         fn handle_signal(&mut self, _signal: ManagerSignal) {
             unimplemented!();
         }
-        fn ask_manager(&self) -> Option<ProcessSignal<()>> {
+        fn ask_manager(&self) -> Option<ProcessSignal> {
             self.signal
         }
     }
