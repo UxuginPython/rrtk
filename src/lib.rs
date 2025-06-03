@@ -1480,5 +1480,25 @@ fn process_test_child() {
         fn ask_manager(&self) -> Option<ProcessSignal> {
             self.signal
         }
+        fn new_child_info(&self) -> (Box<dyn Process<()>>, u8) {
+            todo!();
+        }
+    }
+    struct Child {
+        time: Rc<RefCell<Time>>,
+        age: u8,
+        signal: Option<ProcessSignal>,
+    }
+    impl Updatable<()> for Child {
+        fn update(&mut self) -> NothingOrError<()> {
+            *self.time.borrow_mut() += Time::from_nanoseconds(1);
+            self.age += 1;
+            Ok(())
+        }
+    }
+    impl Process<()> for Child {
+        fn handle_signal(&mut self, _signal: ManagerSignal) {
+            unimplemented!();
+        }
     }
 }
