@@ -1176,14 +1176,16 @@ pub trait Process<E: Clone + Debug>: Updatable<E> {
 #[cfg(feature = "alloc")]
 struct ProcessWithInfo<E: Clone + Debug> {
     process: Box<dyn Process<E>>,
+    id: u32,
     meanness: u8,
     time_used: Time,
 }
 #[cfg(feature = "alloc")]
 impl<E: Clone + Debug> ProcessWithInfo<E> {
-    fn new<P: Process<E> + 'static>(process: P, meanness: u8, start_time: Time) -> Self {
+    fn new<P: Process<E> + 'static>(process: P, meanness: u8, start_time: Time, id: u32) -> Self {
         Self {
             process: Box::new(process) as Box<dyn Process<E>>,
+            id,
             meanness,
             time_used: start_time,
         }
@@ -1197,6 +1199,7 @@ impl<E: Clone + Debug> ProcessWithInfo<E> {
 pub struct ProcessManager<TG: TimeGetter<E>, E: Clone + Debug> {
     processes: Vec<ProcessWithInfo<E>>,
     time_getter: TG,
+    next_id: u32,
 }
 #[cfg(feature = "alloc")]
 impl<TG: TimeGetter<E>, E: Clone + Debug> ProcessManager<TG, E> {
@@ -1204,9 +1207,10 @@ impl<TG: TimeGetter<E>, E: Clone + Debug> ProcessManager<TG, E> {
         Self {
             processes: Vec::new(),
             time_getter,
+            next_id: 0,
         }
     }
-    pub fn add_process<P: Process<E> + 'static>(&mut self, process: P, meanness: u8) {
+    pub fn add_process<P: Process<E> + 'static>(&mut self, process: P, meanness: u8) -> u32 {
         //Pretend it's already been running for a time proportional to its meanness since it's
         //being started when the manager has already been going for a while and it basically keeps
         //stopwatches for every process.
@@ -1214,8 +1218,19 @@ impl<TG: TimeGetter<E>, E: Clone + Debug> ProcessManager<TG, E> {
             meanness as f32 / (meanness as f32 + self.get_total_meanness())
                 * self.get_total_time().as_seconds(),
         );
+        let id = self.next_id;
+        self.next_id += 1;
         self.processes
-            .push(ProcessWithInfo::new(process, meanness, start_time));
+            .push(ProcessWithInfo::new(process, meanness, start_time, id));
+        id
+    }
+    pub fn quit(&mut self, id: u32) {
+        (&mut self.processes)
+            .into_iter()
+            .find(|process_with_info| process_with_info.id == id)
+            .unwrap()
+            .process
+            .handle_signal(ManagerSignal::Quit);
     }
     fn get_total_time(&self) -> Time {
         let mut output = Time::ZERO;
