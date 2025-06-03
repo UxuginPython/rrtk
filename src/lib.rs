@@ -1166,6 +1166,7 @@ impl<T, C: ?Sized + Chronology<T>> Chronology<T> for Mutex<C> {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ManagerSignal {
     Quit,
+    AddedChild(u32),
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ProcessSignal {
@@ -1266,6 +1267,8 @@ impl<TG: TimeGetter<E>, E: Clone + Debug> ProcessManager<TG, E> {
                 let time_dying_child = self.processes[index].time_used;
                 self.processes[index_parent].meanness += meanness_dying_child;
                 self.processes[index_parent].time_used += time_dying_child;
+                //TODO: Notify the next of kin (send a signal to the parent that just got its time
+                //and meanness back).
             }
         }
         self.processes.swap_remove(index);
@@ -1323,6 +1326,9 @@ impl<TG: TimeGetter<E>, E: Clone + Debug> ProcessManager<TG, E> {
                     time_child,
                     id_child,
                 ));
+                self.processes[index]
+                    .process
+                    .handle_signal(ManagerSignal::AddedChild(id_child));
             }
             //Continue the "conversation" between the process and the manager until either
             //Process::ask_manager() returns None or the process dies.
@@ -1463,36 +1469,52 @@ fn process_test_child() {
     let time = Rc::new(RefCell::new(Time::ZERO));
     struct MyProcess {
         time: Rc<RefCell<Time>>,
-        age: u8,
+        updates: u8,
         signal: Option<ProcessSignal>,
     }
     impl Updatable<()> for MyProcess {
         fn update(&mut self) -> NothingOrError<()> {
             *self.time.borrow_mut() += Time::from_nanoseconds(1);
-            self.age += 1;
+            self.updates += 1;
+            if self.updates == 5 {
+                self.signal = Some(ProcessSignal::AddChild);
+            }
             Ok(())
         }
     }
     impl Process<()> for MyProcess {
-        fn handle_signal(&mut self, _signal: ManagerSignal) {
-            unimplemented!();
+        fn handle_signal(&mut self, signal: ManagerSignal) {
+            match signal {
+                ManagerSignal::Quit => unimplemented!(),
+                ManagerSignal::AddedChild(_) => self.signal = None,
+            }
         }
         fn ask_manager(&self) -> Option<ProcessSignal> {
             self.signal
         }
         fn new_child_info(&self) -> (Box<dyn Process<()>>, u8) {
-            todo!();
+            (
+                Box::new(Child {
+                    time: Rc::clone(&self.time),
+                    updates: 0,
+                    signal: None,
+                }) as Box<dyn Process<()>>,
+                1,
+            )
         }
     }
     struct Child {
         time: Rc<RefCell<Time>>,
-        age: u8,
+        updates: u8,
         signal: Option<ProcessSignal>,
     }
     impl Updatable<()> for Child {
         fn update(&mut self) -> NothingOrError<()> {
             *self.time.borrow_mut() += Time::from_nanoseconds(1);
-            self.age += 1;
+            self.updates += 1;
+            if self.updates == 7 {
+                self.signal = Some(ProcessSignal::Die);
+            }
             Ok(())
         }
     }
@@ -1500,5 +1522,43 @@ fn process_test_child() {
         fn handle_signal(&mut self, _signal: ManagerSignal) {
             unimplemented!();
         }
+        fn ask_manager(&self) -> Option<ProcessSignal> {
+            self.signal
+        }
     }
+    let mut manager = ProcessManager::new(Rc::clone(&time));
+    manager.add_process(
+        MyProcess {
+            time,
+            updates: 0,
+            signal: None,
+        },
+        1,
+    );
+    for _ in 0..4 {
+        manager.update().unwrap();
+    }
+    assert!(manager.processes[0].process.ask_manager().is_none());
+    manager.update().unwrap();
+    assert_eq!(
+        manager.processes[0].process.ask_manager(),
+        Some(ProcessSignal::AddChild)
+    );
+    manager.update().unwrap();
+    assert!(manager.processes[0].process.ask_manager().is_none());
+    assert_eq!(manager.processes.len(), 2);
+    for _ in 0..5 {
+        manager.update().unwrap();
+    }
+    assert!(manager.processes[1].process.ask_manager().is_none());
+    manager.update().unwrap();
+    //This also kind of asserts that it's still currently alive (although it wants to die) because
+    //it would panic on an index out of range error otherwise.
+    assert_eq!(
+        manager.processes[1].process.ask_manager(),
+        Some(ProcessSignal::Die)
+    );
+    manager.update().unwrap();
+    assert_eq!(manager.processes.len(), 1);
+    //TODO: test the time dividing stuff
 }
