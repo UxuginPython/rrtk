@@ -1085,7 +1085,7 @@ fn process_quit() {
     for _ in 0..4 {
         manager.update().unwrap();
     }
-    manager.quit(id);
+    manager.quit(id).unwrap();
     for _ in 0..6 {
         manager.update().unwrap();
     }
@@ -1119,7 +1119,7 @@ fn process_kill() {
     for _ in 0..4 {
         manager.update().unwrap();
     }
-    manager.kill(id);
+    manager.kill(id).unwrap();
     for _ in 0..6 {
         manager.update().unwrap();
     }

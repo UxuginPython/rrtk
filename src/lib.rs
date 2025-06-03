@@ -71,6 +71,8 @@ pub mod error {
     ///The error type used when a `TryFrom` fails.
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]
     pub struct CannotConvert;
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    pub struct NoSuchProcess;
 }
 ///A derivative of position: position, velocity, or acceleration.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -1224,22 +1226,27 @@ impl<TG: TimeGetter<E>, E: Clone + Debug> ProcessManager<TG, E> {
             .push(ProcessWithInfo::new(process, meanness, start_time, id));
         id
     }
-    pub fn quit(&mut self, id: u32) {
-        let index = self.get_index(id);
+    pub fn quit(&mut self, id: u32) -> Result<(), error::NoSuchProcess> {
+        let index = self.get_index(id)?;
         self.processes[index]
             .process
             .handle_signal(ManagerSignal::Quit);
+        Ok(())
     }
-    pub fn kill(&mut self, id: u32) {
-        self.processes.swap_remove(self.get_index(id));
+    pub fn kill(&mut self, id: u32) -> Result<(), error::NoSuchProcess> {
+        self.processes.swap_remove(self.get_index(id)?);
+        Ok(())
     }
-    fn get_index(&self, id: u32) -> usize {
-        self.processes
+    fn get_index(&self, id: u32) -> Result<usize, error::NoSuchProcess> {
+        match self
+            .processes
             .iter()
             .enumerate()
             .find(|(_, process_with_info)| process_with_info.id == id)
-            .expect("TODO REMOVE THIS EXPECT")
-            .0
+        {
+            Some((index, _)) => Ok(index),
+            None => Err(error::NoSuchProcess),
+        }
     }
     fn get_total_time(&self) -> Time {
         let mut output = Time::ZERO;
