@@ -15,7 +15,7 @@ pub enum MotionProfilePiece {
     ///You are done with the motion profile.
     Complete,
 }
-///A motion profile for getting from one state to another.
+/*///A motion profile for getting from one state to another.
 #[derive(Clone, Debug, PartialEq)]
 pub struct MotionProfile {
     start_pos: Quantity,
@@ -187,7 +187,7 @@ impl MotionProfile {
             return self.end_command.get_position();
         }
     }
-}
+}*/
 #[cfg(test)]
 mod tests {
     use super::*;

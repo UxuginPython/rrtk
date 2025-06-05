@@ -174,7 +174,7 @@ where
         Ok(())
     }
 }
-pub use acceleration_to_state::AccelerationToState;
+/*pub use acceleration_to_state::AccelerationToState;
 mod acceleration_to_state {
     use super::*;
     struct Update0 {
@@ -506,7 +506,7 @@ mod position_to_state {
             Ok(())
         }
     }
-}
+}*/
 //TODO: Decide if you want to make this and DimensionRemover use where clauses too. It makes it a
 //bit less clear what's a real type vs what's just a compile-time integer, but it's more in line
 //with the other types and might be a bit easier to read.

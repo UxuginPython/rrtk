@@ -20,7 +20,7 @@ impl Command {
             PositionDerivative::Acceleration => Self::Acceleration(value),
         }
     }
-    ///Get the commanded constant position if there is one. If the position derivative is
+    /*///Get the commanded constant position if there is one. If the position derivative is
     ///velocity or acceleration, this will return `None` as there is not a constant position.
     pub const fn get_position(&self) -> Option<Quantity> {
         match self {
@@ -50,7 +50,7 @@ impl Command {
             },
             MILLIMETER_PER_SECOND_SQUARED,
         )
-    }
+    }*/
 }
 impl From<State> for Command {
     fn from(state: State) -> Self {
@@ -65,7 +65,7 @@ impl From<State> for Command {
         }
     }
 }
-#[cfg(any(
+/*#[cfg(any(
     feature = "dim_check_release",
     all(debug_assertions, feature = "dim_check_debug")
 ))]
@@ -79,7 +79,7 @@ impl TryFrom<Quantity> for Command {
             _ => Err(error::UnitInvalid),
         }
     }
-}
+}*/
 impl From<Command> for f32 {
     fn from(was: Command) -> f32 {
         match was {

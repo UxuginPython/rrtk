@@ -12,7 +12,7 @@ pub struct State {
     pub acceleration: f32,
 }
 impl State {
-    ///Constructor for [`State`] using [`Quantity`] objects for position, velocity, and acceleration.
+    /*///Constructor for [`State`] using [`Quantity`] objects for position, velocity, and acceleration.
     pub const fn new(position: Quantity, velocity: Quantity, acceleration: Quantity) -> Self {
         position.unit.assert_eq_assume_ok(&MILLIMETER);
         velocity.unit.assert_eq_assume_ok(&MILLIMETER_PER_SECOND);
@@ -24,7 +24,7 @@ impl State {
             velocity: velocity.value,
             acceleration: acceleration.value,
         }
-    }
+    }*/
     ///Constructor for [`State`] using raw [`f32`]s for position, velocity, and acceleration.
     pub const fn new_raw(position: f32, velocity: f32, acceleration: f32) -> Self {
         State {
@@ -34,7 +34,7 @@ impl State {
         }
     }
     //TODO: This can probably become const fn once it doesn't use runtime Quantity.
-    ///Calculate the future state assuming a constant acceleration.
+    /*///Calculate the future state assuming a constant acceleration.
     pub fn update(&mut self, delta_time: Time) {
         let delta_time = Quantity::from(delta_time);
         let old_acceleration = self.get_acceleration();
@@ -45,8 +45,8 @@ impl State {
             + delta_time * (old_velocity + new_velocity) / Quantity::dimensionless(2.0);
         self.position = new_position.value;
         self.velocity = new_velocity.value;
-    }
-    ///Set the acceleration with a [`Quantity`]. With dimension checking enabled, sets the
+    }*/
+    /*///Set the acceleration with a [`Quantity`]. With dimension checking enabled, sets the
     ///acceleration and returns [`Ok`] if the argument's [`Unit`] is correct, otherwise leaves it
     ///unchanged and returns [`Err`]. With dimension checking disabled, always sets the acceleration
     ///to the [`Quantity`]'s value and returns [`Ok`], ignoring the [`Unit`].
@@ -63,13 +63,13 @@ impl State {
         } else {
             Err(error::UnitInvalid)
         }
-    }
+    }*/
     ///Set the acceleration with an [`f32`] of millimeters per second squared.
     #[inline]
     pub const fn set_constant_acceleration_raw(&mut self, acceleration: f32) {
         self.acceleration = acceleration;
     }
-    ///Set the velocity to a given value with a [`Quantity`], and set acceleration to zero. With
+    /*///Set the velocity to a given value with a [`Quantity`], and set acceleration to zero. With
     ///dimension checking enabled, sets the velocity and acceleration and returns [`Ok`] if the
     ///argument's [`Unit`] is correct, otherwise leaves them unchanged and returns [`Err`]. With
     ///dimension checking disabled, ignores the [`Unit`] and always sets velocity and acceleration
@@ -85,14 +85,14 @@ impl State {
         } else {
             Err(error::UnitInvalid)
         }
-    }
+    }*/
     ///Set the velocity to a given value with an [`f32`] of millimeters per second, and set acceleration to zero.
     #[inline]
     pub const fn set_constant_velocity_raw(&mut self, velocity: f32) {
         self.acceleration = 0.0;
         self.velocity = velocity;
     }
-    ///Set the position to a given value with a [`Quantity`], and set velocity and acceleration to
+    /*///Set the position to a given value with a [`Quantity`], and set velocity and acceleration to
     ///zero. With dimension checking enabled, sets the position, velocity, and acceleration and
     ///returns [`Ok`] if the argument's [`Unit`] is correct, otherwise leaves them unchanged and
     ///returns [`Err`]. With dimension checking disabled, always sets the position, velocity, and
@@ -109,7 +109,7 @@ impl State {
         } else {
             Err(error::UnitInvalid)
         }
-    }
+    }*/
     ///Set the position to a given value with an [`f32`] of millimeters, and set velocity and acceleration to zero.
     #[inline]
     pub const fn set_constant_position_raw(&mut self, position: f32) {
@@ -117,7 +117,7 @@ impl State {
         self.velocity = 0.0;
         self.position = position;
     }
-    ///Get the position as a [`Quantity`].
+    /*///Get the position as a [`Quantity`].
     #[inline]
     pub const fn get_position(&self) -> Quantity {
         Quantity::new(self.position, MILLIMETER)
@@ -140,7 +140,7 @@ impl State {
             PositionDerivative::Velocity => self.get_velocity(),
             PositionDerivative::Acceleration => self.get_acceleration(),
         }
-    }
+    }*/
 }
 impl Neg for State {
     type Output = Self;

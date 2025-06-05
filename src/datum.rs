@@ -97,8 +97,6 @@ impl NotDatum for PositionDerivative {}
 impl NotDatum for error::CannotConvert {}
 impl NotDatum for error::UnitInvalid {}
 impl NotDatum for Time {}
-impl NotDatum for Quantity {}
-impl NotDatum for Unit {}
 impl NotDatum for DimensionlessInteger {}
 impl NotDatum for compile_time_integer::Zero {}
 impl<T: compile_time_integer::Integer> NotDatum for compile_time_integer::OnePlus<T> {}
