@@ -10,6 +10,9 @@
 //![`NegativeOnePlus`] in the same number is discouraged, e.g., using
 //!`NegativeOnePlus<OnePlus<Zero>>` for 0.
 use super::*;
+//This attribute currently cannot be in the actual file with #![] for some reason.
+#[rustfmt::skip]
+pub mod aliases;
 ///A trait used for defining numbers in RRTK's compile-time integer system based on operations on
 ///them. You should probably not implement this yourself; instead, use the [provided
 ///types](super::compile_time_integer) for constructing compile-time integers.
