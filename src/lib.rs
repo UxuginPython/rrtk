@@ -1167,6 +1167,7 @@ impl<T, C: ?Sized + Chronology<T>> Chronology<T> for Mutex<C> {
 pub enum ManagerSignal {
     Quit,
     AddedChild(u32),
+    ChildDied(u32),
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ProcessSignal {
@@ -1263,12 +1264,14 @@ impl<TG: TimeGetter<E>, E: Clone + Debug> ProcessManager<TG, E> {
     fn kill_index(&mut self, index: usize) {
         if let Some(id_parent) = self.processes[index].parent {
             if let Ok(index_parent) = self.get_index(id_parent) {
+                let id_dying_child = self.processes[index].id;
                 let meanness_dying_child = self.processes[index].meanness;
                 let time_dying_child = self.processes[index].time_used;
                 self.processes[index_parent].meanness += meanness_dying_child;
                 self.processes[index_parent].time_used += time_dying_child;
-                //TODO: Notify the next of kin (send a signal to the parent that just got its time
-                //and meanness back).
+                self.processes[index_parent]
+                    .process
+                    .handle_signal(ManagerSignal::ChildDied(id_dying_child));
             }
         }
         self.processes.swap_remove(index);
