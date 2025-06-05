@@ -65,21 +65,6 @@ impl From<State> for Command {
         }
     }
 }
-/*#[cfg(any(
-    feature = "dim_check_release",
-    all(debug_assertions, feature = "dim_check_debug")
-))]
-impl TryFrom<Quantity> for Command {
-    type Error = error::UnitInvalid;
-    fn try_from(was: Quantity) -> Result<Self, error::UnitInvalid> {
-        match was.unit {
-            MILLIMETER => Ok(Self::Position(was.value)),
-            MILLIMETER_PER_SECOND => Ok(Self::Velocity(was.value)),
-            MILLIMETER_PER_SECOND_SQUARED => Ok(Self::Acceleration(was.value)),
-            _ => Err(error::UnitInvalid),
-        }
-    }
-}*/
 impl From<Command> for f32 {
     fn from(was: Command) -> f32 {
         match was {
