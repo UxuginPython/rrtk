@@ -507,64 +507,6 @@ mod position_to_state {
         }
     }
 }
-///Stream to convert an [`f32`] to a [`Quantity`] with a given [`Unit`].
-pub struct FloatToQuantity<G: Getter<f32, E>, E: Clone + Debug> {
-    unit: Unit,
-    input: G,
-    phantom_e: PhantomData<E>,
-}
-impl<G: Getter<f32, E>, E: Clone + Debug> FloatToQuantity<G, E> {
-    ///Constructor for [`FloatToQuantity`].
-    pub const fn new(unit: Unit, input: G) -> Self {
-        Self {
-            unit,
-            input,
-            phantom_e: PhantomData,
-        }
-    }
-}
-impl<G: Getter<f32, E>, E: Clone + Debug> Updatable<E> for FloatToQuantity<G, E> {
-    fn update(&mut self) -> NothingOrError<E> {
-        self.input.update()?;
-        Ok(())
-    }
-}
-impl<G: Getter<f32, E>, E: Clone + Debug> Getter<Quantity, E> for FloatToQuantity<G, E> {
-    fn get(&self) -> Output<Quantity, E> {
-        match self.input.get()? {
-            None => Ok(None),
-            Some(x) => Ok(Some(Datum::new(x.time, Quantity::new(x.value, self.unit)))),
-        }
-    }
-}
-///Stream to convert a [`Quantity`] to a raw [`f32`].
-pub struct QuantityToFloat<G: Getter<Quantity, E>, E: Clone + Debug> {
-    input: G,
-    phantom_e: PhantomData<E>,
-}
-impl<G: Getter<Quantity, E>, E: Clone + Debug> QuantityToFloat<G, E> {
-    ///Constructor for [`QuantityToFloat`].
-    pub const fn new(input: G) -> Self {
-        Self {
-            input,
-            phantom_e: PhantomData,
-        }
-    }
-}
-impl<G: Getter<Quantity, E>, E: Clone + Debug> Getter<f32, E> for QuantityToFloat<G, E> {
-    fn get(&self) -> Output<f32, E> {
-        match self.input.get()? {
-            None => Ok(None),
-            Some(x) => Ok(Some(Datum::new(x.time, x.value.value))),
-        }
-    }
-}
-impl<G: Getter<Quantity, E>, E: Clone + Debug> Updatable<E> for QuantityToFloat<G, E> {
-    fn update(&mut self) -> NothingOrError<E> {
-        self.input.update()?;
-        Ok(())
-    }
-}
 //TODO: Decide if you want to make this and DimensionRemover use where clauses too. It makes it a
 //bit less clear what's a real type vs what's just a compile-time integer, but it's more in line
 //with the other types and might be a bit easier to read.

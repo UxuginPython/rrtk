@@ -82,21 +82,6 @@ pub enum PositionDerivative {
     ///How fast how fast you're going's changing.
     Acceleration,
 }
-#[cfg(any(
-    feature = "dim_check_release",
-    all(debug_assertions, feature = "dim_check_debug")
-))]
-impl TryFrom<Unit> for PositionDerivative {
-    type Error = error::UnitInvalid;
-    fn try_from(was: Unit) -> Result<Self, error::UnitInvalid> {
-        Ok(match was {
-            MILLIMETER => PositionDerivative::Position,
-            MILLIMETER_PER_SECOND => PositionDerivative::Velocity,
-            MILLIMETER_PER_SECOND_SQUARED => PositionDerivative::Acceleration,
-            _ => return Err(error::UnitInvalid),
-        })
-    }
-}
 impl From<Command> for PositionDerivative {
     fn from(was: Command) -> Self {
         match was {
