@@ -4,59 +4,60 @@
 //unfortunately can't be here for some reason.
 //!Type aliases for [`Quantity`] types of different dimensions.
 #![allow(missing_docs)]
+use compile_time_integer::aliases::*;
 use super::*;
-pub type InverseMillimeterCubedSecondCubed<T> = Quantity<T, NegativeOnePlus<NegativeOnePlus<NegativeOnePlus<Zero>>>, NegativeOnePlus<NegativeOnePlus<NegativeOnePlus<Zero>>>>;
-pub type InverseMillimeterCubedSecondSquared<T> = Quantity<T, NegativeOnePlus<NegativeOnePlus<NegativeOnePlus<Zero>>>, NegativeOnePlus<NegativeOnePlus<Zero>>>;
-pub type InverseMillimeterCubedSecond<T> = Quantity<T, NegativeOnePlus<NegativeOnePlus<NegativeOnePlus<Zero>>>, NegativeOnePlus<Zero>>;
-pub type InverseMillimeterCubed<T> = Quantity<T, NegativeOnePlus<NegativeOnePlus<NegativeOnePlus<Zero>>>, Zero>;
-pub type SecondPerMillimeterCubed<T> = Quantity<T, NegativeOnePlus<NegativeOnePlus<NegativeOnePlus<Zero>>>, OnePlus<Zero>>;
-pub type SecondSquaredPerMillimeterCubed<T> = Quantity<T, NegativeOnePlus<NegativeOnePlus<NegativeOnePlus<Zero>>>, OnePlus<OnePlus<Zero>>>;
-pub type SecondCubedPerMillimeterCubed<T> = Quantity<T, NegativeOnePlus<NegativeOnePlus<NegativeOnePlus<Zero>>>, OnePlus<OnePlus<Zero>>>;
+pub type InverseMillimeterCubedSecondCubed<T> = Quantity<T, Neg3, Neg3>;
+pub type InverseMillimeterCubedSecondSquared<T> = Quantity<T, Neg3, Neg2>;
+pub type InverseMillimeterCubedSecond<T> = Quantity<T, Neg3, Neg1>;
+pub type InverseMillimeterCubed<T> = Quantity<T, Neg3, Zero>;
+pub type SecondPerMillimeterCubed<T> = Quantity<T, Neg3, Pos1>;
+pub type SecondSquaredPerMillimeterCubed<T> = Quantity<T, Neg3, Pos2>;
+pub type SecondCubedPerMillimeterCubed<T> = Quantity<T, Neg3, Pos2>;
 
-pub type InverseMillimeterSquaredSecondCubed<T> = Quantity<T, NegativeOnePlus<NegativeOnePlus<Zero>>, NegativeOnePlus<NegativeOnePlus<NegativeOnePlus<Zero>>>>;
-pub type InverseMillimeterSquaredSecondSquared<T> = Quantity<T, NegativeOnePlus<NegativeOnePlus<Zero>>, NegativeOnePlus<NegativeOnePlus<Zero>>>;
-pub type InverseMillimeterSquaredSecond<T> = Quantity<T, NegativeOnePlus<NegativeOnePlus<Zero>>, NegativeOnePlus<Zero>>;
-pub type InverseMillimeterSquared<T> = Quantity<T, NegativeOnePlus<NegativeOnePlus<Zero>>, Zero>;
-pub type SecondPerMillimeterSquared<T> = Quantity<T, NegativeOnePlus<NegativeOnePlus<Zero>>, OnePlus<Zero>>;
-pub type SecondSquaredPerMillimeterSquared<T> = Quantity<T, NegativeOnePlus<NegativeOnePlus<Zero>>, OnePlus<OnePlus<Zero>>>;
-pub type SecondCubedPerMillimeterSquared<T> = Quantity<T, NegativeOnePlus<NegativeOnePlus<Zero>>, OnePlus<OnePlus<Zero>>>;
+pub type InverseMillimeterSquaredSecondCubed<T> = Quantity<T, Neg2, Neg3>;
+pub type InverseMillimeterSquaredSecondSquared<T> = Quantity<T, Neg2, Neg2>;
+pub type InverseMillimeterSquaredSecond<T> = Quantity<T, Neg2, Neg1>;
+pub type InverseMillimeterSquared<T> = Quantity<T, Neg2, Zero>;
+pub type SecondPerMillimeterSquared<T> = Quantity<T, Neg2, Pos1>;
+pub type SecondSquaredPerMillimeterSquared<T> = Quantity<T, Neg2, Pos2>;
+pub type SecondCubedPerMillimeterSquared<T> = Quantity<T, Neg2, Pos2>;
 
-pub type InverseMillimeterSecondCubed<T> = Quantity<T, NegativeOnePlus<Zero>, NegativeOnePlus<NegativeOnePlus<NegativeOnePlus<Zero>>>>;
-pub type InverseMillimeterSecondSquared<T> = Quantity<T, NegativeOnePlus<Zero>, NegativeOnePlus<NegativeOnePlus<Zero>>>;
-pub type InverseMillimeterSecond<T> = Quantity<T, NegativeOnePlus<Zero>, NegativeOnePlus<Zero>>;
-pub type InverseMillimeter<T> = Quantity<T, NegativeOnePlus<Zero>, Zero>;
-pub type SecondPerMillimeter<T> = Quantity<T, NegativeOnePlus<Zero>, OnePlus<Zero>>;
-pub type SecondSquaredPerMillimeter<T> = Quantity<T, NegativeOnePlus<Zero>, OnePlus<OnePlus<Zero>>>;
-pub type SecondCubedPerMillimeter<T> = Quantity<T, NegativeOnePlus<Zero>, OnePlus<OnePlus<Zero>>>;
+pub type InverseMillimeterSecondCubed<T> = Quantity<T, Neg1, Neg3>;
+pub type InverseMillimeterSecondSquared<T> = Quantity<T, Neg1, Neg2>;
+pub type InverseMillimeterSecond<T> = Quantity<T, Neg1, Neg1>;
+pub type InverseMillimeter<T> = Quantity<T, Neg1, Zero>;
+pub type SecondPerMillimeter<T> = Quantity<T, Neg1, Pos1>;
+pub type SecondSquaredPerMillimeter<T> = Quantity<T, Neg1, Pos2>;
+pub type SecondCubedPerMillimeter<T> = Quantity<T, Neg1, Pos2>;
 
-pub type InverseSecondCubed<T> = Quantity<T, Zero, NegativeOnePlus<NegativeOnePlus<NegativeOnePlus<Zero>>>>;
-pub type InverseSecondSquared<T> = Quantity<T, Zero, NegativeOnePlus<NegativeOnePlus<Zero>>>;
-pub type InverseSecond<T> = Quantity<T, Zero, NegativeOnePlus<Zero>>;
+pub type InverseSecondCubed<T> = Quantity<T, Zero, Neg3>;
+pub type InverseSecondSquared<T> = Quantity<T, Zero, Neg2>;
+pub type InverseSecond<T> = Quantity<T, Zero, Neg1>;
 pub type Dimensionless<T> = Quantity<T, Zero, Zero>;
-pub type Second<T> = Quantity<T, Zero, OnePlus<Zero>>;
-pub type SecondSquared<T> = Quantity<T, Zero, OnePlus<OnePlus<Zero>>>;
-pub type SecondCubed<T> = Quantity<T, Zero, OnePlus<OnePlus<OnePlus<Zero>>>>;
+pub type Second<T> = Quantity<T, Zero, Pos1>;
+pub type SecondSquared<T> = Quantity<T, Zero, Pos2>;
+pub type SecondCubed<T> = Quantity<T, Zero, Pos3>;
 
-pub type MillimeterPerSecondCubed<T> = Quantity<T, OnePlus<Zero>, NegativeOnePlus<NegativeOnePlus<NegativeOnePlus<Zero>>>>;
-pub type MillimeterPerSecondSquared<T> = Quantity<T, OnePlus<Zero>, NegativeOnePlus<NegativeOnePlus<Zero>>>;
-pub type MillimeterPerSecond<T> = Quantity<T, OnePlus<Zero>, NegativeOnePlus<Zero>>;
-pub type Millimeter<T> = Quantity<T, OnePlus<Zero>, Zero>;
-pub type MillimeterSecond<T> = Quantity<T, OnePlus<Zero>, OnePlus<Zero>>;
-pub type MillimeterSecondSquared<T> = Quantity<T, OnePlus<Zero>, OnePlus<OnePlus<Zero>>>;
-pub type MillimeterSecondCubed<T> = Quantity<T, OnePlus<Zero>, OnePlus<OnePlus<OnePlus<Zero>>>>;
+pub type MillimeterPerSecondCubed<T> = Quantity<T, Pos1, Neg3>;
+pub type MillimeterPerSecondSquared<T> = Quantity<T, Pos1, Neg2>;
+pub type MillimeterPerSecond<T> = Quantity<T, Pos1, Neg1>;
+pub type Millimeter<T> = Quantity<T, Pos1, Zero>;
+pub type MillimeterSecond<T> = Quantity<T, Pos1, Pos1>;
+pub type MillimeterSecondSquared<T> = Quantity<T, Pos1, Pos2>;
+pub type MillimeterSecondCubed<T> = Quantity<T, Pos1, Pos3>;
 
-pub type MillimeterSquaredPerSecondCubed<T> = Quantity<T, OnePlus<OnePlus<Zero>>, NegativeOnePlus<NegativeOnePlus<NegativeOnePlus<Zero>>>>;
-pub type MillimeterSquaredPerSecondSquared<T> = Quantity<T, OnePlus<OnePlus<Zero>>, NegativeOnePlus<NegativeOnePlus<Zero>>>;
-pub type MillimeterSquaredPerSecond<T> = Quantity<T, OnePlus<OnePlus<Zero>>, NegativeOnePlus<Zero>>;
-pub type MillimeterSquared<T> = Quantity<T, OnePlus<OnePlus<Zero>>, Zero>;
-pub type MillimeterSquaredSecond<T> = Quantity<T, OnePlus<OnePlus<Zero>>, OnePlus<Zero>>;
-pub type MillimeterSquaredSecondSquared<T> = Quantity<T, OnePlus<OnePlus<Zero>>, OnePlus<OnePlus<Zero>>>;
-pub type MillimeterSquaredSecondCubed<T> = Quantity<T, OnePlus<OnePlus<Zero>>, OnePlus<OnePlus<OnePlus<Zero>>>>;
+pub type MillimeterSquaredPerSecondCubed<T> = Quantity<T, Pos2, Neg3>;
+pub type MillimeterSquaredPerSecondSquared<T> = Quantity<T, Pos2, Neg2>;
+pub type MillimeterSquaredPerSecond<T> = Quantity<T, Pos2, Neg1>;
+pub type MillimeterSquared<T> = Quantity<T, Pos2, Zero>;
+pub type MillimeterSquaredSecond<T> = Quantity<T, Pos2, Pos1>;
+pub type MillimeterSquaredSecondSquared<T> = Quantity<T, Pos2, Pos2>;
+pub type MillimeterSquaredSecondCubed<T> = Quantity<T, Pos2, Pos3>;
 
-pub type MillimeterCubedPerSecondCubed<T> = Quantity<T, OnePlus<OnePlus<OnePlus<Zero>>>, NegativeOnePlus<NegativeOnePlus<NegativeOnePlus<Zero>>>>;
-pub type MillimeterCubedPerSecondSquared<T> = Quantity<T, OnePlus<OnePlus<OnePlus<Zero>>>, NegativeOnePlus<NegativeOnePlus<Zero>>>;
-pub type MillimeterCubedPerSecond<T> = Quantity<T, OnePlus<OnePlus<OnePlus<Zero>>>, NegativeOnePlus<Zero>>;
-pub type MillimeterCubed<T> = Quantity<T, OnePlus<OnePlus<OnePlus<Zero>>>, Zero>;
-pub type MillimeterCubedSecond<T> = Quantity<T, OnePlus<OnePlus<OnePlus<Zero>>>, OnePlus<Zero>>;
-pub type MillimeterCubedSecondSquared<T> = Quantity<T, OnePlus<OnePlus<OnePlus<Zero>>>, OnePlus<OnePlus<Zero>>>;
-pub type MillimeterCubedSecondCubed<T> = Quantity<T, OnePlus<OnePlus<OnePlus<Zero>>>, OnePlus<OnePlus<OnePlus<Zero>>>>;
+pub type MillimeterCubedPerSecondCubed<T> = Quantity<T, Pos3, Neg3>;
+pub type MillimeterCubedPerSecondSquared<T> = Quantity<T, Pos3, Neg2>;
+pub type MillimeterCubedPerSecond<T> = Quantity<T, Pos3, Neg1>;
+pub type MillimeterCubed<T> = Quantity<T, Pos3, Zero>;
+pub type MillimeterCubedSecond<T> = Quantity<T, Pos3, Pos1>;
+pub type MillimeterCubedSecondSquared<T> = Quantity<T, Pos3, Pos2>;
+pub type MillimeterCubedSecondCubed<T> = Quantity<T, Pos3, Pos3>;
