@@ -2,6 +2,8 @@
 // Copyright 2024-2025 UxuginPython
 //Make sure to never let rustfmt touch this file. There's an attribute in the super module which
 //unfortunately can't be here for some reason.
+//!Type aliases for [`Quantity`] types of different dimensions.
+#![allow(missing_docs)]
 use super::*;
 pub type InverseMillimeterCubedSecondCubed<T> = Quantity<T, NegativeOnePlus<NegativeOnePlus<NegativeOnePlus<Zero>>>, NegativeOnePlus<NegativeOnePlus<NegativeOnePlus<Zero>>>>;
 pub type InverseMillimeterCubedSecondSquared<T> = Quantity<T, NegativeOnePlus<NegativeOnePlus<NegativeOnePlus<Zero>>>, NegativeOnePlus<NegativeOnePlus<Zero>>>;
