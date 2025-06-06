@@ -32,19 +32,20 @@ impl State {
             acceleration: MillimeterPerSecondSquared::new(acceleration),
         }
     }
-    //TODO: This can probably become const fn once it doesn't use runtime Quantity.
-    /*///Calculate the future state assuming a constant acceleration.
+    //This could maybe be const fn if you're willing to let the code get a bit messy, maybe give up a
+    //slight bit of performance (or not depending on optimization), and give up some of the
+    //dimension guarantees here.
+    ///Calculate the future state assuming a constant acceleration.
     pub fn update(&mut self, delta_time: Time) {
-        let delta_time = Quantity::from(delta_time);
-        let old_acceleration = self.get_acceleration();
-        let old_velocity = self.get_velocity();
-        let old_position = self.get_position();
+        let old_acceleration = self.acceleration;
+        let old_velocity = self.velocity;
+        let old_position = self.position;
         let new_velocity = old_velocity + delta_time * old_acceleration;
-        let new_position = old_position
-            + delta_time * (old_velocity + new_velocity) / Quantity::dimensionless(2.0);
-        self.position = new_position.value;
-        self.velocity = new_velocity.value;
-    }*/
+        let new_position =
+            old_position + delta_time * (old_velocity + new_velocity) / Dimensionless::new(2.0);
+        self.position = new_position;
+        self.velocity = new_velocity;
+    }
     /*///Set the acceleration with a [`Quantity`]. With dimension checking enabled, sets the
     ///acceleration and returns [`Ok`] if the argument's [`Unit`] is correct, otherwise leaves it
     ///unchanged and returns [`Err`]. With dimension checking disabled, always sets the acceleration
