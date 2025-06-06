@@ -39,7 +39,7 @@ macro_rules! div {
 pub use div;
 ///A quantity with a unit. Dimensional analysis is performed at compile time through the type
 ///parameters' representations of unit exponents.
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(transparent)]
 pub struct Quantity<T, MM: Integer, S: Integer>(PhantomData<MM>, PhantomData<S>, T);
 impl<T, MM: Integer, S: Integer> Quantity<T, MM, S> {
