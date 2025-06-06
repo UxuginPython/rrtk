@@ -45,10 +45,12 @@ pub use div;
 pub struct Quantity<T, MM: Integer, S: Integer>(PhantomData<MM>, PhantomData<S>, T);
 impl<T, MM: Integer, S: Integer> Quantity<T, MM, S> {
     ///Constructor for `Quantity`.
+    #[inline]
     pub const fn new(inner: T) -> Self {
         Self(PhantomData, PhantomData, inner)
     }
     ///Converts the `Quantity` into its inner contained object, consuming it.
+    #[inline]
     pub fn into_inner(self) -> T {
         self.2
     }
