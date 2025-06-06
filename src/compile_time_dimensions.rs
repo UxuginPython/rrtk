@@ -69,6 +69,12 @@ impl<T, MM: Integer, S: Integer> From<T> for Quantity<T, MM, S> {
         self.2
     }
 }*/
+impl<T: Neg<Output = O>, O, MM: Integer, S: Integer> Neg for Quantity<T, MM, S> {
+    type Output = Quantity<O, MM, S>;
+    fn neg(self) -> Quantity<O, MM, S> {
+        Quantity::new(-self.2)
+    }
+}
 impl<T: Add<U, Output = O>, U, O, MM: Integer, S: Integer> Add<Quantity<U, MM, S>>
     for Quantity<T, MM, S>
 {
