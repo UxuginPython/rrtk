@@ -22,37 +22,36 @@ impl Command {
             }
         }
     }
-    /*///Get the commanded constant position if there is one. If the position derivative is
+    ///Get the commanded constant position if there is one. If the position derivative is
     ///velocity or acceleration, this will return `None` as there is not a constant position.
-    pub const fn get_position(&self) -> Option<Quantity> {
-        match self {
-            Self::Position(pos) => Some(Quantity::new(*pos, MILLIMETER)),
-            _ => None,
+    pub const fn get_position(&self) -> Option<Millimeter<f32>> {
+        if let Self::Position(pos) = self {
+            Some(*pos)
+        } else {
+            None
         }
     }
     ///Get the commanded constant velocity if there is one. If the position derivative is
     ///acceleration, this will return `None` as there is not a constant
     ///velocity. If the position derivative is position, this will return 0 as
     ///velocity should be zero with a constant position.
-    pub const fn get_velocity(&self) -> Option<Quantity> {
+    pub const fn get_velocity(&self) -> Option<MillimeterPerSecond<f32>> {
         match self {
-            Self::Position(_) => Some(Quantity::new(0.0, MILLIMETER_PER_SECOND)),
-            Self::Velocity(vel) => Some(Quantity::new(*vel, MILLIMETER_PER_SECOND)),
+            Self::Position(_) => Some(MillimeterPerSecond::new(0.0)),
+            Self::Velocity(vel) => Some(*vel),
             Self::Acceleration(_) => None,
         }
     }
     ///Get the commanded constant acceleration. If the position derivative is not
     ///acceleration, this will return 0 as acceleration should be zero with a constant velocity or
     ///position.
-    pub const fn get_acceleration(&self) -> Quantity {
-        Quantity::new(
-            match self {
-                Self::Acceleration(acc) => *acc,
-                _ => 0.0,
-            },
-            MILLIMETER_PER_SECOND_SQUARED,
-        )
-    }*/
+    pub const fn get_acceleration(&self) -> MillimeterPerSecondSquared<f32> {
+        if let Self::Acceleration(acc) = self {
+            *acc
+        } else {
+            MillimeterPerSecondSquared::new(0.0)
+        }
+    }
 }
 impl From<State> for Command {
     fn from(state: State) -> Self {
