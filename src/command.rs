@@ -5,19 +5,21 @@ use super::*;
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Command {
     ///Where you want to be. This should be in millimeters.
-    Position(f32),
+    Position(Millimeter<f32>),
     ///How fast you want to be going. This should be in millimeters per second.
-    Velocity(f32),
+    Velocity(MillimeterPerSecond<f32>),
     ///How fast you want how fast you're going to change. This should be in millimeters per second squared.
-    Acceleration(f32),
+    Acceleration(MillimeterPerSecondSquared<f32>),
 }
 impl Command {
     ///Constructor for [`Command`].
     pub const fn new(position_derivative: PositionDerivative, value: f32) -> Self {
         match position_derivative {
-            PositionDerivative::Position => Self::Position(value),
-            PositionDerivative::Velocity => Self::Velocity(value),
-            PositionDerivative::Acceleration => Self::Acceleration(value),
+            PositionDerivative::Position => Self::Position(Millimeter::new(value)),
+            PositionDerivative::Velocity => Self::Velocity(MillimeterPerSecond::new(value)),
+            PositionDerivative::Acceleration => {
+                Self::Acceleration(MillimeterPerSecondSquared::new(value))
+            }
         }
     }
     /*///Get the commanded constant position if there is one. If the position derivative is
@@ -54,23 +56,23 @@ impl Command {
 }
 impl From<State> for Command {
     fn from(state: State) -> Self {
-        if state.acceleration == 0.0 {
-            if state.velocity == 0.0 {
-                Command::new(PositionDerivative::Position, state.position)
+        if state.acceleration == MillimeterPerSecondSquared::new(0.0) {
+            if state.velocity == MillimeterPerSecond::new(0.0) {
+                Self::Position(state.position)
             } else {
-                Command::new(PositionDerivative::Velocity, state.velocity)
+                Self::Velocity(state.velocity)
             }
         } else {
-            Command::new(PositionDerivative::Acceleration, state.acceleration)
+            Self::Acceleration(state.acceleration)
         }
     }
 }
 impl From<Command> for f32 {
     fn from(was: Command) -> f32 {
         match was {
-            Command::Position(pos) => pos,
-            Command::Velocity(vel) => vel,
-            Command::Acceleration(acc) => acc,
+            Command::Position(pos) => pos.into_inner(),
+            Command::Velocity(vel) => vel.into_inner(),
+            Command::Acceleration(acc) => acc.into_inner(),
         }
     }
 }
