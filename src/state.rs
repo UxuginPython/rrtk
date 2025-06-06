@@ -5,32 +5,31 @@ use crate::*;
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct State {
     ///Where you are. This should be in millimeters.
-    pub position: f32,
+    pub position: Millimeter<f32>,
     ///How fast you're going. This should be in millimeters per second.
-    pub velocity: f32,
+    pub velocity: MillimeterPerSecond<f32>,
     ///How fast how fast you're going's changing. This should be in millimeters per second squared.
-    pub acceleration: f32,
+    pub acceleration: MillimeterPerSecondSquared<f32>,
 }
 impl State {
-    /*///Constructor for [`State`] using [`Quantity`] objects for position, velocity, and acceleration.
-    pub const fn new(position: Quantity, velocity: Quantity, acceleration: Quantity) -> Self {
-        position.unit.assert_eq_assume_ok(&MILLIMETER);
-        velocity.unit.assert_eq_assume_ok(&MILLIMETER_PER_SECOND);
-        acceleration
-            .unit
-            .assert_eq_assume_ok(&MILLIMETER_PER_SECOND_SQUARED);
-        State {
-            position: position.value,
-            velocity: velocity.value,
-            acceleration: acceleration.value,
-        }
-    }*/
-    ///Constructor for [`State`] using raw [`f32`]s for position, velocity, and acceleration.
-    pub const fn new_raw(position: f32, velocity: f32, acceleration: f32) -> Self {
+    ///Constructor for [`State`] using [`Quantity`] objects for position, velocity, and acceleration.
+    pub const fn new(
+        position: Millimeter<f32>,
+        velocity: MillimeterPerSecond<f32>,
+        acceleration: MillimeterPerSecondSquared<f32>,
+    ) -> Self {
         State {
             position,
             velocity,
             acceleration,
+        }
+    }
+    ///Constructor for [`State`] using raw [`f32`]s for position, velocity, and acceleration.
+    pub const fn new_raw(position: f32, velocity: f32, acceleration: f32) -> Self {
+        State {
+            position: Millimeter::new(position),
+            velocity: MillimeterPerSecond::new(velocity),
+            acceleration: MillimeterPerSecondSquared::new(acceleration),
         }
     }
     //TODO: This can probably become const fn once it doesn't use runtime Quantity.
@@ -67,7 +66,7 @@ impl State {
     ///Set the acceleration with an [`f32`] of millimeters per second squared.
     #[inline]
     pub const fn set_constant_acceleration_raw(&mut self, acceleration: f32) {
-        self.acceleration = acceleration;
+        self.acceleration = MillimeterPerSecondSquared::new(acceleration);
     }
     /*///Set the velocity to a given value with a [`Quantity`], and set acceleration to zero. With
     ///dimension checking enabled, sets the velocity and acceleration and returns [`Ok`] if the
@@ -89,8 +88,8 @@ impl State {
     ///Set the velocity to a given value with an [`f32`] of millimeters per second, and set acceleration to zero.
     #[inline]
     pub const fn set_constant_velocity_raw(&mut self, velocity: f32) {
-        self.acceleration = 0.0;
-        self.velocity = velocity;
+        self.acceleration = MillimeterPerSecondSquared::new(0.0);
+        self.velocity = MillimeterPerSecond::new(velocity);
     }
     /*///Set the position to a given value with a [`Quantity`], and set velocity and acceleration to
     ///zero. With dimension checking enabled, sets the position, velocity, and acceleration and
@@ -113,45 +112,31 @@ impl State {
     ///Set the position to a given value with an [`f32`] of millimeters, and set velocity and acceleration to zero.
     #[inline]
     pub const fn set_constant_position_raw(&mut self, position: f32) {
-        self.acceleration = 0.0;
-        self.velocity = 0.0;
-        self.position = position;
+        self.acceleration = MillimeterPerSecondSquared::new(0.0);
+        self.velocity = MillimeterPerSecond::new(0.0);
+        self.position = Millimeter::new(position);
     }
-    /*///Get the position as a [`Quantity`].
-    #[inline]
-    pub const fn get_position(&self) -> Quantity {
-        Quantity::new(self.position, MILLIMETER)
-    }
-    ///Get the velocity as a [`Quantity`].
-    #[inline]
-    pub const fn get_velocity(&self) -> Quantity {
-        Quantity::new(self.velocity, MILLIMETER_PER_SECOND)
-    }
-    ///Get the acceleration as a [`Quantity`].
-    #[inline]
-    pub const fn get_acceleration(&self) -> Quantity {
-        Quantity::new(self.acceleration, MILLIMETER_PER_SECOND_SQUARED)
-    }
+    //TODO: Should this method actually exist?
     ///State contains a position, velocity, and acceleration. This gets the respective field of a
     ///given position derivative.
-    pub const fn get_value(&self, position_derivative: PositionDerivative) -> Quantity {
+    pub fn get_value(&self, position_derivative: PositionDerivative) -> f32 {
         match position_derivative {
-            PositionDerivative::Position => self.get_position(),
-            PositionDerivative::Velocity => self.get_velocity(),
-            PositionDerivative::Acceleration => self.get_acceleration(),
+            PositionDerivative::Position => self.position.into_inner(),
+            PositionDerivative::Velocity => self.velocity.into_inner(),
+            PositionDerivative::Acceleration => self.acceleration.into_inner(),
         }
-    }*/
+    }
 }
 impl Neg for State {
     type Output = Self;
     fn neg(self) -> Self {
-        State::new_raw(-self.position, -self.velocity, -self.acceleration)
+        State::new(-self.position, -self.velocity, -self.acceleration)
     }
 }
 impl Add for State {
     type Output = Self;
     fn add(self, other: State) -> Self {
-        State::new_raw(
+        State::new(
             self.position + other.position,
             self.velocity + other.velocity,
             self.acceleration + other.acceleration,
@@ -161,7 +146,7 @@ impl Add for State {
 impl Sub for State {
     type Output = Self;
     fn sub(self, other: State) -> Self {
-        State::new_raw(
+        State::new(
             self.position - other.position,
             self.velocity - other.velocity,
             self.acceleration - other.acceleration,
@@ -171,7 +156,8 @@ impl Sub for State {
 impl Mul<f32> for State {
     type Output = Self;
     fn mul(self, coef: f32) -> Self {
-        State::new_raw(
+        let coef = Dimensionless::new(coef);
+        State::new(
             self.position * coef,
             self.velocity * coef,
             self.acceleration * coef,
@@ -181,7 +167,8 @@ impl Mul<f32> for State {
 impl Div<f32> for State {
     type Output = Self;
     fn div(self, dvsr: f32) -> Self {
-        State::new_raw(
+        let dvsr = Dimensionless::new(dvsr);
+        State::new(
             self.position / dvsr,
             self.velocity / dvsr,
             self.acceleration / dvsr,
