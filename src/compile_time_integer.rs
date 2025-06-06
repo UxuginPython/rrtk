@@ -12,7 +12,8 @@
 use super::*;
 //This attribute currently cannot be in the actual file with #![] for some reason.
 #[rustfmt::skip]
-pub mod aliases;
+pub mod integer_aliases;
+pub use integer_aliases::*;
 ///A trait used for defining numbers in RRTK's compile-time integer system based on operations on
 ///them. You should probably not implement this yourself; instead, use the [provided
 ///types](super::compile_time_integer) for constructing compile-time integers.

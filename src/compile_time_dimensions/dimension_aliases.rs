@@ -4,7 +4,6 @@
 //unfortunately can't be here for some reason.
 //!Type aliases for [`Quantity`] types of different dimensions.
 #![allow(missing_docs)]
-use compile_time_integer::aliases::*;
 use super::*;
 pub type InverseMillimeterCubedSecondCubed<T> = Quantity<T, Neg3, Neg3>;
 pub type InverseMillimeterCubedSecondSquared<T> = Quantity<T, Neg3, Neg2>;

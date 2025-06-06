@@ -45,6 +45,7 @@ use core::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Not, Sub, S
 use fmt::Debug;
 mod command;
 pub mod compile_time_dimensions;
+pub use compile_time_dimensions::*;
 pub mod compile_time_integer;
 mod datum;
 #[cfg(feature = "devices")]

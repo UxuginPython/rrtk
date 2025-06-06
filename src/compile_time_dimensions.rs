@@ -10,7 +10,8 @@ use super::*;
 use compile_time_integer::*;
 //This attribute currently cannot be in the actual file with #![] for some reason.
 #[rustfmt::skip]
-pub mod aliases;
+pub mod dimension_aliases;
+pub use dimension_aliases::*;
 ///Gets the resulting type from multiplying quantities of two types. Basically an alias for
 ///`<$a as Mul<$b>>::Output`. This is an important thing to be able to do when writing code that is
 ///generic over units as, since quantities of different units are technically different types, the
