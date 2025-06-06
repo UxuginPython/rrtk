@@ -17,7 +17,7 @@ pub use integer_aliases::*;
 ///A trait used for defining numbers in RRTK's compile-time integer system based on operations on
 ///them. You should probably not implement this yourself; instead, use the [provided
 ///types](super::compile_time_integer) for constructing compile-time integers.
-pub trait Integer: Copy + Debug + fmt::Display {
+pub trait Integer: Copy + Debug + Ord + fmt::Display {
     ///The type representing **n + 1** where **n** is the implementor's value.
     type PlusOne: Integer;
     ///The type representing **n - 1** where **n** is the implementor's value.
@@ -42,7 +42,7 @@ pub trait Integer: Copy + Debug + fmt::Display {
     fn as_i8() -> i8;
 }
 ///Type representing zero in RRTK's compile-time integer system.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(transparent)]
 pub struct Zero;
 impl Integer for Zero {
@@ -65,7 +65,7 @@ impl fmt::Display for Zero {
     }
 }
 ///Type representing something added to one in RRTK's compile-time integer system.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(transparent)]
 pub struct OnePlus<T: Integer>(T);
 impl<T: Integer> Integer for OnePlus<T> {
@@ -88,7 +88,7 @@ impl<T: Integer> fmt::Display for OnePlus<T> {
 }
 ///Type representing something added to negative one, or one subtracted from something, in RRTK's
 ///compile-time integer system.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(transparent)]
 pub struct NegativeOnePlus<T: Integer>(T);
 impl<T: Integer> Integer for NegativeOnePlus<T> {
@@ -109,3 +109,4 @@ impl<T: Integer> fmt::Display for NegativeOnePlus<T> {
         write!(f, "{}", Self::as_i8())
     }
 }
+//#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
