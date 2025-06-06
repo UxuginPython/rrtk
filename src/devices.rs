@@ -120,17 +120,12 @@ pub struct GearTrain<'a, E: Clone + Debug> {
 }
 impl<'a, E: Clone + Debug> GearTrain<'a, E> {
     ///Construct a [`GearTrain`] with the ratio as an `f32`.
-    pub const fn with_ratio_raw(ratio: f32) -> Self {
+    pub const fn with_ratio(ratio: f32) -> Self {
         Self {
             term1: Terminal::new(),
             term2: Terminal::new(),
             ratio: ratio,
         }
-    }
-    ///Construct a [`GearTrain`] with the ratio as a dimensionless [`Quantity`].
-    pub const fn with_ratio(ratio: Quantity) -> Self {
-        ratio.unit.assert_eq_assume_ok(&DIMENSIONLESS);
-        Self::with_ratio_raw(ratio.value)
     }
     ///Construct a [`GearTrain`] from an array of the numbers of teeth on each gear in the train.
     pub const fn new<const N: usize>(teeth: [f32; N]) -> Self {
@@ -140,7 +135,7 @@ impl<'a, E: Clone + Debug> GearTrain<'a, E> {
             );
         }
         let ratio = teeth[0] / teeth[teeth.len() - 1] * if N % 2 == 0 { -1.0 } else { 1.0 };
-        Self::with_ratio_raw(ratio)
+        Self::with_ratio(ratio)
     }
     ///Get a reference to the side 1 terminal of the device where (side 1) * ratio = (side 2).
     pub const fn get_terminal_1(&self) -> &'a RefCell<Terminal<'a, E>> {
