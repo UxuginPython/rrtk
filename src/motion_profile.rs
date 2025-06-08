@@ -26,7 +26,7 @@ pub struct MotionProfile {
     max_acc: MillimeterPerSecondSquared<f32>,
     end_command: Command,
 }
-/*impl Chronology<Command> for MotionProfile {
+impl Chronology<Command> for MotionProfile {
     fn get(&self, time: Time) -> Option<Datum<Command>> {
         let mode = match self.get_mode(time) {
             Some(value) => value,
@@ -34,20 +34,23 @@ pub struct MotionProfile {
                 return None;
             }
         };
-        let value = match mode {
-            PositionDerivative::Position => self
-                .get_position(time)
-                .expect("If mode is Position, this should be Some."),
-            PositionDerivative::Velocity => self
-                .get_velocity(time)
-                .expect("If mode is Velocity, this should be Some."),
-            PositionDerivative::Acceleration => self
-                .get_acceleration(time)
-                .expect("If mode is Acceleration, this should be Some."),
+        let command = match mode {
+            PositionDerivative::Position => Command::from(
+                self.get_position(time)
+                    .expect("If mode is Position, this should be Some."),
+            ),
+            PositionDerivative::Velocity => Command::from(
+                self.get_velocity(time)
+                    .expect("If mode is Velocity, this should be Some."),
+            ),
+            PositionDerivative::Acceleration => Command::from(
+                self.get_acceleration(time)
+                    .expect("If mode is Acceleration, this should be Some."),
+            ),
         };
-        Some(Datum::new(time, Command::new(mode, value.into())))
+        Some(Datum::new(time, command))
     }
-}*/
+}
 //Unfortunately this is one of the times when you might be able to get a bit more functionality
 //(more const fns in this case) but at the significant expense of readability and simplicity. The
 //real solution here is to stop using runtime Quantity, which will happen at some point. When that

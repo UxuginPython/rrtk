@@ -53,6 +53,21 @@ impl Command {
         }
     }
 }
+impl From<Millimeter<f32>> for Command {
+    fn from(was: Millimeter<f32>) -> Self {
+        Self::Position(was)
+    }
+}
+impl From<MillimeterPerSecond<f32>> for Command {
+    fn from(was: MillimeterPerSecond<f32>) -> Self {
+        Self::Velocity(was)
+    }
+}
+impl From<MillimeterPerSecondSquared<f32>> for Command {
+    fn from(was: MillimeterPerSecondSquared<f32>) -> Self {
+        Self::Acceleration(was)
+    }
+}
 impl From<State> for Command {
     fn from(state: State) -> Self {
         if state.acceleration == MillimeterPerSecondSquared::new(0.0) {
