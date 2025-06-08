@@ -216,11 +216,42 @@ mod acceleration_to_state {
                 Ok(Some(new_acceleration_datum)) => {
                     let new_update_time = new_acceleration_datum.time;
                     let new_acceleration = new_acceleration_datum.value;
-                    if let Some(update_0) = &self.update_0 {
-                        todo!();
-                    } else {
-                        todo!();
-                    }
+                    self.update_0 = Some(Update0 {
+                        last_update_time: new_update_time,
+                        acceleration: new_acceleration,
+                        update_1: if let Some(update_0) = &self.update_0 {
+                            let old_update_time = update_0.last_update_time;
+                            let old_acceleration = update_0.acceleration;
+                            let delta_time = new_update_time - old_update_time;
+                            let added_velocity = (old_acceleration + new_acceleration)
+                                * Dimensionless::new(0.5)
+                                * delta_time;
+                            Some(if let Some(update_1) = &update_0.update_1 {
+                                let old_velocity = update_1.velocity;
+                                let new_velocity = old_velocity + added_velocity;
+                                let added_position = (old_velocity + new_velocity)
+                                    * Dimensionless::new(0.5)
+                                    * delta_time;
+                                Update1 {
+                                    velocity: new_velocity,
+                                    update_2_position: Some(
+                                        if let Some(old_position) = update_1.update_2_position {
+                                            old_position + added_position
+                                        } else {
+                                            added_position
+                                        },
+                                    ),
+                                }
+                            } else {
+                                Update1 {
+                                    velocity: added_velocity,
+                                    update_2_position: None,
+                                }
+                            })
+                        } else {
+                            None
+                        },
+                    });
                 }
                 Ok(None) => {}
                 Err(error) => {
