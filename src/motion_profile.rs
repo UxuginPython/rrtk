@@ -153,36 +153,40 @@ impl MotionProfile {
             return self.end_command.get_velocity();
         }
     }
-    /*///Get the intended position at a given time.
-    pub fn get_position(&self, t: Time) -> Option<Quantity> {
+    ///Get the intended position at a given time.
+    pub fn get_position(&self, t: Time) -> Option<Millimeter<f32>> {
         if t < Time::default() {
             None
         } else if t < self.t1 {
-            let t = Quantity::from(t);
             return Some(
-                Quantity::dimensionless(0.5) * self.max_acc * t * t
+                Dimensionless::new(0.5) * self.max_acc * t * t
                     + self.start_vel * t
                     + self.start_pos,
             );
         } else if t < self.t2 {
             return Some(
-                self.max_acc * (self.t1 * (-self.t1 / DimensionlessInteger(2) + t))
-                    + self.start_vel * Quantity::from(t)
+                self.max_acc
+                    * (self.t1.as_compile_time_quantity()
+                        * (-self.t1 / DimensionlessInteger(2) + t))
+                    + self.start_vel * t
                     + self.start_pos,
             );
         } else if t < self.t3 {
             return Some(
-                self.max_acc * (self.t1 * (-self.t1 / DimensionlessInteger(2) + self.t2))
-                    - Quantity::dimensionless(0.5)
+                self.max_acc
+                    * (self.t1.as_compile_time_quantity()
+                        * (-self.t1 / DimensionlessInteger(2) + self.t2))
+                    - Dimensionless::new(0.5)
                         * self.max_acc
-                        * ((t - self.t2) * (t - DimensionlessInteger(2) * self.t1 - self.t2))
-                    + self.start_vel * Quantity::from(t)
+                        * ((t - self.t2).as_compile_time_quantity()
+                            * (t - DimensionlessInteger(2) * self.t1 - self.t2))
+                    + self.start_vel * t
                     + self.start_pos,
             );
         } else {
             return self.end_command.get_position();
         }
-    }*/
+    }
 }
 #[cfg(test)]
 mod tests {
