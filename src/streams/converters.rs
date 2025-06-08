@@ -174,6 +174,7 @@ where
         Ok(())
     }
 }
+pub use acceleration_to_state::*;
 mod acceleration_to_state {
     use super::*;
     struct Update0 {
@@ -185,9 +186,17 @@ mod acceleration_to_state {
         velocity: MillimeterPerSecond<f32>,
         update_2_position: Option<Millimeter<f32>>,
     }
-    struct AccelerationToState<G> {
+    pub struct AccelerationToState<G> {
         input: G,
         update_0: Option<Update0>,
+    }
+    impl<G> AccelerationToState<G> {
+        pub const fn new(input: G) -> Self {
+            Self {
+                input,
+                update_0: None,
+            }
+        }
     }
     impl<G, E: Clone + Debug> Getter<State, E> for AccelerationToState<G>
     where
