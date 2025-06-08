@@ -109,4 +109,3 @@ impl<T: Integer> fmt::Display for NegativeOnePlus<T> {
         write!(f, "{}", Self::as_i8())
     }
 }
-//#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]

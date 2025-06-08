@@ -55,6 +55,24 @@ impl<T, MM: Integer, S: Integer> Quantity<T, MM, S> {
         self.2
     }
 }
+macro_rules! impl_quantity_abs {
+    ($t: ty) => {
+        impl<MM: Integer, S: Integer> Quantity<$t, MM, S> {
+            ///Evaluate the absolute value of the quantity.
+            pub const fn abs(self) -> Self {
+                Self(PhantomData, PhantomData, self.2.abs())
+            }
+        }
+    };
+}
+impl_quantity_abs!(f32);
+impl_quantity_abs!(f64);
+impl_quantity_abs!(i8);
+impl_quantity_abs!(i16);
+impl_quantity_abs!(i32);
+impl_quantity_abs!(i64);
+impl_quantity_abs!(i128);
+impl_quantity_abs!(isize);
 impl<T, MM: Integer, S: Integer> From<T> for Quantity<T, MM, S> {
     fn from(was: T) -> Self {
         Self(PhantomData, PhantomData, was)

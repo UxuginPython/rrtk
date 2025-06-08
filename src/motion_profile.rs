@@ -15,18 +15,18 @@ pub enum MotionProfilePiece {
     ///You are done with the motion profile.
     Complete,
 }
-/*///A motion profile for getting from one state to another.
+///A motion profile for getting from one state to another.
 #[derive(Clone, Debug, PartialEq)]
 pub struct MotionProfile {
-    start_pos: Quantity,
-    start_vel: Quantity,
+    start_pos: Millimeter<f32>,
+    start_vel: MillimeterPerSecond<f32>,
     t1: Time,
     t2: Time,
     t3: Time,
-    max_acc: Quantity,
+    max_acc: MillimeterPerSecondSquared<f32>,
     end_command: Command,
 }
-impl Chronology<Command> for MotionProfile {
+/*impl Chronology<Command> for MotionProfile {
     fn get(&self, time: Time) -> Option<Datum<Command>> {
         let mode = match self.get_mode(time) {
             Some(value) => value,
@@ -47,7 +47,7 @@ impl Chronology<Command> for MotionProfile {
         };
         Some(Datum::new(time, Command::new(mode, value.into())))
     }
-}
+}*/
 //Unfortunately this is one of the times when you might be able to get a bit more functionality
 //(more const fns in this case) but at the significant expense of readability and simplicity. The
 //real solution here is to stop using runtime Quantity, which will happen at some point. When that
@@ -57,37 +57,33 @@ impl MotionProfile {
     pub fn new(
         start_state: State,
         end_state: State,
-        max_vel: Quantity,
-        max_acc: Quantity,
+        max_vel: MillimeterPerSecond<f32>,
+        max_acc: MillimeterPerSecondSquared<f32>,
     ) -> MotionProfile {
-        let sign = Quantity::new(
-            if end_state.position < start_state.position {
-                -1.0
-            } else {
-                1.0
-            },
-            DIMENSIONLESS,
-        );
+        let sign = Dimensionless::new(if end_state.position < start_state.position {
+            -1.0
+        } else {
+            1.0
+        });
         let max_vel = max_vel.abs() * sign;
         let max_acc = max_acc.abs() * sign;
-        let d_t1_vel = max_vel - start_state.get_velocity();
+        let d_t1_vel = max_vel - start_state.velocity;
         let t1 = d_t1_vel / max_acc;
-        assert!(f32::from(t1) >= 0.0);
-        let d_t1_pos = (start_state.get_velocity() + max_vel) / Quantity::dimensionless(2.0) * t1;
-        let d_t3_vel = end_state.get_velocity() - max_vel;
+        assert!(t1.into_inner() >= 0.0);
+        let d_t1_pos = (start_state.velocity + max_vel) / Dimensionless::new(2.0) * t1;
+        let d_t3_vel = end_state.velocity - max_vel;
         let d_t3 = d_t3_vel / -max_acc;
-        assert!(f32::from(d_t3) >= 0.0);
-        let d_t3_pos = (max_vel + end_state.get_velocity()) / Quantity::dimensionless(2.0) * d_t3;
-        let d_t2_pos =
-            (end_state.get_position() - start_state.get_position()) - (d_t1_pos + d_t3_pos);
+        assert!(d_t3.into_inner() >= 0.0);
+        let d_t3_pos = (max_vel + end_state.velocity) / Dimensionless::new(2.0) * d_t3;
+        let d_t2_pos = (end_state.position - start_state.position) - (d_t1_pos + d_t3_pos);
         let d_t2 = d_t2_pos / max_vel;
-        assert!(f32::from(d_t2) >= 0.0);
+        assert!(d_t2.into_inner() >= 0.0);
         let t2 = t1 + d_t2;
         let t3 = t2 + d_t3;
         let end_command = Command::from(end_state);
         MotionProfile {
-            start_pos: start_state.get_position(),
-            start_vel: start_state.get_velocity(),
+            start_pos: start_state.position,
+            start_vel: start_state.velocity,
             t1: Time::try_from(t1).expect(
                 "t1 must always be in seconds in max_vel and max_acc have correct dimensions",
             ),
@@ -101,7 +97,7 @@ impl MotionProfile {
             end_command,
         }
     }
-    ///Get the intended [`PositionDerivative`] at a given time.
+    /*///Get the intended [`PositionDerivative`] at a given time.
     pub fn get_mode(&self, t: Time) -> Option<PositionDerivative> {
         if t < Time::default() {
             None
@@ -186,8 +182,8 @@ impl MotionProfile {
         } else {
             return self.end_command.get_position();
         }
-    }
-}*/
+    }*/
+}
 #[cfg(test)]
 mod tests {
     use super::*;
