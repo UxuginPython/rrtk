@@ -186,11 +186,14 @@ mod acceleration_to_state {
         velocity: MillimeterPerSecond<f32>,
         update_2_position: Option<Millimeter<f32>>,
     }
+    ///Doubly integrates an acceleration to create a full [`State`] object. Uses trapezoidal
+    ///integration.
     pub struct AccelerationToState<G> {
         input: G,
         update_0: Option<Update0>,
     }
     impl<G> AccelerationToState<G> {
+        ///Constructor for `AccelerationToState`.
         pub const fn new(input: G) -> Self {
             Self {
                 input,
@@ -284,11 +287,14 @@ mod velocity_to_state {
         position: Millimeter<f32>,
         acceleration: MillimeterPerSecondSquared<f32>,
     }
+    ///Integrates and takes the derivative of a velocity to create a full [`State`] object. Uses
+    ///trapezoidal integration.
     pub struct VelocityToState<G> {
         input: G,
         update_0: Option<Update0>,
     }
     impl<G> VelocityToState<G> {
+        ///Constructor for `VelocityToState`.
         pub const fn new(input: G) -> Self {
             Self {
                 input,
@@ -365,11 +371,13 @@ mod position_to_state {
         velocity: MillimeterPerSecond<f32>,
         update_2_acceleration: Option<MillimeterPerSecondSquared<f32>>,
     }
+    ///Takes the second derivative of a position to create a full [`State`] object.
     pub struct PositionToState<G> {
         input: G,
         update_0: Option<Update0>,
     }
     impl<G> PositionToState<G> {
+        ///Constructor for `PositionToState`.
         pub const fn new(input: G) -> Self {
             Self {
                 input,
