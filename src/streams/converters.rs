@@ -174,6 +174,40 @@ where
         Ok(())
     }
 }
+mod acceleration_to_state {
+    use super::*;
+    struct Update0 {
+        last_update_time: Time,
+        acc: MillimeterPerSecondSquared<f32>,
+        update_1: Option<Update1>,
+    }
+    struct Update1 {
+        vel: MillimeterPerSecond<f32>,
+        update_2_pos: Option<Millimeter<f32>>,
+    }
+    struct AccelerationToState<G> {
+        input: G,
+        update_0: Option<Update0>,
+    }
+    impl<G, E: Clone + Debug> Getter<State, E> for AccelerationToState<G>
+    where
+        AccelerationToState<G>: Updatable<E>,
+    {
+        fn get(&self) -> Output<State, E> {
+            if let Some(update_0) = &self.update_0 {
+                if let Some(update_1) = &update_0.update_1 {
+                    if let Some(update_2_pos) = update_1.update_2_pos {
+                        return Ok(Some(Datum::new(
+                            update_0.last_update_time,
+                            State::new(update_2_pos, update_1.vel, update_0.acc),
+                        )));
+                    }
+                }
+            }
+            Ok(None)
+        }
+    }
+}
 /*pub use acceleration_to_state::AccelerationToState;
 mod acceleration_to_state {
     use super::*;
