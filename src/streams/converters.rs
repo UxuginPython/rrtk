@@ -178,12 +178,12 @@ mod acceleration_to_state {
     use super::*;
     struct Update0 {
         last_update_time: Time,
-        acc: MillimeterPerSecondSquared<f32>,
+        acceleration: MillimeterPerSecondSquared<f32>,
         update_1: Option<Update1>,
     }
     struct Update1 {
-        vel: MillimeterPerSecond<f32>,
-        update_2_pos: Option<Millimeter<f32>>,
+        velocity: MillimeterPerSecond<f32>,
+        update_2_position: Option<Millimeter<f32>>,
     }
     struct AccelerationToState<G> {
         input: G,
@@ -196,10 +196,10 @@ mod acceleration_to_state {
         fn get(&self) -> Output<State, E> {
             if let Some(update_0) = &self.update_0 {
                 if let Some(update_1) = &update_0.update_1 {
-                    if let Some(update_2_pos) = update_1.update_2_pos {
+                    if let Some(update_2_position) = update_1.update_2_position {
                         return Ok(Some(Datum::new(
                             update_0.last_update_time,
-                            State::new(update_2_pos, update_1.vel, update_0.acc),
+                            State::new(update_2_position, update_1.velocity, update_0.acceleration),
                         )));
                     }
                 }
@@ -213,7 +213,15 @@ mod acceleration_to_state {
         fn update(&mut self) -> NothingOrError<E> {
             self.input.update()?;
             match self.input.get() {
-                Ok(Some(new_acc)) => todo!(),
+                Ok(Some(new_acceleration_datum)) => {
+                    let new_update_time = new_acceleration_datum.time;
+                    let new_acceleration = new_acceleration_datum.value;
+                    if let Some(update_0) = &self.update_0 {
+                        todo!();
+                    } else {
+                        todo!();
+                    }
+                }
                 Ok(None) => {}
                 Err(error) => {
                     self.update_0 = None;
