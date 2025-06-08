@@ -207,6 +207,22 @@ mod acceleration_to_state {
             Ok(None)
         }
     }
+    impl<G: Getter<MillimeterPerSecondSquared<f32>, E>, E: Clone + Debug> Updatable<E>
+        for AccelerationToState<G>
+    {
+        fn update(&mut self) -> NothingOrError<E> {
+            self.input.update()?;
+            match self.input.get() {
+                Ok(Some(new_acc)) => todo!(),
+                Ok(None) => {}
+                Err(error) => {
+                    self.update_0 = None;
+                    return Err(error);
+                }
+            }
+            Ok(())
+        }
+    }
 }
 /*pub use acceleration_to_state::AccelerationToState;
 mod acceleration_to_state {
