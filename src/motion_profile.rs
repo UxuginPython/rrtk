@@ -125,21 +125,21 @@ impl MotionProfile {
             return MotionProfilePiece::Complete;
         }
     }
-    /*///Get the intended acceleration at a given time.
-    pub fn get_acceleration(&self, t: Time) -> Option<Quantity> {
+    ///Get the intended acceleration at a given time.
+    pub fn get_acceleration(&self, t: Time) -> Option<MillimeterPerSecondSquared<f32>> {
         if t < Time::default() {
             None
         } else if t < self.t1 {
             return Some(self.max_acc);
         } else if t < self.t2 {
-            return Some(Quantity::new(0.0, MILLIMETER_PER_SECOND_SQUARED));
+            return Some(MillimeterPerSecondSquared::new(0.0));
         } else if t < self.t3 {
             return Some(-self.max_acc);
         } else {
             return Some(self.end_command.get_acceleration());
         }
     }
-    ///Get the intended velocity at a given time.
+    /*///Get the intended velocity at a given time.
     pub fn get_velocity(&self, t: Time) -> Option<Quantity> {
         if t < Time::default() {
             None
