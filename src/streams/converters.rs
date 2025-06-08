@@ -272,6 +272,89 @@ mod acceleration_to_state {
         }
     }
 }
+pub use position_to_state::*;
+mod position_to_state {
+    use super::*;
+    struct Update0 {
+        last_update_time: Time,
+        position: Millimeter<f32>,
+        update_1: Option<Update1>,
+    }
+    struct Update1 {
+        velocity: MillimeterPerSecond<f32>,
+        update_2_acceleration: Option<MillimeterPerSecondSquared<f32>>,
+    }
+    pub struct PositionToState<G> {
+        input: G,
+        update_0: Option<Update0>,
+    }
+    impl<G> PositionToState<G> {
+        pub const fn new(input: G) -> Self {
+            Self {
+                input,
+                update_0: None,
+            }
+        }
+    }
+    impl<G, E: Clone + Debug> Getter<State, E> for PositionToState<G>
+    where
+        PositionToState<G>: Updatable<E>,
+    {
+        fn get(&self) -> Output<State, E> {
+            if let Some(update_0) = &self.update_0 {
+                if let Some(update_1) = &update_0.update_1 {
+                    if let Some(update_2_acceleration) = update_1.update_2_acceleration {
+                        return Ok(Some(Datum::new(
+                            update_0.last_update_time,
+                            State::new(update_0.position, update_1.velocity, update_2_acceleration),
+                        )));
+                    }
+                }
+            }
+            Ok(None)
+        }
+    }
+    impl<G: Getter<Millimeter<f32>, E>, E: Clone + Debug> Updatable<E> for PositionToState<G> {
+        fn update(&mut self) -> NothingOrError<E> {
+            self.input.update()?;
+            match self.input.get() {
+                Ok(Some(new_position_datum)) => {
+                    let new_update_time = new_position_datum.time;
+                    let new_position = new_position_datum.value;
+                    self.update_0 = Some(Update0 {
+                        last_update_time: new_update_time,
+                        position: new_position,
+                        update_1: if let Some(update_0) = &self.update_0 {
+                            let old_update_time = update_0.last_update_time;
+                            let old_position = update_0.position;
+                            let delta_time = new_update_time - old_update_time;
+                            let new_velocity = (new_position - old_position) / delta_time;
+                            Some(Update1 {
+                                velocity: new_velocity,
+                                update_2_acceleration: if let Some(update_1) = &update_0.update_1 {
+                                    let old_velocity = update_1.velocity;
+                                    let new_acceleration =
+                                        (new_velocity - old_velocity) / delta_time;
+                                    Some(new_acceleration)
+                                } else {
+                                    None
+                                },
+                            })
+                        } else {
+                            None
+                        },
+                    });
+                }
+                Ok(None) => {}
+                Err(error) => {
+                    self.update_0 = None;
+                    return Err(error);
+                }
+            }
+            Ok(())
+        }
+    }
+}
 /*pub use acceleration_to_state::AccelerationToState;
 mod acceleration_to_state {
     use super::*;
