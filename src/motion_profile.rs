@@ -139,21 +139,21 @@ impl MotionProfile {
             return Some(self.end_command.get_acceleration());
         }
     }
-    /*///Get the intended velocity at a given time.
-    pub fn get_velocity(&self, t: Time) -> Option<Quantity> {
+    ///Get the intended velocity at a given time.
+    pub fn get_velocity(&self, t: Time) -> Option<MillimeterPerSecond<f32>> {
         if t < Time::default() {
             None
         } else if t < self.t1 {
-            return Some(self.max_acc * Quantity::from(t) + self.start_vel);
+            return Some(self.max_acc * t + self.start_vel);
         } else if t < self.t2 {
-            return Some(self.max_acc * Quantity::from(self.t1) + self.start_vel);
+            return Some(self.max_acc * self.t1 + self.start_vel);
         } else if t < self.t3 {
-            return Some(self.max_acc * Quantity::from(self.t1 + self.t2 - t) + self.start_vel);
+            return Some(self.max_acc * (self.t1 + self.t2 - t) + self.start_vel);
         } else {
             return self.end_command.get_velocity();
         }
     }
-    ///Get the intended position at a given time.
+    /*///Get the intended position at a given time.
     pub fn get_position(&self, t: Time) -> Option<Quantity> {
         if t < Time::default() {
             None
