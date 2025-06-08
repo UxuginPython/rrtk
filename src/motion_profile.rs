@@ -97,7 +97,7 @@ impl MotionProfile {
             end_command,
         }
     }
-    /*///Get the intended [`PositionDerivative`] at a given time.
+    ///Get the intended [`PositionDerivative`] at a given time.
     pub fn get_mode(&self, t: Time) -> Option<PositionDerivative> {
         if t < Time::default() {
             None
@@ -125,7 +125,7 @@ impl MotionProfile {
             return MotionProfilePiece::Complete;
         }
     }
-    ///Get the intended acceleration at a given time.
+    /*///Get the intended acceleration at a given time.
     pub fn get_acceleration(&self, t: Time) -> Option<Quantity> {
         if t < Time::default() {
             None
