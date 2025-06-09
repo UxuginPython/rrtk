@@ -1037,7 +1037,7 @@ fn integral_stream() {
         assert_eq!(stream.get().unwrap().unwrap().value, Millimeter::new(1.0));
     }
 }
-/*#[test]
+#[test]
 fn pid_controller_stream() {
     #[derive(Clone, Copy, Debug)]
     struct DummyError;
@@ -1053,7 +1053,7 @@ fn pid_controller_stream() {
         fn get(&self) -> Output<f32, DummyError> {
             Ok(Some(Datum::new(
                 self.time,
-                f32::from(Quantity::from(self.time / DimensionlessInteger(2))),
+                (self.time / DimensionlessInteger(2)).as_seconds(),
             )))
         }
     }
@@ -1089,6 +1089,7 @@ fn pid_controller_stream() {
 #[test]
 #[cfg(any(feature = "std", feature = "libm"))]
 fn ewma_stream() {
+    //TODO: Test EWMA with Quantity.
     #[derive(Clone, Copy, Debug)]
     struct DummyError;
     struct DummyStream {
@@ -1147,92 +1148,10 @@ fn ewma_stream() {
         //assert_eq!(stream.get().unwrap().unwrap().value, 104.97888585552573);
     }
 }
-//See note on exponent_stream test
-#[test]
-#[cfg(any(feature = "std", feature = "libm"))]
-fn ewma_stream_quantity() {
-    #[derive(Clone, Copy, Debug)]
-    struct DummyError;
-    struct DummyStream {
-        time: Time,
-    }
-    impl DummyStream {
-        pub const fn new() -> Self {
-            Self { time: Time::ZERO }
-        }
-    }
-    impl Getter<Quantity, DummyError> for DummyStream {
-        fn get(&self) -> Output<Quantity, DummyError> {
-            let value = match self.time.as_nanoseconds() {
-                2_000_000_000 => Quantity::dimensionless(110.0),
-                4_000_000_000 => Quantity::dimensionless(111.0),
-                6_000_000_000 => Quantity::dimensionless(116.0),
-                8_000_000_000 => Quantity::dimensionless(97.0),
-                10_000_000_000 => Quantity::dimensionless(102.0),
-                12_000_000_000 => Quantity::dimensionless(111.0),
-                14_000_000_000 => Quantity::dimensionless(111.0),
-                16_000_000_000 => Quantity::dimensionless(100.0),
-                _ => Quantity::dimensionless(0.0),
-            };
-            Ok(Some(Datum::new(self.time, value)))
-        }
-    }
-    impl Updatable<DummyError> for DummyStream {
-        fn update(&mut self) -> NothingOrError<DummyError> {
-            self.time += Time::from_nanoseconds(2_000_000_000);
-            Ok(())
-        }
-    }
-    unsafe {
-        static mut INPUT: DummyStream = DummyStream::new();
-        let input = PointerDereferencer::new(core::ptr::addr_of_mut!(INPUT));
-        let mut stream = EWMAStream::new(input.clone(), 0.25);
-        stream.update().unwrap();
-        assert_eq!(
-            stream.get().unwrap().unwrap().value,
-            Quantity::dimensionless(110.0)
-        );
-        stream.update().unwrap();
-        assert_eq!(
-            stream.get().unwrap().unwrap().value,
-            Quantity::dimensionless(110.4375)
-        );
-        stream.update().unwrap();
-        //Floating-point stuff gets a bit weird because of rounding, but it still appears to work
-        //correctly.
-        assert_eq!(
-            stream.get().unwrap().unwrap().value,
-            Quantity::dimensionless(112.87109375)
-        );
-        stream.update().unwrap();
-        assert_eq!(
-            stream.get().unwrap().unwrap().value,
-            Quantity::dimensionless(105.927490234375)
-        );
-        stream.update().unwrap();
-        assert_eq!(
-            stream.get().unwrap().unwrap().value,
-            Quantity::dimensionless(104.20921325683594)
-        );
-        stream.update().unwrap();
-        assert_eq!(
-            stream.get().unwrap().unwrap().value,
-            Quantity::dimensionless(107.18018245697021)
-        );
-        stream.update().unwrap();
-        assert_eq!(
-            stream.get().unwrap().unwrap().value,
-            Quantity::dimensionless(108.85135263204575)
-        );
-        stream.update().unwrap();
-        //Despite every other assert_eq! here working, this one does not because the way f32 works
-        //means that it thinks it's off by 0.00001. I am unconcerned.
-        //assert_eq!(stream.get().unwrap().unwrap().value, 104.97888585552573);
-    }
-}
 #[test]
 #[cfg(feature = "alloc")]
 fn moving_average_stream() {
+    //TODO: Test moving average with Quantity
     #[derive(Clone, Copy, Debug)]
     struct DummyError;
     struct DummyStream {
@@ -1285,81 +1204,6 @@ fn moving_average_stream() {
         assert_eq!(stream.get().unwrap().unwrap().value, 109.2);
         stream.update().unwrap();
         assert_eq!(stream.get().unwrap().unwrap().value, 106.6);
-    }
-}
-#[test]
-#[cfg(feature = "alloc")]
-fn moving_average_stream_quantity() {
-    #[derive(Clone, Copy, Debug)]
-    struct DummyError;
-    struct DummyStream {
-        time: Time,
-    }
-    impl DummyStream {
-        pub const fn new() -> Self {
-            Self { time: Time::ZERO }
-        }
-    }
-    impl Getter<Quantity, DummyError> for DummyStream {
-        fn get(&self) -> Output<Quantity, DummyError> {
-            let value = match self.time.as_nanoseconds() {
-                2 => Quantity::dimensionless(110.0),
-                4 => Quantity::dimensionless(111.0),
-                6 => Quantity::dimensionless(116.0),
-                8 => Quantity::dimensionless(97.0),
-                10 => Quantity::dimensionless(102.0),
-                12 => Quantity::dimensionless(111.0),
-                14 => Quantity::dimensionless(111.0),
-                16 => Quantity::dimensionless(100.0),
-                _ => Quantity::dimensionless(0.0),
-            };
-            Ok(Some(Datum::new(self.time, value)))
-        }
-    }
-    impl Updatable<DummyError> for DummyStream {
-        fn update(&mut self) -> NothingOrError<DummyError> {
-            self.time += Time::from_nanoseconds(2);
-            Ok(())
-        }
-    }
-    unsafe {
-        static mut INPUT: DummyStream = DummyStream::new();
-        let input = PointerDereferencer::new(core::ptr::addr_of_mut!(INPUT));
-        let mut stream = MovingAverageStream::new(input.clone(), Time::from_nanoseconds(5));
-        stream.update().unwrap();
-        assert_eq!(
-            stream.get().unwrap().unwrap().value,
-            Quantity::dimensionless(110.0)
-        );
-        stream.update().unwrap();
-        assert_eq!(
-            stream.get().unwrap().unwrap().value,
-            Quantity::dimensionless(110.4)
-        );
-        stream.update().unwrap();
-        //assert_eq!(stream.get().unwrap().unwrap().value, 112.8);
-        stream.update().unwrap();
-        assert_eq!(
-            stream.get().unwrap().unwrap().value,
-            Quantity::dimensionless(107.4)
-        );
-        stream.update().unwrap();
-        //assert_eq!(stream.get().unwrap().unwrap().value, 102.8);
-        stream.update().unwrap();
-        assert_eq!(
-            stream.get().unwrap().unwrap().value,
-            Quantity::dimensionless(104.6)
-        );
-        stream.update().unwrap();
-        assert_eq!(
-            stream.get().unwrap().unwrap().value,
-            Quantity::dimensionless(109.2)
-        );
-        stream.update().unwrap();
-        assert_eq!(
-            stream.get().unwrap().unwrap().value,
-            Quantity::dimensionless(106.6)
-        );
     }
 }
 #[test]
@@ -2071,4 +1915,4 @@ fn command_pid() {
             assert_eq!(pid.get().unwrap().unwrap().value, 20.225);
         }
     }
-}*/
+}
