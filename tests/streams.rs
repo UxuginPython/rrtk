@@ -959,7 +959,7 @@ fn exponent_stream() {
         }
     }
 }
-/*#[test]
+#[test]
 fn derivative_stream() {
     #[derive(Clone, Copy, Debug)]
     struct DummyError;
@@ -971,11 +971,11 @@ fn derivative_stream() {
             Self { time: Time::ZERO }
         }
     }
-    impl Getter<Quantity, DummyError> for DummyStream {
-        fn get(&self) -> Output<Quantity, DummyError> {
+    impl Getter<Second<f32>, DummyError> for DummyStream {
+        fn get(&self) -> Output<Second<f32>, DummyError> {
             Ok(Some(Datum::new(
                 self.time * DimensionlessInteger(2),
-                Quantity::from(self.time * DimensionlessInteger(3)),
+                (self.time * DimensionlessInteger(3)).as_compile_time_quantity(),
             )))
         }
     }
@@ -997,7 +997,7 @@ fn derivative_stream() {
         );
         assert_eq!(
             stream.get().unwrap().unwrap().value,
-            Quantity::new(1.5, DIMENSIONLESS) //Derivating time d time returns a dimensionless quantity.
+            Dimensionless::new(1.5) //Derivating time d time returns a dimensionless quantity.
         );
     }
 }
@@ -1013,12 +1013,9 @@ fn integral_stream() {
             Self { time: Time::ZERO }
         }
     }
-    impl Getter<Quantity, DummyError> for DummyStream {
-        fn get(&self) -> Output<Quantity, DummyError> {
-            Ok(Some(Datum::new(
-                self.time,
-                Quantity::new(1.0, MILLIMETER_PER_SECOND),
-            )))
+    impl Getter<MillimeterPerSecond<f32>, DummyError> for DummyStream {
+        fn get(&self) -> Output<MillimeterPerSecond<f32>, DummyError> {
+            Ok(Some(Datum::new(self.time, MillimeterPerSecond::new(1.0))))
         }
     }
     impl Updatable<DummyError> for DummyStream {
@@ -1037,13 +1034,10 @@ fn integral_stream() {
             stream.get().unwrap().unwrap().time,
             Time::from_nanoseconds(2_000_000_000)
         );
-        assert_eq!(
-            stream.get().unwrap().unwrap().value,
-            Quantity::new(1.0, MILLIMETER)
-        );
+        assert_eq!(stream.get().unwrap().unwrap().value, Millimeter::new(1.0));
     }
 }
-#[test]
+/*#[test]
 fn pid_controller_stream() {
     #[derive(Clone, Copy, Debug)]
     struct DummyError;
