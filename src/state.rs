@@ -59,6 +59,7 @@ impl State {
         self.velocity = MillimeterPerSecond::new(0.0);
         self.position = position;
     }
+    //Might you want to rename Command to something more broad and make this return that?
     ///State contains a position, velocity, and acceleration. This gets the respective field of a
     ///given position derivative.
     pub fn get_value(&self, position_derivative: PositionDerivative) -> f32 {
