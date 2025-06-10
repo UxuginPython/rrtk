@@ -24,14 +24,6 @@ impl State {
             acceleration,
         }
     }
-    ///Constructor for [`State`] using raw [`f32`]s for position, velocity, and acceleration.
-    pub const fn new_raw(position: f32, velocity: f32, acceleration: f32) -> Self {
-        State {
-            position: Millimeter::new(position),
-            velocity: MillimeterPerSecond::new(velocity),
-            acceleration: MillimeterPerSecondSquared::new(acceleration),
-        }
-    }
     //This could maybe be const fn if you're willing to let the code get a bit messy, maybe give up a
     //slight bit of performance (or not depending on optimization), and give up some of the
     //dimension guarantees here.
@@ -54,22 +46,11 @@ impl State {
     ) {
         self.acceleration = acceleration;
     }
-    ///Set the acceleration with an [`f32`] of millimeters per second squared.
-    #[inline]
-    pub const fn set_constant_acceleration_raw(&mut self, acceleration: f32) {
-        self.acceleration = MillimeterPerSecondSquared::new(acceleration);
-    }
     ///Set the velocity to a given value and set the acceleration to zero.
     #[inline]
     pub const fn set_constant_velocity(&mut self, velocity: MillimeterPerSecond<f32>) {
         self.acceleration = MillimeterPerSecondSquared::new(0.0);
         self.velocity = velocity;
-    }
-    ///Set the velocity to a given value with an [`f32`] of millimeters per second, and set acceleration to zero.
-    #[inline]
-    pub const fn set_constant_velocity_raw(&mut self, velocity: f32) {
-        self.acceleration = MillimeterPerSecondSquared::new(0.0);
-        self.velocity = MillimeterPerSecond::new(velocity);
     }
     ///Set the position to a given value and set the velocity and acceleration to zero.
     #[inline]
@@ -78,14 +59,6 @@ impl State {
         self.velocity = MillimeterPerSecond::new(0.0);
         self.position = position;
     }
-    ///Set the position to a given value with an [`f32`] of millimeters, and set velocity and acceleration to zero.
-    #[inline]
-    pub const fn set_constant_position_raw(&mut self, position: f32) {
-        self.acceleration = MillimeterPerSecondSquared::new(0.0);
-        self.velocity = MillimeterPerSecond::new(0.0);
-        self.position = Millimeter::new(position);
-    }
-    //TODO: Should this method actually exist?
     ///State contains a position, velocity, and acceleration. This gets the respective field of a
     ///given position derivative.
     pub fn get_value(&self, position_derivative: PositionDerivative) -> f32 {
