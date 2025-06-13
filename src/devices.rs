@@ -69,7 +69,7 @@ impl<E: Clone + Debug> Updatable<E> for Invert<'_, E> {
                         datum2.time
                     };
                     //average with negative state2 as it is inverted from state1
-                    let new_state = (state1 - state2) / 2.0;
+                    let new_state = (state1 - state2) * Dimensionless::new(0.5);
                     self.term1.borrow_mut().set(Datum::new(time, new_state))?;
                     self.term2.borrow_mut().set(Datum::new(time, -new_state))?;
                 }
@@ -116,11 +116,11 @@ impl<E: Clone + Debug> Device<E> for Invert<'_, E> {
 pub struct GearTrain<'a, E: Clone + Debug> {
     term1: RefCell<Terminal<'a, E>>,
     term2: RefCell<Terminal<'a, E>>,
-    ratio: f32,
+    ratio: Dimensionless<f32>,
 }
 impl<'a, E: Clone + Debug> GearTrain<'a, E> {
     ///Construct a [`GearTrain`] with the ratio as an `f32`.
-    pub const fn with_ratio(ratio: f32) -> Self {
+    pub const fn with_ratio(ratio: Dimensionless<f32>) -> Self {
         Self {
             term1: Terminal::new(),
             term2: Terminal::new(),
@@ -135,7 +135,7 @@ impl<'a, E: Clone + Debug> GearTrain<'a, E> {
             );
         }
         let ratio = teeth[0] / teeth[teeth.len() - 1] * if N % 2 == 0 { -1.0 } else { 1.0 };
-        Self::with_ratio(ratio)
+        Self::with_ratio(Dimensionless::new(ratio))
     }
     ///Get a reference to the side 1 terminal of the device where (side 1) * ratio = (side 2).
     pub const fn get_terminal_1(&self) -> &'a RefCell<Terminal<'a, E>> {
@@ -169,8 +169,9 @@ impl<E: Clone + Debug> Updatable<E> for GearTrain<'_, E> {
                     } else {
                         datum2.time
                     };
+                    //FIXME: This link  may or may not work anymore.
                     //https://www.desmos.com/3d/gvwbqszr5e
-                    let r_squared_plus_1 = self.ratio * self.ratio + 1.0;
+                    let r_squared_plus_1 = self.ratio * self.ratio + Dimensionless::new(1.0);
                     let x_plus_r_y = state1 + state2 * self.ratio;
                     let newstate1 = x_plus_r_y / r_squared_plus_1;
                     let newstate2 = (x_plus_r_y * self.ratio) / r_squared_plus_1;
@@ -284,7 +285,7 @@ impl<const N: usize, E: Clone + Debug> Updatable<E> for Axle<'_, N, E> {
             }
         }
         if count >= 1 {
-            datum /= count as f32;
+            datum /= Dimensionless::new(count as f32);
             for i in &self.inputs {
                 i.borrow_mut().set(datum.clone())?;
             }
@@ -421,15 +422,15 @@ impl<E: Clone + Debug> Updatable<E> for Differential<'_, E> {
                 //calculated estimated values based on all three constrained to add. This
                 //essentially means that the estimated values will be as close to the measured
                 //values as possible while forcing the two sides to add to the sum branch.
-                self.sum
-                    .borrow_mut()
-                    .set((side1 + side2 + sum * 2.0) / 3.0)?;
-                self.side1
-                    .borrow_mut()
-                    .set((side1 * 2.0 - side2 + sum) / 3.0)?;
-                self.side2
-                    .borrow_mut()
-                    .set((-side1 + side2 * 2.0 + sum) / 3.0)?;
+                self.sum.borrow_mut().set(
+                    (side1 + side2 + sum * Dimensionless::new(2.0)) / Dimensionless::new(3.0),
+                )?;
+                self.side1.borrow_mut().set(
+                    (side1 * Dimensionless::new(2.0) - side2 + sum) / Dimensionless::new(3.0),
+                )?;
+                self.side2.borrow_mut().set(
+                    (-side1 + side2 * Dimensionless::new(2.0) + sum) / Dimensionless::new(3.0),
+                )?;
             }
         }
         Ok(())

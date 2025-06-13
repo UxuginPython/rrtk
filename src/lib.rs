@@ -546,7 +546,8 @@ impl<E: Clone + Debug> Getter<State, E> for Terminal<'_, E> {
                 1 => return Ok(Some(addends[0].assume_init())),
                 2 => {
                     return Ok(Some(
-                        (addends[0].assume_init() + addends[1].assume_init()) / 2.0,
+                        (addends[0].assume_init() + addends[1].assume_init())
+                            * Dimensionless::new(0.5),
                     ));
                 }
                 _ => unimplemented!(),

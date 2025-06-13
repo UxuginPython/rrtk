@@ -96,10 +96,9 @@ impl Sub for State {
         )
     }
 }
-impl Mul<f32> for State {
+impl Mul<Dimensionless<f32>> for State {
     type Output = Self;
-    fn mul(self, coef: f32) -> Self {
-        let coef = Dimensionless::new(coef);
+    fn mul(self, coef: Dimensionless<f32>) -> Self {
         State::new(
             self.position * coef,
             self.velocity * coef,
@@ -107,10 +106,9 @@ impl Mul<f32> for State {
         )
     }
 }
-impl Div<f32> for State {
+impl Div<Dimensionless<f32>> for State {
     type Output = Self;
-    fn div(self, dvsr: f32) -> Self {
-        let dvsr = Dimensionless::new(dvsr);
+    fn div(self, dvsr: Dimensionless<f32>) -> Self {
         State::new(
             self.position / dvsr,
             self.velocity / dvsr,
@@ -128,13 +126,13 @@ impl SubAssign for State {
         *self = *self - other;
     }
 }
-impl MulAssign<f32> for State {
-    fn mul_assign(&mut self, coef: f32) {
+impl MulAssign<Dimensionless<f32>> for State {
+    fn mul_assign(&mut self, coef: Dimensionless<f32>) {
         *self = *self * coef;
     }
 }
-impl DivAssign<f32> for State {
-    fn div_assign(&mut self, dvsr: f32) {
+impl DivAssign<Dimensionless<f32>> for State {
+    fn div_assign(&mut self, dvsr: Dimensionless<f32>) {
         *self = *self / dvsr;
     }
 }

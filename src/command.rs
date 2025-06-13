@@ -106,20 +106,24 @@ impl Sub for Command {
         Self::new(self_pos_der, f32::from(self) - f32::from(rhs))
     }
 }
-impl Mul<f32> for Command {
+impl Mul<Dimensionless<f32>> for Command {
     type Output = Self;
-    fn mul(self, rhs: f32) -> Self {
-        let self_pos_der = PositionDerivative::from(self);
-        let value = f32::from(self) * rhs;
-        Self::new(self_pos_der, value)
+    fn mul(self, rhs: Dimensionless<f32>) -> Self {
+        match self {
+            Self::Position(pos) => Self::Position(pos * rhs),
+            Self::Velocity(vel) => Self::Velocity(vel * rhs),
+            Self::Acceleration(acc) => Self::Acceleration(acc * rhs),
+        }
     }
 }
-impl Div<f32> for Command {
+impl Div<Dimensionless<f32>> for Command {
     type Output = Self;
-    fn div(self, rhs: f32) -> Self {
-        let self_pos_der = PositionDerivative::from(self);
-        let value = f32::from(self) / rhs;
-        Self::new(self_pos_der, value)
+    fn div(self, rhs: Dimensionless<f32>) -> Self {
+        match self {
+            Self::Position(pos) => Self::Position(pos / rhs),
+            Self::Velocity(vel) => Self::Velocity(vel / rhs),
+            Self::Acceleration(vel) => Self::Acceleration(vel / rhs),
+        }
     }
 }
 impl Neg for Command {
@@ -142,13 +146,15 @@ impl SubAssign for Command {
         *self = *self - rhs;
     }
 }
-impl MulAssign<f32> for Command {
-    fn mul_assign(&mut self, rhs: f32) {
+//TODO: You might be able to optimize this to be faster than just calling the Mul and Div
+//implementations since it only mutates the inside of a variant and never changes variants.
+impl MulAssign<Dimensionless<f32>> for Command {
+    fn mul_assign(&mut self, rhs: Dimensionless<f32>) {
         *self = *self * rhs;
     }
 }
-impl DivAssign<f32> for Command {
-    fn div_assign(&mut self, rhs: f32) {
+impl DivAssign<Dimensionless<f32>> for Command {
+    fn div_assign(&mut self, rhs: Dimensionless<f32>) {
         *self = *self / rhs;
     }
 }
