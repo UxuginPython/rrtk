@@ -440,7 +440,7 @@ fn motion_profile_get_mode() {
         Some(PositionDerivative::Acceleration)
     );
 }
-/*#[test]
+#[test]
 fn motion_profile_get_acceleration() {
     let motion_profile = MotionProfile::new(
         State::new(
@@ -453,8 +453,8 @@ fn motion_profile_get_acceleration() {
             MillimeterPerSecond::new(0.0),
             MillimeterPerSecondSquared::new(0.0),
         ),
-        Quantity::new(0.1, MILLIMETER_PER_SECOND),
-        Quantity::new(0.01, MILLIMETER_PER_SECOND_SQUARED),
+        MillimeterPerSecond::new(0.1),
+        MillimeterPerSecondSquared::new(0.01),
     );
     assert_eq!(
         motion_profile.get_acceleration(Time::from_nanoseconds(-1_000_000_000)),
@@ -462,19 +462,19 @@ fn motion_profile_get_acceleration() {
     );
     assert_eq!(
         motion_profile.get_acceleration(Time::from_nanoseconds(5_000_000_000)),
-        Some(Quantity::new(0.01, MILLIMETER_PER_SECOND_SQUARED))
+        Some(MillimeterPerSecondSquared::new(0.01))
     );
     assert_eq!(
         motion_profile.get_acceleration(Time::from_nanoseconds(25_000_000_000)),
-        Some(Quantity::new(0.0, MILLIMETER_PER_SECOND_SQUARED))
+        Some(MillimeterPerSecondSquared::new(0.0))
     );
     assert_eq!(
         motion_profile.get_acceleration(Time::from_nanoseconds(35_000_000_000)),
-        Some(Quantity::new(-0.01, MILLIMETER_PER_SECOND_SQUARED))
+        Some(MillimeterPerSecondSquared::new(-0.01))
     );
     assert_eq!(
         motion_profile.get_acceleration(Time::from_nanoseconds(500_000_000_000)),
-        Some(Quantity::new(0.0, MILLIMETER_PER_SECOND_SQUARED))
+        Some(MillimeterPerSecondSquared::new(0.0))
     );
 }
 #[test]
@@ -490,8 +490,8 @@ fn motion_profile_get_velocity() {
             MillimeterPerSecond::new(0.0),
             MillimeterPerSecondSquared::new(0.0),
         ),
-        Quantity::new(0.1, MILLIMETER_PER_SECOND),
-        Quantity::new(0.01, MILLIMETER_PER_SECOND_SQUARED),
+        MillimeterPerSecond::new(0.1),
+        MillimeterPerSecondSquared::new(0.01),
     );
     assert_eq!(
         motion_profile.get_velocity(Time::from_nanoseconds(-1_000_000_000)),
@@ -500,24 +500,24 @@ fn motion_profile_get_velocity() {
     let gv5 = motion_profile
         .get_velocity(Time::from_nanoseconds(5_000_000_000))
         .unwrap()
-        .value;
+        .into_inner();
     assert!(0.049 < gv5 && gv5 < 0.051);
     let gv25 = motion_profile
         .get_velocity(Time::from_nanoseconds(25_000_000_000))
         .unwrap()
-        .value;
+        .into_inner();
     assert!(0.099 < gv25 && gv25 < 0.101);
     let gv35 = motion_profile
         .get_velocity(Time::from_nanoseconds(35_000_000_000))
         .unwrap()
-        .value;
+        .into_inner();
     assert!(0.049 < gv35 && gv35 < 0.051);
     assert_eq!(
         motion_profile.get_velocity(Time::from_nanoseconds(500_000_000_000)),
-        Some(Quantity::new(0.0, MILLIMETER_PER_SECOND))
+        Some(MillimeterPerSecond::new(0.0))
     );
 }
-#[test]
+/*#[test]
 fn motion_profile_get_velocity_2() {
     let motion_profile = MotionProfile::new(
         State::new(
