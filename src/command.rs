@@ -146,15 +146,23 @@ impl SubAssign for Command {
         *self = *self - rhs;
     }
 }
-//TODO: You might be able to optimize this to be faster than just calling the Mul and Div
-//implementations since it only mutates the inside of a variant and never changes variants.
+//You might be able to optimize this a bit more with an unsafe dereference of the field since it's
+//always an f32 and the variant never changes.
 impl MulAssign<Dimensionless<f32>> for Command {
     fn mul_assign(&mut self, rhs: Dimensionless<f32>) {
-        *self = *self * rhs;
+        match self {
+            Self::Position(pos) => *pos *= rhs,
+            Self::Velocity(vel) => *vel *= rhs,
+            Self::Acceleration(acc) => *acc *= rhs,
+        }
     }
 }
 impl DivAssign<Dimensionless<f32>> for Command {
     fn div_assign(&mut self, rhs: Dimensionless<f32>) {
-        *self = *self / rhs;
+        match self {
+            Self::Position(pos) => *pos /= rhs,
+            Self::Velocity(vel) => *vel /= rhs,
+            Self::Acceleration(acc) => *acc /= rhs,
+        }
     }
 }
