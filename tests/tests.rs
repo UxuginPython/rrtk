@@ -549,7 +549,7 @@ fn motion_profile_get_velocity_2() {
         .into_inner();
     assert!(0.049 < gv35 && gv35 < 0.051);
 }
-/*#[test]
+#[test]
 fn motion_profile_get_velocity_3() {
     let motion_profile = MotionProfile::new(
         State::new(
@@ -567,16 +567,16 @@ fn motion_profile_get_velocity_3() {
     );
     assert_eq!(
         motion_profile.get_velocity(Time::from_nanoseconds(5_000_000_000)),
-        Some(Quantity::new(0.15, MILLIMETER_PER_SECOND))
+        Some(MillimeterPerSecond::new(0.15))
     );
     let gv15 = motion_profile
         .get_velocity(Time::from_nanoseconds(15_000_000_000))
         .unwrap()
-        .value;
+        .into_inner();
     assert!(0.199 < gv15 && gv15 < 0.201);
     assert_eq!(
         motion_profile.get_velocity(Time::from_nanoseconds(25_000_000_000)),
-        Some(Quantity::new(0.15, MILLIMETER_PER_SECOND))
+        Some(MillimeterPerSecond::new(0.15))
     );
 }
 #[test]
@@ -602,27 +602,27 @@ fn motion_profile_get_position() {
     let gp5 = motion_profile
         .get_position(Time::from_nanoseconds(5_000_000_000))
         .unwrap()
-        .value;
+        .into_inner();
     assert!(0.124 < gp5 && gp5 < 0.126);
     assert_eq!(
         motion_profile
             .get_position(Time::from_nanoseconds(25_000_000_000))
             .unwrap()
-            .value,
+            .into_inner(),
         2.0
     );
     assert_eq!(
         motion_profile
             .get_position(Time::from_nanoseconds(35_000_000_000))
             .unwrap()
-            .value,
+            .into_inner(),
         2.875
     );
     assert_eq!(
         motion_profile
             .get_position(Time::from_nanoseconds(500_000_000_000))
             .unwrap()
-            .value,
+            .into_inner(),
         3.0
     );
 }
@@ -646,21 +646,21 @@ fn motion_profile_get_position_2() {
         motion_profile
             .get_position(Time::from_nanoseconds(5_000_000_000))
             .unwrap()
-            .value,
+            .into_inner(),
         1.125
     );
     assert_eq!(
         motion_profile
             .get_position(Time::from_nanoseconds(25_000_000_000))
             .unwrap()
-            .value,
+            .into_inner(),
         3.0
     );
     assert_eq!(
         motion_profile
             .get_position(Time::from_nanoseconds(35_000_000_000))
             .unwrap()
-            .value,
+            .into_inner(),
         3.875
     );
 }
@@ -684,21 +684,21 @@ fn motion_profile_get_position_3() {
         motion_profile
             .get_position(Time::from_nanoseconds(5_000_000_000))
             .unwrap()
-            .value,
+            .into_inner(),
         1.625
     );
     assert_eq!(
         motion_profile
             .get_position(Time::from_nanoseconds(15_000_000_000))
             .unwrap()
-            .value,
+            .into_inner(),
         3.5
     );
     assert_eq!(
         motion_profile
             .get_position(Time::from_nanoseconds(25_000_000_000))
             .unwrap()
-            .value,
+            .into_inner(),
         5.375
     );
 }
@@ -788,7 +788,7 @@ fn motion_profile_piece() {
         MotionProfilePiece::Complete
     );
 }
-#[test]
+/*#[test]
 fn command() {
     let command = Command::new(PositionDerivative::Position, 5.0);
     assert_eq!(command.get_position(), Some(Quantity::new(5.0, MILLIMETER)));
