@@ -377,7 +377,7 @@ fn datum_div() {
     x /= 2;
     assert_eq!(x, Datum::new(Time::ZERO, 3));
 }
-/*#[test]
+#[test]
 fn pid_k_values_evaluate() {
     let kvals = PIDKValues::new(1.0, 2.0, 3.0);
     assert_eq!(kvals.evaluate(4.0, 5.0, 6.0), 32.0);
@@ -414,10 +414,18 @@ fn pid_k_values_evaluate() {
 #[test]
 fn motion_profile_get_mode() {
     let motion_profile = MotionProfile::new(
-        State::new_raw(0.0, 0.0, 0.0),
-        State::new_raw(3.0, 0.0, 0.0),
-        Quantity::new(0.1, MILLIMETER_PER_SECOND),
-        Quantity::new(0.01, MILLIMETER_PER_SECOND_SQUARED),
+        State::new(
+            Millimeter::new(0.0),
+            MillimeterPerSecond::new(0.0),
+            MillimeterPerSecondSquared::new(0.0),
+        ),
+        State::new(
+            Millimeter::new(3.0),
+            MillimeterPerSecond::new(0.0),
+            MillimeterPerSecondSquared::new(0.0),
+        ),
+        MillimeterPerSecond::new(0.1),
+        MillimeterPerSecondSquared::new(0.01),
     );
     assert_eq!(
         motion_profile.get_mode(Time::from_nanoseconds(5_000_000_000)),
@@ -432,7 +440,7 @@ fn motion_profile_get_mode() {
         Some(PositionDerivative::Acceleration)
     );
 }
-#[test]
+/*#[test]
 fn motion_profile_get_acceleration() {
     let motion_profile = MotionProfile::new(
         State::new_raw(0.0, 0.0, 0.0),
