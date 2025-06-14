@@ -443,8 +443,8 @@ fn motion_profile_get_mode() {
 /*#[test]
 fn motion_profile_get_acceleration() {
     let motion_profile = MotionProfile::new(
-        State::new_raw(0.0, 0.0, 0.0),
-        State::new_raw(3.0, 0.0, 0.0),
+        State::new(Millimeter::new(0.0), MillimeterPerSecond::new(0.0), MillimeterPerSecondSquared::new(0.0)),
+        State::new(Millimeter::new(3.0), MillimeterPerSecond::new(0.0), MillimeterPerSecondSquared::new(0.0)),
         Quantity::new(0.1, MILLIMETER_PER_SECOND),
         Quantity::new(0.01, MILLIMETER_PER_SECOND_SQUARED),
     );
@@ -472,8 +472,8 @@ fn motion_profile_get_acceleration() {
 #[test]
 fn motion_profile_get_velocity() {
     let motion_profile = MotionProfile::new(
-        State::new_raw(0.0, 0.0, 0.0),
-        State::new_raw(3.0, 0.0, 0.0),
+        State::new(Millimeter::new(0.0), MillimeterPerSecond::new(0.0), MillimeterPerSecondSquared::new(0.0)),
+        State::new(Millimeter::new(3.0), MillimeterPerSecond::new(0.0), MillimeterPerSecondSquared::new(0.0)),
         Quantity::new(0.1, MILLIMETER_PER_SECOND),
         Quantity::new(0.01, MILLIMETER_PER_SECOND_SQUARED),
     );
@@ -504,8 +504,8 @@ fn motion_profile_get_velocity() {
 #[test]
 fn motion_profile_get_velocity_2() {
     let motion_profile = MotionProfile::new(
-        State::new_raw(1.0, 0.0, 0.03),
-        State::new_raw(4.0, 0.0, 0.0),
+        State::new(Millimeter::new(1.0), MillimeterPerSecond::new(0.0), MillimeterPerSecondSquared::new(0.03)),
+        State::new(Millimeter::new(4.0), MillimeterPerSecond::new(0.0), MillimeterPerSecondSquared::new(0.0)),
         Quantity::new(0.1, MILLIMETER_PER_SECOND),
         Quantity::new(0.01, MILLIMETER_PER_SECOND_SQUARED),
     );
@@ -528,8 +528,8 @@ fn motion_profile_get_velocity_2() {
 #[test]
 fn motion_profile_get_velocity_3() {
     let motion_profile = MotionProfile::new(
-        State::new_raw(1.0, 0.1, 0.03),
-        State::new_raw(6.0, 0.1, 0.0),
+        State::new(Millimeter::new(1.0), MillimeterPerSecond::new(0.1), MillimeterPerSecondSquared::new(0.03)),
+        State::new(Millimeter::new(6.0), MillimeterPerSecond::new(0.1), MillimeterPerSecondSquared::new(0.0)),
         Quantity::new(0.2, MILLIMETER_PER_SECOND),
         Quantity::new(0.01, MILLIMETER_PER_SECOND_SQUARED),
     );
@@ -550,8 +550,8 @@ fn motion_profile_get_velocity_3() {
 #[test]
 fn motion_profile_get_position() {
     let motion_profile = MotionProfile::new(
-        State::new_raw(0.0, 0.0, 0.0),
-        State::new_raw(3.0, 0.0, 0.0),
+        State::new(Millimeter::new(0.0), MillimeterPerSecond::new(0.0), MillimeterPerSecondSquared::new(0.0)),
+        State::new(Millimeter::new(3.0), MillimeterPerSecond::new(0.0), MillimeterPerSecondSquared::new(0.0)),
         Quantity::new(0.1, MILLIMETER_PER_SECOND),
         Quantity::new(0.01, MILLIMETER_PER_SECOND_SQUARED),
     );
@@ -589,8 +589,8 @@ fn motion_profile_get_position() {
 #[test]
 fn motion_profile_get_position_2() {
     let motion_profile = MotionProfile::new(
-        State::new_raw(1.0, 0.0, 0.03),
-        State::new_raw(4.0, 0.0, 0.0),
+        State::new(Millimeter::new(1.0), MillimeterPerSecond::new(0.0), MillimeterPerSecondSquared::new(0.03)),
+        State::new(Millimeter::new(4.0), MillimeterPerSecond::new(0.0), MillimeterPerSecondSquared::new(0.0)),
         Quantity::new(0.1, MILLIMETER_PER_SECOND),
         Quantity::new(0.01, MILLIMETER_PER_SECOND_SQUARED),
     );
@@ -619,8 +619,8 @@ fn motion_profile_get_position_2() {
 #[test]
 fn motion_profile_get_position_3() {
     let motion_profile = MotionProfile::new(
-        State::new_raw(1.0, 0.1, 0.03),
-        State::new_raw(6.0, 0.1, 0.0),
+        State::new(Millimeter::new(1.0), MillimeterPerSecond::new(0.1), MillimeterPerSecondSquared::new(0.03)),
+        State::new(Millimeter::new(6.0), MillimeterPerSecond::new(0.1), MillimeterPerSecondSquared::new(0.0)),
         Quantity::new(0.2, MILLIMETER_PER_SECOND),
         Quantity::new(0.01, MILLIMETER_PER_SECOND_SQUARED),
     );
@@ -649,8 +649,8 @@ fn motion_profile_get_position_3() {
 #[test]
 fn motion_profile_chronology() {
     let motion_profile = MotionProfile::new(
-        State::new_raw(0.0, 0.0, 0.0),
-        State::new_raw(3.0, 0.0, 0.0),
+        State::new(Millimeter::new(0.0), MillimeterPerSecond::new(0.0), MillimeterPerSecondSquared::new(0.0)),
+        State::new(Millimeter::new(3.0), MillimeterPerSecond::new(0.0), MillimeterPerSecondSquared::new(0.0)),
         Quantity::new(0.1, MILLIMETER_PER_SECOND),
         Quantity::new(0.01, MILLIMETER_PER_SECOND_SQUARED),
     );
@@ -690,8 +690,8 @@ fn motion_profile_chronology() {
 #[test]
 fn motion_profile_piece() {
     let motion_profile = MotionProfile::new(
-        State::new_raw(0.0, 0.0, 0.0),
-        State::new_raw(3.0, 0.0, 0.0),
+        State::new(Millimeter::new(0.0), MillimeterPerSecond::new(0.0), MillimeterPerSecondSquared::new(0.0)),
+        State::new(Millimeter::new(3.0), MillimeterPerSecond::new(0.0), MillimeterPerSecondSquared::new(0.0)),
         Quantity::new(0.1, MILLIMETER_PER_SECOND),
         Quantity::new(0.01, MILLIMETER_PER_SECOND_SQUARED),
     );
@@ -754,9 +754,9 @@ fn command_from_state() {
         MillimeterPerSecondSquared::new(3.0),
     ));
     assert_eq!(command, Command::new(PositionDerivative::Acceleration, 3.0));
-    let command = Command::from(State::new_raw(1.0, 2.0, 0.0));
+    let command = Command::from(State::new(Millimeter::new(1.0), MillimeterPerSecond::new(2.0), MillimeterPerSecondSquared::new(0.0)));
     assert_eq!(command, Command::new(PositionDerivative::Velocity, 2.0));
-    let command = Command::from(State::new_raw(1.0, 0.0, 0.0));
+    let command = Command::from(State::new(Millimeter::new(1.0), MillimeterPerSecond::new(0.0), MillimeterPerSecondSquared::new(0.0)));
     assert_eq!(command, Command::new(PositionDerivative::Position, 1.0));
 }
 #[test]
@@ -1021,3 +1021,4 @@ fn none_getter() {
     <NoneGetter as Updatable<()>>::update(&mut getter).unwrap();
     assert_eq!(<NoneGetter as Getter<(), ()>>::get(&getter), Ok(None));
 }*/
+
