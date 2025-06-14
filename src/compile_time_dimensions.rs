@@ -7,7 +7,6 @@
 //!special struct called [`Quantity`], which is a transparent struct holding only a value at
 //!runtime.
 use super::*;
-use compile_time_dimensions::aliases::Dimensionless;
 use compile_time_integer::*;
 //This attribute currently cannot be in the actual file with #![] for some reason.
 #[rustfmt::skip]
