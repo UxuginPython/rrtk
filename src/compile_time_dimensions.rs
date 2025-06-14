@@ -7,6 +7,7 @@
 //!special struct called [`Quantity`], which is a transparent struct holding only a value at
 //!runtime.
 use super::*;
+use compile_time_dimensions::aliases::Dimensionless;
 use compile_time_integer::*;
 //This attribute currently cannot be in the actual file with #![] for some reason.
 #[rustfmt::skip]
@@ -104,12 +105,26 @@ impl<T: Add<U, Output = O>, U, O, MM: Integer, S: Integer> Add<Quantity<U, MM, S
         Quantity::from(self.2 + rhs.2)
     }
 }
+impl<T: AddAssign<U>, U, MM: Integer, S: Integer> AddAssign<Quantity<U, MM, S>>
+    for Quantity<T, MM, S>
+{
+    fn add_assign(&mut self, rhs: Quantity<U, MM, S>) {
+        self.2 += rhs.2;
+    }
+}
 impl<T: Sub<U, Output = O>, U, O, MM: Integer, S: Integer> Sub<Quantity<U, MM, S>>
     for Quantity<T, MM, S>
 {
     type Output = Quantity<O, MM, S>;
     fn sub(self, rhs: Quantity<U, MM, S>) -> Quantity<O, MM, S> {
         Quantity::from(self.2 - rhs.2)
+    }
+}
+impl<T: SubAssign<U>, U, MM: Integer, S: Integer> SubAssign<Quantity<U, MM, S>>
+    for Quantity<T, MM, S>
+{
+    fn sub_assign(&mut self, rhs: Quantity<U, MM, S>) {
+        self.2 -= rhs.2;
     }
 }
 impl<T: Mul<U, Output = O>, U, O, MM1: Integer, S1: Integer, MM2: Integer, S2: Integer>
@@ -120,12 +135,26 @@ impl<T: Mul<U, Output = O>, U, O, MM1: Integer, S1: Integer, MM2: Integer, S2: I
         Quantity::from(self.2 * rhs.2)
     }
 }
+impl<T: MulAssign<U>, U, MM: Integer, S: Integer> MulAssign<Dimensionless<U>>
+    for Quantity<T, MM, S>
+{
+    fn mul_assign(&mut self, rhs: Dimensionless<U>) {
+        self.2 *= rhs.2;
+    }
+}
 impl<T: Div<U, Output = O>, U, O, MM1: Integer, S1: Integer, MM2: Integer, S2: Integer>
     Div<Quantity<U, MM2, S2>> for Quantity<T, MM1, S1>
 {
     type Output = Quantity<O, MM1::Minus<MM2>, S1::Minus<S2>>;
     fn div(self, rhs: Quantity<U, MM2, S2>) -> Quantity<O, MM1::Minus<MM2>, S1::Minus<S2>> {
         Quantity::from(self.2 / rhs.2)
+    }
+}
+impl<T: DivAssign<U>, U, MM: Integer, S: Integer> DivAssign<Dimensionless<U>>
+    for Quantity<T, MM, S>
+{
+    fn div_assign(&mut self, rhs: Dimensionless<U>) {
+        self.2 /= rhs.2;
     }
 }
 impl<MM: Integer, S: Integer> Mul<Time> for Quantity<f32, MM, S>
