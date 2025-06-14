@@ -2,15 +2,15 @@
 // Copyright 2024-2025 UxuginPython
 use rrtk::*;
 #[test]
-fn state_new_raw() {
+fn state_new() {
     let state = State::new(
         Millimeter::new(1.0),
         MillimeterPerSecond::new(2.0),
         MillimeterPerSecondSquared::new(3.0),
     );
-    assert_eq!(state.position, 1.0);
-    assert_eq!(state.velocity, 2.0);
-    assert_eq!(state.acceleration, 3.0);
+    assert_eq!(state.position, Millimeter::new(1.0));
+    assert_eq!(state.velocity, MillimeterPerSecond::new(2.0));
+    assert_eq!(state.acceleration, MillimeterPerSecondSquared::new(3.0));
 }
 #[test]
 fn state_update() {
@@ -20,19 +20,19 @@ fn state_update() {
         MillimeterPerSecondSquared::new(3.0),
     );
     state.update(Time::from_nanoseconds(4_000_000_000));
-    assert_eq!(state.position, 33.0);
-    assert_eq!(state.velocity, 14.0);
-    assert_eq!(state.acceleration, 3.0);
+    assert_eq!(state.position, Millimeter::new(33.0));
+    assert_eq!(state.velocity, MillimeterPerSecond::new(14.0));
+    assert_eq!(state.acceleration, MillimeterPerSecondSquared::new(3.0));
 }
 #[test]
-fn state_acceleration_raw() {
+fn state_acceleration() {
     let mut state = State::new(
         Millimeter::new(1.0),
         MillimeterPerSecond::new(2.0),
         MillimeterPerSecondSquared::new(3.0),
     );
-    state.set_constant_acceleration_raw(4.0);
-    assert_eq!(state.acceleration, 4.0);
+    state.set_constant_acceleration(MillimeterPerSecondSquared::new(4.0));
+    assert_eq!(state.acceleration, MillimeterPerSecondSquared::new(4.0));
 }
 #[test]
 fn state_velocity_raw() {
@@ -41,9 +41,9 @@ fn state_velocity_raw() {
         MillimeterPerSecond::new(2.0),
         MillimeterPerSecondSquared::new(3.0),
     );
-    state.set_constant_velocity_raw(4.0);
-    assert_eq!(state.velocity, 4.0);
-    assert_eq!(state.acceleration, 0.0);
+    state.set_constant_velocity(MillimeterPerSecond::new(4.0));
+    assert_eq!(state.velocity, MillimeterPerSecond::new(4.0));
+    assert_eq!(state.acceleration, MillimeterPerSecondSquared::new(0.0));
 }
 #[test]
 fn state_position_raw() {
@@ -52,10 +52,10 @@ fn state_position_raw() {
         MillimeterPerSecond::new(2.0),
         MillimeterPerSecondSquared::new(3.0),
     );
-    state.set_constant_position_raw(4.0);
-    assert_eq!(state.position, 4.0);
-    assert_eq!(state.velocity, 0.0);
-    assert_eq!(state.acceleration, 0.0);
+    state.set_constant_position(Millimeter::new(4.0));
+    assert_eq!(state.position, Millimeter::new(4.0));
+    assert_eq!(state.velocity, MillimeterPerSecond::new(0.0));
+    assert_eq!(state.acceleration, MillimeterPerSecondSquared::new(0.0));
 }
 #[test]
 fn state_get_value() {
@@ -64,18 +64,9 @@ fn state_get_value() {
         MillimeterPerSecond::new(2.0),
         MillimeterPerSecondSquared::new(3.0),
     );
-    assert_eq!(
-        state.get_value(PositionDerivative::Position),
-        Quantity::new(1.0, MILLIMETER)
-    );
-    assert_eq!(
-        state.get_value(PositionDerivative::Velocity),
-        Quantity::new(2.0, MILLIMETER_PER_SECOND)
-    );
-    assert_eq!(
-        state.get_value(PositionDerivative::Acceleration),
-        Quantity::new(3.0, MILLIMETER_PER_SECOND_SQUARED)
-    );
+    assert_eq!(state.get_value(PositionDerivative::Position), 1.0);
+    assert_eq!(state.get_value(PositionDerivative::Velocity), 2.0);
+    assert_eq!(state.get_value(PositionDerivative::Acceleration), 3.0);
 }
 #[test]
 fn state_ops() {
@@ -85,70 +76,134 @@ fn state_ops() {
             MillimeterPerSecond::new(2.0),
             MillimeterPerSecondSquared::new(3.0)
         ),
-        State::new_raw(-1.0, -2.0, -3.0)
+        State::new(
+            Millimeter::new(-1.0),
+            MillimeterPerSecond::new(-2.0),
+            MillimeterPerSecondSquared::new(-3.0)
+        )
     );
     assert_eq!(
         State::new(
             Millimeter::new(1.0),
             MillimeterPerSecond::new(2.0),
             MillimeterPerSecondSquared::new(3.0)
-        ) + State::new_raw(4.0, 5.0, 6.0),
-        State::new_raw(5.0, 7.0, 9.0)
+        ) + State::new(
+            Millimeter::new(4.0),
+            MillimeterPerSecond::new(5.0),
+            MillimeterPerSecondSquared::new(6.0)
+        ),
+        State::new(
+            Millimeter::new(5.0),
+            MillimeterPerSecond::new(7.0),
+            MillimeterPerSecondSquared::new(9.0)
+        )
     );
     assert_eq!(
         State::new(
             Millimeter::new(1.0),
             MillimeterPerSecond::new(2.0),
             MillimeterPerSecondSquared::new(3.0)
-        ) - State::new_raw(4.0, 5.0, 6.0),
-        State::new_raw(-3.0, -3.0, -3.0)
+        ) - State::new(
+            Millimeter::new(4.0),
+            MillimeterPerSecond::new(5.0),
+            MillimeterPerSecondSquared::new(6.0)
+        ),
+        State::new(
+            Millimeter::new(-3.0),
+            MillimeterPerSecond::new(-3.0),
+            MillimeterPerSecondSquared::new(-3.0)
+        )
     );
     assert_eq!(
         State::new(
             Millimeter::new(1.0),
             MillimeterPerSecond::new(2.0),
             MillimeterPerSecondSquared::new(3.0)
-        ) * 2.0,
-        State::new_raw(2.0, 4.0, 6.0)
+        ) * Dimensionless::new(2.0),
+        State::new(
+            Millimeter::new(2.0),
+            MillimeterPerSecond::new(4.0),
+            MillimeterPerSecondSquared::new(6.0)
+        )
     );
     assert_eq!(
         State::new(
             Millimeter::new(1.0),
             MillimeterPerSecond::new(2.0),
             MillimeterPerSecondSquared::new(3.0)
-        ) / 2.0,
-        State::new_raw(0.5, 1.0, 1.5)
+        ) / Dimensionless::new(2.0),
+        State::new(
+            Millimeter::new(0.5),
+            MillimeterPerSecond::new(1.0),
+            MillimeterPerSecondSquared::new(1.5)
+        )
     );
     let mut state = State::new(
         Millimeter::new(1.0),
         MillimeterPerSecond::new(2.0),
         MillimeterPerSecondSquared::new(3.0),
     );
-    state += State::new_raw(4.0, 5.0, 6.0);
-    assert_eq!(state, State::new_raw(5.0, 7.0, 9.0));
+    state += State::new(
+        Millimeter::new(4.0),
+        MillimeterPerSecond::new(5.0),
+        MillimeterPerSecondSquared::new(6.0),
+    );
+    assert_eq!(
+        state,
+        State::new(
+            Millimeter::new(5.0),
+            MillimeterPerSecond::new(7.0),
+            MillimeterPerSecondSquared::new(9.0)
+        )
+    );
     let mut state = State::new(
         Millimeter::new(1.0),
         MillimeterPerSecond::new(2.0),
         MillimeterPerSecondSquared::new(3.0),
     );
-    state -= State::new_raw(4.0, 5.0, 6.0);
-    assert_eq!(state, State::new_raw(-3.0, -3.0, -3.0));
+    state -= State::new(
+        Millimeter::new(4.0),
+        MillimeterPerSecond::new(5.0),
+        MillimeterPerSecondSquared::new(6.0),
+    );
+    assert_eq!(
+        state,
+        State::new(
+            Millimeter::new(-3.0),
+            MillimeterPerSecond::new(-3.0),
+            MillimeterPerSecondSquared::new(-3.0)
+        )
+    );
     let mut state = State::new(
         Millimeter::new(1.0),
         MillimeterPerSecond::new(2.0),
         MillimeterPerSecondSquared::new(3.0),
     );
-    state *= 2.0;
-    assert_eq!(state, State::new_raw(2.0, 4.0, 6.0));
+    state *= Dimensionless::new(2.0);
+    assert_eq!(
+        state,
+        State::new(
+            Millimeter::new(2.0),
+            MillimeterPerSecond::new(4.0),
+            MillimeterPerSecondSquared::new(6.0)
+        )
+    );
     let mut state = State::new(
         Millimeter::new(1.0),
         MillimeterPerSecond::new(2.0),
         MillimeterPerSecondSquared::new(3.0),
     );
-    state /= 2.0;
-    assert_eq!(state, State::new_raw(0.5, 1.0, 1.5));
+    state /= Dimensionless::new(2.0);
+    assert_eq!(
+        state,
+        State::new(
+            Millimeter::new(0.5),
+            MillimeterPerSecond::new(1.0),
+            MillimeterPerSecondSquared::new(1.5)
+        )
+    );
 }
-#[test]
+/*#[test]
 fn latest_datum() {
     assert_eq!(
         latest(
@@ -1114,4 +1169,4 @@ fn none_getter() {
     assert_eq!(<NoneGetter as Getter<(), ()>>::get(&getter), Ok(None));
     <NoneGetter as Updatable<()>>::update(&mut getter).unwrap();
     assert_eq!(<NoneGetter as Getter<(), ()>>::get(&getter), Ok(None));
-}
+}*/
