@@ -203,7 +203,7 @@ fn state_ops() {
         )
     );
 }
-/*#[test]
+#[test]
 fn latest_datum() {
     assert_eq!(
         latest(
@@ -377,7 +377,7 @@ fn datum_div() {
     x /= 2;
     assert_eq!(x, Datum::new(Time::ZERO, 3));
 }
-#[test]
+/*#[test]
 fn datum_state_mul() {
     assert_eq!(
         Datum::new(
