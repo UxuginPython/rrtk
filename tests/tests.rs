@@ -377,7 +377,7 @@ fn datum_div() {
     x /= 2;
     assert_eq!(x, Datum::new(Time::ZERO, 3));
 }
-/*#[test]
+#[test]
 fn datum_state_mul() {
     assert_eq!(
         Datum::new(
@@ -388,7 +388,14 @@ fn datum_state_mul() {
                 MillimeterPerSecondSquared::new(3.0)
             )
         ) * Datum::new(Time::from_nanoseconds(1), 3.0),
-        Datum::new(Time::from_nanoseconds(1), State::new_raw(3.0, 6.0, 9.0))
+        Datum::new(
+            Time::from_nanoseconds(1),
+            State::new(
+                Millimeter::new(3.0),
+                MillimeterPerSecond::new(6.0),
+                MillimeterPerSecondSquared::new(9.0)
+            )
+        )
     );
     assert_eq!(
         Datum::new(
@@ -399,7 +406,14 @@ fn datum_state_mul() {
                 MillimeterPerSecondSquared::new(3.0)
             )
         ) * Datum::new(Time::ZERO, 3.0),
-        Datum::new(Time::from_nanoseconds(1), State::new_raw(3.0, 6.0, 9.0))
+        Datum::new(
+            Time::from_nanoseconds(1),
+            State::new(
+                Millimeter::new(3.0),
+                MillimeterPerSecond::new(6.0),
+                MillimeterPerSecondSquared::new(9.0)
+            )
+        )
     );
 
     let mut x = Datum::new(
@@ -413,7 +427,14 @@ fn datum_state_mul() {
     x *= Datum::new(Time::from_nanoseconds(1), 3.0);
     assert_eq!(
         x,
-        Datum::new(Time::from_nanoseconds(1), State::new_raw(3.0, 6.0, 9.0))
+        Datum::new(
+            Time::from_nanoseconds(1),
+            State::new(
+                Millimeter::new(3.0),
+                MillimeterPerSecond::new(6.0),
+                MillimeterPerSecondSquared::new(9.0)
+            )
+        )
     );
 
     let mut x = Datum::new(
@@ -427,7 +448,14 @@ fn datum_state_mul() {
     x *= Datum::new(Time::ZERO, 3.0);
     assert_eq!(
         x,
-        Datum::new(Time::from_nanoseconds(1), State::new_raw(3.0, 6.0, 9.0))
+        Datum::new(
+            Time::from_nanoseconds(1),
+            State::new(
+                Millimeter::new(3.0),
+                MillimeterPerSecond::new(6.0),
+                MillimeterPerSecondSquared::new(9.0)
+            )
+        )
     );
 
     assert_eq!(
@@ -439,7 +467,14 @@ fn datum_state_mul() {
                 MillimeterPerSecondSquared::new(3.0)
             )
         ) * 3.0,
-        Datum::new(Time::ZERO, State::new_raw(3.0, 6.0, 9.0))
+        Datum::new(
+            Time::ZERO,
+            State::new(
+                Millimeter::new(3.0),
+                MillimeterPerSecond::new(6.0),
+                MillimeterPerSecondSquared::new(9.0)
+            )
+        )
     );
 
     let mut x = Datum::new(
@@ -451,12 +486,22 @@ fn datum_state_mul() {
         ),
     );
     x *= 3.0;
-    assert_eq!(x, Datum::new(Time::ZERO, State::new_raw(3.0, 6.0, 9.0)));
+    assert_eq!(
+        x,
+        Datum::new(
+            Time::ZERO,
+            State::new(
+                Millimeter::new(3.0),
+                MillimeterPerSecond::new(6.0),
+                MillimeterPerSecondSquared::new(9.0)
+            )
+        )
+    );
 }
-#[test]
+/*#[test]
 fn datum_state_div() {
     assert_eq!(
-        Datum::new(Time::ZERO, State::new_raw(2.0, 4.0, 6.0))
+        Datum::new(Time::ZERO, State::new(Millimeter::new(2.0), MillimeterPerSecond::new(4.0), MillimeterPerSecondSquared::new(6.0)))
             / Datum::new(Time::from_nanoseconds(1), 2.0),
         Datum::new(
             Time::from_nanoseconds(1),
@@ -468,7 +513,7 @@ fn datum_state_div() {
         )
     );
     assert_eq!(
-        Datum::new(Time::from_nanoseconds(1), State::new_raw(2.0, 4.0, 6.0))
+        Datum::new(Time::from_nanoseconds(1), State::new(Millimeter::new(2.0), MillimeterPerSecond::new(4.0), MillimeterPerSecondSquared::new(6.0)))
             / Datum::new(Time::ZERO, 2.0),
         Datum::new(
             Time::from_nanoseconds(1),
@@ -480,7 +525,7 @@ fn datum_state_div() {
         )
     );
 
-    let mut x = Datum::new(Time::ZERO, State::new_raw(2.0, 4.0, 6.0));
+    let mut x = Datum::new(Time::ZERO, State::new(Millimeter::new(2.0), MillimeterPerSecond::new(4.0), MillimeterPerSecondSquared::new(6.0)));
     x /= Datum::new(Time::from_nanoseconds(1), 2.0);
     assert_eq!(
         x,
@@ -494,7 +539,7 @@ fn datum_state_div() {
         )
     );
 
-    let mut x = Datum::new(Time::from_nanoseconds(1), State::new_raw(2.0, 4.0, 6.0));
+    let mut x = Datum::new(Time::from_nanoseconds(1), State::new(Millimeter::new(2.0), MillimeterPerSecond::new(4.0), MillimeterPerSecondSquared::new(6.0)));
     x /= Datum::new(Time::ZERO, 2.0);
     assert_eq!(
         x,
@@ -509,7 +554,7 @@ fn datum_state_div() {
     );
 
     assert_eq!(
-        Datum::new(Time::ZERO, State::new_raw(2.0, 4.0, 6.0)) / 2.0,
+        Datum::new(Time::ZERO, State::new(Millimeter::new(2.0), MillimeterPerSecond::new(4.0), MillimeterPerSecondSquared::new(6.0))) / 2.0,
         Datum::new(
             Time::ZERO,
             State::new(
@@ -520,7 +565,7 @@ fn datum_state_div() {
         )
     );
 
-    let mut x = Datum::new(Time::ZERO, State::new_raw(2.0, 4.0, 6.0));
+    let mut x = Datum::new(Time::ZERO, State::new(Millimeter::new(2.0), MillimeterPerSecond::new(4.0), MillimeterPerSecondSquared::new(6.0)));
     x /= 2.0;
     assert_eq!(
         x,
