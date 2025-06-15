@@ -872,8 +872,8 @@ fn command_ops() {
     x /= y;
     assert_eq!(x, Command::Position(Millimeter::new(2.0)));
 }
-/*#[test]
-fn time_getter_from_stream() {
+#[test]
+fn time_getter_from_getter() {
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]
     enum Error {
         GetterNone,
@@ -1103,4 +1103,4 @@ fn none_getter() {
     assert_eq!(<NoneGetter as Getter<(), ()>>::get(&getter), Ok(None));
     <NoneGetter as Updatable<()>>::update(&mut getter).unwrap();
     assert_eq!(<NoneGetter as Getter<(), ()>>::get(&getter), Ok(None));
-}*/
+}
