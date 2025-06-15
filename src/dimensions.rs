@@ -132,9 +132,7 @@ impl Time {
         Self((value * 1_000_000_000.0) as i64)
     }
     ///Construct a `Time` from compile-time [`Quantity`](compile_time_dimensions::Quantity) seconds stored using `f32`.
-    pub fn from_compile_time_quantity(
-        value: compile_time_dimensions::Quantity<f32, Zero, OnePlus<Zero>>,
-    ) -> Self {
+    pub fn from_compile_time_quantity(value: Second<f32>) -> Self {
         Self::from_seconds(value.into_inner())
     }
     ///Get the internal `i64` nanoseconds from the `Time`.
@@ -147,10 +145,8 @@ impl Time {
     }
     ///Get the value of the `Time` as compile-time `Quantity` seconds stored using `f32`.
     ///Effectively a wrapper for [`as_seconds`](Self::as_seconds).
-    pub const fn as_compile_time_quantity(
-        self,
-    ) -> compile_time_dimensions::Quantity<f32, Zero, OnePlus<Zero>> {
-        compile_time_dimensions::Quantity::new(self.as_seconds())
+    pub const fn as_compile_time_quantity(self) -> Second<f32> {
+        Second::new(self.as_seconds())
     }
 }
 impl From<compile_time_dimensions::Quantity<f32, Zero, OnePlus<Zero>>> for Time {
