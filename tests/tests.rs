@@ -788,34 +788,28 @@ fn motion_profile_piece() {
         MotionProfilePiece::Complete
     );
 }
-/*#[test]
+#[test]
 fn command() {
     let command = Command::new(PositionDerivative::Position, 5.0);
-    assert_eq!(command.get_position(), Some(Quantity::new(5.0, MILLIMETER)));
-    assert_eq!(
-        command.get_velocity(),
-        Some(Quantity::new(0.0, MILLIMETER_PER_SECOND))
-    );
+    assert_eq!(command.get_position(), Some(Millimeter::new(5.0)));
+    assert_eq!(command.get_velocity(), Some(MillimeterPerSecond::new(0.0)));
     assert_eq!(
         command.get_acceleration(),
-        Quantity::new(0.0, MILLIMETER_PER_SECOND_SQUARED)
+        MillimeterPerSecondSquared::new(0.0)
     );
     let command = Command::new(PositionDerivative::Velocity, 5.0);
     assert_eq!(command.get_position(), None);
-    assert_eq!(
-        command.get_velocity(),
-        Some(Quantity::new(5.0, MILLIMETER_PER_SECOND))
-    );
+    assert_eq!(command.get_velocity(), Some(MillimeterPerSecond::new(5.0)));
     assert_eq!(
         command.get_acceleration(),
-        Quantity::new(0.0, MILLIMETER_PER_SECOND_SQUARED)
+        MillimeterPerSecondSquared::new(0.0)
     );
     let command = Command::new(PositionDerivative::Acceleration, 5.0);
     assert_eq!(command.get_position(), None);
     assert_eq!(command.get_velocity(), None);
     assert_eq!(
         command.get_acceleration(),
-        Quantity::new(5.0, MILLIMETER_PER_SECOND_SQUARED)
+        MillimeterPerSecondSquared::new(5.0)
     );
 }
 #[test]
@@ -841,35 +835,44 @@ fn command_from_state() {
 }
 #[test]
 fn command_ops() {
-    assert_eq!(-Command::Position(1.0), Command::Position(-1.0));
     assert_eq!(
-        Command::Position(2.0) + Command::Position(3.0),
-        Command::Position(5.0)
+        -Command::Position(Millimeter::new(1.0)),
+        Command::Position(Millimeter::new(-1.0))
     );
     assert_eq!(
-        Command::Position(3.0) - Command::Position(2.0),
-        Command::Position(1.0)
+        Command::Position(Millimeter::new(2.0)) + Command::Position(Millimeter::new(3.0)),
+        Command::Position(Millimeter::new(5.0))
     );
-    assert_eq!(Command::Position(3.0) * 2.0, Command::Position(6.0),);
-    assert_eq!(Command::Position(4.0) / 2.0, Command::Position(2.0));
-    let mut x = Command::Position(2.0);
-    let y = Command::Position(3.0);
+    assert_eq!(
+        Command::Position(Millimeter::new(3.0)) - Command::Position(Millimeter::new(2.0)),
+        Command::Position(Millimeter::new(1.0))
+    );
+    assert_eq!(
+        Command::Position(Millimeter::new(3.0)) * Dimensionless::new(2.0),
+        Command::Position(Millimeter::new(6.0))
+    );
+    assert_eq!(
+        Command::Position(Millimeter::new(4.0)) / Dimensionless::new(2.0),
+        Command::Position(Millimeter::new(2.0))
+    );
+    let mut x = Command::Position(Millimeter::new(2.0));
+    let y = Command::Position(Millimeter::new(3.0));
     x += y;
-    assert_eq!(x, Command::Position(5.0));
-    let mut x = Command::Position(3.0);
-    let y = Command::Position(2.0);
+    assert_eq!(x, Command::Position(Millimeter::new(5.0)));
+    let mut x = Command::Position(Millimeter::new(3.0));
+    let y = Command::Position(Millimeter::new(2.0));
     x -= y;
-    assert_eq!(x, Command::Position(1.0));
-    let mut x = Command::Position(3.0);
-    let y = 2.0;
+    assert_eq!(x, Command::Position(Millimeter::new(1.0)));
+    let mut x = Command::Position(Millimeter::new(3.0));
+    let y = Dimensionless::new(2.0);
     x *= y;
-    assert_eq!(x, Command::Position(6.0));
-    let mut x = Command::Position(4.0);
-    let y = 2.0;
+    assert_eq!(x, Command::Position(Millimeter::new(6.0)));
+    let mut x = Command::Position(Millimeter::new(4.0));
+    let y = Dimensionless::new(2.0);
     x /= y;
-    assert_eq!(x, Command::Position(2.0));
+    assert_eq!(x, Command::Position(Millimeter::new(2.0)));
 }
-#[test]
+/*#[test]
 fn time_getter_from_stream() {
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]
     enum Error {
