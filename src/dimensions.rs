@@ -114,7 +114,6 @@
 //!let y: Quantity = x.into();
 //!```
 use super::*;
-use compile_time_integer::*;
 ///A time stored internally in `i64` nanoseconds. Mostly interacts with other types through `f32`
 ///seconds however.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord)]
@@ -128,35 +127,35 @@ impl Time {
         Self(value)
     }
     ///Construct a `Time` from `f32` seconds.
-    pub const fn from_seconds(value: f32) -> Self {
+    pub const fn from_seconds_f32(value: f32) -> Self {
         Self((value * 1_000_000_000.0) as i64)
     }
     ///Construct a `Time` from compile-time [`Quantity`](compile_time_dimensions::Quantity) seconds stored using `f32`.
-    pub fn from_compile_time_quantity(value: Second<f32>) -> Self {
-        Self::from_seconds(value.into_inner())
+    pub fn from_seconds(value: Second<f32>) -> Self {
+        Self::from_seconds_f32(value.into_inner())
     }
     ///Get the internal `i64` nanoseconds from the `Time`.
     pub const fn as_nanoseconds(self) -> i64 {
         self.0
     }
     ///Get the value of the `Time` as `f32` seconds.
-    pub const fn as_seconds(self) -> f32 {
+    pub const fn as_seconds_f32(self) -> f32 {
         (self.0 as f32) / 1_000_000_000.0
     }
     ///Get the value of the `Time` as compile-time `Quantity` seconds stored using `f32`.
     ///Effectively a wrapper for [`as_seconds`](Self::as_seconds).
-    pub const fn as_compile_time_quantity(self) -> Second<f32> {
-        Second::new(self.as_seconds())
+    pub const fn as_seconds(self) -> Second<f32> {
+        Second::new(self.as_seconds_f32())
     }
 }
-impl From<compile_time_dimensions::Quantity<f32, Zero, OnePlus<Zero>>> for Time {
-    fn from(was: compile_time_dimensions::Quantity<f32, Zero, OnePlus<Zero>>) -> Self {
-        Self::from_compile_time_quantity(was)
+impl From<Second<f32>> for Time {
+    fn from(was: Second<f32>) -> Self {
+        Self::from_seconds(was)
     }
 }
-impl From<Time> for compile_time_dimensions::Quantity<f32, Zero, OnePlus<Zero>> {
+impl From<Time> for Second<f32> {
     fn from(was: Time) -> Self {
-        was.as_compile_time_quantity()
+        was.as_seconds()
     }
 }
 impl Add for Time {
@@ -209,32 +208,33 @@ impl DivAssign<DimensionlessInteger> for Time {
         self.0 /= rhs.0;
     }
 }
+//XXX: wut
 ///Converts the time to `f32` seconds before the operation.
 impl Mul<f32> for Time {
     type Output = f32;
     fn mul(self, rhs: f32) -> f32 {
-        self.as_seconds() * rhs
+        self.as_seconds_f32() * rhs
     }
 }
 ///Converts the time to `f32` seconds before the operation.
 impl Mul<Time> for f32 {
     type Output = Self;
     fn mul(self, rhs: Time) -> Self {
-        self * rhs.as_seconds()
+        self * rhs.as_seconds_f32()
     }
 }
 ///Converts the time to `f32` seconds before the operation.
 impl Div<f32> for Time {
     type Output = f32;
     fn div(self, rhs: f32) -> f32 {
-        self.as_seconds() / rhs
+        self.as_seconds_f32() / rhs
     }
 }
 ///Converts the time to `f32` seconds before the operation.
 impl Div<Time> for f32 {
     type Output = Self;
     fn div(self, rhs: Time) -> Self {
-        self / rhs.as_seconds()
+        self / rhs.as_seconds_f32()
     }
 }
 ///A dimensionless quantity stored as an integer. Used almost exclusively for when a time, stored

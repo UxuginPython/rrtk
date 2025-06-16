@@ -61,7 +61,7 @@ impl<G: Getter<f32, E>, E: Clone + Debug> Updatable<E> for PIDControllerStream<G
         let error = self.setpoint - process.value;
         let [int_error_addend, drv_error] = match &self.prev_error {
             Some(prev_error) => {
-                let delta_time = (process.time - prev_error.time).as_seconds();
+                let delta_time = (process.time - prev_error.time).as_seconds_f32();
                 let drv_error = (error - prev_error.value) / delta_time;
                 //Trapezoidal integral approximation is more precise than rectangular.
                 let int_error_addend = delta_time * (prev_error.value + error) / 2.0;
@@ -196,7 +196,7 @@ mod command_pid {
                     }));
                 }
                 Ok(Some(update_0)) => {
-                    let delta_time = (datum_state.time - update_0.time).as_seconds();
+                    let delta_time = (datum_state.time - update_0.time).as_seconds_f32();
                     let error_drv = (error - update_0.error) / delta_time;
                     let error_int_addend = (update_0.error + error) / 2.0 * delta_time;
                     match &update_0.maybe_update_1 {
@@ -352,7 +352,7 @@ where
         let prev_time = self
             .update_time
             .expect("update_time must be Some if value is");
-        let delta_time = (output.time - prev_time).as_seconds();
+        let delta_time = (output.time - prev_time).as_seconds_f32();
         let lambda = 1.0 - powf(1.0 - self.smoothing_constant, delta_time);
         let value = prev_value.value * (1.0 - lambda) + output.value * lambda;
         self.value = Ok(Some(Datum::new(output.time, value)));

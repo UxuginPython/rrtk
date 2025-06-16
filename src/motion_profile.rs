@@ -168,20 +168,17 @@ impl MotionProfile {
             );
         } else if t < self.t2 {
             return Some(
-                self.max_acc
-                    * (self.t1.as_compile_time_quantity()
-                        * (-self.t1 / DimensionlessInteger(2) + t))
+                self.max_acc * (self.t1.as_seconds() * (-self.t1 / DimensionlessInteger(2) + t))
                     + self.start_vel * t
                     + self.start_pos,
             );
         } else if t < self.t3 {
             return Some(
                 self.max_acc
-                    * (self.t1.as_compile_time_quantity()
-                        * (-self.t1 / DimensionlessInteger(2) + self.t2))
+                    * (self.t1.as_seconds() * (-self.t1 / DimensionlessInteger(2) + self.t2))
                     - Dimensionless::new(0.5)
                         * self.max_acc
-                        * ((t - self.t2).as_compile_time_quantity()
+                        * ((t - self.t2).as_seconds()
                             * (t - DimensionlessInteger(2) * self.t1 - self.t2))
                     + self.start_vel * t
                     + self.start_pos,

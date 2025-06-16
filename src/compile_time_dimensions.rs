@@ -163,13 +163,13 @@ where
 {
     type Output = Quantity<f32, MM, S::Plus<OnePlus<Zero>>>;
     fn mul(self, rhs: Time) -> Quantity<f32, MM, S::Plus<OnePlus<Zero>>> {
-        self * rhs.as_compile_time_quantity()
+        self * rhs.as_seconds()
     }
 }
 impl<MM: Integer, S: Integer> Mul<Quantity<f32, MM, S>> for Time {
     type Output = Quantity<f32, MM, S::PlusOne>;
     fn mul(self, rhs: Quantity<f32, MM, S>) -> Quantity<f32, MM, S::PlusOne> {
-        self.as_compile_time_quantity() * rhs
+        self.as_seconds() * rhs
     }
 }
 impl<MM: Integer, S: Integer> Div<Time> for Quantity<f32, MM, S>
@@ -179,7 +179,7 @@ where
 {
     type Output = Quantity<f32, MM, S::Minus<OnePlus<Zero>>>;
     fn div(self, rhs: Time) -> Quantity<f32, MM, S::Minus<OnePlus<Zero>>> {
-        self / rhs.as_compile_time_quantity()
+        self / rhs.as_seconds()
     }
 }
 impl<MM: Integer, S: Integer> Div<Quantity<f32, MM, S>> for Time
@@ -192,7 +192,7 @@ where
         self,
         rhs: Quantity<f32, MM, S>,
     ) -> Quantity<f32, MM, <<S as Integer>::Negative as Integer>::PlusOne> {
-        self.as_compile_time_quantity() / rhs
+        self.as_seconds() / rhs
     }
 }
 impl<T: fmt::Display, MM: Integer, S: Integer> fmt::Display for Quantity<T, MM, S> {

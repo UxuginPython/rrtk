@@ -259,7 +259,7 @@ fn velocity_to_state() {
         fn get(&self) -> Output<MillimeterPerSecond<f32>, ()> {
             Ok(Some(Datum::new(
                 self.time,
-                MillimeterPerSecond::new(self.time.as_seconds()),
+                MillimeterPerSecond::new(self.time.as_seconds_f32()),
             )))
         }
     }
@@ -307,7 +307,7 @@ fn position_to_state() {
         fn get(&self) -> Output<Millimeter<f32>, ()> {
             Ok(Some(Datum::new(
                 self.time,
-                Millimeter::new(self.time.as_seconds()),
+                Millimeter::new(self.time.as_seconds_f32()),
             )))
         }
     }
@@ -975,7 +975,7 @@ fn derivative_stream() {
         fn get(&self) -> Output<Second<f32>, DummyError> {
             Ok(Some(Datum::new(
                 self.time * DimensionlessInteger(2),
-                (self.time * DimensionlessInteger(3)).as_compile_time_quantity(),
+                (self.time * DimensionlessInteger(3)).as_seconds(),
             )))
         }
     }
@@ -1053,7 +1053,7 @@ fn pid_controller_stream() {
         fn get(&self) -> Output<f32, DummyError> {
             Ok(Some(Datum::new(
                 self.time,
-                (self.time / DimensionlessInteger(2)).as_seconds(),
+                (self.time / DimensionlessInteger(2)).as_seconds_f32(),
             )))
         }
     }
