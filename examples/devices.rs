@@ -6,7 +6,11 @@
 #[cfg(all(feature = "devices", feature = "alloc"))]
 const COMMAND: Command = Command::new(PositionDerivative::Position, 5.0);
 #[cfg(all(feature = "devices", feature = "alloc"))]
-const STATE: State = State::new_raw(0.0, 0.0, 0.0);
+const STATE: State = State::new(
+    Millimeter::new(0.0),
+    MillimeterPerSecond::new(0.0),
+    MillimeterPerSecondSquared::new(0.0),
+);
 #[cfg(all(feature = "devices", feature = "alloc"))]
 const K_VALUES: PositionDerivativeDependentPIDKValues = PositionDerivativeDependentPIDKValues::new(
     PIDKValues::new(1.0, 0.01, 0.1),
