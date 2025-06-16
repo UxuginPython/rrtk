@@ -194,8 +194,16 @@ mod tests {
     #[test]
     fn motion_profile_new_1() {
         let motion_profile = MotionProfile::new(
-            State::new_raw(0.0, 0.0, 0.0),
-            State::new_raw(3.0, 0.0, 0.0),
+            State::new(
+                Millimeter::new(0.0),
+                MillimeterPerSecond::new(0.0),
+                MillimeterPerSecondSquared::new(0.0),
+            ),
+            State::new(
+                Millimeter::new(3.0),
+                MillimeterPerSecond::new(0.0),
+                MillimeterPerSecondSquared::new(0.0),
+            ),
             MillimeterPerSecond::new(0.1),
             MillimeterPerSecondSquared::new(0.01),
         );
@@ -213,8 +221,16 @@ mod tests {
     #[test]
     fn motion_profile_new_2() {
         let motion_profile = MotionProfile::new(
-            State::new_raw(1.0, 0.0, 0.0),
-            State::new_raw(3.0, 0.0, 0.0),
+            State::new(
+                Millimeter::new(1.0),
+                MillimeterPerSecond::new(0.0),
+                MillimeterPerSecondSquared::new(0.0),
+            ),
+            State::new(
+                Millimeter::new(3.0),
+                MillimeterPerSecond::new(0.0),
+                MillimeterPerSecondSquared::new(0.0),
+            ),
             MillimeterPerSecond::new(0.1),
             MillimeterPerSecondSquared::new(0.01),
         );
@@ -232,8 +248,16 @@ mod tests {
     #[test]
     fn motion_profile_new_3() {
         let motion_profile = MotionProfile::new(
-            State::new_raw(0.0, 0.1, 0.0),
-            State::new_raw(3.0, 0.0, 0.0),
+            State::new(
+                Millimeter::new(0.0),
+                MillimeterPerSecond::new(0.1),
+                MillimeterPerSecondSquared::new(0.0),
+            ),
+            State::new(
+                Millimeter::new(3.0),
+                MillimeterPerSecond::new(0.0),
+                MillimeterPerSecondSquared::new(0.0),
+            ),
             MillimeterPerSecond::new(0.1),
             MillimeterPerSecondSquared::new(0.01),
         );
@@ -254,8 +278,16 @@ mod tests {
     #[test]
     fn motion_profile_new_4() {
         let motion_profile = MotionProfile::new(
-            State::new_raw(0.0, 0.0, 0.01),
-            State::new_raw(3.0, 0.0, 0.0),
+            State::new(
+                Millimeter::new(0.0),
+                MillimeterPerSecond::new(0.0),
+                MillimeterPerSecondSquared::new(0.01),
+            ),
+            State::new(
+                Millimeter::new(3.0),
+                MillimeterPerSecond::new(0.0),
+                MillimeterPerSecondSquared::new(0.0),
+            ),
             MillimeterPerSecond::new(0.1),
             MillimeterPerSecondSquared::new(0.01),
         );
@@ -273,8 +305,16 @@ mod tests {
     #[test]
     fn motion_profile_new_5() {
         let motion_profile = MotionProfile::new(
-            State::new_raw(0.0, 0.0, 0.0),
-            State::new_raw(6.0, 0.0, 0.0),
+            State::new(
+                Millimeter::new(0.0),
+                MillimeterPerSecond::new(0.0),
+                MillimeterPerSecondSquared::new(0.0),
+            ),
+            State::new(
+                Millimeter::new(6.0),
+                MillimeterPerSecond::new(0.0),
+                MillimeterPerSecondSquared::new(0.0),
+            ),
             MillimeterPerSecond::new(0.2),
             MillimeterPerSecondSquared::new(0.01),
         );
@@ -295,8 +335,16 @@ mod tests {
     #[test]
     fn motion_profile_new_6() {
         let motion_profile = MotionProfile::new(
-            State::new_raw(0.0, 0.0, 0.0),
-            State::new_raw(3.0, 0.0, 0.0),
+            State::new(
+                Millimeter::new(0.0),
+                MillimeterPerSecond::new(0.0),
+                MillimeterPerSecondSquared::new(0.0),
+            ),
+            State::new(
+                Millimeter::new(3.0),
+                MillimeterPerSecond::new(0.0),
+                MillimeterPerSecondSquared::new(0.0),
+            ),
             MillimeterPerSecond::new(0.1),
             MillimeterPerSecondSquared::new(0.02),
         );
@@ -317,8 +365,16 @@ mod tests {
     #[test]
     fn motion_profile_new_7() {
         let motion_profile = MotionProfile::new(
-            State::new_raw(0.0, 0.0, 0.0),
-            State::new_raw(-3.0, 0.0, 0.0),
+            State::new(
+                Millimeter::new(0.0),
+                MillimeterPerSecond::new(0.0),
+                MillimeterPerSecondSquared::new(0.0),
+            ),
+            State::new(
+                Millimeter::new(-3.0),
+                MillimeterPerSecond::new(0.0),
+                MillimeterPerSecondSquared::new(0.0),
+            ),
             MillimeterPerSecond::new(0.1),
             MillimeterPerSecondSquared::new(0.01),
         );
