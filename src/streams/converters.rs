@@ -447,8 +447,7 @@ mod position_to_state {
 //TODO: Decide if you want to make this and DimensionRemover use where clauses too. It makes it a
 //bit less clear what's a real type vs what's just a compile-time integer, but it's more in line
 //with the other types and might be a bit easier to read.
-///Adds a compile-time [`Quantity`](compile_time_dimensions::Quantity) wrapper with a specific unit
-///around a number.
+///Adds a [`Quantity`] wrapper with a specific unit around a number.
 pub struct DimensionAdder<T, MM: Integer, S: Integer, G: Getter<T, E>, E: Clone + Debug> {
     input: G,
     phantom_t: PhantomData<T>,
@@ -489,8 +488,7 @@ impl<T, MM: Integer, S: Integer, G: Getter<T, E>, E: Clone + Debug> Updatable<E>
         Ok(())
     }
 }
-///Gets the inner number from the output of a getter returning compile-time
-///[`Quantity`](compile_time_dimensions::Quantity).
+///Gets the inner number from the output of a getter returning a [`Quantity`].
 pub struct DimensionRemover<
     T,
     MM: Integer,
