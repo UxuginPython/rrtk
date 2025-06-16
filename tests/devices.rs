@@ -13,25 +13,60 @@ fn terminal() {
     );
     term1
         .borrow_mut()
-        .set(Datum::new(Time::ZERO, State::new_raw(1.0, 2.0, 3.0)))
+        .set(Datum::new(
+            Time::ZERO,
+            State::new(
+                Millimeter::new(1.0),
+                MillimeterPerSecond::new(2.0),
+                MillimeterPerSecondSquared::new(3.0),
+            ),
+        ))
         .unwrap();
     assert_eq!(
         term1.borrow().get(),
-        Ok(Some(Datum::new(Time::ZERO, State::new_raw(1.0, 2.0, 3.0))))
+        Ok(Some(Datum::new(
+            Time::ZERO,
+            State::new(
+                Millimeter::new(1.0),
+                MillimeterPerSecond::new(2.0),
+                MillimeterPerSecondSquared::new(3.0)
+            )
+        )))
     );
     let term2 = Terminal::<()>::new();
     connect(&term1, &term2);
     assert_eq!(
         term2.borrow().get(),
-        Ok(Some(Datum::new(Time::ZERO, State::new_raw(1.0, 2.0, 3.0))))
+        Ok(Some(Datum::new(
+            Time::ZERO,
+            State::new(
+                Millimeter::new(1.0),
+                MillimeterPerSecond::new(2.0),
+                MillimeterPerSecondSquared::new(3.0)
+            )
+        )))
     );
     term2
         .borrow_mut()
-        .set(Datum::new(Time::ZERO, State::new_raw(4.0, 5.0, 6.0)))
+        .set(Datum::new(
+            Time::ZERO,
+            State::new(
+                Millimeter::new(4.0),
+                MillimeterPerSecond::new(5.0),
+                MillimeterPerSecondSquared::new(6.0),
+            ),
+        ))
         .unwrap();
     assert_eq!(
         term1.borrow().get(),
-        Ok(Some(Datum::new(Time::ZERO, State::new_raw(2.5, 3.5, 4.5))))
+        Ok(Some(Datum::new(
+            Time::ZERO,
+            State::new(
+                Millimeter::new(2.5),
+                MillimeterPerSecond::new(3.5),
+                MillimeterPerSecondSquared::new(4.5)
+            )
+        )))
     );
     term1
         .borrow_mut()
@@ -49,7 +84,14 @@ fn invert() {
     let terminal2 = Terminal::<()>::new();
     terminal1
         .borrow_mut()
-        .set(Datum::new(Time::ZERO, State::new_raw(1.0, 2.0, 3.0)))
+        .set(Datum::new(
+            Time::ZERO,
+            State::new(
+                Millimeter::new(1.0),
+                MillimeterPerSecond::new(2.0),
+                MillimeterPerSecondSquared::new(3.0),
+            ),
+        ))
         .unwrap();
     terminal1
         .borrow_mut()
@@ -63,7 +105,11 @@ fn invert() {
             .unwrap()
             .unwrap()
             .value,
-        State::new_raw(1.0, 2.0, 3.0)
+        State::new(
+            Millimeter::new(1.0),
+            MillimeterPerSecond::new(2.0),
+            MillimeterPerSecondSquared::new(3.0)
+        )
     );
     assert_eq!(
         <rrtk::Terminal<'_, ()> as rrtk::Getter<Command, ()>>::get(&terminal1.borrow())
@@ -77,7 +123,11 @@ fn invert() {
             .unwrap()
             .unwrap()
             .value,
-        State::new_raw(-1.0, -2.0, -3.0)
+        State::new(
+            Millimeter::new(-1.0),
+            MillimeterPerSecond::new(-2.0),
+            MillimeterPerSecondSquared::new(-3.0)
+        )
     );
     assert_eq!(
         <rrtk::Terminal<'_, ()> as rrtk::Getter<Command, ()>>::get(&terminal2.borrow())
@@ -92,7 +142,14 @@ fn invert() {
     let terminal2 = Terminal::<()>::new();
     terminal2
         .borrow_mut()
-        .set(Datum::new(Time::ZERO, State::new_raw(-1.0, -2.0, -3.0)))
+        .set(Datum::new(
+            Time::ZERO,
+            State::new(
+                Millimeter::new(-1.0),
+                MillimeterPerSecond::new(-2.0),
+                MillimeterPerSecondSquared::new(-3.0),
+            ),
+        ))
         .unwrap();
     terminal2
         .borrow_mut()
@@ -106,7 +163,11 @@ fn invert() {
             .unwrap()
             .unwrap()
             .value,
-        State::new_raw(1.0, 2.0, 3.0)
+        State::new(
+            Millimeter::new(1.0),
+            MillimeterPerSecond::new(2.0),
+            MillimeterPerSecondSquared::new(3.0)
+        )
     );
     assert_eq!(
         <rrtk::Terminal<'_, ()> as rrtk::Getter<Command, ()>>::get(&terminal1.borrow())
@@ -120,7 +181,11 @@ fn invert() {
             .unwrap()
             .unwrap()
             .value,
-        State::new_raw(-1.0, -2.0, -3.0)
+        State::new(
+            Millimeter::new(-1.0),
+            MillimeterPerSecond::new(-2.0),
+            MillimeterPerSecondSquared::new(-3.0)
+        )
     );
     assert_eq!(
         <rrtk::Terminal<'_, ()> as rrtk::Getter<Command, ()>>::get(&terminal2.borrow())
@@ -135,11 +200,25 @@ fn invert() {
     let terminal2 = Terminal::<()>::new();
     terminal1
         .borrow_mut()
-        .set(Datum::new(Time::ZERO, State::new_raw(1.0, 2.0, 3.0)))
+        .set(Datum::new(
+            Time::ZERO,
+            State::new(
+                Millimeter::new(1.0),
+                MillimeterPerSecond::new(2.0),
+                MillimeterPerSecondSquared::new(3.0),
+            ),
+        ))
         .unwrap();
     terminal2
         .borrow_mut()
-        .set(Datum::new(Time::ZERO, State::new_raw(-4.0, -5.0, -6.0)))
+        .set(Datum::new(
+            Time::ZERO,
+            State::new(
+                Millimeter::new(-4.0),
+                MillimeterPerSecond::new(-5.0),
+                MillimeterPerSecondSquared::new(-6.0),
+            ),
+        ))
         .unwrap();
     connect(invert.get_terminal_1(), &terminal1);
     connect(invert.get_terminal_2(), &terminal2);
@@ -149,10 +228,10 @@ fn invert() {
             .unwrap()
             .unwrap()
             .value,
-        State::new_raw(
-            (((1.0 + 4.0) / 2.0) + 1.0) / 2.0,
-            ((2.0 + 5.0) / 2.0 + 2.0) / 2.0,
-            ((3.0 + 6.0) / 2.0 + 3.0) / 2.0
+        State::new(
+            Millimeter::new((((1.0 + 4.0) / 2.0) + 1.0) / 2.0),
+            MillimeterPerSecond::new(((2.0 + 5.0) / 2.0 + 2.0) / 2.0),
+            MillimeterPerSecondSquared::new(((3.0 + 6.0) / 2.0 + 3.0) / 2.0)
         )
     );
     assert_eq!(
@@ -160,10 +239,10 @@ fn invert() {
             .unwrap()
             .unwrap()
             .value,
-        State::new_raw(
-            -(((1.0 + 4.0) / 2.0) + 4.0) / 2.0,
-            -((2.0 + 5.0) / 2.0 + 5.0) / 2.0,
-            -((3.0 + 6.0) / 2.0 + 6.0) / 2.0
+        State::new(
+            Millimeter::new(-(((1.0 + 4.0) / 2.0) + 4.0) / 2.0),
+            MillimeterPerSecond::new(-((2.0 + 5.0) / 2.0 + 5.0) / 2.0),
+            MillimeterPerSecondSquared::new(-((3.0 + 6.0) / 2.0 + 6.0) / 2.0)
         )
     );
 }
@@ -183,7 +262,14 @@ fn gear_train_2() {
     assert_eq!(terminal2.borrow_mut().get(), Ok(None::<Datum<Command>>));
     terminal1
         .borrow_mut()
-        .set(Datum::new(Time::ZERO, State::new_raw(3.0, 6.0, 9.0)))
+        .set(Datum::new(
+            Time::ZERO,
+            State::new(
+                Millimeter::new(3.0),
+                MillimeterPerSecond::new(6.0),
+                MillimeterPerSecondSquared::new(9.0),
+            ),
+        ))
         .unwrap();
     terminal1
         .borrow_mut()
@@ -194,7 +280,11 @@ fn gear_train_2() {
         terminal2.borrow_mut().get(),
         Ok(Some(Datum::new(
             Time::ZERO,
-            State::new_raw(-1.0, -2.0, -3.0)
+            State::new(
+                Millimeter::new(-1.0),
+                MillimeterPerSecond::new(-2.0),
+                MillimeterPerSecondSquared::new(-3.0)
+            )
         )))
     );
     assert_eq!(
@@ -213,7 +303,14 @@ fn gear_train_odd() {
     assert_eq!(terminal2.borrow_mut().get(), Ok(None::<Datum<Command>>));
     terminal1
         .borrow_mut()
-        .set(Datum::new(Time::ZERO, State::new_raw(2.0, 4.0, 6.0)))
+        .set(Datum::new(
+            Time::ZERO,
+            State::new(
+                Millimeter::new(2.0),
+                MillimeterPerSecond::new(4.0),
+                MillimeterPerSecondSquared::new(6.0),
+            ),
+        ))
         .unwrap();
     terminal1
         .borrow_mut()
@@ -222,7 +319,14 @@ fn gear_train_odd() {
     gear_train.update().unwrap();
     assert_eq!(
         terminal2.borrow_mut().get(),
-        Ok(Some(Datum::new(Time::ZERO, State::new_raw(3.0, 6.0, 9.0))))
+        Ok(Some(Datum::new(
+            Time::ZERO,
+            State::new(
+                Millimeter::new(3.0),
+                MillimeterPerSecond::new(6.0),
+                MillimeterPerSecondSquared::new(9.0)
+            )
+        )))
     );
     assert_eq!(
         terminal2.borrow_mut().get(),
@@ -240,7 +344,14 @@ fn gear_train_even() {
     assert_eq!(terminal2.borrow_mut().get(), Ok(None::<Datum<Command>>));
     terminal1
         .borrow_mut()
-        .set(Datum::new(Time::ZERO, State::new_raw(2.0, 4.0, 6.0)))
+        .set(Datum::new(
+            Time::ZERO,
+            State::new(
+                Millimeter::new(2.0),
+                MillimeterPerSecond::new(4.0),
+                MillimeterPerSecondSquared::new(6.0),
+            ),
+        ))
         .unwrap();
     terminal1
         .borrow_mut()
@@ -251,7 +362,11 @@ fn gear_train_even() {
         terminal2.borrow_mut().get(),
         Ok(Some(Datum::new(
             Time::ZERO,
-            State::new_raw(-3.0, -6.0, -9.0)
+            State::new(
+                Millimeter::new(-3.0),
+                MillimeterPerSecond::new(-6.0),
+                MillimeterPerSecondSquared::new(-9.0)
+            )
         )))
     );
     assert_eq!(
@@ -267,7 +382,11 @@ fn gear_train_multiple_inputs() {
         .borrow_mut()
         .set(Datum::new(
             Time::from_nanoseconds(3),
-            State::new_raw(2.0, 4.0, 6.0),
+            State::new(
+                Millimeter::new(2.0),
+                MillimeterPerSecond::new(4.0),
+                MillimeterPerSecondSquared::new(6.0),
+            ),
         ))
         .unwrap();
     gear_train
@@ -283,7 +402,11 @@ fn gear_train_multiple_inputs() {
         .borrow_mut()
         .set(Datum::new(
             Time::from_nanoseconds(2),
-            State::new_raw(-2.0, -4.0, -6.0),
+            State::new(
+                Millimeter::new(-2.0),
+                MillimeterPerSecond::new(-4.0),
+                MillimeterPerSecondSquared::new(-6.0),
+            ),
         ))
         .unwrap();
     gear_train
@@ -299,7 +422,11 @@ fn gear_train_multiple_inputs() {
         gear_train.get_terminal_1().borrow().get(),
         Ok(Some(Datum::new(
             Time::from_nanoseconds(3),
-            State::new_raw(2.4, 4.8, 7.2)
+            State::new(
+                Millimeter::new(2.4),
+                MillimeterPerSecond::new(4.8),
+                MillimeterPerSecondSquared::new(7.2)
+            )
         )))
     );
     assert_eq!(
@@ -313,7 +440,11 @@ fn gear_train_multiple_inputs() {
         gear_train.get_terminal_2().borrow().get(),
         Ok(Some(Datum::new(
             Time::from_nanoseconds(3),
-            State::new_raw(-1.2, -2.4, -3.6)
+            State::new(
+                Millimeter::new(-1.2),
+                MillimeterPerSecond::new(-2.4),
+                MillimeterPerSecondSquared::new(-3.6)
+            )
         )))
     );
     assert_eq!(
@@ -332,11 +463,25 @@ fn axle() {
     let terminal3 = Terminal::new();
     terminal1
         .borrow_mut()
-        .set(Datum::new(Time::ZERO, State::new_raw(1.0, 2.0, 3.0)))
+        .set(Datum::new(
+            Time::ZERO,
+            State::new(
+                Millimeter::new(1.0),
+                MillimeterPerSecond::new(2.0),
+                MillimeterPerSecondSquared::new(3.0),
+            ),
+        ))
         .unwrap();
     terminal2
         .borrow_mut()
-        .set(Datum::new(Time::ZERO, State::new_raw(4.0, 5.0, 6.0)))
+        .set(Datum::new(
+            Time::ZERO,
+            State::new(
+                Millimeter::new(4.0),
+                MillimeterPerSecond::new(5.0),
+                MillimeterPerSecondSquared::new(6.0),
+            ),
+        ))
         .unwrap();
     terminal1
         .borrow_mut()
@@ -351,10 +496,10 @@ fn axle() {
             .unwrap()
             .unwrap()
             .value,
-        State::new_raw(
-            ((1.0 + 4.0) / 2.0 + 1.0) / 2.0,
-            ((2.0 + 5.0) / 2.0 + 2.0) / 2.0,
-            ((3.0 + 6.0) / 2.0 + 3.0) / 2.0
+        State::new(
+            Millimeter::new(((1.0 + 4.0) / 2.0 + 1.0) / 2.0),
+            MillimeterPerSecond::new(((2.0 + 5.0) / 2.0 + 2.0) / 2.0),
+            MillimeterPerSecondSquared::new(((3.0 + 6.0) / 2.0 + 3.0) / 2.0)
         )
     );
     assert_eq!(
@@ -369,10 +514,10 @@ fn axle() {
             .unwrap()
             .unwrap()
             .value,
-        State::new_raw(
-            ((1.0 + 4.0) / 2.0 + 4.0) / 2.0,
-            ((2.0 + 5.0) / 2.0 + 5.0) / 2.0,
-            ((3.0 + 6.0) / 2.0 + 6.0) / 2.0
+        State::new(
+            Millimeter::new(((1.0 + 4.0) / 2.0 + 4.0) / 2.0),
+            MillimeterPerSecond::new(((2.0 + 5.0) / 2.0 + 5.0) / 2.0),
+            MillimeterPerSecondSquared::new(((3.0 + 6.0) / 2.0 + 6.0) / 2.0)
         )
     );
     assert_eq!(
@@ -387,7 +532,11 @@ fn axle() {
             .unwrap()
             .unwrap()
             .value,
-        State::new_raw(2.5, 3.5, 4.5)
+        State::new(
+            Millimeter::new(2.5),
+            MillimeterPerSecond::new(3.5),
+            MillimeterPerSecondSquared::new(4.5)
+        )
     );
     assert_eq!(
         <rrtk::Terminal<'_, ()> as rrtk::Getter<Command, ()>>::get(&terminal3.borrow())
@@ -405,15 +554,36 @@ fn differential() {
     let terminal_sum = Terminal::new();
     terminal1
         .borrow_mut()
-        .set(Datum::new(Time::ZERO, State::new_raw(2.0, 2.0, 2.0)))
+        .set(Datum::new(
+            Time::ZERO,
+            State::new(
+                Millimeter::new(2.0),
+                MillimeterPerSecond::new(2.0),
+                MillimeterPerSecondSquared::new(2.0),
+            ),
+        ))
         .unwrap();
     terminal2
         .borrow_mut()
-        .set(Datum::new(Time::ZERO, State::new_raw(3.0, 3.0, 3.0)))
+        .set(Datum::new(
+            Time::ZERO,
+            State::new(
+                Millimeter::new(3.0),
+                MillimeterPerSecond::new(3.0),
+                MillimeterPerSecondSquared::new(3.0),
+            ),
+        ))
         .unwrap();
     terminal_sum
         .borrow_mut()
-        .set(Datum::new(Time::ZERO, State::new_raw(4.0, 4.0, 4.0)))
+        .set(Datum::new(
+            Time::ZERO,
+            State::new(
+                Millimeter::new(4.0),
+                MillimeterPerSecond::new(4.0),
+                MillimeterPerSecondSquared::new(4.0),
+            ),
+        ))
         .unwrap();
     connect(differential.get_side_1(), &terminal1);
     connect(differential.get_side_2(), &terminal2);
@@ -431,21 +601,33 @@ fn differential() {
             .unwrap()
             .unwrap()
             .value,
-        State::new_raw(TERM_1, TERM_1, TERM_1)
+        State::new(
+            Millimeter::new(TERM_1),
+            MillimeterPerSecond::new(TERM_1),
+            MillimeterPerSecondSquared::new(TERM_1)
+        )
     );
     assert_eq!(
         <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal2.borrow())
             .unwrap()
             .unwrap()
             .value,
-        State::new_raw(TERM_2, TERM_2, TERM_2)
+        State::new(
+            Millimeter::new(TERM_2),
+            MillimeterPerSecond::new(TERM_2),
+            MillimeterPerSecondSquared::new(TERM_2)
+        )
     );
     assert_eq!(
         <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal_sum.borrow())
             .unwrap()
             .unwrap()
             .value,
-        State::new_raw(TERM_SUM, TERM_SUM, TERM_SUM)
+        State::new(
+            Millimeter::new(TERM_SUM),
+            MillimeterPerSecond::new(TERM_SUM),
+            MillimeterPerSecondSquared::new(TERM_SUM)
+        )
     );
 }
 #[test]
@@ -456,15 +638,36 @@ fn differential_distrust_side_1() {
     let terminal_sum = Terminal::new();
     terminal1
         .borrow_mut()
-        .set(Datum::new(Time::ZERO, State::new_raw(2.0, 2.0, 2.0)))
+        .set(Datum::new(
+            Time::ZERO,
+            State::new(
+                Millimeter::new(2.0),
+                MillimeterPerSecond::new(2.0),
+                MillimeterPerSecondSquared::new(2.0),
+            ),
+        ))
         .unwrap();
     terminal2
         .borrow_mut()
-        .set(Datum::new(Time::ZERO, State::new_raw(3.0, 3.0, 3.0)))
+        .set(Datum::new(
+            Time::ZERO,
+            State::new(
+                Millimeter::new(3.0),
+                MillimeterPerSecond::new(3.0),
+                MillimeterPerSecondSquared::new(3.0),
+            ),
+        ))
         .unwrap();
     terminal_sum
         .borrow_mut()
-        .set(Datum::new(Time::ZERO, State::new_raw(4.0, 4.0, 4.0)))
+        .set(Datum::new(
+            Time::ZERO,
+            State::new(
+                Millimeter::new(4.0),
+                MillimeterPerSecond::new(4.0),
+                MillimeterPerSecondSquared::new(4.0),
+            ),
+        ))
         .unwrap();
     connect(differential.get_side_1(), &terminal1);
     connect(differential.get_side_2(), &terminal2);
@@ -482,21 +685,33 @@ fn differential_distrust_side_1() {
             .unwrap()
             .unwrap()
             .value,
-        State::new_raw(TERM_1, TERM_1, TERM_1)
+        State::new(
+            Millimeter::new(TERM_1),
+            MillimeterPerSecond::new(TERM_1),
+            MillimeterPerSecondSquared::new(TERM_1)
+        )
     );
     assert_eq!(
         <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal2.borrow())
             .unwrap()
             .unwrap()
             .value,
-        State::new_raw(TERM_2, TERM_2, TERM_2)
+        State::new(
+            Millimeter::new(TERM_2),
+            MillimeterPerSecond::new(TERM_2),
+            MillimeterPerSecondSquared::new(TERM_2)
+        )
     );
     assert_eq!(
         <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal_sum.borrow())
             .unwrap()
             .unwrap()
             .value,
-        State::new_raw(TERM_SUM, TERM_SUM, TERM_SUM)
+        State::new(
+            Millimeter::new(TERM_SUM),
+            MillimeterPerSecond::new(TERM_SUM),
+            MillimeterPerSecondSquared::new(TERM_SUM)
+        )
     );
 }
 #[test]
@@ -507,15 +722,36 @@ fn differential_distrust_side_2() {
     let terminal_sum = Terminal::new();
     terminal1
         .borrow_mut()
-        .set(Datum::new(Time::ZERO, State::new_raw(2.0, 2.0, 2.0)))
+        .set(Datum::new(
+            Time::ZERO,
+            State::new(
+                Millimeter::new(2.0),
+                MillimeterPerSecond::new(2.0),
+                MillimeterPerSecondSquared::new(2.0),
+            ),
+        ))
         .unwrap();
     terminal2
         .borrow_mut()
-        .set(Datum::new(Time::ZERO, State::new_raw(3.0, 3.0, 3.0)))
+        .set(Datum::new(
+            Time::ZERO,
+            State::new(
+                Millimeter::new(3.0),
+                MillimeterPerSecond::new(3.0),
+                MillimeterPerSecondSquared::new(3.0),
+            ),
+        ))
         .unwrap();
     terminal_sum
         .borrow_mut()
-        .set(Datum::new(Time::ZERO, State::new_raw(4.0, 4.0, 4.0)))
+        .set(Datum::new(
+            Time::ZERO,
+            State::new(
+                Millimeter::new(4.0),
+                MillimeterPerSecond::new(4.0),
+                MillimeterPerSecondSquared::new(4.0),
+            ),
+        ))
         .unwrap();
     connect(differential.get_side_1(), &terminal1);
     connect(differential.get_side_2(), &terminal2);
@@ -533,21 +769,33 @@ fn differential_distrust_side_2() {
             .unwrap()
             .unwrap()
             .value,
-        State::new_raw(TERM_1, TERM_1, TERM_1)
+        State::new(
+            Millimeter::new(TERM_1),
+            MillimeterPerSecond::new(TERM_1),
+            MillimeterPerSecondSquared::new(TERM_1)
+        )
     );
     assert_eq!(
         <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal2.borrow())
             .unwrap()
             .unwrap()
             .value,
-        State::new_raw(TERM_2, TERM_2, TERM_2)
+        State::new(
+            Millimeter::new(TERM_2),
+            MillimeterPerSecond::new(TERM_2),
+            MillimeterPerSecondSquared::new(TERM_2)
+        )
     );
     assert_eq!(
         <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal_sum.borrow())
             .unwrap()
             .unwrap()
             .value,
-        State::new_raw(TERM_SUM, TERM_SUM, TERM_SUM)
+        State::new(
+            Millimeter::new(TERM_SUM),
+            MillimeterPerSecond::new(TERM_SUM),
+            MillimeterPerSecondSquared::new(TERM_SUM)
+        )
     );
 }
 #[test]
@@ -558,15 +806,36 @@ fn differential_distrust_sum() {
     let terminal_sum = Terminal::new();
     terminal1
         .borrow_mut()
-        .set(Datum::new(Time::ZERO, State::new_raw(2.0, 2.0, 2.0)))
+        .set(Datum::new(
+            Time::ZERO,
+            State::new(
+                Millimeter::new(2.0),
+                MillimeterPerSecond::new(2.0),
+                MillimeterPerSecondSquared::new(2.0),
+            ),
+        ))
         .unwrap();
     terminal2
         .borrow_mut()
-        .set(Datum::new(Time::ZERO, State::new_raw(3.0, 3.0, 3.0)))
+        .set(Datum::new(
+            Time::ZERO,
+            State::new(
+                Millimeter::new(3.0),
+                MillimeterPerSecond::new(3.0),
+                MillimeterPerSecondSquared::new(3.0),
+            ),
+        ))
         .unwrap();
     terminal_sum
         .borrow_mut()
-        .set(Datum::new(Time::ZERO, State::new_raw(4.0, 4.0, 4.0)))
+        .set(Datum::new(
+            Time::ZERO,
+            State::new(
+                Millimeter::new(4.0),
+                MillimeterPerSecond::new(4.0),
+                MillimeterPerSecondSquared::new(4.0),
+            ),
+        ))
         .unwrap();
     connect(differential.get_side_1(), &terminal1);
     connect(differential.get_side_2(), &terminal2);
@@ -584,21 +853,33 @@ fn differential_distrust_sum() {
             .unwrap()
             .unwrap()
             .value,
-        State::new_raw(TERM_1, TERM_1, TERM_1)
+        State::new(
+            Millimeter::new(TERM_1),
+            MillimeterPerSecond::new(TERM_1),
+            MillimeterPerSecondSquared::new(TERM_1)
+        )
     );
     assert_eq!(
         <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal2.borrow())
             .unwrap()
             .unwrap()
             .value,
-        State::new_raw(TERM_2, TERM_2, TERM_2)
+        State::new(
+            Millimeter::new(TERM_2),
+            MillimeterPerSecond::new(TERM_2),
+            MillimeterPerSecondSquared::new(TERM_2)
+        )
     );
     assert_eq!(
         <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal_sum.borrow())
             .unwrap()
             .unwrap()
             .value,
-        State::new_raw(TERM_SUM, TERM_SUM, TERM_SUM)
+        State::new(
+            Millimeter::new(TERM_SUM),
+            MillimeterPerSecond::new(TERM_SUM),
+            MillimeterPerSecondSquared::new(TERM_SUM)
+        )
     );
 }
 //TODO: make this test more thorough with the different combinations of Some/None command and
@@ -626,7 +907,11 @@ fn actuator_wrapper() {
                 TerminalData {
                     time: Time::from_nanoseconds(2),
                     command: Some(Command::new(PositionDerivative::Position, 5.0)),
-                    state: Some(State::new_raw(1.0, 2.0, 3.0)),
+                    state: Some(State::new(
+                        Millimeter::new(1.0),
+                        MillimeterPerSecond::new(2.0),
+                        MillimeterPerSecondSquared::new(3.0)
+                    )),
                 }
             );
             unsafe {
@@ -650,7 +935,11 @@ fn actuator_wrapper() {
         .borrow_mut()
         .set(Datum::new(
             Time::from_nanoseconds(2),
-            State::new_raw(1.0, 2.0, 3.0),
+            State::new(
+                Millimeter::new(1.0),
+                MillimeterPerSecond::new(2.0),
+                MillimeterPerSecondSquared::new(3.0),
+            ),
         ))
         .unwrap();
     wrapper.update().unwrap();
@@ -663,7 +952,14 @@ fn getter_state_device_wrapper() {
     struct GetterState;
     impl Getter<State, ()> for GetterState {
         fn get(&self) -> Output<State, ()> {
-            Ok(Some(Datum::new(Time::ZERO, State::new_raw(1.0, 2.0, 3.0))))
+            Ok(Some(Datum::new(
+                Time::ZERO,
+                State::new(
+                    Millimeter::new(1.0),
+                    MillimeterPerSecond::new(2.0),
+                    MillimeterPerSecondSquared::new(3.0),
+                ),
+            )))
         }
     }
     impl Updatable<()> for GetterState {
@@ -680,7 +976,11 @@ fn getter_state_device_wrapper() {
             .unwrap()
             .unwrap()
             .value,
-        State::new_raw(1.0, 2.0, 3.0)
+        State::new(
+            Millimeter::new(1.0),
+            MillimeterPerSecond::new(2.0),
+            MillimeterPerSecondSquared::new(3.0)
+        )
     );
 }
 #[test]
@@ -688,7 +988,11 @@ fn getter_state_device_wrapper() {
 fn pid_wrapper() {
     static mut ASSERTS: u8 = 0;
     const COMMAND: Command = Command::new(PositionDerivative::Position, 5.0);
-    const STATE: State = State::new_raw(0.0, 0.0, 0.0);
+    const STATE: State = State::new(
+        Millimeter::new(0.0),
+        MillimeterPerSecond::new(0.0),
+        MillimeterPerSecondSquared::new(0.0),
+    );
     const K_VALUES: PositionDerivativeDependentPIDKValues =
         PositionDerivativeDependentPIDKValues::new(
             PIDKValues::new(1.0, 0.01, 0.1),
