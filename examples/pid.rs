@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // Copyright 2024-2025 UxuginPython
-//TODO: There may be some redundant stuff here.
 #[cfg(feature = "alloc")]
 extern crate alloc;
 #[cfg(feature = "alloc")]
@@ -26,12 +25,7 @@ struct StreamPID {
     //performance boost.
     //Also note that you should almost always use a more specific error type than (). This example
     //is not focused on error handling.
-    int: Rc<RefCell<dyn Getter<f32, ()>>>,
-    drv: Rc<RefCell<dyn Getter<f32, ()>>>,
-    pro_float_maker: Rc<RefCell<dyn Getter<f32, ()>>>,
-    int_float_maker: Rc<RefCell<dyn Getter<f32, ()>>>,
-    drv_float_maker: Rc<RefCell<dyn Getter<f32, ()>>>,
-    output: SumStream<f32, 3, Rc<RefCell<dyn Getter<f32, ()>>>, ()>,
+    output: SumStream<f32, 3, Box<dyn Getter<f32, ()>>, ()>,
 }
 #[cfg(feature = "alloc")]
 impl StreamPID {
@@ -52,15 +46,16 @@ impl StreamPID {
         let error = Rc::new(RefCell::new(DifferenceStream::new(setpoint, input.clone())));
         //Notice how one can directly use a Getter as an input for a stream OR put it in an
         //Rc<RefCell<T>> first if multiple things need access to it. Rc<RefCell<T>> passes through
-        //the Getter implementation of its referent. Using an Rc<RefCell>> or similar to a getter
+        //the Getter implementation of its referent. Using an Rc<RefCell<T>>> or similar to a getter
         //as a stream input is often necessary and not discouraged, but where possible, directly
         //using the getter will be slightly faster.
-        //Rc<RefCell<T>>, Arc<RwLock<T>>, and Arc<Mutex<T>> all have this functionality, and
-        //similar functionality can be achieved with *mut T, *const RwLock<T>, and *const Mutex<T>
+        //Rc<RefCell<T>>, Arc<RwLock<T>>, Arc<Mutex<T>>, and Box<T> all have this functionality,
+        //and similar functionality can be achieved with *mut T, *const RwLock<T>, and *const Mutex<T>
         //through PointerDereferencer. There are also implementations for Updatable (which is
-        //required for Getter), Settable, and TimeGetter.
-        let int = Rc::new(RefCell::new(IntegralStream::new(error.clone())));
-        let drv = Rc::new(RefCell::new(DerivativeStream::new(error.clone())));
+        //required for Getter), Settable, and TimeGetter. Chronology and Device work a bit
+        //differently.
+        let int = Rc::new(RefCell::new(IntegralStream::new(Rc::clone(&error))));
+        let drv = Rc::new(RefCell::new(DerivativeStream::new(Rc::clone(&error))));
         //`ProductStream`'s behavior is to treat all `None` values as 1.0 so that it's as if they
         //were not included. However, this is not what we want with the coefficient. `NoneToValue`
         //is used to convert all `None` values to `Some(0.0)` to effectively exlude them from the
@@ -68,24 +63,14 @@ impl StreamPID {
         let int_zeroer = NoneToValue::new(int.clone(), time_getter.clone(), 0.0);
         let drv_zeroer = NoneToValue::new(drv.clone(), time_getter.clone(), 0.0);
         let kp_mul = Product2::new(kp, error.clone());
-        let pro_float_maker = Rc::new(RefCell::new(kp_mul));
         let ki_mul = Product2::new(ki, int_zeroer);
-        let int_float_maker = Rc::new(RefCell::new(ki_mul));
         let kd_mul = Product2::new(kd, drv_zeroer);
-        let drv_float_maker = Rc::new(RefCell::new(kd_mul));
         let output = SumStream::new([
-            Rc::clone(&pro_float_maker) as Rc<RefCell<dyn Getter<f32, ()>>>,
-            Rc::clone(&int_float_maker) as Rc<RefCell<dyn Getter<f32, ()>>>,
-            Rc::clone(&drv_float_maker) as Rc<RefCell<dyn Getter<f32, ()>>>,
+            Box::new(kp_mul) as Box<dyn Getter<f32, ()>>,
+            Box::new(ki_mul) as Box<dyn Getter<f32, ()>>,
+            Box::new(kd_mul) as Box<dyn Getter<f32, ()>>,
         ]);
-        Self {
-            int: int as Rc<RefCell<dyn Getter<f32, ()>>>,
-            drv: drv as Rc<RefCell<dyn Getter<f32, ()>>>,
-            pro_float_maker: pro_float_maker as Rc<RefCell<dyn Getter<f32, ()>>>,
-            int_float_maker: int_float_maker as Rc<RefCell<dyn Getter<f32, ()>>>,
-            drv_float_maker: drv_float_maker as Rc<RefCell<dyn Getter<f32, ()>>>,
-            output: output,
-        }
+        Self { output: output }
     }
 }
 #[cfg(feature = "alloc")]
@@ -97,15 +82,9 @@ impl Getter<f32, ()> for StreamPID {
 #[cfg(feature = "alloc")]
 impl Updatable<()> for StreamPID {
     fn update(&mut self) -> NothingOrError<()> {
-        //The other streams used that are not updated here do not need to be updated. Streams like
-        //SumStream just calculate their output in the get method since they do not need to store
-        //any data beyond the `Reference`s to their inputs. The non-math streams used here work in
-        //a similar way.
-        self.int.update()?;
-        self.drv.update()?;
-        self.pro_float_maker.update()?;
-        self.int_float_maker.update()?;
-        self.drv_float_maker.update()?;
+        //All builtin streams update their inputs. If you make your own, it is strongly recommended
+        //that they do the same.
+        self.output.update()?;
         Ok(())
     }
 }
