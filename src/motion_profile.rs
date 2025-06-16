@@ -196,8 +196,8 @@ mod tests {
         let motion_profile = MotionProfile::new(
             State::new_raw(0.0, 0.0, 0.0),
             State::new_raw(3.0, 0.0, 0.0),
-            Quantity::new(0.1, MILLIMETER_PER_SECOND),
-            Quantity::new(0.01, MILLIMETER_PER_SECOND_SQUARED),
+            MillimeterPerSecond::new(0.1),
+            MillimeterPerSecondSquared::new(0.01),
         );
         assert_eq!(motion_profile.t1, Time::from_nanoseconds(10_000_000_000));
         assert_eq!(
@@ -207,7 +207,7 @@ mod tests {
         assert_eq!(motion_profile.t3, Time::from_nanoseconds(40_000_000_000));
         assert_eq!(
             motion_profile.max_acc,
-            Quantity::new(0.01, MILLIMETER_PER_SECOND_SQUARED)
+            MillimeterPerSecondSquared::new(0.01)
         );
     }
     #[test]
@@ -215,8 +215,8 @@ mod tests {
         let motion_profile = MotionProfile::new(
             State::new_raw(1.0, 0.0, 0.0),
             State::new_raw(3.0, 0.0, 0.0),
-            Quantity::new(0.1, MILLIMETER_PER_SECOND),
-            Quantity::new(0.01, MILLIMETER_PER_SECOND_SQUARED),
+            MillimeterPerSecond::new(0.1),
+            MillimeterPerSecondSquared::new(0.01),
         );
         assert_eq!(motion_profile.t1, Time::from_nanoseconds(10_000_000_000));
         assert_eq!(motion_profile.t2, Time::from_nanoseconds(20_000_000_000));
@@ -226,7 +226,7 @@ mod tests {
         );
         assert_eq!(
             motion_profile.max_acc,
-            Quantity::new(0.01, MILLIMETER_PER_SECOND_SQUARED)
+            MillimeterPerSecondSquared::new(0.01)
         );
     }
     #[test]
@@ -234,8 +234,8 @@ mod tests {
         let motion_profile = MotionProfile::new(
             State::new_raw(0.0, 0.1, 0.0),
             State::new_raw(3.0, 0.0, 0.0),
-            Quantity::new(0.1, MILLIMETER_PER_SECOND),
-            Quantity::new(0.01, MILLIMETER_PER_SECOND_SQUARED),
+            MillimeterPerSecond::new(0.1),
+            MillimeterPerSecondSquared::new(0.01),
         );
         assert_eq!(motion_profile.t1, Time::from_nanoseconds(0));
         assert_eq!(
@@ -248,7 +248,7 @@ mod tests {
         );
         assert_eq!(
             motion_profile.max_acc,
-            Quantity::new(0.01, MILLIMETER_PER_SECOND_SQUARED)
+            MillimeterPerSecondSquared::new(0.01)
         );
     }
     #[test]
@@ -256,8 +256,8 @@ mod tests {
         let motion_profile = MotionProfile::new(
             State::new_raw(0.0, 0.0, 0.01),
             State::new_raw(3.0, 0.0, 0.0),
-            Quantity::new(0.1, MILLIMETER_PER_SECOND),
-            Quantity::new(0.01, MILLIMETER_PER_SECOND_SQUARED),
+            MillimeterPerSecond::new(0.1),
+            MillimeterPerSecondSquared::new(0.01),
         );
         assert_eq!(motion_profile.t1, Time::from_nanoseconds(10_000_000_000));
         assert_eq!(
@@ -267,7 +267,7 @@ mod tests {
         assert_eq!(motion_profile.t3, Time::from_nanoseconds(40_000_000_000));
         assert_eq!(
             motion_profile.max_acc,
-            Quantity::new(0.01, MILLIMETER_PER_SECOND_SQUARED)
+            MillimeterPerSecondSquared::new(0.01)
         );
     }
     #[test]
@@ -275,8 +275,8 @@ mod tests {
         let motion_profile = MotionProfile::new(
             State::new_raw(0.0, 0.0, 0.0),
             State::new_raw(6.0, 0.0, 0.0),
-            Quantity::new(0.2, MILLIMETER_PER_SECOND),
-            Quantity::new(0.01, MILLIMETER_PER_SECOND_SQUARED),
+            MillimeterPerSecond::new(0.2),
+            MillimeterPerSecondSquared::new(0.01),
         );
         assert_eq!(motion_profile.t1, Time::from_nanoseconds(20_000_000_000));
         assert_eq!(
@@ -289,7 +289,7 @@ mod tests {
         );
         assert_eq!(
             motion_profile.max_acc,
-            Quantity::new(0.01, MILLIMETER_PER_SECOND_SQUARED)
+            MillimeterPerSecondSquared::new(0.01)
         );
     }
     #[test]
@@ -297,8 +297,8 @@ mod tests {
         let motion_profile = MotionProfile::new(
             State::new_raw(0.0, 0.0, 0.0),
             State::new_raw(3.0, 0.0, 0.0),
-            Quantity::new(0.1, MILLIMETER_PER_SECOND),
-            Quantity::new(0.02, MILLIMETER_PER_SECOND_SQUARED),
+            MillimeterPerSecond::new(0.1),
+            MillimeterPerSecondSquared::new(0.02),
         );
         assert_eq!(motion_profile.t1, Time::from_nanoseconds(5_000_000_000));
         assert_eq!(
@@ -311,7 +311,7 @@ mod tests {
         );
         assert_eq!(
             motion_profile.max_acc,
-            Quantity::new(0.02, MILLIMETER_PER_SECOND_SQUARED)
+            MillimeterPerSecondSquared::new(0.02)
         );
     }
     #[test]
@@ -319,8 +319,8 @@ mod tests {
         let motion_profile = MotionProfile::new(
             State::new_raw(0.0, 0.0, 0.0),
             State::new_raw(-3.0, 0.0, 0.0),
-            Quantity::new(0.1, MILLIMETER_PER_SECOND),
-            Quantity::new(0.01, MILLIMETER_PER_SECOND_SQUARED),
+            MillimeterPerSecond::new(0.1),
+            MillimeterPerSecondSquared::new(0.01),
         );
         assert_eq!(motion_profile.t1, Time::from_nanoseconds(10_000_000_000));
         assert_eq!(
@@ -330,7 +330,7 @@ mod tests {
         assert_eq!(motion_profile.t3, Time::from_nanoseconds(40_000_000_000));
         assert_eq!(
             motion_profile.max_acc,
-            Quantity::new(-0.01, MILLIMETER_PER_SECOND_SQUARED)
+            MillimeterPerSecondSquared::new(-0.01)
         );
     }
 }
