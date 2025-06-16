@@ -95,7 +95,10 @@ fn invert() {
         .unwrap();
     terminal1
         .borrow_mut()
-        .set(Datum::new(Time::ZERO, Command::Position(1.0)))
+        .set(Datum::new(
+            Time::ZERO,
+            Command::Position(Millimeter::new(1.0)),
+        ))
         .unwrap();
     connect(invert.get_terminal_1(), &terminal1);
     connect(invert.get_terminal_2(), &terminal2);
@@ -116,7 +119,7 @@ fn invert() {
             .unwrap()
             .unwrap()
             .value,
-        Command::Position(1.0)
+        Command::Position(Millimeter::new(1.0))
     );
     assert_eq!(
         <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal2.borrow())
@@ -134,7 +137,7 @@ fn invert() {
             .unwrap()
             .unwrap()
             .value,
-        Command::Position(-1.0)
+        Command::Position(Millimeter::new(-1.0))
     );
 
     let mut invert = Invert::new();
@@ -153,7 +156,10 @@ fn invert() {
         .unwrap();
     terminal2
         .borrow_mut()
-        .set(Datum::new(Time::ZERO, Command::Position(-1.0)))
+        .set(Datum::new(
+            Time::ZERO,
+            Command::Position(Millimeter::new(-1.0)),
+        ))
         .unwrap();
     connect(invert.get_terminal_1(), &terminal1);
     connect(invert.get_terminal_2(), &terminal2);
@@ -174,7 +180,7 @@ fn invert() {
             .unwrap()
             .unwrap()
             .value,
-        Command::Position(1.0)
+        Command::Position(Millimeter::new(1.0))
     );
     assert_eq!(
         <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal2.borrow())
@@ -192,7 +198,7 @@ fn invert() {
             .unwrap()
             .unwrap()
             .value,
-        Command::Position(-1.0)
+        Command::Position(Millimeter::new(-1.0))
     );
 
     let mut invert = Invert::new();
@@ -273,7 +279,10 @@ fn gear_train_2() {
         .unwrap();
     terminal1
         .borrow_mut()
-        .set(Datum::new(Time::ZERO, Command::Position(3.0)))
+        .set(Datum::new(
+            Time::ZERO,
+            Command::Position(Millimeter::new(3.0)),
+        ))
         .unwrap();
     gear_train.update().unwrap();
     assert_eq!(
@@ -289,7 +298,10 @@ fn gear_train_2() {
     );
     assert_eq!(
         terminal2.borrow_mut().get(),
-        Ok(Some(Datum::new(Time::ZERO, Command::Position(-1.0))))
+        Ok(Some(Datum::new(
+            Time::ZERO,
+            Command::Position(Millimeter::new(-1.0))
+        )))
     );
 }
 #[test]
@@ -314,7 +326,10 @@ fn gear_train_odd() {
         .unwrap();
     terminal1
         .borrow_mut()
-        .set(Datum::new(Time::ZERO, Command::Position(2.0)))
+        .set(Datum::new(
+            Time::ZERO,
+            Command::Position(Millimeter::new(2.0)),
+        ))
         .unwrap();
     gear_train.update().unwrap();
     assert_eq!(
@@ -330,7 +345,10 @@ fn gear_train_odd() {
     );
     assert_eq!(
         terminal2.borrow_mut().get(),
-        Ok(Some(Datum::new(Time::ZERO, Command::Position(3.0))))
+        Ok(Some(Datum::new(
+            Time::ZERO,
+            Command::Position(Millimeter::new(3.0))
+        )))
     );
 }
 #[test]
@@ -355,7 +373,10 @@ fn gear_train_even() {
         .unwrap();
     terminal1
         .borrow_mut()
-        .set(Datum::new(Time::ZERO, Command::Position(2.0)))
+        .set(Datum::new(
+            Time::ZERO,
+            Command::Position(Millimeter::new(2.0)),
+        ))
         .unwrap();
     gear_train.update().unwrap();
     assert_eq!(
@@ -371,7 +392,10 @@ fn gear_train_even() {
     );
     assert_eq!(
         terminal2.borrow_mut().get(),
-        Ok(Some(Datum::new(Time::ZERO, Command::Position(-3.0))))
+        Ok(Some(Datum::new(
+            Time::ZERO,
+            Command::Position(Millimeter::new(-3.0))
+        )))
     );
 }
 #[test]
@@ -394,7 +418,7 @@ fn gear_train_multiple_inputs() {
         .borrow_mut()
         .set(Datum::new(
             Time::from_nanoseconds(3),
-            Command::Position(2.0),
+            Command::Position(Millimeter::new(2.0)),
         ))
         .unwrap();
     gear_train
@@ -414,7 +438,7 @@ fn gear_train_multiple_inputs() {
         .borrow_mut()
         .set(Datum::new(
             Time::from_nanoseconds(2),
-            Command::Position(-2.0),
+            Command::Position(Millimeter::new(-2.0)),
         ))
         .unwrap();
     gear_train.update().unwrap();
@@ -433,7 +457,7 @@ fn gear_train_multiple_inputs() {
         gear_train.get_terminal_1().borrow().get(),
         Ok(Some(Datum::new(
             Time::from_nanoseconds(3),
-            Command::Position(2.0)
+            Command::Position(Millimeter::new(2.0))
         )))
     );
     assert_eq!(
@@ -451,7 +475,7 @@ fn gear_train_multiple_inputs() {
         gear_train.get_terminal_2().borrow().get(),
         Ok(Some(Datum::new(
             Time::from_nanoseconds(3),
-            Command::Position(-1.0)
+            Command::Position(Millimeter::new(-1.0))
         )))
     );
 }
@@ -485,7 +509,10 @@ fn axle() {
         .unwrap();
     terminal1
         .borrow_mut()
-        .set(Datum::new(Time::ZERO, Command::Position(1.0)))
+        .set(Datum::new(
+            Time::ZERO,
+            Command::Position(Millimeter::new(1.0)),
+        ))
         .unwrap();
     connect(axle.get_terminal(0), &terminal1);
     connect(axle.get_terminal(1), &terminal2);
@@ -507,7 +534,7 @@ fn axle() {
             .unwrap()
             .unwrap()
             .value,
-        Command::Position(1.0)
+        Command::Position(Millimeter::new(1.0))
     );
     assert_eq!(
         <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal2.borrow())
@@ -525,7 +552,7 @@ fn axle() {
             .unwrap()
             .unwrap()
             .value,
-        Command::Position(1.0)
+        Command::Position(Millimeter::new(1.0))
     );
     assert_eq!(
         <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal3.borrow())
@@ -543,7 +570,7 @@ fn axle() {
             .unwrap()
             .unwrap()
             .value,
-        Command::Position(1.0)
+        Command::Position(Millimeter::new(1.0))
     );
 }
 #[test]
