@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // Copyright 2024-2025 UxuginPython
+//TODO: There may be some redundant stuff here.
 #[cfg(feature = "alloc")]
 extern crate alloc;
 #[cfg(feature = "alloc")]
@@ -25,8 +26,8 @@ struct StreamPID {
     //performance boost.
     //Also note that you should almost always use a more specific error type than (). This example
     //is not focused on error handling.
-    int: Rc<RefCell<dyn Getter<Quantity, ()>>>,
-    drv: Rc<RefCell<dyn Getter<Quantity, ()>>>,
+    int: Rc<RefCell<dyn Getter<f32, ()>>>,
+    drv: Rc<RefCell<dyn Getter<f32, ()>>>,
     pro_float_maker: Rc<RefCell<dyn Getter<f32, ()>>>,
     int_float_maker: Rc<RefCell<dyn Getter<f32, ()>>>,
     drv_float_maker: Rc<RefCell<dyn Getter<f32, ()>>>,
@@ -37,11 +38,11 @@ impl StreamPID {
     pub fn new(
         //One would generally prefer to use a type parameter to Rc<RefCell<dyn Getter<_, _>>>. This
         //example uses the latter for simplicity.
-        input: Rc<RefCell<dyn Getter<Quantity, ()>>>,
-        setpoint: Quantity,
-        kp: Quantity,
-        ki: Quantity,
-        kd: Quantity,
+        input: Rc<RefCell<dyn Getter<f32, ()>>>,
+        setpoint: f32,
+        kp: f32,
+        ki: f32,
+        kd: f32,
     ) -> Self {
         let time_getter = Rc::new(RefCell::new(TimeGetterFromGetter::new(input.clone(), ())));
         let setpoint = ConstantGetter::new(time_getter.clone(), setpoint);
@@ -64,33 +65,22 @@ impl StreamPID {
         //were not included. However, this is not what we want with the coefficient. `NoneToValue`
         //is used to convert all `None` values to `Some(0.0)` to effectively exlude them from the
         //final sum.
-        let int_zeroer = NoneToValue::new(
-            int.clone(),
-            time_getter.clone(),
-            Quantity::new(0.0, MILLIMETER),
-        );
-        let drv_zeroer = NoneToValue::new(
-            drv.clone(),
-            time_getter.clone(),
-            Quantity::new(0.0, MILLIMETER),
-        );
+        let int_zeroer = NoneToValue::new(int.clone(), time_getter.clone(), 0.0);
+        let drv_zeroer = NoneToValue::new(drv.clone(), time_getter.clone(), 0.0);
         let kp_mul = Product2::new(kp, error.clone());
-        //The way a PID controller works necessitates that it adds quantities of different units.
-        //Thus, QuantityToFloat streams are required to keep the dimensional analysis system from
-        //stopping this.
-        let pro_float_maker = Rc::new(RefCell::new(QuantityToFloat::new(kp_mul)));
+        let pro_float_maker = Rc::new(RefCell::new(kp_mul));
         let ki_mul = Product2::new(ki, int_zeroer);
-        let int_float_maker = Rc::new(RefCell::new(QuantityToFloat::new(ki_mul)));
+        let int_float_maker = Rc::new(RefCell::new(ki_mul));
         let kd_mul = Product2::new(kd, drv_zeroer);
-        let drv_float_maker = Rc::new(RefCell::new(QuantityToFloat::new(kd_mul)));
+        let drv_float_maker = Rc::new(RefCell::new(kd_mul));
         let output = SumStream::new([
             Rc::clone(&pro_float_maker) as Rc<RefCell<dyn Getter<f32, ()>>>,
             Rc::clone(&int_float_maker) as Rc<RefCell<dyn Getter<f32, ()>>>,
             Rc::clone(&drv_float_maker) as Rc<RefCell<dyn Getter<f32, ()>>>,
         ]);
         Self {
-            int: int as Rc<RefCell<dyn Getter<Quantity, ()>>>,
-            drv: drv as Rc<RefCell<dyn Getter<Quantity, ()>>>,
+            int: int as Rc<RefCell<dyn Getter<f32, ()>>>,
+            drv: drv as Rc<RefCell<dyn Getter<f32, ()>>>,
             pro_float_maker: pro_float_maker as Rc<RefCell<dyn Getter<f32, ()>>>,
             int_float_maker: int_float_maker as Rc<RefCell<dyn Getter<f32, ()>>>,
             drv_float_maker: drv_float_maker as Rc<RefCell<dyn Getter<f32, ()>>>,
@@ -134,11 +124,11 @@ impl MyStream {
 //intended to do is to show the PID controller's command values and not model a real system by
 //assuming a constant velocity.
 #[cfg(feature = "alloc")]
-impl Getter<Quantity, ()> for MyStream {
-    fn get(&self) -> Output<Quantity, ()> {
+impl Getter<f32, ()> for MyStream {
+    fn get(&self) -> Output<f32, ()> {
         Ok(Some(Datum::new(
             self.time,
-            Quantity::from(self.time) * Quantity::new(0.5, MILLIMETER_PER_SECOND),
+            self.time.as_seconds_f32() * 0.5,
         )))
     }
 }
@@ -151,23 +141,20 @@ impl Updatable<()> for MyStream {
 }
 #[cfg(feature = "alloc")]
 fn main() {
-    const SETPOINT: Quantity = Quantity::new(5.0, MILLIMETER);
-    const KP: Quantity = Quantity::dimensionless(1.0);
-    const KI: Quantity = Quantity::dimensionless(0.01);
-    const KD: Quantity = Quantity::dimensionless(0.1);
+    const SETPOINT: f32 = 5.0;
+    const KP: f32 = 1.0;
+    const KI: f32 = 0.01;
+    const KD: f32 = 0.1;
     println!("PID Controller using RRTK Streams");
-    println!(
-        "kp = {:?}; ki = {:?}; kd = {:?}",
-        KP.value, KI.value, KD.value
-    );
-    let input = Rc::new(RefCell::new(MyStream::new())) as Rc<RefCell<dyn Getter<Quantity, ()>>>;
+    println!("kp = {:?}; ki = {:?}; kd = {:?}", KP, KI, KD);
+    let input = Rc::new(RefCell::new(MyStream::new())) as Rc<RefCell<dyn Getter<f32, ()>>>;
     let mut stream = StreamPID::new(input.clone(), SETPOINT, KP, KI, KD);
     stream.update().unwrap();
     println!(
         "time: {:?}; setpoint: {:?}; process: {:?}; command: {:?}",
         stream.get().unwrap().unwrap().time.as_nanoseconds(),
-        SETPOINT.value,
-        input.borrow().get().unwrap().unwrap().value.value,
+        SETPOINT,
+        input.borrow().get().unwrap().unwrap().value,
         stream.get().unwrap().unwrap().value
     );
     for _ in 0..6 {
