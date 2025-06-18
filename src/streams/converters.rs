@@ -467,16 +467,13 @@ impl<T, MM: Integer, S: Integer, G: Getter<T, E>, E: Clone + Debug> DimensionAdd
         }
     }
 }
-impl<T, MM: Integer, S: Integer, G: Getter<T, E>, E: Clone + Debug>
-    Getter<compile_time_dimensions::Quantity<T, MM, S>, E> for DimensionAdder<T, MM, S, G, E>
+impl<T, MM: Integer, S: Integer, G: Getter<T, E>, E: Clone + Debug> Getter<Quantity<T, MM, S>, E>
+    for DimensionAdder<T, MM, S, G, E>
 {
-    fn get(&self) -> Output<compile_time_dimensions::Quantity<T, MM, S>, E> {
+    fn get(&self) -> Output<Quantity<T, MM, S>, E> {
         match self.input.get()? {
             None => Ok(None),
-            Some(x) => Ok(Some(Datum::new(
-                x.time,
-                compile_time_dimensions::Quantity::new(x.value),
-            ))),
+            Some(x) => Ok(Some(Datum::new(x.time, Quantity::new(x.value)))),
         }
     }
 }
@@ -493,7 +490,7 @@ pub struct DimensionRemover<
     T,
     MM: Integer,
     S: Integer,
-    G: Getter<compile_time_dimensions::Quantity<T, MM, S>, E>,
+    G: Getter<Quantity<T, MM, S>, E>,
     E: Clone + Debug,
 > {
     input: G,
@@ -502,13 +499,8 @@ pub struct DimensionRemover<
     phantom_s: PhantomData<S>,
     phantom_e: PhantomData<E>,
 }
-impl<
-    T,
-    MM: Integer,
-    S: Integer,
-    G: Getter<compile_time_dimensions::Quantity<T, MM, S>, E>,
-    E: Clone + Debug,
-> DimensionRemover<T, MM, S, G, E>
+impl<T, MM: Integer, S: Integer, G: Getter<Quantity<T, MM, S>, E>, E: Clone + Debug>
+    DimensionRemover<T, MM, S, G, E>
 {
     ///Constructor for `DimensionRemover`.
     pub const fn new(input: G) -> Self {
@@ -521,13 +513,8 @@ impl<
         }
     }
 }
-impl<
-    T,
-    MM: Integer,
-    S: Integer,
-    G: Getter<compile_time_dimensions::Quantity<T, MM, S>, E>,
-    E: Clone + Debug,
-> Getter<T, E> for DimensionRemover<T, MM, S, G, E>
+impl<T, MM: Integer, S: Integer, G: Getter<Quantity<T, MM, S>, E>, E: Clone + Debug> Getter<T, E>
+    for DimensionRemover<T, MM, S, G, E>
 {
     fn get(&self) -> Output<T, E> {
         match self.input.get()? {
@@ -536,13 +523,8 @@ impl<
         }
     }
 }
-impl<
-    T,
-    MM: Integer,
-    S: Integer,
-    G: Getter<compile_time_dimensions::Quantity<T, MM, S>, E>,
-    E: Clone + Debug,
-> Updatable<E> for DimensionRemover<T, MM, S, G, E>
+impl<T, MM: Integer, S: Integer, G: Getter<Quantity<T, MM, S>, E>, E: Clone + Debug> Updatable<E>
+    for DimensionRemover<T, MM, S, G, E>
 {
     fn update(&mut self) -> NothingOrError<E> {
         self.input.update()?;

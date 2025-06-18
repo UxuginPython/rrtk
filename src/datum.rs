@@ -101,7 +101,7 @@ impl NotDatum for DimensionlessInteger {}
 impl NotDatum for compile_time_integer::Zero {}
 impl<T: compile_time_integer::Integer> NotDatum for compile_time_integer::OnePlus<T> {}
 impl<T: compile_time_integer::Integer> NotDatum for compile_time_integer::NegativeOnePlus<T> {}
-impl<T, MM, S> NotDatum for compile_time_dimensions::Quantity<T, MM, S>
+impl<T, MM, S> NotDatum for Quantity<T, MM, S>
 where
     MM: compile_time_integer::Integer,
     S: compile_time_integer::Integer,
