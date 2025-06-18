@@ -1,6 +1,27 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // Copyright 2024-2025 UxuginPython
 use crate::*;
+pub trait GenericState<P, V, A>:
+    Copy
+    + Debug
+    + Default
+    + PartialEq
+    + Neg<Output = Self>
+    + Add<Output = Self>
+    + Sub<Output = Self>
+    + Mul<Dimensionless<f32>, Output = Self>
+    + Div<Dimensionless<f32>, Output = Self>
+    + AddAssign
+    + SubAssign
+    + MulAssign<Dimensionless<f32>>
+    + DivAssign<Dimensionless<f32>>
+{
+    fn generic_new(position: P, velocity: V, acceleration: A) -> Self;
+    fn generic_update(&mut self, delta_time: Time);
+    fn generic_set_constant_position(&mut self, position: P);
+    fn generic_set_constant_velocity(&mut self, velocity: V);
+    fn generic_set_constant_acceleration(&mut self, acceleration: A);
+}
 macro_rules! build_state_struct {
     ($name: ident, $pos: ty, $vel: ty, $acc: ty) => {
         ///A one-dimensional motion state with position, velocity, and acceleration.
@@ -129,6 +150,28 @@ macro_rules! build_state_struct {
         impl DivAssign<Dimensionless<f32>> for $name {
             fn div_assign(&mut self, dvsr: Dimensionless<f32>) {
                 *self = *self / dvsr;
+            }
+        }
+        impl GenericState<$pos, $vel, $acc> for $name {
+            #[inline]
+            fn generic_new(position: $pos, velocity: $vel, acceleration: $acc) -> Self {
+                Self::new(position, velocity, acceleration)
+            }
+            #[inline]
+            fn generic_update(&mut self, delta_time: Time) {
+                self.update(delta_time);
+            }
+            #[inline]
+            fn generic_set_constant_position(&mut self, position: $pos) {
+                self.set_constant_position(position);
+            }
+            #[inline]
+            fn generic_set_constant_velocity(&mut self, velocity: $vel) {
+                self.set_constant_velocity(velocity);
+            }
+            #[inline]
+            fn generic_set_constant_acceleration(&mut self, acceleration: $acc) {
+                self.set_constant_acceleration(acceleration);
             }
         }
     };
