@@ -44,14 +44,14 @@ macro_rules! build_state_struct {
             ///Set the velocity to a given value and set the acceleration to zero.
             #[inline]
             pub const fn set_constant_velocity(&mut self, velocity: $vel) {
-                self.acceleration = MillimeterPerSecondSquared::new(0.0);
+                self.acceleration = <$acc>::new(0.0);
                 self.velocity = velocity;
             }
             ///Set the position to a given value and set the velocity and acceleration to zero.
             #[inline]
             pub const fn set_constant_position(&mut self, position: $pos) {
-                self.acceleration = MillimeterPerSecondSquared::new(0.0);
-                self.velocity = MillimeterPerSecond::new(0.0);
+                self.acceleration = <$acc>::new(0.0);
+                self.velocity = <$vel>::new(0.0);
                 self.position = position;
             }
             //Might you want to rename Command to something more broad and make this return that?
@@ -138,4 +138,10 @@ build_state_struct!(
     Millimeter<f32>,
     MillimeterPerSecond<f32>,
     MillimeterPerSecondSquared<f32>
+);
+build_state_struct!(
+    AngularState,
+    Dimensionless<f32>,
+    InverseSecond<f32>,
+    InverseSecondSquared<f32>
 );
