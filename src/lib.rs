@@ -64,9 +64,6 @@ pub use state::*;
 ///Error types used for various things in RRTK. Currently they are only zero-sized types, but this
 ///may change.
 pub mod error {
-    ///The error type used when an operation fails due to mismatched runtime dimensions.
-    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-    pub struct UnitInvalid;
     ///The error type used when a `TryFrom` fails.
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]
     pub struct CannotConvert;

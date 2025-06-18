@@ -95,7 +95,6 @@ impl NotDatum for State {}
 impl NotDatum for Command {}
 impl NotDatum for PositionDerivative {}
 impl NotDatum for error::CannotConvert {}
-impl NotDatum for error::UnitInvalid {}
 impl NotDatum for Time {}
 impl NotDatum for DimensionlessInteger {}
 impl NotDatum for compile_time_integer::Zero {}
