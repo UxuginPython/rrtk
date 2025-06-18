@@ -35,7 +35,7 @@ macro_rules! build_state_struct {
             pub acceleration: $acc,
         }
         impl $name {
-            ///Constructor for [`$name`] using [`Quantity`] objects for position, velocity, and acceleration.
+            ///Constructor using [`Quantity`] objects for position, velocity, and acceleration.
             pub const fn new(position: $pos, velocity: $vel, acceleration: $acc) -> Self {
                 $name {
                     position,
@@ -76,7 +76,7 @@ macro_rules! build_state_struct {
                 self.position = position;
             }
             //Might you want to rename Command to something more broad and make this return that?
-            ///$name contains a position, velocity, and acceleration. This gets the respective field of a
+            ///States contain a position, velocity, and acceleration. This gets the respective field of a
             ///given position derivative.
             pub fn get_value(&self, position_derivative: PositionDerivative) -> f32 {
                 match position_derivative {
