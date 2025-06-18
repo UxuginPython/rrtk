@@ -5,22 +5,18 @@ macro_rules! build_state_struct {
     ($name: ident, $pos: ty, $vel: ty, $acc: ty) => {
         ///A one-dimensional motion state with position, velocity, and acceleration.
         #[derive(Clone, Copy, Debug, Default, PartialEq)]
-        pub struct State {
+        pub struct $name {
             ///Where you are. This should be in millimeters.
-            pub position: Millimeter<f32>,
+            pub position: $pos,
             ///How fast you're going. This should be in millimeters per second.
-            pub velocity: MillimeterPerSecond<f32>,
+            pub velocity: $vel,
             ///How fast how fast you're going's changing. This should be in millimeters per second squared.
-            pub acceleration: MillimeterPerSecondSquared<f32>,
+            pub acceleration: $acc,
         }
-        impl State {
-            ///Constructor for [`State`] using [`Quantity`] objects for position, velocity, and acceleration.
-            pub const fn new(
-                position: Millimeter<f32>,
-                velocity: MillimeterPerSecond<f32>,
-                acceleration: MillimeterPerSecondSquared<f32>,
-            ) -> Self {
-                State {
+        impl $name {
+            ///Constructor for [`$name`] using [`Quantity`] objects for position, velocity, and acceleration.
+            pub const fn new(position: $pos, velocity: $vel, acceleration: $acc) -> Self {
+                $name {
                     position,
                     velocity,
                     acceleration,
@@ -42,27 +38,24 @@ macro_rules! build_state_struct {
             }
             ///Set the acceleration.
             #[inline]
-            pub const fn set_constant_acceleration(
-                &mut self,
-                acceleration: MillimeterPerSecondSquared<f32>,
-            ) {
+            pub const fn set_constant_acceleration(&mut self, acceleration: $acc) {
                 self.acceleration = acceleration;
             }
             ///Set the velocity to a given value and set the acceleration to zero.
             #[inline]
-            pub const fn set_constant_velocity(&mut self, velocity: MillimeterPerSecond<f32>) {
+            pub const fn set_constant_velocity(&mut self, velocity: $vel) {
                 self.acceleration = MillimeterPerSecondSquared::new(0.0);
                 self.velocity = velocity;
             }
             ///Set the position to a given value and set the velocity and acceleration to zero.
             #[inline]
-            pub const fn set_constant_position(&mut self, position: Millimeter<f32>) {
+            pub const fn set_constant_position(&mut self, position: $pos) {
                 self.acceleration = MillimeterPerSecondSquared::new(0.0);
                 self.velocity = MillimeterPerSecond::new(0.0);
                 self.position = position;
             }
             //Might you want to rename Command to something more broad and make this return that?
-            ///State contains a position, velocity, and acceleration. This gets the respective field of a
+            ///$name contains a position, velocity, and acceleration. This gets the respective field of a
             ///given position derivative.
             pub fn get_value(&self, position_derivative: PositionDerivative) -> f32 {
                 match position_derivative {
@@ -72,68 +65,68 @@ macro_rules! build_state_struct {
                 }
             }
         }
-        impl Neg for State {
+        impl Neg for $name {
             type Output = Self;
             fn neg(self) -> Self {
-                State::new(-self.position, -self.velocity, -self.acceleration)
+                $name::new(-self.position, -self.velocity, -self.acceleration)
             }
         }
-        impl Add for State {
+        impl Add for $name {
             type Output = Self;
-            fn add(self, other: State) -> Self {
-                State::new(
+            fn add(self, other: $name) -> Self {
+                $name::new(
                     self.position + other.position,
                     self.velocity + other.velocity,
                     self.acceleration + other.acceleration,
                 )
             }
         }
-        impl Sub for State {
+        impl Sub for $name {
             type Output = Self;
-            fn sub(self, other: State) -> Self {
-                State::new(
+            fn sub(self, other: $name) -> Self {
+                $name::new(
                     self.position - other.position,
                     self.velocity - other.velocity,
                     self.acceleration - other.acceleration,
                 )
             }
         }
-        impl Mul<Dimensionless<f32>> for State {
+        impl Mul<Dimensionless<f32>> for $name {
             type Output = Self;
             fn mul(self, coef: Dimensionless<f32>) -> Self {
-                State::new(
+                $name::new(
                     self.position * coef,
                     self.velocity * coef,
                     self.acceleration * coef,
                 )
             }
         }
-        impl Div<Dimensionless<f32>> for State {
+        impl Div<Dimensionless<f32>> for $name {
             type Output = Self;
             fn div(self, dvsr: Dimensionless<f32>) -> Self {
-                State::new(
+                $name::new(
                     self.position / dvsr,
                     self.velocity / dvsr,
                     self.acceleration / dvsr,
                 )
             }
         }
-        impl AddAssign for State {
-            fn add_assign(&mut self, other: State) {
+        impl AddAssign for $name {
+            fn add_assign(&mut self, other: $name) {
                 *self = *self + other;
             }
         }
-        impl SubAssign for State {
-            fn sub_assign(&mut self, other: State) {
+        impl SubAssign for $name {
+            fn sub_assign(&mut self, other: $name) {
                 *self = *self - other;
             }
         }
-        impl MulAssign<Dimensionless<f32>> for State {
+        impl MulAssign<Dimensionless<f32>> for $name {
             fn mul_assign(&mut self, coef: Dimensionless<f32>) {
                 *self = *self * coef;
             }
         }
-        impl DivAssign<Dimensionless<f32>> for State {
+        impl DivAssign<Dimensionless<f32>> for $name {
             fn div_assign(&mut self, dvsr: Dimensionless<f32>) {
                 *self = *self / dvsr;
             }
