@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // Copyright 2024-2025 UxuginPython
 use crate::*;
+///This trait allows one to write code generically over [`State`] and [`AngularState`]. Each of
+///those has a corresponding method to each method of this trait without the `generic_` prefix.
+///This is necessary because many of the implementations should be const fn and can't be in a
+///trait. Calling the direct methods (without `generic_`) is preferred where possible.
 pub trait GenericState<P, V, A>:
     Copy
     + Debug
@@ -16,10 +20,16 @@ pub trait GenericState<P, V, A>:
     + MulAssign<Dimensionless<f32>>
     + DivAssign<Dimensionless<f32>>
 {
+    ///Constructor from a position, velocity, and acceleration.
     fn generic_new(position: P, velocity: V, acceleration: A) -> Self;
+    ///Calculate the future state assuming a constant acceleration. This is unrelated to
+    ///[`Updatable`].
     fn generic_update(&mut self, delta_time: Time);
+    ///Set the position to a given value and set the velocity and acceleration to zero.
     fn generic_set_constant_position(&mut self, position: P);
+    ///Set the velocity to a given value and set the acceleration to zero.
     fn generic_set_constant_velocity(&mut self, velocity: V);
+    ///Set the acceleration.
     fn generic_set_constant_acceleration(&mut self, acceleration: A);
 }
 macro_rules! build_state_struct {
@@ -46,7 +56,8 @@ macro_rules! build_state_struct {
             //This could maybe be const fn if you're willing to let the code get a bit messy, maybe give up a
             //slight bit of performance (or not depending on optimization), and give up some of the
             //dimension guarantees here.
-            ///Calculate the future state assuming a constant acceleration.
+            ///Calculate the future state assuming a constant acceleration. This is unrelated to
+            ///[`Updatable`].
             pub fn update(&mut self, delta_time: Time) {
                 let old_acceleration = self.acceleration;
                 let old_velocity = self.velocity;
