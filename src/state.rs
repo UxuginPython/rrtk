@@ -5,7 +5,7 @@ use crate::*;
 ///those has a corresponding method to each method of this trait without the `generic_` prefix.
 ///This is necessary because many of the implementations should be const fn and can't be in a
 ///trait. Calling the direct methods (without `generic_`) is preferred where possible.
-pub trait GenericState<P, V, A>:
+pub trait GenericState:
     Copy
     + Debug
     + Default
@@ -20,17 +20,27 @@ pub trait GenericState<P, V, A>:
     + MulAssign<Dimensionless<f32>>
     + DivAssign<Dimensionless<f32>>
 {
+    ///The type that the position is stored as. Almost certainly a [`Quantity`] of some type.
+    type Position;
+    ///The type that the velocity is stored as. Almost certainly a [`Quantity`] of some type.
+    type Velocity;
+    ///The type that the acceleration is stored as. Almost certainly a [`Quantity`] of some type.
+    type Acceleration;
     ///Constructor from a position, velocity, and acceleration.
-    fn generic_new(position: P, velocity: V, acceleration: A) -> Self;
+    fn generic_new(
+        position: Self::Position,
+        velocity: Self::Velocity,
+        acceleration: Self::Acceleration,
+    ) -> Self;
     ///Calculate the future state assuming a constant acceleration. This is unrelated to
     ///[`Updatable`].
     fn generic_update(&mut self, delta_time: Time);
     ///Set the position to a given value and set the velocity and acceleration to zero.
-    fn generic_set_constant_position(&mut self, position: P);
+    fn generic_set_constant_position(&mut self, position: Self::Position);
     ///Set the velocity to a given value and set the acceleration to zero.
-    fn generic_set_constant_velocity(&mut self, velocity: V);
+    fn generic_set_constant_velocity(&mut self, velocity: Self::Velocity);
     ///Set the acceleration.
-    fn generic_set_constant_acceleration(&mut self, acceleration: A);
+    fn generic_set_constant_acceleration(&mut self, acceleration: Self::Acceleration);
 }
 macro_rules! build_state_struct {
     ($name: ident, $pos: ty, $vel: ty, $acc: ty) => {
@@ -163,7 +173,10 @@ macro_rules! build_state_struct {
                 *self = *self / dvsr;
             }
         }
-        impl GenericState<$pos, $vel, $acc> for $name {
+        impl GenericState for $name {
+            type Position = $pos;
+            type Velocity = $vel;
+            type Acceleration = $acc;
             #[inline]
             fn generic_new(position: $pos, velocity: $vel, acceleration: $acc) -> Self {
                 Self::new(position, velocity, acceleration)
