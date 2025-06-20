@@ -212,3 +212,23 @@ build_state_struct!(
     InverseSecond<f32>,
     InverseSecondSquared<f32>
 );
+impl Mul<Millimeter<f32>> for AngularState {
+    type Output = State;
+    fn mul(self, rhs: Millimeter<f32>) -> State {
+        State {
+            position: self.position * rhs,
+            velocity: self.velocity * rhs,
+            acceleration: self.acceleration * rhs,
+        }
+    }
+}
+impl Div<Millimeter<f32>> for State {
+    type Output = AngularState;
+    fn div(self, rhs: Millimeter<f32>) -> AngularState {
+        AngularState {
+            position: self.position / rhs,
+            velocity: self.velocity / rhs,
+            acceleration: self.acceleration / rhs,
+        }
+    }
+}
