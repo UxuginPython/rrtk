@@ -78,15 +78,6 @@ pub enum PositionDerivative {
     ///How fast how fast you're going's changing.
     Acceleration,
 }
-impl From<Command> for PositionDerivative {
-    fn from(was: Command) -> Self {
-        match was {
-            Command::Position(_) => Self::Position,
-            Command::Velocity(_) => Self::Velocity,
-            Command::Acceleration(_) => Self::Acceleration,
-        }
-    }
-}
 impl TryFrom<MotionProfilePiece> for PositionDerivative {
     type Error = error::CannotConvert;
     fn try_from(was: MotionProfilePiece) -> Result<Self, error::CannotConvert> {

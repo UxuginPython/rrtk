@@ -2,7 +2,7 @@
 // Copyright 2024-2025 UxuginPython
 use super::*;
 macro_rules! build_command_enum {
-    ($name: ident, $pos: ty, $vel: ty, $acc: ty) => {
+    ($name: ident, $pos: ty, $vel: ty, $acc: ty, $corresponding_state: ty) => {
         ///A command for a motor to perform: go to a position, run at a velocity, or accelerate at a rate.
         #[derive(Clone, Copy, Debug, PartialEq)]
         pub enum $name {
@@ -17,11 +17,9 @@ macro_rules! build_command_enum {
             ///Constructor for [`$name`].
             pub const fn new(position_derivative: PositionDerivative, value: f32) -> Self {
                 match position_derivative {
-                    PositionDerivative::Position => Self::Position(Millimeter::new(value)),
-                    PositionDerivative::Velocity => Self::Velocity(MillimeterPerSecond::new(value)),
-                    PositionDerivative::Acceleration => {
-                        Self::Acceleration(MillimeterPerSecondSquared::new(value))
-                    }
+                    PositionDerivative::Position => Self::Position(<$pos>::new(value)),
+                    PositionDerivative::Velocity => Self::Velocity(<$vel>::new(value)),
+                    PositionDerivative::Acceleration => Self::Acceleration(<$acc>::new(value)),
                 }
             }
             ///Get the commanded constant position if there is one. If the position derivative is
@@ -39,7 +37,7 @@ macro_rules! build_command_enum {
             ///velocity should be zero with a constant position.
             pub const fn get_velocity(&self) -> Option<$vel> {
                 match self {
-                    Self::Position(_) => Some(MillimeterPerSecond::new(0.0)),
+                    Self::Position(_) => Some(<$vel>::new(0.0)),
                     Self::Velocity(vel) => Some(*vel),
                     Self::Acceleration(_) => None,
                 }
@@ -51,7 +49,7 @@ macro_rules! build_command_enum {
                 if let Self::Acceleration(acc) = self {
                     *acc
                 } else {
-                    MillimeterPerSecondSquared::new(0.0)
+                    <$acc>::new(0.0)
                 }
             }
         }
@@ -70,8 +68,8 @@ macro_rules! build_command_enum {
                 Self::Acceleration(was)
             }
         }
-        impl From<State> for $name {
-            fn from(state: State) -> Self {
+        impl From<$corresponding_state> for $name {
+            fn from(state: $corresponding_state) -> Self {
                 if state.acceleration == <$acc>::new(0.0) {
                     if state.velocity == <$vel>::new(0.0) {
                         Self::Position(state.position)
@@ -168,11 +166,28 @@ macro_rules! build_command_enum {
                 }
             }
         }
+        impl From<$name> for PositionDerivative {
+            fn from(was: $name) -> Self {
+                match was {
+                    $name::Position(_) => Self::Position,
+                    $name::Velocity(_) => Self::Velocity,
+                    $name::Acceleration(_) => Self::Acceleration,
+                }
+            }
+        }
     };
 }
 build_command_enum!(
     Command,
     Millimeter<f32>,
     MillimeterPerSecond<f32>,
-    MillimeterPerSecondSquared<f32>
+    MillimeterPerSecondSquared<f32>,
+    State
+);
+build_command_enum!(
+    AngularCommand,
+    Dimensionless<f32>,
+    InverseSecond<f32>,
+    InverseSecondSquared<f32>,
+    AngularState
 );
