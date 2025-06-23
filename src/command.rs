@@ -191,3 +191,23 @@ build_command_enum!(
     InverseSecondSquared<f32>,
     AngularState
 );
+impl Mul<Millimeter<f32>> for AngularCommand {
+    type Output = Command;
+    fn mul(self, rhs: Millimeter<f32>) -> Command {
+        match self {
+            Self::Position(pos) => Command::Position(pos * rhs),
+            Self::Velocity(vel) => Command::Velocity(vel * rhs),
+            Self::Acceleration(acc) => Command::Acceleration(acc * rhs),
+        }
+    }
+}
+impl Div<Millimeter<f32>> for Command {
+    type Output = AngularCommand;
+    fn div(self, rhs: Millimeter<f32>) -> AngularCommand {
+        match self {
+            Self::Position(pos) => AngularCommand::Position(pos / rhs),
+            Self::Velocity(vel) => AngularCommand::Velocity(vel / rhs),
+            Self::Acceleration(acc) => AngularCommand::Acceleration(acc / rhs),
+        }
+    }
+}
