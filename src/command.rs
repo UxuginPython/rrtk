@@ -1,6 +1,31 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // Copyright 2024-2025 UxuginPython
 use super::*;
+//TODO: Figure out what to do about the impls not for $name. where clauses?
+pub trait GenericCommand:
+    From<Self::Position>
+    + From<Self::Velocity>
+    + From<Self::Acceleration>
+    + From<Self::CorrespondingState>
+    + Add<Output = Self>
+    + Sub<Output = Self>
+    + Mul<Dimensionless<f32>>
+    + Div<Dimensionless<f32>>
+    + Neg<Output = Self>
+    + AddAssign
+    + SubAssign
+    + MulAssign<Dimensionless<f32>>
+    + DivAssign<Dimensionless<f32>>
+{
+    type Position;
+    type Velocity;
+    type Acceleration;
+    type CorrespondingState;
+    fn generic_new(position_derivative: PositionDerivative, value: f32) -> Self;
+    fn generic_get_position(&self) -> Option<Self::Position>;
+    fn generic_get_velocity(&self) -> Option<Self::Velocity>;
+    fn generic_get_acceleration(&self) -> Self::Acceleration;
+}
 macro_rules! build_command_enum {
     ($name: ident, $pos: ty, $vel: ty, $acc: ty, $corresponding_state: ty) => {
         ///A command for a motor to perform: go to a position, run at a velocity, or accelerate at a rate.
@@ -51,6 +76,28 @@ macro_rules! build_command_enum {
                 } else {
                     <$acc>::new(0.0)
                 }
+            }
+        }
+        impl GenericCommand for $name {
+            type Position = $pos;
+            type Velocity = $vel;
+            type Acceleration = $acc;
+            type CorrespondingState = $corresponding_state;
+            #[inline]
+            fn generic_new(position_derivative: PositionDerivative, value: f32) -> Self {
+                Self::new(position_derivative, value)
+            }
+            #[inline]
+            fn generic_get_position(&self) -> Option<$pos> {
+                self.get_position()
+            }
+            #[inline]
+            fn generic_get_velocity(&self) -> Option<$vel> {
+                self.get_velocity()
+            }
+            #[inline]
+            fn generic_get_acceleration(&self) -> $acc {
+                self.get_acceleration()
             }
         }
         impl From<$pos> for $name {
