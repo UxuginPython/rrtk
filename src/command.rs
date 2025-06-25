@@ -2,6 +2,10 @@
 // Copyright 2024-2025 UxuginPython
 use super::*;
 //TODO: Figure out what to do about the impls not for $name. where clauses?
+///This trait allows one to write code generically over [`Command`] and [`AngularCommand`]. Each of
+///those has a corresponding method to each method of this trait without the `generic_` prefix.
+///This is necessary because many of the implementations should be const fn and can't be in a
+///trait. Calling the direct methods (without `generic_`) is preferred where possible.
 pub trait GenericCommand:
     From<Self::Position>
     + From<Self::Velocity>
@@ -17,13 +21,32 @@ pub trait GenericCommand:
     + MulAssign<Dimensionless<f32>>
     + DivAssign<Dimensionless<f32>>
 {
+    ///The type that position is stored as. Almost certainly a [`Quantity`] of some type.
     type Position;
+    ///The type that velocity is stored as. Almost certainly a [`Quantity`] of some type.
     type Velocity;
+    ///The type that acceleration is stored as. Almost certainly a [`Quantity`] of some type.
     type Acceleration;
-    type CorrespondingState;
+    ///The corresponding state type with the same types for position, velocity, and acceleration.
+    type CorrespondingState: GenericState<
+            Position = Self::Position,
+            Velocity = Self::Velocity,
+            Acceleration = Self::Acceleration,
+        >;
+    ///Constructor from a position derivative and value.
     fn generic_new(position_derivative: PositionDerivative, value: f32) -> Self;
+    ///If the command requires a known constant position, get it; otherwise, return `None`. This
+    ///will only return `Some` with the `Position` variant.
     fn generic_get_position(&self) -> Option<Self::Position>;
+    ///If the command requires a known constant velocity, get it; otherwise, return `None`. This
+    ///will return `Some` with either the `Position` or `Velocity` variant. More specifically, if
+    ///the command is the `Position` variant, this will always return `Some` with a value of zero.
+    ///This returns `None` with the `Acceleration` variant because either velocity is not constant
+    ///(most cases) or the constant velocity is not known (with a fixed acceleration of zero).
     fn generic_get_velocity(&self) -> Option<Self::Velocity>;
+    ///Get the (constant) acceleration required by the command. Returns zero with the `Position` or
+    ///`Velocity` variant, and, of course, returns the specified acceleration with the
+    ///`Acceleration` variant.
     fn generic_get_acceleration(&self) -> Self::Acceleration;
 }
 macro_rules! build_command_enum {
@@ -39,7 +62,7 @@ macro_rules! build_command_enum {
             Acceleration($acc),
         }
         impl $name {
-            ///Constructor for [`$name`].
+            ///Constructor from a position derivative and value.
             pub const fn new(position_derivative: PositionDerivative, value: f32) -> Self {
                 match position_derivative {
                     PositionDerivative::Position => Self::Position(<$pos>::new(value)),
