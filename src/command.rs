@@ -1,13 +1,15 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // Copyright 2024-2025 UxuginPython
 use super::*;
-//TODO: Figure out what to do about the impls not for $name. where clauses?
 ///This trait allows one to write code generically over [`Command`] and [`AngularCommand`]. Each of
 ///those has a corresponding method to each method of this trait without the `generic_` prefix.
 ///This is necessary because many of the implementations should be const fn and can't be in a
 ///trait. Calling the direct methods (without `generic_`) is preferred where possible.
 pub trait GenericCommand:
-    From<Self::Position>
+    Copy
+    + Debug
+    + PartialEq
+    + From<Self::Position>
     + From<Self::Velocity>
     + From<Self::Acceleration>
     + From<Self::CorrespondingState>
@@ -20,6 +22,9 @@ pub trait GenericCommand:
     + SubAssign
     + MulAssign<Dimensionless<f32>>
     + DivAssign<Dimensionless<f32>>
+where
+    f32: From<Self>,
+    PositionDerivative: From<Self>,
 {
     ///The type that position is stored as. Almost certainly a [`Quantity`] of some type.
     type Position;
