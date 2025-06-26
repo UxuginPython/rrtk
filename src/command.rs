@@ -29,6 +29,8 @@ pub trait GenericCommand:
         + Default
         + fmt::Display
         + PartialOrd
+        + Add<Output = Self::Position>
+        + Sub<Output = Self::Position>
         + Div<Time, Output = Self::Velocity>;
     ///The type that velocity is stored as. Almost certainly a [`Quantity`] of some type.
     type Velocity: Copy
@@ -36,6 +38,8 @@ pub trait GenericCommand:
         + Default
         + fmt::Display
         + PartialOrd
+        + Add<Output = Self::Velocity>
+        + Sub<Output = Self::Velocity>
         + Mul<Time, Output = Self::Position>
         + Div<Time, Output = Self::Acceleration>;
     ///The type that acceleration is stored as. Almost certainly a [`Quantity`] of some type.
@@ -44,6 +48,8 @@ pub trait GenericCommand:
         + Default
         + fmt::Display
         + PartialOrd
+        + Add<Output = Self::Acceleration>
+        + Sub<Output = Self::Acceleration>
         + Mul<Time, Output = Self::Velocity>;
     ///The corresponding state type with the same types for position, velocity, and acceleration.
     type CorrespondingState: GenericState<

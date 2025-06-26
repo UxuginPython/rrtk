@@ -33,6 +33,8 @@ pub trait GenericState:
         + Default
         + fmt::Display
         + PartialOrd
+        + Add<Output = Self::Position>
+        + Sub<Output = Self::Position>
         + Div<Time, Output = Self::Velocity>;
     ///The type that the velocity is stored as. Almost certainly a [`Quantity`] of some type.
     type Velocity: Copy
@@ -40,6 +42,8 @@ pub trait GenericState:
         + Default
         + fmt::Display
         + PartialOrd
+        + Add<Output = Self::Velocity>
+        + Sub<Output = Self::Velocity>
         + Mul<Time, Output = Self::Position>
         + Div<Time, Output = Self::Acceleration>;
     ///The type that the acceleration is stored as. Almost certainly a [`Quantity`] of some type.
@@ -48,6 +52,8 @@ pub trait GenericState:
         + Default
         + fmt::Display
         + PartialOrd
+        + Add<Output = Self::Acceleration>
+        + Sub<Output = Self::Acceleration>
         + Mul<Time, Output = Self::Velocity>;
     ///Constructor from a position, velocity, and acceleration.
     fn generic_new(
