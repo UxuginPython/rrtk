@@ -5,6 +5,13 @@ use crate::*;
 ///those has a corresponding method to each method of this trait without the `generic_` prefix.
 ///This is necessary because many of the implementations should be const fn and can't be in a
 ///trait. Calling the direct methods (without `generic_`) is preferred where possible.
+///
+///`generic_(position|velocity|acceleration)(_mut)?`, to use regex syntax, are a bit different:
+///they correspond to fields rather than methods. If you are directly using a state object, it is
+///recommended to use the `position`, `velocity`, and `acceleration` fields directly, but this is
+///not possible when using `GenericState`. Thus, these methods exist to allow access to the fields.
+///`generic_(position|velocity|acceleration)` get the values themselves, and their corresponding
+///`_mut` methods get `&mut` references to allow mutating the values inside the state struct.
 pub trait GenericState:
     Copy
     + Debug
@@ -41,6 +48,18 @@ pub trait GenericState:
     fn generic_set_constant_velocity(&mut self, velocity: Self::Velocity);
     ///Set the acceleration.
     fn generic_set_constant_acceleration(&mut self, acceleration: Self::Acceleration);
+    ///Generically get the position value of the state.
+    fn generic_position(&self) -> Self::Position;
+    ///Generically get the velocity value of the state.
+    fn generic_velocity(&self) -> Self::Velocity;
+    ///Generically get the acceleration value of the state.
+    fn generic_acceleration(&self) -> Self::Acceleration;
+    ///Get a mutable reference to the position value of the state.
+    fn generic_position_mut(&mut self) -> &mut Self::Position;
+    ///Get a mutable reference to the velocity value of the state.
+    fn generic_velocity_mut(&mut self) -> &mut Self::Velocity;
+    ///Get a mutable reference to the acceleration value of the state.
+    fn generic_acceleration_mut(&mut self) -> &mut Self::Acceleration;
 }
 macro_rules! build_state_struct {
     ($name: ident, $pos: ty, $vel: ty, $acc: ty) => {
@@ -196,6 +215,30 @@ macro_rules! build_state_struct {
             #[inline]
             fn generic_set_constant_acceleration(&mut self, acceleration: $acc) {
                 self.set_constant_acceleration(acceleration);
+            }
+            #[inline]
+            fn generic_position(&self) -> $pos {
+                self.position
+            }
+            #[inline]
+            fn generic_velocity(&self) -> $vel {
+                self.velocity
+            }
+            #[inline]
+            fn generic_acceleration(&self) -> $acc {
+                self.acceleration
+            }
+            #[inline]
+            fn generic_position_mut(&mut self) -> &mut $pos {
+                &mut self.position
+            }
+            #[inline]
+            fn generic_velocity_mut(&mut self) -> &mut $vel {
+                &mut self.velocity
+            }
+            #[inline]
+            fn generic_acceleration_mut(&mut self) -> &mut $acc {
+                &mut self.acceleration
             }
         }
     };
