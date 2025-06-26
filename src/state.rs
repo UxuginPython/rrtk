@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // Copyright 2024-2025 UxuginPython
 use crate::*;
+//TODO: Check over this documentation.
 ///This trait allows one to write code generically over [`State`] and [`AngularState`]. Each of
 ///those has a corresponding method to each method of this trait without the `generic_` prefix.
 ///This is necessary because many of the implementations should be const fn and can't be in a
@@ -41,6 +42,12 @@ pub trait GenericState:
     fn generic_set_constant_velocity(&mut self, velocity: Self::Velocity);
     ///Set the acceleration.
     fn generic_set_constant_acceleration(&mut self, acceleration: Self::Acceleration);
+    ///Generically get the position value of the state.
+    fn generic_position(&self) -> Self::Position;
+    ///Generically get the velocity value of the state.
+    fn generic_velocity(&self) -> Self::Velocity;
+    ///Generically get the acceleration value of the state.
+    fn generic_acceleration(&self) -> Self::Acceleration;
 }
 macro_rules! build_state_struct {
     ($name: ident, $pos: ty, $vel: ty, $acc: ty) => {
@@ -196,6 +203,18 @@ macro_rules! build_state_struct {
             #[inline]
             fn generic_set_constant_acceleration(&mut self, acceleration: $acc) {
                 self.set_constant_acceleration(acceleration);
+            }
+            #[inline]
+            fn generic_position(&self) -> $pos {
+                self.position
+            }
+            #[inline]
+            fn generic_velocity(&self) -> $vel {
+                self.velocity
+            }
+            #[inline]
+            fn generic_acceleration(&self) -> $acc {
+                self.acceleration
             }
         }
     };
