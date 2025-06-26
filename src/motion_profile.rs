@@ -70,8 +70,8 @@ impl<C: GenericCommand> MotionProfile<C> {
                 1.0
             },
         );
-        let max_vel = max_vel.abs() * sign;
-        let max_acc = max_acc.abs() * sign;
+        let max_vel = max_vel.rrtk_abs() * sign;
+        let max_acc = max_acc.rrtk_abs() * sign;
         let d_t1_vel = max_vel - start_state.generic_velocity();
         let t1 = d_t1_vel / max_acc;
         assert!(t1.into_inner() >= 0.0);
