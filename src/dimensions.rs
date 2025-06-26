@@ -406,3 +406,8 @@ impl<T: Half, MM: Integer, S: Integer> Half for Quantity<T, MM, S> {
         Self::new(self.2.half())
     }
 }
+impl<T: AbsoluteValue, MM: Integer, S: Integer> AbsoluteValue for Quantity<T, MM, S> {
+    fn rrtk_abs(self) -> Self {
+        Self::new(self.2.rrtk_abs())
+    }
+}
