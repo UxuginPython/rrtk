@@ -36,7 +36,7 @@ pub trait GenericState:
         + Add<Output = Self::Position>
         + Sub<Output = Self::Position>
         + Div<Time, Output = Self::Velocity>
-        + AbsoluteValue;
+        + stulta::AbsoluteValue;
     ///The type that the velocity is stored as. Almost certainly a [`Quantity`] of some type.
     type Velocity: Copy
         + Debug
@@ -47,7 +47,7 @@ pub trait GenericState:
         + Sub<Output = Self::Velocity>
         + Mul<Time, Output = Self::Position>
         + Div<Time, Output = Self::Acceleration>
-        + AbsoluteValue;
+        + stulta::AbsoluteValue;
     ///The type that the acceleration is stored as. Almost certainly a [`Quantity`] of some type.
     type Acceleration: Copy
         + Debug
@@ -57,7 +57,7 @@ pub trait GenericState:
         + Add<Output = Self::Acceleration>
         + Sub<Output = Self::Acceleration>
         + Mul<Time, Output = Self::Velocity>
-        + AbsoluteValue;
+        + stulta::AbsoluteValue;
     ///Constructor from a position, velocity, and acceleration.
     fn generic_new(
         position: Self::Position,

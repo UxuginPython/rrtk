@@ -401,12 +401,14 @@ impl<T: fmt::Display, MM: Integer, S: Integer> fmt::Display for Quantity<T, MM, 
         write!(f, "{} mm^{}s^{}", self.2, MM::as_i8(), S::as_i8())
     }
 }
-impl<T: Half, MM: Integer, S: Integer> Half for Quantity<T, MM, S> {
+impl<T: stulta::Half, MM: Integer, S: Integer> stulta::Half for Quantity<T, MM, S> {
     fn half(self) -> Self {
         Self::new(self.2.half())
     }
 }
-impl<T: AbsoluteValue, MM: Integer, S: Integer> AbsoluteValue for Quantity<T, MM, S> {
+impl<T: stulta::AbsoluteValue, MM: Integer, S: Integer> stulta::AbsoluteValue
+    for Quantity<T, MM, S>
+{
     fn rrtk_abs(self) -> Self {
         Self::new(self.2.rrtk_abs())
     }
