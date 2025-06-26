@@ -1,11 +1,15 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // Copyright 2024-2025 UxuginPython
 use crate::*;
-//TODO: Check over this documentation.
 ///This trait allows one to write code generically over [`State`] and [`AngularState`]. Each of
 ///those has a corresponding method to each method of this trait without the `generic_` prefix.
 ///This is necessary because many of the implementations should be const fn and can't be in a
 ///trait. Calling the direct methods (without `generic_`) is preferred where possible.
+///
+///`generic_(position|velocity|acceleration)` are a bit different: They correspond to fields rather
+///than methods. If you are directly using a state object, it is recommended to use the `position`,
+///`velocity`, and `acceleration` fields directly, but this is not possible when using
+///`GenericState`. Thus, these methods exist to allow access to the fields.
 pub trait GenericState:
     Copy
     + Debug
