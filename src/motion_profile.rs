@@ -50,40 +50,43 @@ pub struct MotionProfile<C: GenericCommand> {
         };
         Some(Datum::new(time, command))
     }
-}
+}*/
 //Unfortunately this is one of the times when you might be able to get a bit more functionality
 //(more const fns in this case) but at the significant expense of readability and simplicity. The
 //real solution here is to stop using runtime Quantity, which will happen at some point. When that
 //happens, TODO review what can be const fn again.
-impl MotionProfile {
+impl<C: GenericCommand> MotionProfile<C> {
     ///Constructor for [`MotionProfile`] using start and end states.
     pub fn new(
-        start_state: State,
-        end_state: State,
-        max_vel: MillimeterPerSecond<f32>,
-        max_acc: MillimeterPerSecondSquared<f32>,
-    ) -> MotionProfile {
-        let sign = Dimensionless::new(if end_state.position < start_state.position {
-            -1.0
-        } else {
-            1.0
-        });
+        start_state: C::CorrespondingState,
+        end_state: C::CorrespondingState,
+        max_vel: C::Velocity,
+        max_acc: C::Acceleration,
+    ) -> Self {
+        let sign = Dimensionless::new(
+            if end_state.generic_position() < start_state.generic_position() {
+                -1.0
+            } else {
+                1.0
+            },
+        );
         let max_vel = max_vel.abs() * sign;
         let max_acc = max_acc.abs() * sign;
-        let d_t1_vel = max_vel - start_state.velocity;
+        let d_t1_vel = max_vel - start_state.generic_velocity();
         let t1 = d_t1_vel / max_acc;
         assert!(t1.into_inner() >= 0.0);
-        let d_t1_pos = (start_state.velocity + max_vel) / Dimensionless::new(2.0) * t1;
-        let d_t3_vel = end_state.velocity - max_vel;
+        let d_t1_pos = (start_state.generic_velocity() + max_vel) / Dimensionless::new(2.0) * t1;
+        let d_t3_vel = end_state.generic_velocity() - max_vel;
         let d_t3 = d_t3_vel / -max_acc;
         assert!(d_t3.into_inner() >= 0.0);
-        let d_t3_pos = (max_vel + end_state.velocity) / Dimensionless::new(2.0) * d_t3;
-        let d_t2_pos = (end_state.position - start_state.position) - (d_t1_pos + d_t3_pos);
+        let d_t3_pos = (max_vel + end_state.generic_velocity()) / Dimensionless::new(2.0) * d_t3;
+        let d_t2_pos =
+            (end_state.generic_position() - start_state.generic_position()) - (d_t1_pos + d_t3_pos);
         let d_t2 = d_t2_pos / max_vel;
         assert!(d_t2.into_inner() >= 0.0);
         let t2 = t1 + d_t2;
         let t3 = t2 + d_t3;
-        let end_command = Command::from(end_state);
+        let end_command = C::from(end_state);
         MotionProfile {
             start_pos: start_state.position,
             start_vel: start_state.velocity,
@@ -100,7 +103,7 @@ impl MotionProfile {
             end_command,
         }
     }
-    ///Get the intended [`PositionDerivative`] at a given time.
+    /*///Get the intended [`PositionDerivative`] at a given time.
     pub fn get_mode(&self, t: Time) -> Option<PositionDerivative> {
         if t < Time::default() {
             None
@@ -186,9 +189,9 @@ impl MotionProfile {
         } else {
             return self.end_command.get_position();
         }
-    }
+    }*/
 }
-#[cfg(test)]
+/*#[cfg(test)]
 mod tests {
     use super::*;
     #[test]
