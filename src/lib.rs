@@ -699,6 +699,26 @@ impl Half for f64 {
         self / 2.0
     }
 }
+trait AbsoluteValue {
+    fn rrtk_abs(self) -> Self;
+}
+macro_rules! impl_abs {
+    ($num: ty) => {
+        impl AbsoluteValue for $num {
+            fn rrtk_abs(self) -> Self {
+                self.abs()
+            }
+        }
+    };
+}
+impl_abs!(i8);
+impl_abs!(i16);
+impl_abs!(i32);
+impl_abs!(i64);
+impl_abs!(i128);
+impl_abs!(isize);
+impl_abs!(f32);
+impl_abs!(f64);
 ///[`Updatable`], [`Getter`], [`Settable`], and [`TimeGetter`] are passed through `Box`,
 ///`Rc<RefCell<T>>`, `Arc<RwLock<T>>`, and `Arc<Mutex<T>>`, but this cannot be done safely for
 ///references involving raw pointer dereferencing. This is a wrapper struct that provides this
