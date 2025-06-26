@@ -699,7 +699,8 @@ impl Half for f64 {
         self / 2.0
     }
 }
-trait AbsoluteValue {
+#[doc(hidden)]
+pub trait AbsoluteValue {
     fn rrtk_abs(self) -> Self;
 }
 macro_rules! impl_abs {
