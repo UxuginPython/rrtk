@@ -28,11 +28,27 @@ pub trait GenericState:
     + DivAssign<Dimensionless<f32>>
 {
     ///The type that the position is stored as. Almost certainly a [`Quantity`] of some type.
-    type Position: Copy + Debug + Default + fmt::Display + PartialOrd;
+    type Position: Copy
+        + Debug
+        + Default
+        + fmt::Display
+        + PartialOrd
+        + Div<Time, Output = Self::Velocity>;
     ///The type that the velocity is stored as. Almost certainly a [`Quantity`] of some type.
-    type Velocity: Copy + Debug + Default + fmt::Display + PartialOrd;
+    type Velocity: Copy
+        + Debug
+        + Default
+        + fmt::Display
+        + PartialOrd
+        + Mul<Time, Output = Self::Position>
+        + Div<Time, Output = Self::Acceleration>;
     ///The type that the acceleration is stored as. Almost certainly a [`Quantity`] of some type.
-    type Acceleration: Copy + Debug + Default + fmt::Display + PartialOrd;
+    type Acceleration: Copy
+        + Debug
+        + Default
+        + fmt::Display
+        + PartialOrd
+        + Mul<Time, Output = Self::Velocity>;
     ///Constructor from a position, velocity, and acceleration.
     fn generic_new(
         position: Self::Position,
