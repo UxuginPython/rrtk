@@ -32,7 +32,7 @@ pub trait GenericCommand:
         + Add<Output = Self::Position>
         + Sub<Output = Self::Position>
         + Div<Time, Output = Self::Velocity>
-        + AbsoluteValue;
+        + stulta::AbsoluteValue;
     ///The type that velocity is stored as. Almost certainly a [`Quantity`] of some type.
     type Velocity: Copy
         + Debug
@@ -43,7 +43,7 @@ pub trait GenericCommand:
         + Sub<Output = Self::Velocity>
         + Mul<Time, Output = Self::Position>
         + Div<Time, Output = Self::Acceleration>
-        + AbsoluteValue;
+        + stulta::AbsoluteValue;
     ///The type that acceleration is stored as. Almost certainly a [`Quantity`] of some type.
     type Acceleration: Copy
         + Debug
@@ -53,7 +53,7 @@ pub trait GenericCommand:
         + Add<Output = Self::Acceleration>
         + Sub<Output = Self::Acceleration>
         + Mul<Time, Output = Self::Velocity>
-        + AbsoluteValue;
+        + stulta::AbsoluteValue;
     ///The corresponding state type with the same types for position, velocity, and acceleration.
     type CorrespondingState: GenericState<
             Position = Self::Position,

@@ -637,7 +637,7 @@ impl<T, O, N1, G, E> Updatable<E> for IntegralStream<T, O, G, E>
 where
     T: Copy + Add<Output = N1>,
     Time: Mul<N1, Output = O>,
-    O: Copy + Half + Add<O, Output = O>,
+    O: Copy + stulta::Half + Add<O, Output = O>,
     G: Getter<T, E>,
     E: Clone + Debug,
 {
