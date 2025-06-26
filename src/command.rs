@@ -253,7 +253,7 @@ macro_rules! build_command_enum {
     };
 }
 build_command_enum!(
-    Command,
+    LinearCommand,
     Millimeter<f32>,
     MillimeterPerSecond<f32>,
     MillimeterPerSecondSquared<f32>,
@@ -267,16 +267,16 @@ build_command_enum!(
     AngularState
 );
 impl Mul<Millimeter<f32>> for AngularCommand {
-    type Output = Command;
-    fn mul(self, rhs: Millimeter<f32>) -> Command {
+    type Output = LinearCommand;
+    fn mul(self, rhs: Millimeter<f32>) -> LinearCommand {
         match self {
-            Self::Position(pos) => Command::Position(pos * rhs),
-            Self::Velocity(vel) => Command::Velocity(vel * rhs),
-            Self::Acceleration(acc) => Command::Acceleration(acc * rhs),
+            Self::Position(pos) => LinearCommand::Position(pos * rhs),
+            Self::Velocity(vel) => LinearCommand::Velocity(vel * rhs),
+            Self::Acceleration(acc) => LinearCommand::Acceleration(acc * rhs),
         }
     }
 }
-impl Div<Millimeter<f32>> for Command {
+impl Div<Millimeter<f32>> for LinearCommand {
     type Output = AngularCommand;
     fn div(self, rhs: Millimeter<f32>) -> AngularCommand {
         match self {

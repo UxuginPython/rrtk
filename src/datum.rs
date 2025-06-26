@@ -92,7 +92,7 @@ impl<T: ?Sized> NotDatum for Mutex<T> {}
 #[cfg(feature = "std")]
 impl<T: ?Sized> NotDatum for RwLock<T> {}
 impl NotDatum for State {}
-impl NotDatum for Command {}
+impl NotDatum for LinearCommand {}
 impl NotDatum for PositionDerivative {}
 impl NotDatum for error::CannotConvert {}
 impl NotDatum for Time {}

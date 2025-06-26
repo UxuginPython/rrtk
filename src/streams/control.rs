@@ -81,7 +81,7 @@ impl<G: Getter<f32, E>, E: Clone + Debug> Updatable<E> for PIDControllerStream<G
         Ok(())
     }
 }
-pub use command_pid::CommandPID;
+/*pub use command_pid::CommandPID;
 mod command_pid {
     use super::*;
     #[derive(Clone, Debug, PartialEq)]
@@ -266,7 +266,7 @@ mod command_pid {
             Ok(())
         }
     }
-}
+}*/
 ///An Exponentially Weighted Moving Average stream for use with the stream system. See <https://www.itl.nist.gov/div898/handbook/pmc/section3/pmc324.htm> for more information. Because a standard EWMA requires that new data always arrive at the same interval, this implementation uses λ=1-(1-`smoothing_constant`)^Δt instead of the usual weighting factor.
 #[cfg(feature = "internal_enhanced_float")]
 pub struct EWMAStream<T, G, E>
