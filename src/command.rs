@@ -24,11 +24,11 @@ pub trait GenericCommand:
     + DivAssign<Dimensionless<f32>>
 {
     ///The type that position is stored as. Almost certainly a [`Quantity`] of some type.
-    type Position;
+    type Position: Copy + Debug + Default + fmt::Display + PartialOrd;
     ///The type that velocity is stored as. Almost certainly a [`Quantity`] of some type.
-    type Velocity;
+    type Velocity: Copy + Debug + Default + fmt::Display + PartialOrd;
     ///The type that acceleration is stored as. Almost certainly a [`Quantity`] of some type.
-    type Acceleration;
+    type Acceleration: Copy + Debug + Default + fmt::Display + PartialOrd;
     ///The corresponding state type with the same types for position, velocity, and acceleration.
     type CorrespondingState: GenericState<
             Position = Self::Position,
