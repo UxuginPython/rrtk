@@ -87,9 +87,9 @@ impl<C: GenericCommand> MotionProfile<C> {
         let t2 = t1 + d_t2;
         let t3 = t2 + d_t3;
         let end_command = C::from(end_state);
-        MotionProfile {
-            start_pos: start_state.position,
-            start_vel: start_state.velocity,
+        Self {
+            start_pos: start_state.generic_position(),
+            start_vel: start_state.generic_velocity(),
             t1: Time::try_from(t1).expect(
                 "t1 must always be in seconds in max_vel and max_acc have correct dimensions",
             ),
