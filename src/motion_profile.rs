@@ -15,18 +15,18 @@ pub enum MotionProfilePiece {
     ///You are done with the motion profile.
     Complete,
 }
-/*///A motion profile for getting from one state to another.
+///A motion profile for getting from one state to another.
 #[derive(Clone, Debug, PartialEq)]
-pub struct MotionProfile {
-    start_pos: Millimeter<f32>,
-    start_vel: MillimeterPerSecond<f32>,
+pub struct MotionProfile<C: GenericCommand> {
+    start_pos: C::Position,
+    start_vel: C::Velocity,
     t1: Time,
     t2: Time,
     t3: Time,
-    max_acc: MillimeterPerSecondSquared<f32>,
-    end_command: Command,
+    max_acc: C::Acceleration,
+    end_command: C,
 }
-impl Chronology<Command> for MotionProfile {
+/*impl Chronology<Command> for MotionProfile {
     fn get(&self, time: Time) -> Option<Datum<Command>> {
         let mode = match self.get_mode(time) {
             Some(value) => value,
