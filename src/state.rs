@@ -52,6 +52,12 @@ pub trait GenericState:
     fn generic_velocity(&self) -> Self::Velocity;
     ///Generically get the acceleration value of the state.
     fn generic_acceleration(&self) -> Self::Acceleration;
+    ///Get a mutable reference to the position value of the state.
+    fn generic_position_mut(&mut self) -> &mut Self::Position;
+    ///Get a mutable reference to the velocity value of the state.
+    fn generic_velocity_mut(&mut self) -> &mut Self::Velocity;
+    ///Get a mutable reference to the acceleration value of the state.
+    fn generic_acceleration_mut(&mut self) -> &mut Self::Acceleration;
 }
 macro_rules! build_state_struct {
     ($name: ident, $pos: ty, $vel: ty, $acc: ty) => {
@@ -219,6 +225,18 @@ macro_rules! build_state_struct {
             #[inline]
             fn generic_acceleration(&self) -> $acc {
                 self.acceleration
+            }
+            #[inline]
+            fn generic_position_mut(&mut self) -> &mut $pos {
+                &mut self.position
+            }
+            #[inline]
+            fn generic_velocity_mut(&mut self) -> &mut $vel {
+                &mut self.velocity
+            }
+            #[inline]
+            fn generic_acceleration_mut(&mut self) -> &mut $acc {
+                &mut self.acceleration
             }
         }
     };
