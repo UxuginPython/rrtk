@@ -72,7 +72,7 @@ fn terminal() {
         .borrow_mut()
         .set(Datum::new(
             Time::ZERO,
-            Command::new(PositionDerivative::Position, 1.0),
+            AngularCommand::new(PositionDerivative::Position, 1.0),
         ))
         .unwrap(); //The stuff from `Settable` should take care of everything.
     term1.borrow_mut().update().unwrap(); //This should do nothing.
@@ -97,7 +97,7 @@ fn invert() {
         .borrow_mut()
         .set(Datum::new(
             Time::ZERO,
-            Command::Position(Dimensionless::new(1.0)),
+            AngularCommand::Position(Dimensionless::new(1.0)),
         ))
         .unwrap();
     connect(invert.get_terminal_1(), &terminal1);
@@ -115,11 +115,11 @@ fn invert() {
         )
     );
     assert_eq!(
-        <rrtk::Terminal<'_, ()> as rrtk::Getter<Command, ()>>::get(&terminal1.borrow())
+        <rrtk::Terminal<'_, ()> as rrtk::Getter<AngularCommand, ()>>::get(&terminal1.borrow())
             .unwrap()
             .unwrap()
             .value,
-        Command::Position(Dimensionless::new(1.0))
+        AngularCommand::Position(Dimensionless::new(1.0))
     );
     assert_eq!(
         <rrtk::Terminal<'_, ()> as rrtk::Getter<AngularState, ()>>::get(&terminal2.borrow())
@@ -133,11 +133,11 @@ fn invert() {
         )
     );
     assert_eq!(
-        <rrtk::Terminal<'_, ()> as rrtk::Getter<Command, ()>>::get(&terminal2.borrow())
+        <rrtk::Terminal<'_, ()> as rrtk::Getter<AngularCommand, ()>>::get(&terminal2.borrow())
             .unwrap()
             .unwrap()
             .value,
-        Command::Position(Dimensionless::new(-1.0))
+        AngularCommand::Position(Dimensionless::new(-1.0))
     );
 
     let mut invert = Invert::new();
@@ -158,7 +158,7 @@ fn invert() {
         .borrow_mut()
         .set(Datum::new(
             Time::ZERO,
-            Command::Position(Dimensionless::new(-1.0)),
+            AngularCommand::Position(Dimensionless::new(-1.0)),
         ))
         .unwrap();
     connect(invert.get_terminal_1(), &terminal1);
@@ -176,11 +176,11 @@ fn invert() {
         )
     );
     assert_eq!(
-        <rrtk::Terminal<'_, ()> as rrtk::Getter<Command, ()>>::get(&terminal1.borrow())
+        <rrtk::Terminal<'_, ()> as rrtk::Getter<AngularCommand, ()>>::get(&terminal1.borrow())
             .unwrap()
             .unwrap()
             .value,
-        Command::Position(Dimensionless::new(1.0))
+        AngularCommand::Position(Dimensionless::new(1.0))
     );
     assert_eq!(
         <rrtk::Terminal<'_, ()> as rrtk::Getter<AngularState, ()>>::get(&terminal2.borrow())
@@ -194,11 +194,11 @@ fn invert() {
         )
     );
     assert_eq!(
-        <rrtk::Terminal<'_, ()> as rrtk::Getter<Command, ()>>::get(&terminal2.borrow())
+        <rrtk::Terminal<'_, ()> as rrtk::Getter<AngularCommand, ()>>::get(&terminal2.borrow())
             .unwrap()
             .unwrap()
             .value,
-        Command::Position(Dimensionless::new(-1.0))
+        AngularCommand::Position(Dimensionless::new(-1.0))
     );
 
     let mut invert = Invert::new();
@@ -268,7 +268,10 @@ fn gear_train_2() {
         terminal2.borrow_mut().get(),
         Ok(None::<Datum<AngularState>>)
     );
-    assert_eq!(terminal2.borrow_mut().get(), Ok(None::<Datum<Command>>));
+    assert_eq!(
+        terminal2.borrow_mut().get(),
+        Ok(None::<Datum<AngularCommand>>)
+    );
     terminal1
         .borrow_mut()
         .set(Datum::new(
@@ -284,7 +287,7 @@ fn gear_train_2() {
         .borrow_mut()
         .set(Datum::new(
             Time::ZERO,
-            Command::Position(Dimensionless::new(3.0)),
+            AngularCommand::Position(Dimensionless::new(3.0)),
         ))
         .unwrap();
     gear_train.update().unwrap();
@@ -303,7 +306,7 @@ fn gear_train_2() {
         terminal2.borrow_mut().get(),
         Ok(Some(Datum::new(
             Time::ZERO,
-            Command::Position(Dimensionless::new(-1.0))
+            AngularCommand::Position(Dimensionless::new(-1.0))
         )))
     );
 }
@@ -318,7 +321,10 @@ fn gear_train_odd() {
         terminal2.borrow_mut().get(),
         Ok(None::<Datum<AngularState>>)
     );
-    assert_eq!(terminal2.borrow_mut().get(), Ok(None::<Datum<Command>>));
+    assert_eq!(
+        terminal2.borrow_mut().get(),
+        Ok(None::<Datum<AngularCommand>>)
+    );
     terminal1
         .borrow_mut()
         .set(Datum::new(
@@ -334,7 +340,7 @@ fn gear_train_odd() {
         .borrow_mut()
         .set(Datum::new(
             Time::ZERO,
-            Command::Position(Dimensionless::new(2.0)),
+            AngularCommand::Position(Dimensionless::new(2.0)),
         ))
         .unwrap();
     gear_train.update().unwrap();
@@ -353,7 +359,7 @@ fn gear_train_odd() {
         terminal2.borrow_mut().get(),
         Ok(Some(Datum::new(
             Time::ZERO,
-            Command::Position(Dimensionless::new(3.0))
+            AngularCommand::Position(Dimensionless::new(3.0))
         )))
     );
 }
@@ -368,7 +374,10 @@ fn gear_train_even() {
         terminal2.borrow_mut().get(),
         Ok(None::<Datum<AngularState>>)
     );
-    assert_eq!(terminal2.borrow_mut().get(), Ok(None::<Datum<Command>>));
+    assert_eq!(
+        terminal2.borrow_mut().get(),
+        Ok(None::<Datum<AngularCommand>>)
+    );
     terminal1
         .borrow_mut()
         .set(Datum::new(
@@ -384,7 +393,7 @@ fn gear_train_even() {
         .borrow_mut()
         .set(Datum::new(
             Time::ZERO,
-            Command::Position(Dimensionless::new(2.0)),
+            AngularCommand::Position(Dimensionless::new(2.0)),
         ))
         .unwrap();
     gear_train.update().unwrap();
@@ -403,7 +412,7 @@ fn gear_train_even() {
         terminal2.borrow_mut().get(),
         Ok(Some(Datum::new(
             Time::ZERO,
-            Command::Position(Dimensionless::new(-3.0))
+            AngularCommand::Position(Dimensionless::new(-3.0))
         )))
     );
 }
@@ -427,7 +436,7 @@ fn gear_train_multiple_inputs() {
         .borrow_mut()
         .set(Datum::new(
             Time::from_nanoseconds(3),
-            Command::Position(Dimensionless::new(2.0)),
+            AngularCommand::Position(Dimensionless::new(2.0)),
         ))
         .unwrap();
     gear_train
@@ -447,7 +456,7 @@ fn gear_train_multiple_inputs() {
         .borrow_mut()
         .set(Datum::new(
             Time::from_nanoseconds(2),
-            Command::Position(Dimensionless::new(-2.0)),
+            AngularCommand::Position(Dimensionless::new(-2.0)),
         ))
         .unwrap();
     gear_train.update().unwrap();
@@ -466,7 +475,7 @@ fn gear_train_multiple_inputs() {
         gear_train.get_terminal_1().borrow().get(),
         Ok(Some(Datum::new(
             Time::from_nanoseconds(3),
-            Command::Position(Dimensionless::new(2.0))
+            AngularCommand::Position(Dimensionless::new(2.0))
         )))
     );
     assert_eq!(
@@ -484,7 +493,7 @@ fn gear_train_multiple_inputs() {
         gear_train.get_terminal_2().borrow().get(),
         Ok(Some(Datum::new(
             Time::from_nanoseconds(3),
-            Command::Position(Dimensionless::new(-1.0))
+            AngularCommand::Position(Dimensionless::new(-1.0))
         )))
     );
 }
@@ -520,7 +529,7 @@ fn axle() {
         .borrow_mut()
         .set(Datum::new(
             Time::ZERO,
-            Command::Position(Dimensionless::new(1.0)),
+            AngularCommand::Position(Dimensionless::new(1.0)),
         ))
         .unwrap();
     connect(axle.get_terminal(0), &terminal1);
@@ -539,11 +548,11 @@ fn axle() {
         )
     );
     assert_eq!(
-        <rrtk::Terminal<'_, ()> as rrtk::Getter<Command, ()>>::get(&terminal1.borrow())
+        <rrtk::Terminal<'_, ()> as rrtk::Getter<AngularCommand, ()>>::get(&terminal1.borrow())
             .unwrap()
             .unwrap()
             .value,
-        Command::Position(Dimensionless::new(1.0))
+        AngularCommand::Position(Dimensionless::new(1.0))
     );
     assert_eq!(
         <rrtk::Terminal<'_, ()> as rrtk::Getter<AngularState, ()>>::get(&terminal2.borrow())
@@ -557,11 +566,11 @@ fn axle() {
         )
     );
     assert_eq!(
-        <rrtk::Terminal<'_, ()> as rrtk::Getter<Command, ()>>::get(&terminal2.borrow())
+        <rrtk::Terminal<'_, ()> as rrtk::Getter<AngularCommand, ()>>::get(&terminal2.borrow())
             .unwrap()
             .unwrap()
             .value,
-        Command::Position(Dimensionless::new(1.0))
+        AngularCommand::Position(Dimensionless::new(1.0))
     );
     assert_eq!(
         <rrtk::Terminal<'_, ()> as rrtk::Getter<AngularState, ()>>::get(&terminal3.borrow())
@@ -575,11 +584,11 @@ fn axle() {
         )
     );
     assert_eq!(
-        <rrtk::Terminal<'_, ()> as rrtk::Getter<Command, ()>>::get(&terminal3.borrow())
+        <rrtk::Terminal<'_, ()> as rrtk::Getter<AngularCommand, ()>>::get(&terminal3.borrow())
             .unwrap()
             .unwrap()
             .value,
-        Command::Position(Dimensionless::new(1.0))
+        AngularCommand::Position(Dimensionless::new(1.0))
     );
 }
 #[test]
@@ -942,7 +951,7 @@ fn actuator_wrapper() {
                 self.last_request.unwrap(),
                 TerminalData {
                     time: Time::from_nanoseconds(2),
-                    command: Some(Command::new(PositionDerivative::Position, 5.0)),
+                    command: Some(AngularCommand::new(PositionDerivative::Position, 5.0)),
                     state: Some(AngularState::new(
                         Dimensionless::new(1.0),
                         InverseSecond::new(2.0),
@@ -964,7 +973,7 @@ fn actuator_wrapper() {
         .borrow_mut()
         .set(Datum::new(
             Time::from_nanoseconds(1),
-            Command::new(PositionDerivative::Position, 5.0),
+            AngularCommand::new(PositionDerivative::Position, 5.0),
         ))
         .unwrap();
     terminal
@@ -1023,7 +1032,7 @@ fn getter_state_device_wrapper() {
 #[cfg(feature = "alloc")]
 fn pid_wrapper() {
     static mut ASSERTS: u8 = 0;
-    const COMMAND: Command = Command::new(PositionDerivative::Position, 5.0);
+    const COMMAND: AngularCommand = AngularCommand::new(PositionDerivative::Position, 5.0);
     const STATE: AngularState = AngularState::new(
         Dimensionless::new(0.0),
         InverseSecond::new(0.0),
