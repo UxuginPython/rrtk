@@ -147,8 +147,8 @@ impl<C: GenericCommand> MotionProfile<C> {
             return Some(self.end_command.generic_get_acceleration());
         }
     }
-    /*///Get the intended velocity at a given time.
-    pub fn get_velocity(&self, t: Time) -> Option<MillimeterPerSecond<f32>> {
+    ///Get the intended velocity at a given time.
+    pub fn get_velocity(&self, t: Time) -> Option<C::Velocity> {
         if t < Time::default() {
             None
         } else if t < self.t1 {
@@ -158,10 +158,10 @@ impl<C: GenericCommand> MotionProfile<C> {
         } else if t < self.t3 {
             return Some(self.max_acc * (self.t1 + self.t2 - t) + self.start_vel);
         } else {
-            return self.end_command.get_velocity();
+            return self.end_command.generic_get_velocity();
         }
     }
-    ///Get the intended position at a given time.
+    /*///Get the intended position at a given time.
     pub fn get_position(&self, t: Time) -> Option<Millimeter<f32>> {
         if t < Time::default() {
             None
