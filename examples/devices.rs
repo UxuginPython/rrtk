@@ -4,12 +4,13 @@
 //runaway motor with its encoder detached, especially when where are no comments. It's also not
 //just a Settable bug - read Encoder's Getter impl.
 #[cfg(all(feature = "devices", feature = "alloc"))]
-const COMMAND: Command = Command::new(PositionDerivative::Position, 5.0);
+const COMMAND: AngularCommand = AngularCommand::new(PositionDerivative::Position, 5.0);
+//Radians are dimensionless.
 #[cfg(all(feature = "devices", feature = "alloc"))]
-const STATE: State = State::new(
-    Millimeter::new(0.0),
-    MillimeterPerSecond::new(0.0),
-    MillimeterPerSecondSquared::new(0.0),
+const STATE: AngularState = AngularState::new(
+    Dimensionless::new(0.0),
+    InverseSecond::new(0.0),
+    InverseSecondSquared::new(0.0),
 );
 #[cfg(all(feature = "devices", feature = "alloc"))]
 const K_VALUES: PositionDerivativeDependentPIDKValues = PositionDerivativeDependentPIDKValues::new(
@@ -40,8 +41,8 @@ struct Encoder {
     time: Time,
 }
 #[cfg(all(feature = "devices", feature = "alloc"))]
-impl Getter<State, ()> for Encoder {
-    fn get(&self) -> Output<State, ()> {
+impl Getter<AngularState, ()> for Encoder {
+    fn get(&self) -> Output<AngularState, ()> {
         println!("Encoder returning state {:?}", STATE);
         Ok(Some(Datum::new(self.time, STATE)))
     }
