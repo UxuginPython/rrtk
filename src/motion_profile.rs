@@ -27,8 +27,7 @@ pub struct MotionProfile<C: GenericCommand> {
     max_acc: C::Acceleration,
     end_command: C,
 }
-//This *should* be fixed, but it's not confirmed because the methods it calls don't work yet.
-/*impl<C: GenericCommand> Chronology<C> for MotionProfile<C> {
+impl<C: GenericCommand> Chronology<C> for MotionProfile<C> {
     fn get(&self, time: Time) -> Option<Datum<C>> {
         let mode = match self.get_mode(time) {
             Some(value) => value,
@@ -52,7 +51,7 @@ pub struct MotionProfile<C: GenericCommand> {
         };
         Some(Datum::new(time, command))
     }
-}*/
+}
 //Unfortunately this is one of the times when you might be able to get a bit more functionality
 //(more const fns in this case) but at the significant expense of readability and simplicity. The
 //real solution here is to stop using runtime Quantity, which will happen at some point. When that
@@ -161,13 +160,13 @@ impl<C: GenericCommand> MotionProfile<C> {
             return self.end_command.generic_get_velocity();
         }
     }
-    /*///Get the intended position at a given time.
-    pub fn get_position(&self, t: Time) -> Option<Millimeter<f32>> {
+    ///Get the intended position at a given time.
+    pub fn get_position(&self, t: Time) -> Option<C::Position> {
         if t < Time::default() {
             None
         } else if t < self.t1 {
             return Some(
-                Dimensionless::new(0.5) * self.max_acc * t * t
+                self.max_acc * t * t * Dimensionless::new(0.5)
                     + self.start_vel * t
                     + self.start_pos,
             );
@@ -181,17 +180,17 @@ impl<C: GenericCommand> MotionProfile<C> {
             return Some(
                 self.max_acc
                     * (self.t1.as_seconds() * (-self.t1 / DimensionlessInteger(2) + self.t2))
-                    - Dimensionless::new(0.5)
-                        * self.max_acc
+                    - self.max_acc
+                        * Dimensionless::new(0.5)
                         * ((t - self.t2).as_seconds()
                             * (t - DimensionlessInteger(2) * self.t1 - self.t2))
                     + self.start_vel * t
                     + self.start_pos,
             );
         } else {
-            return self.end_command.get_position();
+            return self.end_command.generic_get_position();
         }
-    }*/
+    }
 }
 /*#[cfg(test)]
 mod tests {

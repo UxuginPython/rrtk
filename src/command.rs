@@ -39,6 +39,7 @@ pub trait GenericCommand:
         + Div<Dimensionless<f32>, Output = Self::Position>
         + Div<Time, Output = Self::Velocity>
         + Div<Self::Velocity, Output = Second<f32>>
+        + Div<SecondSquared<f32>, Output = Self::Acceleration>
         + stulta::AbsoluteValue;
     ///The type that velocity is stored as. Almost certainly a [`Quantity`] of some type.
     type Velocity: Copy
@@ -69,6 +70,7 @@ pub trait GenericCommand:
         + Div<Dimensionless<f32>, Output = Self::Acceleration>
         + Mul<Time, Output = Self::Velocity>
         + Mul<Second<f32>, Output = Self::Velocity>
+        + Mul<SecondSquared<f32>, Output = Self::Position>
         + stulta::AbsoluteValue;
     ///The corresponding state type with the same types for position, velocity, and acceleration.
     type CorrespondingState: GenericState<
