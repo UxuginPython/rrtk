@@ -368,21 +368,21 @@ mod velocity_to_state {
 pub use position_to_state::*;
 mod position_to_state {
     use super::*;
-    struct Update0 {
+    struct Update0<P, V, A> {
         last_update_time: Time,
-        position: Millimeter<f32>,
-        update_1: Option<Update1>,
+        position: P,
+        update_1: Option<Update1<V, A>>,
     }
-    struct Update1 {
-        velocity: MillimeterPerSecond<f32>,
-        update_2_acceleration: Option<MillimeterPerSecondSquared<f32>>,
+    struct Update1<V, A> {
+        velocity: V,
+        update_2_acceleration: Option<A>,
     }
     ///Takes the second derivative of a position to create a full [`State`] object.
-    pub struct PositionToState<G> {
+    pub struct PositionToState<G, S: GenericState> {
         input: G,
-        update_0: Option<Update0>,
+        update_0: Option<Update0<S::Position, S::Velocity, S::Acceleration>>,
     }
-    impl<G> PositionToState<G> {
+    impl<G, S: GenericState> PositionToState<G, S> {
         ///Constructor for `PositionToState`.
         pub const fn new(input: G) -> Self {
             Self {
@@ -391,17 +391,21 @@ mod position_to_state {
             }
         }
     }
-    impl<G, E: Clone + Debug> Getter<State, E> for PositionToState<G>
+    impl<G, S: GenericState, E: Clone + Debug> Getter<S, E> for PositionToState<G, S>
     where
         Self: Updatable<E>,
     {
-        fn get(&self) -> Output<State, E> {
+        fn get(&self) -> Output<S, E> {
             if let Some(update_0) = &self.update_0 {
                 if let Some(update_1) = &update_0.update_1 {
                     if let Some(update_2_acceleration) = update_1.update_2_acceleration {
                         return Ok(Some(Datum::new(
                             update_0.last_update_time,
-                            State::new(update_0.position, update_1.velocity, update_2_acceleration),
+                            S::generic_new(
+                                update_0.position,
+                                update_1.velocity,
+                                update_2_acceleration,
+                            ),
                         )));
                     }
                 }
@@ -409,7 +413,9 @@ mod position_to_state {
             Ok(None)
         }
     }
-    impl<G: Getter<Millimeter<f32>, E>, E: Clone + Debug> Updatable<E> for PositionToState<G> {
+    impl<G: Getter<S::Position, E>, S: GenericState, E: Clone + Debug> Updatable<E>
+        for PositionToState<G, S>
+    {
         fn update(&mut self) -> NothingOrError<E> {
             self.input.update()?;
             match self.input.get() {
