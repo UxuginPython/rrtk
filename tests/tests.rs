@@ -479,7 +479,7 @@ fn motion_profile_get_acceleration() {
 }
 #[test]
 fn motion_profile_get_velocity() {
-    let motion_profile = MotionProfile::new(
+    let motion_profile = MotionProfile::<LinearCommand>::new(
         LinearState::new(
             Millimeter::new(0.0),
             MillimeterPerSecond::new(0.0),
@@ -519,7 +519,7 @@ fn motion_profile_get_velocity() {
 }
 #[test]
 fn motion_profile_get_velocity_2() {
-    let motion_profile = MotionProfile::new(
+    let motion_profile = MotionProfile::<LinearCommand>::new(
         LinearState::new(
             Millimeter::new(1.0),
             MillimeterPerSecond::new(0.0),
@@ -551,7 +551,7 @@ fn motion_profile_get_velocity_2() {
 }
 #[test]
 fn motion_profile_get_velocity_3() {
-    let motion_profile = MotionProfile::new(
+    let motion_profile = MotionProfile::<LinearCommand>::new(
         LinearState::new(
             Millimeter::new(1.0),
             MillimeterPerSecond::new(0.1),
@@ -581,7 +581,7 @@ fn motion_profile_get_velocity_3() {
 }
 #[test]
 fn motion_profile_get_position() {
-    let motion_profile = MotionProfile::new(
+    let motion_profile = MotionProfile::<LinearCommand>::new(
         LinearState::new(
             Millimeter::new(0.0),
             MillimeterPerSecond::new(0.0),
@@ -628,7 +628,7 @@ fn motion_profile_get_position() {
 }
 #[test]
 fn motion_profile_get_position_2() {
-    let motion_profile = MotionProfile::new(
+    let motion_profile = MotionProfile::<LinearCommand>::new(
         LinearState::new(
             Millimeter::new(1.0),
             MillimeterPerSecond::new(0.0),
@@ -666,7 +666,7 @@ fn motion_profile_get_position_2() {
 }
 #[test]
 fn motion_profile_get_position_3() {
-    let motion_profile = MotionProfile::new(
+    let motion_profile = MotionProfile::<LinearCommand>::new(
         LinearState::new(
             Millimeter::new(1.0),
             MillimeterPerSecond::new(0.1),
@@ -704,7 +704,7 @@ fn motion_profile_get_position_3() {
 }
 #[test]
 fn motion_profile_chronology() {
-    let motion_profile = MotionProfile::new(
+    let motion_profile = MotionProfile::<LinearCommand>::new(
         LinearState::new(
             Millimeter::new(0.0),
             MillimeterPerSecond::new(0.0),
@@ -753,7 +753,7 @@ fn motion_profile_chronology() {
 }
 #[test]
 fn motion_profile_piece() {
-    let motion_profile = MotionProfile::new(
+    let motion_profile = MotionProfile::<LinearCommand>::new(
         LinearState::new(
             Millimeter::new(0.0),
             MillimeterPerSecond::new(0.0),
