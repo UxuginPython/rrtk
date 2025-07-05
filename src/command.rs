@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // Copyright 2024-2025 UxuginPython
 use super::*;
+//You can add pretty much whatever bounds here as long as they're implemented for Command and
+//AngularCommand. Most of the strange or redundant seeming ones here have to do with MotionProfile.
 ///This trait allows one to write code generically over [`Command`] and [`AngularCommand`]. Each of
 ///those has a corresponding method to each method of this trait without the `generic_` prefix.
 ///This is necessary because many of the implementations should be const fn and can't be in a
@@ -29,9 +31,13 @@ pub trait GenericCommand:
         + Default
         + fmt::Display
         + PartialOrd
+        + Neg<Output = Self::Position>
         + Add<Output = Self::Position>
         + Sub<Output = Self::Position>
+        + Mul<Dimensionless<f32>, Output = Self::Position>
+        + Div<Dimensionless<f32>, Output = Self::Position>
         + Div<Time, Output = Self::Velocity>
+        + Div<Self::Velocity, Output = Second<f32>>
         + stulta::AbsoluteValue;
     ///The type that velocity is stored as. Almost certainly a [`Quantity`] of some type.
     type Velocity: Copy
@@ -39,10 +45,15 @@ pub trait GenericCommand:
         + Default
         + fmt::Display
         + PartialOrd
+        + Neg<Output = Self::Velocity>
         + Add<Output = Self::Velocity>
         + Sub<Output = Self::Velocity>
+        + Mul<Dimensionless<f32>, Output = Self::Velocity>
+        + Div<Dimensionless<f32>, Output = Self::Velocity>
         + Mul<Time, Output = Self::Position>
         + Div<Time, Output = Self::Acceleration>
+        + Div<Self::Acceleration, Output = Second<f32>>
+        + Mul<Second<f32>, Output = Self::Position>
         + stulta::AbsoluteValue;
     ///The type that acceleration is stored as. Almost certainly a [`Quantity`] of some type.
     type Acceleration: Copy
@@ -50,9 +61,13 @@ pub trait GenericCommand:
         + Default
         + fmt::Display
         + PartialOrd
+        + Neg<Output = Self::Acceleration>
         + Add<Output = Self::Acceleration>
         + Sub<Output = Self::Acceleration>
+        + Mul<Dimensionless<f32>, Output = Self::Acceleration>
+        + Div<Dimensionless<f32>, Output = Self::Acceleration>
         + Mul<Time, Output = Self::Velocity>
+        + Mul<Second<f32>, Output = Self::Velocity>
         + stulta::AbsoluteValue;
     ///The corresponding state type with the same types for position, velocity, and acceleration.
     type CorrespondingState: GenericState<
