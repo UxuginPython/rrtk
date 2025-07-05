@@ -236,7 +236,7 @@ fn acceleration_to_state() {
             output.unwrap().unwrap(),
             Datum::new(
                 Time::from_nanoseconds(3_000_000_000),
-                State::new(
+                LinearState::new(
                     Millimeter::new(1.5),
                     MillimeterPerSecond::new(2.0),
                     MillimeterPerSecondSquared::new(1.0)
@@ -284,7 +284,7 @@ fn velocity_to_state() {
             output.unwrap().unwrap(),
             Datum::new(
                 Time::from_nanoseconds(2_000_000_000),
-                State::new(
+                LinearState::new(
                     Millimeter::new(1.5),
                     MillimeterPerSecond::new(2.0),
                     MillimeterPerSecondSquared::new(1.0)
@@ -335,7 +335,7 @@ fn position_to_state() {
             output.unwrap().unwrap(),
             Datum::new(
                 Time::from_nanoseconds(3_000_000_000),
-                State::new(
+                LinearState::new(
                     Millimeter::new(3.0),
                     MillimeterPerSecond::new(1.0),
                     MillimeterPerSecondSquared::new(0.0)
@@ -1841,9 +1841,9 @@ fn command_pid() {
     struct Input {
         time: Time,
     }
-    impl Getter<State, ()> for Input {
-        fn get(&self) -> Output<State, ()> {
-            Ok(Some(Datum::new(self.time, State::default())))
+    impl Getter<LinearState, ()> for Input {
+        fn get(&self) -> Output<LinearState, ()> {
+            Ok(Some(Datum::new(self.time, LinearState::default())))
         }
     }
     impl Updatable<()> for Input {
@@ -1863,7 +1863,7 @@ fn command_pid() {
             let input = PointerDereferencer::new(core::ptr::addr_of_mut!(INPUT));
             let mut pid = CommandPID::new(
                 input.clone(),
-                Command::new(PositionDerivative::Position, 5.0),
+                LinearCommand::new(PositionDerivative::Position, 5.0),
                 kvals,
             );
             assert_eq!(pid.get().unwrap(), None);
@@ -1882,7 +1882,7 @@ fn command_pid() {
             let input = PointerDereferencer::new(core::ptr::addr_of_mut!(INPUT));
             let mut pid = CommandPID::new(
                 input.clone(),
-                Command::new(PositionDerivative::Velocity, 5.0),
+                LinearCommand::new(PositionDerivative::Velocity, 5.0),
                 kvals,
             );
             assert_eq!(pid.get().unwrap(), None);
@@ -1901,7 +1901,7 @@ fn command_pid() {
             let input = PointerDereferencer::new(core::ptr::addr_of_mut!(INPUT));
             let mut pid = CommandPID::new(
                 input.clone(),
-                Command::new(PositionDerivative::Acceleration, 5.0),
+                LinearCommand::new(PositionDerivative::Acceleration, 5.0),
                 kvals,
             );
             assert_eq!(pid.get().unwrap(), None);
