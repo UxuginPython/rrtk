@@ -8,17 +8,17 @@ use rrtk::*;
 fn terminal() {
     let term1 = Terminal::<()>::new();
     assert_eq!(
-        <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&term1.borrow()),
+        <rrtk::Terminal<'_, ()> as rrtk::Getter<AngularState, ()>>::get(&term1.borrow()),
         Ok(None)
     );
     term1
         .borrow_mut()
         .set(Datum::new(
             Time::ZERO,
-            State::new(
-                Millimeter::new(1.0),
-                MillimeterPerSecond::new(2.0),
-                MillimeterPerSecondSquared::new(3.0),
+            AngularState::new(
+                Dimensionless::new(1.0),
+                InverseSecond::new(2.0),
+                InverseSecondSquared::new(3.0),
             ),
         ))
         .unwrap();
@@ -26,10 +26,10 @@ fn terminal() {
         term1.borrow().get(),
         Ok(Some(Datum::new(
             Time::ZERO,
-            State::new(
-                Millimeter::new(1.0),
-                MillimeterPerSecond::new(2.0),
-                MillimeterPerSecondSquared::new(3.0)
+            AngularState::new(
+                Dimensionless::new(1.0),
+                InverseSecond::new(2.0),
+                InverseSecondSquared::new(3.0)
             )
         )))
     );
@@ -39,10 +39,10 @@ fn terminal() {
         term2.borrow().get(),
         Ok(Some(Datum::new(
             Time::ZERO,
-            State::new(
-                Millimeter::new(1.0),
-                MillimeterPerSecond::new(2.0),
-                MillimeterPerSecondSquared::new(3.0)
+            AngularState::new(
+                Dimensionless::new(1.0),
+                InverseSecond::new(2.0),
+                InverseSecondSquared::new(3.0)
             )
         )))
     );
@@ -50,10 +50,10 @@ fn terminal() {
         .borrow_mut()
         .set(Datum::new(
             Time::ZERO,
-            State::new(
-                Millimeter::new(4.0),
-                MillimeterPerSecond::new(5.0),
-                MillimeterPerSecondSquared::new(6.0),
+            AngularState::new(
+                Dimensionless::new(4.0),
+                InverseSecond::new(5.0),
+                InverseSecondSquared::new(6.0),
             ),
         ))
         .unwrap();
@@ -61,10 +61,10 @@ fn terminal() {
         term1.borrow().get(),
         Ok(Some(Datum::new(
             Time::ZERO,
-            State::new(
-                Millimeter::new(2.5),
-                MillimeterPerSecond::new(3.5),
-                MillimeterPerSecondSquared::new(4.5)
+            AngularState::new(
+                Dimensionless::new(2.5),
+                InverseSecond::new(3.5),
+                InverseSecondSquared::new(4.5)
             )
         )))
     );
@@ -86,10 +86,10 @@ fn invert() {
         .borrow_mut()
         .set(Datum::new(
             Time::ZERO,
-            State::new(
-                Millimeter::new(1.0),
-                MillimeterPerSecond::new(2.0),
-                MillimeterPerSecondSquared::new(3.0),
+            AngularState::new(
+                Dimensionless::new(1.0),
+                InverseSecond::new(2.0),
+                InverseSecondSquared::new(3.0),
             ),
         ))
         .unwrap();
@@ -97,21 +97,21 @@ fn invert() {
         .borrow_mut()
         .set(Datum::new(
             Time::ZERO,
-            Command::Position(Millimeter::new(1.0)),
+            Command::Position(Dimensionless::new(1.0)),
         ))
         .unwrap();
     connect(invert.get_terminal_1(), &terminal1);
     connect(invert.get_terminal_2(), &terminal2);
     invert.update().unwrap();
     assert_eq!(
-        <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal1.borrow())
+        <rrtk::Terminal<'_, ()> as rrtk::Getter<AngularState, ()>>::get(&terminal1.borrow())
             .unwrap()
             .unwrap()
             .value,
-        State::new(
-            Millimeter::new(1.0),
-            MillimeterPerSecond::new(2.0),
-            MillimeterPerSecondSquared::new(3.0)
+        AngularState::new(
+            Dimensionless::new(1.0),
+            InverseSecond::new(2.0),
+            InverseSecondSquared::new(3.0)
         )
     );
     assert_eq!(
@@ -119,17 +119,17 @@ fn invert() {
             .unwrap()
             .unwrap()
             .value,
-        Command::Position(Millimeter::new(1.0))
+        Command::Position(Dimensionless::new(1.0))
     );
     assert_eq!(
-        <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal2.borrow())
+        <rrtk::Terminal<'_, ()> as rrtk::Getter<AngularState, ()>>::get(&terminal2.borrow())
             .unwrap()
             .unwrap()
             .value,
-        State::new(
-            Millimeter::new(-1.0),
-            MillimeterPerSecond::new(-2.0),
-            MillimeterPerSecondSquared::new(-3.0)
+        AngularState::new(
+            Dimensionless::new(-1.0),
+            InverseSecond::new(-2.0),
+            InverseSecondSquared::new(-3.0)
         )
     );
     assert_eq!(
@@ -137,7 +137,7 @@ fn invert() {
             .unwrap()
             .unwrap()
             .value,
-        Command::Position(Millimeter::new(-1.0))
+        Command::Position(Dimensionless::new(-1.0))
     );
 
     let mut invert = Invert::new();
@@ -147,10 +147,10 @@ fn invert() {
         .borrow_mut()
         .set(Datum::new(
             Time::ZERO,
-            State::new(
-                Millimeter::new(-1.0),
-                MillimeterPerSecond::new(-2.0),
-                MillimeterPerSecondSquared::new(-3.0),
+            AngularState::new(
+                Dimensionless::new(-1.0),
+                InverseSecond::new(-2.0),
+                InverseSecondSquared::new(-3.0),
             ),
         ))
         .unwrap();
@@ -158,21 +158,21 @@ fn invert() {
         .borrow_mut()
         .set(Datum::new(
             Time::ZERO,
-            Command::Position(Millimeter::new(-1.0)),
+            Command::Position(Dimensionless::new(-1.0)),
         ))
         .unwrap();
     connect(invert.get_terminal_1(), &terminal1);
     connect(invert.get_terminal_2(), &terminal2);
     invert.update().unwrap();
     assert_eq!(
-        <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal1.borrow())
+        <rrtk::Terminal<'_, ()> as rrtk::Getter<AngularState, ()>>::get(&terminal1.borrow())
             .unwrap()
             .unwrap()
             .value,
-        State::new(
-            Millimeter::new(1.0),
-            MillimeterPerSecond::new(2.0),
-            MillimeterPerSecondSquared::new(3.0)
+        AngularState::new(
+            Dimensionless::new(1.0),
+            InverseSecond::new(2.0),
+            InverseSecondSquared::new(3.0)
         )
     );
     assert_eq!(
@@ -180,17 +180,17 @@ fn invert() {
             .unwrap()
             .unwrap()
             .value,
-        Command::Position(Millimeter::new(1.0))
+        Command::Position(Dimensionless::new(1.0))
     );
     assert_eq!(
-        <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal2.borrow())
+        <rrtk::Terminal<'_, ()> as rrtk::Getter<AngularState, ()>>::get(&terminal2.borrow())
             .unwrap()
             .unwrap()
             .value,
-        State::new(
-            Millimeter::new(-1.0),
-            MillimeterPerSecond::new(-2.0),
-            MillimeterPerSecondSquared::new(-3.0)
+        AngularState::new(
+            Dimensionless::new(-1.0),
+            InverseSecond::new(-2.0),
+            InverseSecondSquared::new(-3.0)
         )
     );
     assert_eq!(
@@ -198,7 +198,7 @@ fn invert() {
             .unwrap()
             .unwrap()
             .value,
-        Command::Position(Millimeter::new(-1.0))
+        Command::Position(Dimensionless::new(-1.0))
     );
 
     let mut invert = Invert::new();
@@ -208,10 +208,10 @@ fn invert() {
         .borrow_mut()
         .set(Datum::new(
             Time::ZERO,
-            State::new(
-                Millimeter::new(1.0),
-                MillimeterPerSecond::new(2.0),
-                MillimeterPerSecondSquared::new(3.0),
+            AngularState::new(
+                Dimensionless::new(1.0),
+                InverseSecond::new(2.0),
+                InverseSecondSquared::new(3.0),
             ),
         ))
         .unwrap();
@@ -219,10 +219,10 @@ fn invert() {
         .borrow_mut()
         .set(Datum::new(
             Time::ZERO,
-            State::new(
-                Millimeter::new(-4.0),
-                MillimeterPerSecond::new(-5.0),
-                MillimeterPerSecondSquared::new(-6.0),
+            AngularState::new(
+                Dimensionless::new(-4.0),
+                InverseSecond::new(-5.0),
+                InverseSecondSquared::new(-6.0),
             ),
         ))
         .unwrap();
@@ -230,25 +230,25 @@ fn invert() {
     connect(invert.get_terminal_2(), &terminal2);
     invert.update().unwrap();
     assert_eq!(
-        <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal1.borrow())
+        <rrtk::Terminal<'_, ()> as rrtk::Getter<AngularState, ()>>::get(&terminal1.borrow())
             .unwrap()
             .unwrap()
             .value,
-        State::new(
-            Millimeter::new((((1.0 + 4.0) / 2.0) + 1.0) / 2.0),
-            MillimeterPerSecond::new(((2.0 + 5.0) / 2.0 + 2.0) / 2.0),
-            MillimeterPerSecondSquared::new(((3.0 + 6.0) / 2.0 + 3.0) / 2.0)
+        AngularState::new(
+            Dimensionless::new((((1.0 + 4.0) / 2.0) + 1.0) / 2.0),
+            InverseSecond::new(((2.0 + 5.0) / 2.0 + 2.0) / 2.0),
+            InverseSecondSquared::new(((3.0 + 6.0) / 2.0 + 3.0) / 2.0)
         )
     );
     assert_eq!(
-        <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal2.borrow())
+        <rrtk::Terminal<'_, ()> as rrtk::Getter<AngularState, ()>>::get(&terminal2.borrow())
             .unwrap()
             .unwrap()
             .value,
-        State::new(
-            Millimeter::new(-(((1.0 + 4.0) / 2.0) + 4.0) / 2.0),
-            MillimeterPerSecond::new(-((2.0 + 5.0) / 2.0 + 5.0) / 2.0),
-            MillimeterPerSecondSquared::new(-((3.0 + 6.0) / 2.0 + 6.0) / 2.0)
+        AngularState::new(
+            Dimensionless::new(-(((1.0 + 4.0) / 2.0) + 4.0) / 2.0),
+            InverseSecond::new(-((2.0 + 5.0) / 2.0 + 5.0) / 2.0),
+            InverseSecondSquared::new(-((3.0 + 6.0) / 2.0 + 6.0) / 2.0)
         )
     );
 }
@@ -264,16 +264,19 @@ fn gear_train_2() {
     let terminal2 = Terminal::<()>::new();
     connect(gear_train.get_terminal_1(), &terminal1);
     connect(gear_train.get_terminal_2(), &terminal2);
-    assert_eq!(terminal2.borrow_mut().get(), Ok(None::<Datum<State>>));
+    assert_eq!(
+        terminal2.borrow_mut().get(),
+        Ok(None::<Datum<AngularState>>)
+    );
     assert_eq!(terminal2.borrow_mut().get(), Ok(None::<Datum<Command>>));
     terminal1
         .borrow_mut()
         .set(Datum::new(
             Time::ZERO,
-            State::new(
-                Millimeter::new(3.0),
-                MillimeterPerSecond::new(6.0),
-                MillimeterPerSecondSquared::new(9.0),
+            AngularState::new(
+                Dimensionless::new(3.0),
+                InverseSecond::new(6.0),
+                InverseSecondSquared::new(9.0),
             ),
         ))
         .unwrap();
@@ -281,7 +284,7 @@ fn gear_train_2() {
         .borrow_mut()
         .set(Datum::new(
             Time::ZERO,
-            Command::Position(Millimeter::new(3.0)),
+            Command::Position(Dimensionless::new(3.0)),
         ))
         .unwrap();
     gear_train.update().unwrap();
@@ -289,10 +292,10 @@ fn gear_train_2() {
         terminal2.borrow_mut().get(),
         Ok(Some(Datum::new(
             Time::ZERO,
-            State::new(
-                Millimeter::new(-1.0),
-                MillimeterPerSecond::new(-2.0),
-                MillimeterPerSecondSquared::new(-3.0)
+            AngularState::new(
+                Dimensionless::new(-1.0),
+                InverseSecond::new(-2.0),
+                InverseSecondSquared::new(-3.0)
             )
         )))
     );
@@ -300,7 +303,7 @@ fn gear_train_2() {
         terminal2.borrow_mut().get(),
         Ok(Some(Datum::new(
             Time::ZERO,
-            Command::Position(Millimeter::new(-1.0))
+            Command::Position(Dimensionless::new(-1.0))
         )))
     );
 }
@@ -311,16 +314,19 @@ fn gear_train_odd() {
     let terminal2 = Terminal::<()>::new();
     connect(gear_train.get_terminal_1(), &terminal1);
     connect(gear_train.get_terminal_2(), &terminal2);
-    assert_eq!(terminal2.borrow_mut().get(), Ok(None::<Datum<State>>));
+    assert_eq!(
+        terminal2.borrow_mut().get(),
+        Ok(None::<Datum<AngularState>>)
+    );
     assert_eq!(terminal2.borrow_mut().get(), Ok(None::<Datum<Command>>));
     terminal1
         .borrow_mut()
         .set(Datum::new(
             Time::ZERO,
-            State::new(
-                Millimeter::new(2.0),
-                MillimeterPerSecond::new(4.0),
-                MillimeterPerSecondSquared::new(6.0),
+            AngularState::new(
+                Dimensionless::new(2.0),
+                InverseSecond::new(4.0),
+                InverseSecondSquared::new(6.0),
             ),
         ))
         .unwrap();
@@ -328,7 +334,7 @@ fn gear_train_odd() {
         .borrow_mut()
         .set(Datum::new(
             Time::ZERO,
-            Command::Position(Millimeter::new(2.0)),
+            Command::Position(Dimensionless::new(2.0)),
         ))
         .unwrap();
     gear_train.update().unwrap();
@@ -336,10 +342,10 @@ fn gear_train_odd() {
         terminal2.borrow_mut().get(),
         Ok(Some(Datum::new(
             Time::ZERO,
-            State::new(
-                Millimeter::new(3.0),
-                MillimeterPerSecond::new(6.0),
-                MillimeterPerSecondSquared::new(9.0)
+            AngularState::new(
+                Dimensionless::new(3.0),
+                InverseSecond::new(6.0),
+                InverseSecondSquared::new(9.0)
             )
         )))
     );
@@ -347,7 +353,7 @@ fn gear_train_odd() {
         terminal2.borrow_mut().get(),
         Ok(Some(Datum::new(
             Time::ZERO,
-            Command::Position(Millimeter::new(3.0))
+            Command::Position(Dimensionless::new(3.0))
         )))
     );
 }
@@ -358,16 +364,19 @@ fn gear_train_even() {
     let terminal2 = Terminal::<()>::new();
     connect(gear_train.get_terminal_1(), &terminal1);
     connect(gear_train.get_terminal_2(), &terminal2);
-    assert_eq!(terminal2.borrow_mut().get(), Ok(None::<Datum<State>>));
+    assert_eq!(
+        terminal2.borrow_mut().get(),
+        Ok(None::<Datum<AngularState>>)
+    );
     assert_eq!(terminal2.borrow_mut().get(), Ok(None::<Datum<Command>>));
     terminal1
         .borrow_mut()
         .set(Datum::new(
             Time::ZERO,
-            State::new(
-                Millimeter::new(2.0),
-                MillimeterPerSecond::new(4.0),
-                MillimeterPerSecondSquared::new(6.0),
+            AngularState::new(
+                Dimensionless::new(2.0),
+                InverseSecond::new(4.0),
+                InverseSecondSquared::new(6.0),
             ),
         ))
         .unwrap();
@@ -375,7 +384,7 @@ fn gear_train_even() {
         .borrow_mut()
         .set(Datum::new(
             Time::ZERO,
-            Command::Position(Millimeter::new(2.0)),
+            Command::Position(Dimensionless::new(2.0)),
         ))
         .unwrap();
     gear_train.update().unwrap();
@@ -383,10 +392,10 @@ fn gear_train_even() {
         terminal2.borrow_mut().get(),
         Ok(Some(Datum::new(
             Time::ZERO,
-            State::new(
-                Millimeter::new(-3.0),
-                MillimeterPerSecond::new(-6.0),
-                MillimeterPerSecondSquared::new(-9.0)
+            AngularState::new(
+                Dimensionless::new(-3.0),
+                InverseSecond::new(-6.0),
+                InverseSecondSquared::new(-9.0)
             )
         )))
     );
@@ -394,7 +403,7 @@ fn gear_train_even() {
         terminal2.borrow_mut().get(),
         Ok(Some(Datum::new(
             Time::ZERO,
-            Command::Position(Millimeter::new(-3.0))
+            Command::Position(Dimensionless::new(-3.0))
         )))
     );
 }
@@ -406,10 +415,10 @@ fn gear_train_multiple_inputs() {
         .borrow_mut()
         .set(Datum::new(
             Time::from_nanoseconds(3),
-            State::new(
-                Millimeter::new(2.0),
-                MillimeterPerSecond::new(4.0),
-                MillimeterPerSecondSquared::new(6.0),
+            AngularState::new(
+                Dimensionless::new(2.0),
+                InverseSecond::new(4.0),
+                InverseSecondSquared::new(6.0),
             ),
         ))
         .unwrap();
@@ -418,7 +427,7 @@ fn gear_train_multiple_inputs() {
         .borrow_mut()
         .set(Datum::new(
             Time::from_nanoseconds(3),
-            Command::Position(Millimeter::new(2.0)),
+            Command::Position(Dimensionless::new(2.0)),
         ))
         .unwrap();
     gear_train
@@ -426,10 +435,10 @@ fn gear_train_multiple_inputs() {
         .borrow_mut()
         .set(Datum::new(
             Time::from_nanoseconds(2),
-            State::new(
-                Millimeter::new(-2.0),
-                MillimeterPerSecond::new(-4.0),
-                MillimeterPerSecondSquared::new(-6.0),
+            AngularState::new(
+                Dimensionless::new(-2.0),
+                InverseSecond::new(-4.0),
+                InverseSecondSquared::new(-6.0),
             ),
         ))
         .unwrap();
@@ -438,7 +447,7 @@ fn gear_train_multiple_inputs() {
         .borrow_mut()
         .set(Datum::new(
             Time::from_nanoseconds(2),
-            Command::Position(Millimeter::new(-2.0)),
+            Command::Position(Dimensionless::new(-2.0)),
         ))
         .unwrap();
     gear_train.update().unwrap();
@@ -446,10 +455,10 @@ fn gear_train_multiple_inputs() {
         gear_train.get_terminal_1().borrow().get(),
         Ok(Some(Datum::new(
             Time::from_nanoseconds(3),
-            State::new(
-                Millimeter::new(2.4),
-                MillimeterPerSecond::new(4.8),
-                MillimeterPerSecondSquared::new(7.2)
+            AngularState::new(
+                Dimensionless::new(2.4),
+                InverseSecond::new(4.8),
+                InverseSecondSquared::new(7.2)
             )
         )))
     );
@@ -457,17 +466,17 @@ fn gear_train_multiple_inputs() {
         gear_train.get_terminal_1().borrow().get(),
         Ok(Some(Datum::new(
             Time::from_nanoseconds(3),
-            Command::Position(Millimeter::new(2.0))
+            Command::Position(Dimensionless::new(2.0))
         )))
     );
     assert_eq!(
         gear_train.get_terminal_2().borrow().get(),
         Ok(Some(Datum::new(
             Time::from_nanoseconds(3),
-            State::new(
-                Millimeter::new(-1.2),
-                MillimeterPerSecond::new(-2.4),
-                MillimeterPerSecondSquared::new(-3.6)
+            AngularState::new(
+                Dimensionless::new(-1.2),
+                InverseSecond::new(-2.4),
+                InverseSecondSquared::new(-3.6)
             )
         )))
     );
@@ -475,7 +484,7 @@ fn gear_train_multiple_inputs() {
         gear_train.get_terminal_2().borrow().get(),
         Ok(Some(Datum::new(
             Time::from_nanoseconds(3),
-            Command::Position(Millimeter::new(-1.0))
+            Command::Position(Dimensionless::new(-1.0))
         )))
     );
 }
@@ -489,10 +498,10 @@ fn axle() {
         .borrow_mut()
         .set(Datum::new(
             Time::ZERO,
-            State::new(
-                Millimeter::new(1.0),
-                MillimeterPerSecond::new(2.0),
-                MillimeterPerSecondSquared::new(3.0),
+            AngularState::new(
+                Dimensionless::new(1.0),
+                InverseSecond::new(2.0),
+                InverseSecondSquared::new(3.0),
             ),
         ))
         .unwrap();
@@ -500,10 +509,10 @@ fn axle() {
         .borrow_mut()
         .set(Datum::new(
             Time::ZERO,
-            State::new(
-                Millimeter::new(4.0),
-                MillimeterPerSecond::new(5.0),
-                MillimeterPerSecondSquared::new(6.0),
+            AngularState::new(
+                Dimensionless::new(4.0),
+                InverseSecond::new(5.0),
+                InverseSecondSquared::new(6.0),
             ),
         ))
         .unwrap();
@@ -511,7 +520,7 @@ fn axle() {
         .borrow_mut()
         .set(Datum::new(
             Time::ZERO,
-            Command::Position(Millimeter::new(1.0)),
+            Command::Position(Dimensionless::new(1.0)),
         ))
         .unwrap();
     connect(axle.get_terminal(0), &terminal1);
@@ -519,14 +528,14 @@ fn axle() {
     connect(axle.get_terminal(2), &terminal3);
     axle.update().unwrap();
     assert_eq!(
-        <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal1.borrow())
+        <rrtk::Terminal<'_, ()> as rrtk::Getter<AngularState, ()>>::get(&terminal1.borrow())
             .unwrap()
             .unwrap()
             .value,
-        State::new(
-            Millimeter::new(((1.0 + 4.0) / 2.0 + 1.0) / 2.0),
-            MillimeterPerSecond::new(((2.0 + 5.0) / 2.0 + 2.0) / 2.0),
-            MillimeterPerSecondSquared::new(((3.0 + 6.0) / 2.0 + 3.0) / 2.0)
+        AngularState::new(
+            Dimensionless::new(((1.0 + 4.0) / 2.0 + 1.0) / 2.0),
+            InverseSecond::new(((2.0 + 5.0) / 2.0 + 2.0) / 2.0),
+            InverseSecondSquared::new(((3.0 + 6.0) / 2.0 + 3.0) / 2.0)
         )
     );
     assert_eq!(
@@ -534,17 +543,17 @@ fn axle() {
             .unwrap()
             .unwrap()
             .value,
-        Command::Position(Millimeter::new(1.0))
+        Command::Position(Dimensionless::new(1.0))
     );
     assert_eq!(
-        <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal2.borrow())
+        <rrtk::Terminal<'_, ()> as rrtk::Getter<AngularState, ()>>::get(&terminal2.borrow())
             .unwrap()
             .unwrap()
             .value,
-        State::new(
-            Millimeter::new(((1.0 + 4.0) / 2.0 + 4.0) / 2.0),
-            MillimeterPerSecond::new(((2.0 + 5.0) / 2.0 + 5.0) / 2.0),
-            MillimeterPerSecondSquared::new(((3.0 + 6.0) / 2.0 + 6.0) / 2.0)
+        AngularState::new(
+            Dimensionless::new(((1.0 + 4.0) / 2.0 + 4.0) / 2.0),
+            InverseSecond::new(((2.0 + 5.0) / 2.0 + 5.0) / 2.0),
+            InverseSecondSquared::new(((3.0 + 6.0) / 2.0 + 6.0) / 2.0)
         )
     );
     assert_eq!(
@@ -552,17 +561,17 @@ fn axle() {
             .unwrap()
             .unwrap()
             .value,
-        Command::Position(Millimeter::new(1.0))
+        Command::Position(Dimensionless::new(1.0))
     );
     assert_eq!(
-        <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal3.borrow())
+        <rrtk::Terminal<'_, ()> as rrtk::Getter<AngularState, ()>>::get(&terminal3.borrow())
             .unwrap()
             .unwrap()
             .value,
-        State::new(
-            Millimeter::new(2.5),
-            MillimeterPerSecond::new(3.5),
-            MillimeterPerSecondSquared::new(4.5)
+        AngularState::new(
+            Dimensionless::new(2.5),
+            InverseSecond::new(3.5),
+            InverseSecondSquared::new(4.5)
         )
     );
     assert_eq!(
@@ -570,7 +579,7 @@ fn axle() {
             .unwrap()
             .unwrap()
             .value,
-        Command::Position(Millimeter::new(1.0))
+        Command::Position(Dimensionless::new(1.0))
     );
 }
 #[test]
@@ -583,10 +592,10 @@ fn differential() {
         .borrow_mut()
         .set(Datum::new(
             Time::ZERO,
-            State::new(
-                Millimeter::new(2.0),
-                MillimeterPerSecond::new(2.0),
-                MillimeterPerSecondSquared::new(2.0),
+            AngularState::new(
+                Dimensionless::new(2.0),
+                InverseSecond::new(2.0),
+                InverseSecondSquared::new(2.0),
             ),
         ))
         .unwrap();
@@ -594,10 +603,10 @@ fn differential() {
         .borrow_mut()
         .set(Datum::new(
             Time::ZERO,
-            State::new(
-                Millimeter::new(3.0),
-                MillimeterPerSecond::new(3.0),
-                MillimeterPerSecondSquared::new(3.0),
+            AngularState::new(
+                Dimensionless::new(3.0),
+                InverseSecond::new(3.0),
+                InverseSecondSquared::new(3.0),
             ),
         ))
         .unwrap();
@@ -605,10 +614,10 @@ fn differential() {
         .borrow_mut()
         .set(Datum::new(
             Time::ZERO,
-            State::new(
-                Millimeter::new(4.0),
-                MillimeterPerSecond::new(4.0),
-                MillimeterPerSecondSquared::new(4.0),
+            AngularState::new(
+                Dimensionless::new(4.0),
+                InverseSecond::new(4.0),
+                InverseSecondSquared::new(4.0),
             ),
         ))
         .unwrap();
@@ -624,36 +633,36 @@ fn differential() {
     const TERM_2: f32 = (EST_2 + 3.0) / 2.0;
     const TERM_SUM: f32 = (EST_SUM + 4.0) / 2.0;
     assert_eq!(
-        <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal1.borrow())
+        <rrtk::Terminal<'_, ()> as rrtk::Getter<AngularState, ()>>::get(&terminal1.borrow())
             .unwrap()
             .unwrap()
             .value,
-        State::new(
-            Millimeter::new(TERM_1),
-            MillimeterPerSecond::new(TERM_1),
-            MillimeterPerSecondSquared::new(TERM_1)
+        AngularState::new(
+            Dimensionless::new(TERM_1),
+            InverseSecond::new(TERM_1),
+            InverseSecondSquared::new(TERM_1)
         )
     );
     assert_eq!(
-        <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal2.borrow())
+        <rrtk::Terminal<'_, ()> as rrtk::Getter<AngularState, ()>>::get(&terminal2.borrow())
             .unwrap()
             .unwrap()
             .value,
-        State::new(
-            Millimeter::new(TERM_2),
-            MillimeterPerSecond::new(TERM_2),
-            MillimeterPerSecondSquared::new(TERM_2)
+        AngularState::new(
+            Dimensionless::new(TERM_2),
+            InverseSecond::new(TERM_2),
+            InverseSecondSquared::new(TERM_2)
         )
     );
     assert_eq!(
-        <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal_sum.borrow())
+        <rrtk::Terminal<'_, ()> as rrtk::Getter<AngularState, ()>>::get(&terminal_sum.borrow())
             .unwrap()
             .unwrap()
             .value,
-        State::new(
-            Millimeter::new(TERM_SUM),
-            MillimeterPerSecond::new(TERM_SUM),
-            MillimeterPerSecondSquared::new(TERM_SUM)
+        AngularState::new(
+            Dimensionless::new(TERM_SUM),
+            InverseSecond::new(TERM_SUM),
+            InverseSecondSquared::new(TERM_SUM)
         )
     );
 }
@@ -667,10 +676,10 @@ fn differential_distrust_side_1() {
         .borrow_mut()
         .set(Datum::new(
             Time::ZERO,
-            State::new(
-                Millimeter::new(2.0),
-                MillimeterPerSecond::new(2.0),
-                MillimeterPerSecondSquared::new(2.0),
+            AngularState::new(
+                Dimensionless::new(2.0),
+                InverseSecond::new(2.0),
+                InverseSecondSquared::new(2.0),
             ),
         ))
         .unwrap();
@@ -678,10 +687,10 @@ fn differential_distrust_side_1() {
         .borrow_mut()
         .set(Datum::new(
             Time::ZERO,
-            State::new(
-                Millimeter::new(3.0),
-                MillimeterPerSecond::new(3.0),
-                MillimeterPerSecondSquared::new(3.0),
+            AngularState::new(
+                Dimensionless::new(3.0),
+                InverseSecond::new(3.0),
+                InverseSecondSquared::new(3.0),
             ),
         ))
         .unwrap();
@@ -689,10 +698,10 @@ fn differential_distrust_side_1() {
         .borrow_mut()
         .set(Datum::new(
             Time::ZERO,
-            State::new(
-                Millimeter::new(4.0),
-                MillimeterPerSecond::new(4.0),
-                MillimeterPerSecondSquared::new(4.0),
+            AngularState::new(
+                Dimensionless::new(4.0),
+                InverseSecond::new(4.0),
+                InverseSecondSquared::new(4.0),
             ),
         ))
         .unwrap();
@@ -708,36 +717,36 @@ fn differential_distrust_side_1() {
     const TERM_2: f32 = (EST_2 + 3.0) / 2.0;
     const TERM_SUM: f32 = (EST_SUM + 4.0) / 2.0;
     assert_eq!(
-        <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal1.borrow())
+        <rrtk::Terminal<'_, ()> as rrtk::Getter<AngularState, ()>>::get(&terminal1.borrow())
             .unwrap()
             .unwrap()
             .value,
-        State::new(
-            Millimeter::new(TERM_1),
-            MillimeterPerSecond::new(TERM_1),
-            MillimeterPerSecondSquared::new(TERM_1)
+        AngularState::new(
+            Dimensionless::new(TERM_1),
+            InverseSecond::new(TERM_1),
+            InverseSecondSquared::new(TERM_1)
         )
     );
     assert_eq!(
-        <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal2.borrow())
+        <rrtk::Terminal<'_, ()> as rrtk::Getter<AngularState, ()>>::get(&terminal2.borrow())
             .unwrap()
             .unwrap()
             .value,
-        State::new(
-            Millimeter::new(TERM_2),
-            MillimeterPerSecond::new(TERM_2),
-            MillimeterPerSecondSquared::new(TERM_2)
+        AngularState::new(
+            Dimensionless::new(TERM_2),
+            InverseSecond::new(TERM_2),
+            InverseSecondSquared::new(TERM_2)
         )
     );
     assert_eq!(
-        <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal_sum.borrow())
+        <rrtk::Terminal<'_, ()> as rrtk::Getter<AngularState, ()>>::get(&terminal_sum.borrow())
             .unwrap()
             .unwrap()
             .value,
-        State::new(
-            Millimeter::new(TERM_SUM),
-            MillimeterPerSecond::new(TERM_SUM),
-            MillimeterPerSecondSquared::new(TERM_SUM)
+        AngularState::new(
+            Dimensionless::new(TERM_SUM),
+            InverseSecond::new(TERM_SUM),
+            InverseSecondSquared::new(TERM_SUM)
         )
     );
 }
@@ -751,10 +760,10 @@ fn differential_distrust_side_2() {
         .borrow_mut()
         .set(Datum::new(
             Time::ZERO,
-            State::new(
-                Millimeter::new(2.0),
-                MillimeterPerSecond::new(2.0),
-                MillimeterPerSecondSquared::new(2.0),
+            AngularState::new(
+                Dimensionless::new(2.0),
+                InverseSecond::new(2.0),
+                InverseSecondSquared::new(2.0),
             ),
         ))
         .unwrap();
@@ -762,10 +771,10 @@ fn differential_distrust_side_2() {
         .borrow_mut()
         .set(Datum::new(
             Time::ZERO,
-            State::new(
-                Millimeter::new(3.0),
-                MillimeterPerSecond::new(3.0),
-                MillimeterPerSecondSquared::new(3.0),
+            AngularState::new(
+                Dimensionless::new(3.0),
+                InverseSecond::new(3.0),
+                InverseSecondSquared::new(3.0),
             ),
         ))
         .unwrap();
@@ -773,10 +782,10 @@ fn differential_distrust_side_2() {
         .borrow_mut()
         .set(Datum::new(
             Time::ZERO,
-            State::new(
-                Millimeter::new(4.0),
-                MillimeterPerSecond::new(4.0),
-                MillimeterPerSecondSquared::new(4.0),
+            AngularState::new(
+                Dimensionless::new(4.0),
+                InverseSecond::new(4.0),
+                InverseSecondSquared::new(4.0),
             ),
         ))
         .unwrap();
@@ -792,36 +801,36 @@ fn differential_distrust_side_2() {
     const TERM_2: f32 = (EST_2 + 3.0) / 2.0;
     const TERM_SUM: f32 = (EST_SUM + 4.0) / 2.0;
     assert_eq!(
-        <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal1.borrow())
+        <rrtk::Terminal<'_, ()> as rrtk::Getter<AngularState, ()>>::get(&terminal1.borrow())
             .unwrap()
             .unwrap()
             .value,
-        State::new(
-            Millimeter::new(TERM_1),
-            MillimeterPerSecond::new(TERM_1),
-            MillimeterPerSecondSquared::new(TERM_1)
+        AngularState::new(
+            Dimensionless::new(TERM_1),
+            InverseSecond::new(TERM_1),
+            InverseSecondSquared::new(TERM_1)
         )
     );
     assert_eq!(
-        <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal2.borrow())
+        <rrtk::Terminal<'_, ()> as rrtk::Getter<AngularState, ()>>::get(&terminal2.borrow())
             .unwrap()
             .unwrap()
             .value,
-        State::new(
-            Millimeter::new(TERM_2),
-            MillimeterPerSecond::new(TERM_2),
-            MillimeterPerSecondSquared::new(TERM_2)
+        AngularState::new(
+            Dimensionless::new(TERM_2),
+            InverseSecond::new(TERM_2),
+            InverseSecondSquared::new(TERM_2)
         )
     );
     assert_eq!(
-        <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal_sum.borrow())
+        <rrtk::Terminal<'_, ()> as rrtk::Getter<AngularState, ()>>::get(&terminal_sum.borrow())
             .unwrap()
             .unwrap()
             .value,
-        State::new(
-            Millimeter::new(TERM_SUM),
-            MillimeterPerSecond::new(TERM_SUM),
-            MillimeterPerSecondSquared::new(TERM_SUM)
+        AngularState::new(
+            Dimensionless::new(TERM_SUM),
+            InverseSecond::new(TERM_SUM),
+            InverseSecondSquared::new(TERM_SUM)
         )
     );
 }
@@ -835,10 +844,10 @@ fn differential_distrust_sum() {
         .borrow_mut()
         .set(Datum::new(
             Time::ZERO,
-            State::new(
-                Millimeter::new(2.0),
-                MillimeterPerSecond::new(2.0),
-                MillimeterPerSecondSquared::new(2.0),
+            AngularState::new(
+                Dimensionless::new(2.0),
+                InverseSecond::new(2.0),
+                InverseSecondSquared::new(2.0),
             ),
         ))
         .unwrap();
@@ -846,10 +855,10 @@ fn differential_distrust_sum() {
         .borrow_mut()
         .set(Datum::new(
             Time::ZERO,
-            State::new(
-                Millimeter::new(3.0),
-                MillimeterPerSecond::new(3.0),
-                MillimeterPerSecondSquared::new(3.0),
+            AngularState::new(
+                Dimensionless::new(3.0),
+                InverseSecond::new(3.0),
+                InverseSecondSquared::new(3.0),
             ),
         ))
         .unwrap();
@@ -857,10 +866,10 @@ fn differential_distrust_sum() {
         .borrow_mut()
         .set(Datum::new(
             Time::ZERO,
-            State::new(
-                Millimeter::new(4.0),
-                MillimeterPerSecond::new(4.0),
-                MillimeterPerSecondSquared::new(4.0),
+            AngularState::new(
+                Dimensionless::new(4.0),
+                InverseSecond::new(4.0),
+                InverseSecondSquared::new(4.0),
             ),
         ))
         .unwrap();
@@ -876,36 +885,36 @@ fn differential_distrust_sum() {
     const TERM_2: f32 = (EST_2 + 3.0) / 2.0;
     const TERM_SUM: f32 = (EST_SUM + 4.0) / 2.0;
     assert_eq!(
-        <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal1.borrow())
+        <rrtk::Terminal<'_, ()> as rrtk::Getter<AngularState, ()>>::get(&terminal1.borrow())
             .unwrap()
             .unwrap()
             .value,
-        State::new(
-            Millimeter::new(TERM_1),
-            MillimeterPerSecond::new(TERM_1),
-            MillimeterPerSecondSquared::new(TERM_1)
+        AngularState::new(
+            Dimensionless::new(TERM_1),
+            InverseSecond::new(TERM_1),
+            InverseSecondSquared::new(TERM_1)
         )
     );
     assert_eq!(
-        <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal2.borrow())
+        <rrtk::Terminal<'_, ()> as rrtk::Getter<AngularState, ()>>::get(&terminal2.borrow())
             .unwrap()
             .unwrap()
             .value,
-        State::new(
-            Millimeter::new(TERM_2),
-            MillimeterPerSecond::new(TERM_2),
-            MillimeterPerSecondSquared::new(TERM_2)
+        AngularState::new(
+            Dimensionless::new(TERM_2),
+            InverseSecond::new(TERM_2),
+            InverseSecondSquared::new(TERM_2)
         )
     );
     assert_eq!(
-        <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal_sum.borrow())
+        <rrtk::Terminal<'_, ()> as rrtk::Getter<AngularState, ()>>::get(&terminal_sum.borrow())
             .unwrap()
             .unwrap()
             .value,
-        State::new(
-            Millimeter::new(TERM_SUM),
-            MillimeterPerSecond::new(TERM_SUM),
-            MillimeterPerSecondSquared::new(TERM_SUM)
+        AngularState::new(
+            Dimensionless::new(TERM_SUM),
+            InverseSecond::new(TERM_SUM),
+            InverseSecondSquared::new(TERM_SUM)
         )
     );
 }
@@ -934,10 +943,10 @@ fn actuator_wrapper() {
                 TerminalData {
                     time: Time::from_nanoseconds(2),
                     command: Some(Command::new(PositionDerivative::Position, 5.0)),
-                    state: Some(State::new(
-                        Millimeter::new(1.0),
-                        MillimeterPerSecond::new(2.0),
-                        MillimeterPerSecondSquared::new(3.0)
+                    state: Some(AngularState::new(
+                        Dimensionless::new(1.0),
+                        InverseSecond::new(2.0),
+                        InverseSecondSquared::new(3.0)
                     )),
                 }
             );
@@ -962,10 +971,10 @@ fn actuator_wrapper() {
         .borrow_mut()
         .set(Datum::new(
             Time::from_nanoseconds(2),
-            State::new(
-                Millimeter::new(1.0),
-                MillimeterPerSecond::new(2.0),
-                MillimeterPerSecondSquared::new(3.0),
+            AngularState::new(
+                Dimensionless::new(1.0),
+                InverseSecond::new(2.0),
+                InverseSecondSquared::new(3.0),
             ),
         ))
         .unwrap();
@@ -977,14 +986,14 @@ fn actuator_wrapper() {
 #[test]
 fn getter_state_device_wrapper() {
     struct GetterState;
-    impl Getter<State, ()> for GetterState {
-        fn get(&self) -> Output<State, ()> {
+    impl Getter<AngularState, ()> for GetterState {
+        fn get(&self) -> Output<AngularState, ()> {
             Ok(Some(Datum::new(
                 Time::ZERO,
-                State::new(
-                    Millimeter::new(1.0),
-                    MillimeterPerSecond::new(2.0),
-                    MillimeterPerSecondSquared::new(3.0),
+                AngularState::new(
+                    Dimensionless::new(1.0),
+                    InverseSecond::new(2.0),
+                    InverseSecondSquared::new(3.0),
                 ),
             )))
         }
@@ -999,14 +1008,14 @@ fn getter_state_device_wrapper() {
     connect(wrapper.get_terminal(), &terminal);
     wrapper.update().unwrap();
     assert_eq!(
-        <rrtk::Terminal<'_, ()> as rrtk::Getter<State, ()>>::get(&terminal.borrow())
+        <rrtk::Terminal<'_, ()> as rrtk::Getter<AngularState, ()>>::get(&terminal.borrow())
             .unwrap()
             .unwrap()
             .value,
-        State::new(
-            Millimeter::new(1.0),
-            MillimeterPerSecond::new(2.0),
-            MillimeterPerSecondSquared::new(3.0)
+        AngularState::new(
+            Dimensionless::new(1.0),
+            InverseSecond::new(2.0),
+            InverseSecondSquared::new(3.0)
         )
     );
 }
@@ -1015,10 +1024,10 @@ fn getter_state_device_wrapper() {
 fn pid_wrapper() {
     static mut ASSERTS: u8 = 0;
     const COMMAND: Command = Command::new(PositionDerivative::Position, 5.0);
-    const STATE: State = State::new(
-        Millimeter::new(0.0),
-        MillimeterPerSecond::new(0.0),
-        MillimeterPerSecondSquared::new(0.0),
+    const STATE: AngularState = AngularState::new(
+        Dimensionless::new(0.0),
+        InverseSecond::new(0.0),
+        InverseSecondSquared::new(0.0),
     );
     const K_VALUES: PositionDerivativeDependentPIDKValues =
         PositionDerivativeDependentPIDKValues::new(
@@ -1064,8 +1073,8 @@ fn pid_wrapper() {
     struct Encoder {
         time: Time,
     }
-    impl Getter<State, ()> for Encoder {
-        fn get(&self) -> Output<State, ()> {
+    impl Getter<AngularState, ()> for Encoder {
+        fn get(&self) -> Output<AngularState, ()> {
             Ok(Some(Datum::new(self.time, STATE)))
         }
     }
