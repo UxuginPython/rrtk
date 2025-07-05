@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // Copyright 2024-2025 UxuginPython
 use crate::*;
+use stulta::AbsoluteValue;
 ///Where you are in following a motion profile.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum MotionProfilePiece {
