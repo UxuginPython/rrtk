@@ -3,7 +3,7 @@
 use rrtk::*;
 #[test]
 fn state_new() {
-    let state = State::new(
+    let state = LinearState::new(
         Millimeter::new(1.0),
         MillimeterPerSecond::new(2.0),
         MillimeterPerSecondSquared::new(3.0),
@@ -14,7 +14,7 @@ fn state_new() {
 }
 #[test]
 fn state_update() {
-    let mut state = State::new(
+    let mut state = LinearState::new(
         Millimeter::new(1.0),
         MillimeterPerSecond::new(2.0),
         MillimeterPerSecondSquared::new(3.0),
@@ -26,7 +26,7 @@ fn state_update() {
 }
 #[test]
 fn state_acceleration() {
-    let mut state = State::new(
+    let mut state = LinearState::new(
         Millimeter::new(1.0),
         MillimeterPerSecond::new(2.0),
         MillimeterPerSecondSquared::new(3.0),
@@ -36,7 +36,7 @@ fn state_acceleration() {
 }
 #[test]
 fn state_velocity_raw() {
-    let mut state = State::new(
+    let mut state = LinearState::new(
         Millimeter::new(1.0),
         MillimeterPerSecond::new(2.0),
         MillimeterPerSecondSquared::new(3.0),
@@ -47,7 +47,7 @@ fn state_velocity_raw() {
 }
 #[test]
 fn state_position_raw() {
-    let mut state = State::new(
+    let mut state = LinearState::new(
         Millimeter::new(1.0),
         MillimeterPerSecond::new(2.0),
         MillimeterPerSecondSquared::new(3.0),
@@ -59,7 +59,7 @@ fn state_position_raw() {
 }
 #[test]
 fn state_get_value() {
-    let state = State::new(
+    let state = LinearState::new(
         Millimeter::new(1.0),
         MillimeterPerSecond::new(2.0),
         MillimeterPerSecondSquared::new(3.0),
@@ -71,110 +71,110 @@ fn state_get_value() {
 #[test]
 fn state_ops() {
     assert_eq!(
-        -State::new(
+        -LinearState::new(
             Millimeter::new(1.0),
             MillimeterPerSecond::new(2.0),
             MillimeterPerSecondSquared::new(3.0)
         ),
-        State::new(
+        LinearState::new(
             Millimeter::new(-1.0),
             MillimeterPerSecond::new(-2.0),
             MillimeterPerSecondSquared::new(-3.0)
         )
     );
     assert_eq!(
-        State::new(
+        LinearState::new(
             Millimeter::new(1.0),
             MillimeterPerSecond::new(2.0),
             MillimeterPerSecondSquared::new(3.0)
-        ) + State::new(
+        ) + LinearState::new(
             Millimeter::new(4.0),
             MillimeterPerSecond::new(5.0),
             MillimeterPerSecondSquared::new(6.0)
         ),
-        State::new(
+        LinearState::new(
             Millimeter::new(5.0),
             MillimeterPerSecond::new(7.0),
             MillimeterPerSecondSquared::new(9.0)
         )
     );
     assert_eq!(
-        State::new(
+        LinearState::new(
             Millimeter::new(1.0),
             MillimeterPerSecond::new(2.0),
             MillimeterPerSecondSquared::new(3.0)
-        ) - State::new(
+        ) - LinearState::new(
             Millimeter::new(4.0),
             MillimeterPerSecond::new(5.0),
             MillimeterPerSecondSquared::new(6.0)
         ),
-        State::new(
+        LinearState::new(
             Millimeter::new(-3.0),
             MillimeterPerSecond::new(-3.0),
             MillimeterPerSecondSquared::new(-3.0)
         )
     );
     assert_eq!(
-        State::new(
+        LinearState::new(
             Millimeter::new(1.0),
             MillimeterPerSecond::new(2.0),
             MillimeterPerSecondSquared::new(3.0)
         ) * Dimensionless::new(2.0),
-        State::new(
+        LinearState::new(
             Millimeter::new(2.0),
             MillimeterPerSecond::new(4.0),
             MillimeterPerSecondSquared::new(6.0)
         )
     );
     assert_eq!(
-        State::new(
+        LinearState::new(
             Millimeter::new(1.0),
             MillimeterPerSecond::new(2.0),
             MillimeterPerSecondSquared::new(3.0)
         ) / Dimensionless::new(2.0),
-        State::new(
+        LinearState::new(
             Millimeter::new(0.5),
             MillimeterPerSecond::new(1.0),
             MillimeterPerSecondSquared::new(1.5)
         )
     );
-    let mut state = State::new(
+    let mut state = LinearState::new(
         Millimeter::new(1.0),
         MillimeterPerSecond::new(2.0),
         MillimeterPerSecondSquared::new(3.0),
     );
-    state += State::new(
+    state += LinearState::new(
         Millimeter::new(4.0),
         MillimeterPerSecond::new(5.0),
         MillimeterPerSecondSquared::new(6.0),
     );
     assert_eq!(
         state,
-        State::new(
+        LinearState::new(
             Millimeter::new(5.0),
             MillimeterPerSecond::new(7.0),
             MillimeterPerSecondSquared::new(9.0)
         )
     );
-    let mut state = State::new(
+    let mut state = LinearState::new(
         Millimeter::new(1.0),
         MillimeterPerSecond::new(2.0),
         MillimeterPerSecondSquared::new(3.0),
     );
-    state -= State::new(
+    state -= LinearState::new(
         Millimeter::new(4.0),
         MillimeterPerSecond::new(5.0),
         MillimeterPerSecondSquared::new(6.0),
     );
     assert_eq!(
         state,
-        State::new(
+        LinearState::new(
             Millimeter::new(-3.0),
             MillimeterPerSecond::new(-3.0),
             MillimeterPerSecondSquared::new(-3.0)
         )
     );
-    let mut state = State::new(
+    let mut state = LinearState::new(
         Millimeter::new(1.0),
         MillimeterPerSecond::new(2.0),
         MillimeterPerSecondSquared::new(3.0),
@@ -182,13 +182,13 @@ fn state_ops() {
     state *= Dimensionless::new(2.0);
     assert_eq!(
         state,
-        State::new(
+        LinearState::new(
             Millimeter::new(2.0),
             MillimeterPerSecond::new(4.0),
             MillimeterPerSecondSquared::new(6.0)
         )
     );
-    let mut state = State::new(
+    let mut state = LinearState::new(
         Millimeter::new(1.0),
         MillimeterPerSecond::new(2.0),
         MillimeterPerSecondSquared::new(3.0),
@@ -196,7 +196,7 @@ fn state_ops() {
     state /= Dimensionless::new(2.0);
     assert_eq!(
         state,
-        State::new(
+        LinearState::new(
             Millimeter::new(0.5),
             MillimeterPerSecond::new(1.0),
             MillimeterPerSecondSquared::new(1.5)
@@ -413,13 +413,13 @@ fn pid_k_values_evaluate() {
 }
 #[test]
 fn motion_profile_get_mode() {
-    let motion_profile = MotionProfile::new(
-        State::new(
+    let motion_profile = MotionProfile::<LinearCommand>::new(
+        LinearState::new(
             Millimeter::new(0.0),
             MillimeterPerSecond::new(0.0),
             MillimeterPerSecondSquared::new(0.0),
         ),
-        State::new(
+        LinearState::new(
             Millimeter::new(3.0),
             MillimeterPerSecond::new(0.0),
             MillimeterPerSecondSquared::new(0.0),
@@ -442,13 +442,13 @@ fn motion_profile_get_mode() {
 }
 #[test]
 fn motion_profile_get_acceleration() {
-    let motion_profile = MotionProfile::new(
-        State::new(
+    let motion_profile = MotionProfile::<LinearCommand>::new(
+        LinearState::new(
             Millimeter::new(0.0),
             MillimeterPerSecond::new(0.0),
             MillimeterPerSecondSquared::new(0.0),
         ),
-        State::new(
+        LinearState::new(
             Millimeter::new(3.0),
             MillimeterPerSecond::new(0.0),
             MillimeterPerSecondSquared::new(0.0),
@@ -480,12 +480,12 @@ fn motion_profile_get_acceleration() {
 #[test]
 fn motion_profile_get_velocity() {
     let motion_profile = MotionProfile::new(
-        State::new(
+        LinearState::new(
             Millimeter::new(0.0),
             MillimeterPerSecond::new(0.0),
             MillimeterPerSecondSquared::new(0.0),
         ),
-        State::new(
+        LinearState::new(
             Millimeter::new(3.0),
             MillimeterPerSecond::new(0.0),
             MillimeterPerSecondSquared::new(0.0),
@@ -520,12 +520,12 @@ fn motion_profile_get_velocity() {
 #[test]
 fn motion_profile_get_velocity_2() {
     let motion_profile = MotionProfile::new(
-        State::new(
+        LinearState::new(
             Millimeter::new(1.0),
             MillimeterPerSecond::new(0.0),
             MillimeterPerSecondSquared::new(0.03),
         ),
-        State::new(
+        LinearState::new(
             Millimeter::new(4.0),
             MillimeterPerSecond::new(0.0),
             MillimeterPerSecondSquared::new(0.0),
@@ -552,12 +552,12 @@ fn motion_profile_get_velocity_2() {
 #[test]
 fn motion_profile_get_velocity_3() {
     let motion_profile = MotionProfile::new(
-        State::new(
+        LinearState::new(
             Millimeter::new(1.0),
             MillimeterPerSecond::new(0.1),
             MillimeterPerSecondSquared::new(0.03),
         ),
-        State::new(
+        LinearState::new(
             Millimeter::new(6.0),
             MillimeterPerSecond::new(0.1),
             MillimeterPerSecondSquared::new(0.0),
@@ -582,12 +582,12 @@ fn motion_profile_get_velocity_3() {
 #[test]
 fn motion_profile_get_position() {
     let motion_profile = MotionProfile::new(
-        State::new(
+        LinearState::new(
             Millimeter::new(0.0),
             MillimeterPerSecond::new(0.0),
             MillimeterPerSecondSquared::new(0.0),
         ),
-        State::new(
+        LinearState::new(
             Millimeter::new(3.0),
             MillimeterPerSecond::new(0.0),
             MillimeterPerSecondSquared::new(0.0),
@@ -629,12 +629,12 @@ fn motion_profile_get_position() {
 #[test]
 fn motion_profile_get_position_2() {
     let motion_profile = MotionProfile::new(
-        State::new(
+        LinearState::new(
             Millimeter::new(1.0),
             MillimeterPerSecond::new(0.0),
             MillimeterPerSecondSquared::new(0.03),
         ),
-        State::new(
+        LinearState::new(
             Millimeter::new(4.0),
             MillimeterPerSecond::new(0.0),
             MillimeterPerSecondSquared::new(0.0),
@@ -667,12 +667,12 @@ fn motion_profile_get_position_2() {
 #[test]
 fn motion_profile_get_position_3() {
     let motion_profile = MotionProfile::new(
-        State::new(
+        LinearState::new(
             Millimeter::new(1.0),
             MillimeterPerSecond::new(0.1),
             MillimeterPerSecondSquared::new(0.03),
         ),
-        State::new(
+        LinearState::new(
             Millimeter::new(6.0),
             MillimeterPerSecond::new(0.1),
             MillimeterPerSecondSquared::new(0.0),
@@ -705,12 +705,12 @@ fn motion_profile_get_position_3() {
 #[test]
 fn motion_profile_chronology() {
     let motion_profile = MotionProfile::new(
-        State::new(
+        LinearState::new(
             Millimeter::new(0.0),
             MillimeterPerSecond::new(0.0),
             MillimeterPerSecondSquared::new(0.0),
         ),
-        State::new(
+        LinearState::new(
             Millimeter::new(3.0),
             MillimeterPerSecond::new(0.0),
             MillimeterPerSecondSquared::new(0.0),
@@ -718,7 +718,7 @@ fn motion_profile_chronology() {
         MillimeterPerSecond::new(0.1),
         MillimeterPerSecondSquared::new(0.01),
     );
-    let motion_profile = Box::new(motion_profile) as Box<dyn Chronology<Command>>;
+    let motion_profile = Box::new(motion_profile) as Box<dyn Chronology<LinearCommand>>;
     assert_eq!(
         motion_profile.get(Time::from_nanoseconds(-20_000_000_000)),
         None
@@ -728,7 +728,7 @@ fn motion_profile_chronology() {
             .get(Time::from_nanoseconds(5_000_000_000))
             .unwrap()
             .value,
-        Command::new(PositionDerivative::Acceleration, 0.01)
+        LinearCommand::new(PositionDerivative::Acceleration, 0.01)
     );
     let g25 = motion_profile
         .get(Time::from_nanoseconds(25_000_000_000))
@@ -741,25 +741,25 @@ fn motion_profile_chronology() {
             .get(Time::from_nanoseconds(35_000_000_000))
             .unwrap()
             .value,
-        Command::new(PositionDerivative::Acceleration, -0.01)
+        LinearCommand::new(PositionDerivative::Acceleration, -0.01)
     );
     assert_eq!(
         motion_profile
             .get(Time::from_nanoseconds(99999_000_000_000))
             .unwrap()
             .value,
-        Command::new(PositionDerivative::Position, 3.0)
+        LinearCommand::new(PositionDerivative::Position, 3.0)
     );
 }
 #[test]
 fn motion_profile_piece() {
     let motion_profile = MotionProfile::new(
-        State::new(
+        LinearState::new(
             Millimeter::new(0.0),
             MillimeterPerSecond::new(0.0),
             MillimeterPerSecondSquared::new(0.0),
         ),
-        State::new(
+        LinearState::new(
             Millimeter::new(3.0),
             MillimeterPerSecond::new(0.0),
             MillimeterPerSecondSquared::new(0.0),
@@ -790,21 +790,21 @@ fn motion_profile_piece() {
 }
 #[test]
 fn command() {
-    let command = Command::new(PositionDerivative::Position, 5.0);
+    let command = LinearCommand::new(PositionDerivative::Position, 5.0);
     assert_eq!(command.get_position(), Some(Millimeter::new(5.0)));
     assert_eq!(command.get_velocity(), Some(MillimeterPerSecond::new(0.0)));
     assert_eq!(
         command.get_acceleration(),
         MillimeterPerSecondSquared::new(0.0)
     );
-    let command = Command::new(PositionDerivative::Velocity, 5.0);
+    let command = LinearCommand::new(PositionDerivative::Velocity, 5.0);
     assert_eq!(command.get_position(), None);
     assert_eq!(command.get_velocity(), Some(MillimeterPerSecond::new(5.0)));
     assert_eq!(
         command.get_acceleration(),
         MillimeterPerSecondSquared::new(0.0)
     );
-    let command = Command::new(PositionDerivative::Acceleration, 5.0);
+    let command = LinearCommand::new(PositionDerivative::Acceleration, 5.0);
     assert_eq!(command.get_position(), None);
     assert_eq!(command.get_velocity(), None);
     assert_eq!(
@@ -814,63 +814,74 @@ fn command() {
 }
 #[test]
 fn command_from_state() {
-    let command = Command::from(State::new(
+    let command = LinearCommand::from(LinearState::new(
         Millimeter::new(1.0),
         MillimeterPerSecond::new(2.0),
         MillimeterPerSecondSquared::new(3.0),
     ));
-    assert_eq!(command, Command::new(PositionDerivative::Acceleration, 3.0));
-    let command = Command::from(State::new(
+    assert_eq!(
+        command,
+        LinearCommand::new(PositionDerivative::Acceleration, 3.0)
+    );
+    let command = LinearCommand::from(LinearState::new(
         Millimeter::new(1.0),
         MillimeterPerSecond::new(2.0),
         MillimeterPerSecondSquared::new(0.0),
     ));
-    assert_eq!(command, Command::new(PositionDerivative::Velocity, 2.0));
-    let command = Command::from(State::new(
+    assert_eq!(
+        command,
+        LinearCommand::new(PositionDerivative::Velocity, 2.0)
+    );
+    let command = LinearCommand::from(LinearState::new(
         Millimeter::new(1.0),
         MillimeterPerSecond::new(0.0),
         MillimeterPerSecondSquared::new(0.0),
     ));
-    assert_eq!(command, Command::new(PositionDerivative::Position, 1.0));
+    assert_eq!(
+        command,
+        LinearCommand::new(PositionDerivative::Position, 1.0)
+    );
 }
 #[test]
 fn command_ops() {
     assert_eq!(
-        -Command::Position(Millimeter::new(1.0)),
-        Command::Position(Millimeter::new(-1.0))
+        -LinearCommand::Position(Millimeter::new(1.0)),
+        LinearCommand::Position(Millimeter::new(-1.0))
     );
     assert_eq!(
-        Command::Position(Millimeter::new(2.0)) + Command::Position(Millimeter::new(3.0)),
-        Command::Position(Millimeter::new(5.0))
+        LinearCommand::Position(Millimeter::new(2.0))
+            + LinearCommand::Position(Millimeter::new(3.0)),
+        LinearCommand::Position(Millimeter::new(5.0))
     );
     assert_eq!(
-        Command::Position(Millimeter::new(3.0)) - Command::Position(Millimeter::new(2.0)),
-        Command::Position(Millimeter::new(1.0))
+        LinearCommand::Position(Millimeter::new(3.0))
+            - LinearCommand::Position(Millimeter::new(2.0)),
+        LinearCommand::Position(Millimeter::new(1.0))
     );
     assert_eq!(
-        Command::Position(Millimeter::new(3.0)) * Dimensionless::new(2.0),
-        Command::Position(Millimeter::new(6.0))
+        LinearCommand::Position(Millimeter::new(3.0)) * Dimensionless::new(2.0),
+        LinearCommand::Position(Millimeter::new(6.0))
     );
     assert_eq!(
-        Command::Position(Millimeter::new(4.0)) / Dimensionless::new(2.0),
-        Command::Position(Millimeter::new(2.0))
+        LinearCommand::Position(Millimeter::new(4.0)) / Dimensionless::new(2.0),
+        LinearCommand::Position(Millimeter::new(2.0))
     );
-    let mut x = Command::Position(Millimeter::new(2.0));
-    let y = Command::Position(Millimeter::new(3.0));
+    let mut x = LinearCommand::Position(Millimeter::new(2.0));
+    let y = LinearCommand::Position(Millimeter::new(3.0));
     x += y;
-    assert_eq!(x, Command::Position(Millimeter::new(5.0)));
-    let mut x = Command::Position(Millimeter::new(3.0));
-    let y = Command::Position(Millimeter::new(2.0));
+    assert_eq!(x, LinearCommand::Position(Millimeter::new(5.0)));
+    let mut x = LinearCommand::Position(Millimeter::new(3.0));
+    let y = LinearCommand::Position(Millimeter::new(2.0));
     x -= y;
-    assert_eq!(x, Command::Position(Millimeter::new(1.0)));
-    let mut x = Command::Position(Millimeter::new(3.0));
+    assert_eq!(x, LinearCommand::Position(Millimeter::new(1.0)));
+    let mut x = LinearCommand::Position(Millimeter::new(3.0));
     let y = Dimensionless::new(2.0);
     x *= y;
-    assert_eq!(x, Command::Position(Millimeter::new(6.0)));
-    let mut x = Command::Position(Millimeter::new(4.0));
+    assert_eq!(x, LinearCommand::Position(Millimeter::new(6.0)));
+    let mut x = LinearCommand::Position(Millimeter::new(4.0));
     let y = Dimensionless::new(2.0);
     x /= y;
-    assert_eq!(x, Command::Position(Millimeter::new(2.0)));
+    assert_eq!(x, LinearCommand::Position(Millimeter::new(2.0)));
 }
 #[test]
 fn time_getter_from_getter() {
