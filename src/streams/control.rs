@@ -129,16 +129,20 @@ mod command_pid {
             self.update_state = Ok(None);
         }
     }
-    /*impl<G: Getter<State, E>, E: Clone + Debug> Settable<Command, E> for CommandPID<G, E> {
-        fn set(&mut self, command: Command) -> NothingOrError<E> {
+    impl<G: Getter<C::CorrespondingState, E>, C: GenericCommand, E: Clone + Debug> Settable<C, E>
+        for CommandPID<G, C, E>
+    {
+        fn set(&mut self, command: C) -> NothingOrError<E> {
             if command != self.command {
                 self.reset();
                 self.command = command;
             }
             Ok(())
         }
-    }*/
-    /*impl<G: Getter<State, E>, E: Clone + Debug> Getter<f32, E> for CommandPID<G, E> {
+    }
+    impl<G: Getter<C::CorrespondingState, E>, C: GenericCommand, E: Clone + Debug> Getter<f32, E>
+        for CommandPID<G, C, E>
+    {
         fn get(&self) -> Output<f32, E> {
             match &self.update_state {
                 Err(error) => Err(error.clone()),
@@ -165,7 +169,7 @@ mod command_pid {
                 },
             }
         }
-    }*/
+    }
     impl<G: Getter<C::CorrespondingState, E>, C: GenericCommand, E: Clone + Debug> Updatable<E>
         for CommandPID<G, C, E>
     {
