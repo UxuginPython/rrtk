@@ -79,6 +79,9 @@ pub trait GenericState:
     fn generic_set_constant_velocity(&mut self, velocity: Self::Velocity);
     ///Set the acceleration.
     fn generic_set_constant_acceleration(&mut self, acceleration: Self::Acceleration);
+    ///States contain a position, velocity, and acceleration. This gets the respective field of a
+    ///given position derivative.
+    fn generic_get_value(&self, position_derivative: PositionDerivative) -> f32;
     ///Generically get the position value of the state.
     fn generic_position(&self) -> Self::Position;
     ///Generically get the velocity value of the state.
@@ -246,6 +249,10 @@ macro_rules! build_state_struct {
             #[inline]
             fn generic_set_constant_acceleration(&mut self, acceleration: $acc) {
                 self.set_constant_acceleration(acceleration);
+            }
+            #[inline]
+            fn generic_get_value(&self, position_derivative: PositionDerivative) -> f32 {
+                self.get_value(position_derivative)
             }
             #[inline]
             fn generic_position(&self) -> $pos {

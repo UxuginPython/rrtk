@@ -185,8 +185,8 @@ mod command_pid {
                     return Err(error);
                 }
             };
-            let error = f32::from(self.command)
-                - f32::from(datum_state.value.get_value(self.command.into()));
+            let error = <C as Into<f32>>::into(self.command)
+                - f32::from(datum_state.value.generic_get_value(self.command.into()));
             match &self.update_state {
                 Ok(None) | Err(_) => {
                     let output = self.kvals.evaluate(self.command.into(), error, 0.0, 0.0);
