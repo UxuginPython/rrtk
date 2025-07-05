@@ -35,6 +35,8 @@ pub trait GenericState:
         + PartialOrd
         + Add<Output = Self::Position>
         + Sub<Output = Self::Position>
+        + Mul<Dimensionless<f32>, Output = Self::Position>
+        + Div<Dimensionless<f32>, Output = Self::Position>
         + Div<Time, Output = Self::Velocity>
         + stulta::AbsoluteValue;
     ///The type that the velocity is stored as. Almost certainly a [`Quantity`] of some type.
@@ -45,6 +47,8 @@ pub trait GenericState:
         + PartialOrd
         + Add<Output = Self::Velocity>
         + Sub<Output = Self::Velocity>
+        + Mul<Dimensionless<f32>, Output = Self::Velocity>
+        + Div<Dimensionless<f32>, Output = Self::Velocity>
         + Mul<Time, Output = Self::Position>
         + Div<Time, Output = Self::Acceleration>
         + stulta::AbsoluteValue;
@@ -56,6 +60,8 @@ pub trait GenericState:
         + PartialOrd
         + Add<Output = Self::Acceleration>
         + Sub<Output = Self::Acceleration>
+        + Mul<Dimensionless<f32>, Output = Self::Acceleration>
+        + Div<Dimensionless<f32>, Output = Self::Acceleration>
         + Mul<Time, Output = Self::Velocity>
         + stulta::AbsoluteValue;
     ///Constructor from a position, velocity, and acceleration.

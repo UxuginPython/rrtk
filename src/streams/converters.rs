@@ -177,22 +177,22 @@ where
 pub use acceleration_to_state::*;
 mod acceleration_to_state {
     use super::*;
-    struct Update0 {
+    struct Update0<P, V, A> {
         last_update_time: Time,
-        acceleration: MillimeterPerSecondSquared<f32>,
-        update_1: Option<Update1>,
+        acceleration: A,
+        update_1: Option<Update1<P, V>>,
     }
-    struct Update1 {
-        velocity: MillimeterPerSecond<f32>,
-        update_2_position: Option<Millimeter<f32>>,
+    struct Update1<P, V> {
+        velocity: V,
+        update_2_position: Option<P>,
     }
     ///Doubly integrates an acceleration to create a full [`State`] object. Uses trapezoidal
     ///integration.
-    pub struct AccelerationToState<G> {
+    pub struct AccelerationToState<G, S: GenericState> {
         input: G,
-        update_0: Option<Update0>,
+        update_0: Option<Update0<S::Position, S::Velocity, S::Acceleration>>,
     }
-    impl<G> AccelerationToState<G> {
+    impl<G, S: GenericState> AccelerationToState<G, S> {
         ///Constructor for `AccelerationToState`.
         pub const fn new(input: G) -> Self {
             Self {
@@ -201,17 +201,21 @@ mod acceleration_to_state {
             }
         }
     }
-    impl<G, E: Clone + Debug> Getter<State, E> for AccelerationToState<G>
+    impl<G, S: GenericState, E: Clone + Debug> Getter<S, E> for AccelerationToState<G, S>
     where
         Self: Updatable<E>,
     {
-        fn get(&self) -> Output<State, E> {
+        fn get(&self) -> Output<S, E> {
             if let Some(update_0) = &self.update_0 {
                 if let Some(update_1) = &update_0.update_1 {
                     if let Some(update_2_position) = update_1.update_2_position {
                         return Ok(Some(Datum::new(
                             update_0.last_update_time,
-                            State::new(update_2_position, update_1.velocity, update_0.acceleration),
+                            S::generic_new(
+                                update_2_position,
+                                update_1.velocity,
+                                update_0.acceleration,
+                            ),
                         )));
                     }
                 }
@@ -219,8 +223,8 @@ mod acceleration_to_state {
             Ok(None)
         }
     }
-    impl<G: Getter<MillimeterPerSecondSquared<f32>, E>, E: Clone + Debug> Updatable<E>
-        for AccelerationToState<G>
+    impl<G: Getter<S::Acceleration, E>, S: GenericState, E: Clone + Debug> Updatable<E>
+        for AccelerationToState<G, S>
     {
         fn update(&mut self) -> NothingOrError<E> {
             self.input.update()?;
