@@ -24,6 +24,7 @@ pub trait GenericCommand:
     + SubAssign
     + MulAssign<Dimensionless<f32>>
     + DivAssign<Dimensionless<f32>>
+    + Into<PositionDerivative>
 {
     ///The type that position is stored as. Almost certainly a [`Quantity`] of some type.
     type Position: Copy

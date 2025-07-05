@@ -27,8 +27,9 @@ pub struct MotionProfile<C: GenericCommand> {
     max_acc: C::Acceleration,
     end_command: C,
 }
-/*impl Chronology<Command> for MotionProfile {
-    fn get(&self, time: Time) -> Option<Datum<Command>> {
+//This *should* be fixed, but it's not confirmed because the methods it calls don't work yet.
+/*impl<C: GenericCommand> Chronology<C> for MotionProfile<C> {
+    fn get(&self, time: Time) -> Option<Datum<C>> {
         let mode = match self.get_mode(time) {
             Some(value) => value,
             None => {
@@ -36,15 +37,15 @@ pub struct MotionProfile<C: GenericCommand> {
             }
         };
         let command = match mode {
-            PositionDerivative::Position => Command::from(
+            PositionDerivative::Position => C::from(
                 self.get_position(time)
                     .expect("If mode is Position, this should be Some."),
             ),
-            PositionDerivative::Velocity => Command::from(
+            PositionDerivative::Velocity => C::from(
                 self.get_velocity(time)
                     .expect("If mode is Velocity, this should be Some."),
             ),
-            PositionDerivative::Acceleration => Command::from(
+            PositionDerivative::Acceleration => C::from(
                 self.get_acceleration(time)
                     .expect("If mode is Acceleration, this should be Some."),
             ),
@@ -104,7 +105,7 @@ impl<C: GenericCommand> MotionProfile<C> {
             end_command,
         }
     }
-    /*///Get the intended [`PositionDerivative`] at a given time.
+    ///Get the intended [`PositionDerivative`] at a given time.
     pub fn get_mode(&self, t: Time) -> Option<PositionDerivative> {
         if t < Time::default() {
             None
@@ -133,20 +134,20 @@ impl<C: GenericCommand> MotionProfile<C> {
         }
     }
     ///Get the intended acceleration at a given time.
-    pub fn get_acceleration(&self, t: Time) -> Option<MillimeterPerSecondSquared<f32>> {
+    pub fn get_acceleration(&self, t: Time) -> Option<C::Acceleration> {
         if t < Time::default() {
             None
         } else if t < self.t1 {
             return Some(self.max_acc);
         } else if t < self.t2 {
-            return Some(MillimeterPerSecondSquared::new(0.0));
+            return Some(C::Acceleration::default());
         } else if t < self.t3 {
             return Some(-self.max_acc);
         } else {
-            return Some(self.end_command.get_acceleration());
+            return Some(self.end_command.generic_get_acceleration());
         }
     }
-    ///Get the intended velocity at a given time.
+    /*///Get the intended velocity at a given time.
     pub fn get_velocity(&self, t: Time) -> Option<MillimeterPerSecond<f32>> {
         if t < Time::default() {
             None
