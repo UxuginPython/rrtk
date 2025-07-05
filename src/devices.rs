@@ -7,7 +7,7 @@
 use crate::*;
 pub mod wrappers;
 ///A device such that positive for one terminal is negative for the other.
-///As this device has only one degree of freedom, it propagates [`Command`]s given to its terminals
+///As this device has only one degree of freedom, it propagates [`AngularCommand`]s given to its terminals
 ///as well as [`State`]s.
 pub struct Invert<'a, E: Clone + Debug> {
     term1: RefCell<Terminal<'a, E>>,
@@ -75,17 +75,17 @@ impl<E: Clone + Debug> Updatable<E> for Invert<'_, E> {
                 }
             },
         }
-        let get1: Option<Datum<Command>> = self
+        let get1: Option<Datum<AngularCommand>> = self
             .term1
             .borrow()
             .get()
             .expect("Terminal get will always return Ok");
-        let get2: Option<Datum<Command>> = self
+        let get2: Option<Datum<AngularCommand>> = self
             .term2
             .borrow()
             .get()
             .expect("Terminal get will always return Ok");
-        let mut maybe_datum: Option<Datum<Command>> = None;
+        let mut maybe_datum: Option<Datum<AngularCommand>> = None;
         maybe_datum.replace_if_none_or_older_than_option(get1);
         match get2 {
             Some(x) => {
@@ -111,7 +111,7 @@ impl<E: Clone + Debug> Device<E> for Invert<'_, E> {
     }
 }
 ///A gear train, a mechanism consisting of a two or more gears meshed together.
-///As this device has only one degree of freedom, it propagates [`Command`]s given to its terminals
+///As this device has only one degree of freedom, it propagates [`AngularCommand`]s given to its terminals
 ///as well as [`State`]s.
 pub struct GearTrain<'a, E: Clone + Debug> {
     term1: RefCell<Terminal<'a, E>>,
@@ -191,12 +191,12 @@ impl<E: Clone + Debug> Updatable<E> for GearTrain<'_, E> {
                 None => {}
             },
         }
-        let get1: Option<Datum<Command>> = self
+        let get1: Option<Datum<AngularCommand>> = self
             .term1
             .borrow()
             .get()
             .expect("Terminal get will always return Ok");
-        let get2: Option<Datum<Command>> = self
+        let get2: Option<Datum<AngularCommand>> = self
             .term2
             .borrow()
             .get()
@@ -243,7 +243,7 @@ impl<E: Clone + Debug> Device<E> for GearTrain<'_, E> {
 ///only two terminals is possible but may have a slight performance cost. (The type even
 ///technically allows for only one or even zero connected terminals, but there is almost certainly
 ///no legitimate use for this.)
-///As this device has only one degree of freedom, it propagates [`Command`]s given to its terminals
+///As this device has only one degree of freedom, it propagates [`AngularCommand`]s given to its terminals
 ///as well as [`State`]s.
 pub struct Axle<'a, const N: usize, E: Clone + Debug> {
     inputs: [RefCell<Terminal<'a, E>>; N],
@@ -290,7 +290,7 @@ impl<const N: usize, E: Clone + Debug> Updatable<E> for Axle<'_, N, E> {
                 i.borrow_mut().set(datum.clone())?;
             }
         }
-        let mut maybe_datum: Option<Datum<Command>> = None;
+        let mut maybe_datum: Option<Datum<AngularCommand>> = None;
         for i in &self.inputs {
             maybe_datum.replace_if_none_or_older_than_option(i.borrow().get()?);
         }
@@ -327,7 +327,7 @@ pub enum DifferentialDistrust {
     Equal,
 }
 ///A mechanical differential mechanism.
-///As this device has two degrees of freedom, it is not able to propagate [`Command`]s given to its
+///As this device has two degrees of freedom, it is not able to propagate [`AngularCommand`]s given to its
 ///terminals as it does with [`State`]s.
 pub struct Differential<'a, E: Clone + Debug> {
     side1: RefCell<Terminal<'a, E>>,

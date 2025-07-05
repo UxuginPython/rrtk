@@ -457,7 +457,7 @@ impl<E: Clone + Debug> Updatable<E> for Time {
 #[cfg(feature = "devices")]
 pub struct Terminal<'a, E: Clone + Debug> {
     last_request_state: Option<Datum<State>>,
-    last_request_command: Option<Datum<Command>>,
+    last_request_command: Option<Datum<AngularCommand>>,
     other: Option<&'a RefCell<Terminal<'a, E>>>,
 }
 #[cfg(feature = "devices")]
@@ -498,8 +498,8 @@ impl<E: Clone + Debug> Settable<Datum<State>, E> for Terminal<'_, E> {
     }
 }
 #[cfg(feature = "devices")]
-impl<E: Clone + Debug> Settable<Datum<Command>, E> for Terminal<'_, E> {
-    fn set(&mut self, command: Datum<Command>) -> NothingOrError<E> {
+impl<E: Clone + Debug> Settable<Datum<AngularCommand>, E> for Terminal<'_, E> {
+    fn set(&mut self, command: Datum<AngularCommand>) -> NothingOrError<E> {
         self.last_request_command = Some(command);
         Ok(())
     }
@@ -543,9 +543,9 @@ impl<E: Clone + Debug> Getter<State, E> for Terminal<'_, E> {
     }
 }
 #[cfg(feature = "devices")]
-impl<E: Clone + Debug> Getter<Command, E> for Terminal<'_, E> {
-    fn get(&self) -> Output<Command, E> {
-        let mut maybe_command: Option<Datum<Command>> = None;
+impl<E: Clone + Debug> Getter<AngularCommand, E> for Terminal<'_, E> {
+    fn get(&self) -> Output<AngularCommand, E> {
+        let mut maybe_command: Option<Datum<AngularCommand>> = None;
         match self.last_request_command {
             Some(command) => {
                 maybe_command = Some(command);
@@ -630,14 +630,14 @@ pub struct TerminalData {
     ///Timestamp.
     pub time: Time,
     ///Optional command from the terminal.
-    pub command: Option<Command>,
+    pub command: Option<AngularCommand>,
     ///Optional state from the terminal.
     pub state: Option<State>,
 }
 #[cfg(feature = "devices")]
-impl TryFrom<TerminalData> for Datum<Command> {
+impl TryFrom<TerminalData> for Datum<AngularCommand> {
     type Error = error::CannotConvert;
-    fn try_from(value: TerminalData) -> Result<Datum<Command>, error::CannotConvert> {
+    fn try_from(value: TerminalData) -> Result<Datum<AngularCommand>, error::CannotConvert> {
         match value.command {
             Some(command) => Ok(Datum::new(value.time, command)),
             None => Err(error::CannotConvert),

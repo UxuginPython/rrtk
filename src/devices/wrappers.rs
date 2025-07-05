@@ -89,7 +89,7 @@ pub struct PIDWrapper<'a, T: Settable<f32, E>, E: Clone + Debug + 'static> {
     terminal: RefCell<Terminal<'a, E>>,
     time: Rc<RefCell<Time>>,
     state: Rc<RefCell<ConstantGetter<State, Rc<RefCell<Time>>, E>>>,
-    command: Rc<RefCell<ConstantGetter<Command, Rc<RefCell<Time>>, E>>>,
+    command: Rc<RefCell<ConstantGetter<AngularCommand, Rc<RefCell<Time>>, E>>>,
     feeder: Feeder<
         f32,
         streams::control::CommandPID<Rc<RefCell<ConstantGetter<State, Rc<RefCell<Time>>, E>>>, E>,
@@ -104,7 +104,7 @@ impl<'a, T: Settable<f32, E>, E: Clone + Debug + 'static> PIDWrapper<'a, T, E> {
         inner: T,
         initial_time: Time,
         initial_state: State,
-        initial_command: Command,
+        initial_command: AngularCommand,
         kvalues: PositionDerivativeDependentPIDKValues,
     ) -> Self {
         let terminal = Terminal::new();
