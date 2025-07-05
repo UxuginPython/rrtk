@@ -8,7 +8,7 @@ use crate::*;
 pub mod wrappers;
 ///A device such that positive for one terminal is negative for the other.
 ///As this device has only one degree of freedom, it propagates [`AngularCommand`]s given to its terminals
-///as well as [`State`]s.
+///as well as [`AngularState`]s.
 pub struct Invert<'a, E: Clone + Debug> {
     term1: RefCell<Terminal<'a, E>>,
     term2: RefCell<Terminal<'a, E>>,
@@ -37,12 +37,12 @@ impl<'a, E: Clone + Debug> Invert<'a, E> {
 impl<E: Clone + Debug> Updatable<E> for Invert<'_, E> {
     fn update(&mut self) -> NothingOrError<E> {
         self.update_terminals()?;
-        let get1: Option<Datum<State>> = self
+        let get1: Option<Datum<AngularState>> = self
             .term1
             .borrow()
             .get()
             .expect("Terminal get will always return Ok");
-        let get2: Option<Datum<State>> = self
+        let get2: Option<Datum<AngularState>> = self
             .term2
             .borrow()
             .get()
@@ -112,7 +112,7 @@ impl<E: Clone + Debug> Device<E> for Invert<'_, E> {
 }
 ///A gear train, a mechanism consisting of a two or more gears meshed together.
 ///As this device has only one degree of freedom, it propagates [`AngularCommand`]s given to its terminals
-///as well as [`State`]s.
+///as well as [`AngularState`]s.
 pub struct GearTrain<'a, E: Clone + Debug> {
     term1: RefCell<Terminal<'a, E>>,
     term2: RefCell<Terminal<'a, E>>,
@@ -149,12 +149,12 @@ impl<'a, E: Clone + Debug> GearTrain<'a, E> {
 impl<E: Clone + Debug> Updatable<E> for GearTrain<'_, E> {
     fn update(&mut self) -> NothingOrError<E> {
         self.update_terminals()?;
-        let get1: Option<Datum<State>> = self
+        let get1: Option<Datum<AngularState>> = self
             .term1
             .borrow()
             .get()
             .expect("Terminal get will always return Ok");
-        let get2: Option<Datum<State>> = self
+        let get2: Option<Datum<AngularState>> = self
             .term2
             .borrow()
             .get()
@@ -244,7 +244,7 @@ impl<E: Clone + Debug> Device<E> for GearTrain<'_, E> {
 ///technically allows for only one or even zero connected terminals, but there is almost certainly
 ///no legitimate use for this.)
 ///As this device has only one degree of freedom, it propagates [`AngularCommand`]s given to its terminals
-///as well as [`State`]s.
+///as well as [`AngularState`]s.
 pub struct Axle<'a, const N: usize, E: Clone + Debug> {
     inputs: [RefCell<Terminal<'a, E>>; N],
 }
@@ -274,7 +274,7 @@ impl<const N: usize, E: Clone + Debug> Updatable<E> for Axle<'_, N, E> {
     fn update(&mut self) -> NothingOrError<E> {
         self.update_terminals()?;
         let mut count = 0u16;
-        let mut datum = Datum::new(Time::from_nanoseconds(i64::MIN), State::default());
+        let mut datum = Datum::new(Time::from_nanoseconds(i64::MIN), AngularState::default());
         for i in &self.inputs {
             match i.borrow().get()? {
                 Some(gotten_datum) => {
@@ -328,7 +328,7 @@ pub enum DifferentialDistrust {
 }
 ///A mechanical differential mechanism.
 ///As this device has two degrees of freedom, it is not able to propagate [`AngularCommand`]s given to its
-///terminals as it does with [`State`]s.
+///terminals as it does with [`AngularState`]s.
 pub struct Differential<'a, E: Clone + Debug> {
     side1: RefCell<Terminal<'a, E>>,
     side2: RefCell<Terminal<'a, E>>,
@@ -372,48 +372,48 @@ impl<E: Clone + Debug> Updatable<E> for Differential<'_, E> {
         self.update_terminals()?;
         match self.distrust {
             DifferentialDistrust::Side1 => {
-                let sum: Datum<State> = match self.sum.borrow().get()? {
+                let sum: Datum<AngularState> = match self.sum.borrow().get()? {
                     Some(sum) => sum,
                     None => return Ok(()),
                 };
-                let side2: Datum<State> = match self.side2.borrow().get()? {
+                let side2: Datum<AngularState> = match self.side2.borrow().get()? {
                     Some(side2) => side2,
                     None => return Ok(()),
                 };
                 self.side1.borrow_mut().set(sum - side2)?;
             }
             DifferentialDistrust::Side2 => {
-                let sum: Datum<State> = match self.sum.borrow().get()? {
+                let sum: Datum<AngularState> = match self.sum.borrow().get()? {
                     Some(sum) => sum,
                     None => return Ok(()),
                 };
-                let side1: Datum<State> = match self.side1.borrow().get()? {
+                let side1: Datum<AngularState> = match self.side1.borrow().get()? {
                     Some(side1) => side1,
                     None => return Ok(()),
                 };
                 self.side2.borrow_mut().set(sum - side1)?;
             }
             DifferentialDistrust::Sum => {
-                let side1: Datum<State> = match self.side1.borrow().get()? {
+                let side1: Datum<AngularState> = match self.side1.borrow().get()? {
                     Some(side1) => side1,
                     None => return Ok(()),
                 };
-                let side2: Datum<State> = match self.side2.borrow().get()? {
+                let side2: Datum<AngularState> = match self.side2.borrow().get()? {
                     Some(side2) => side2,
                     None => return Ok(()),
                 };
                 self.sum.borrow_mut().set(side1 + side2)?;
             }
             DifferentialDistrust::Equal => {
-                let sum: Datum<State> = match self.sum.borrow().get()? {
+                let sum: Datum<AngularState> = match self.sum.borrow().get()? {
                     Some(sum) => sum,
                     None => return Ok(()),
                 };
-                let side1: Datum<State> = match self.side1.borrow().get()? {
+                let side1: Datum<AngularState> = match self.side1.borrow().get()? {
                     Some(side1) => side1,
                     None => return Ok(()),
                 };
-                let side2: Datum<State> = match self.side2.borrow().get()? {
+                let side2: Datum<AngularState> = match self.side2.borrow().get()? {
                     Some(side2) => side2,
                     None => return Ok(()),
                 };

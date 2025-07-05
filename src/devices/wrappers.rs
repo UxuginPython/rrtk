@@ -45,11 +45,11 @@ impl<T: Settable<TerminalData, E>, E: Clone + Debug> Updatable<E> for ActuatorWr
     }
 }
 ///Connect a [`Getter<State, E>`] to a [`Terminal<E>`] for use as an encoder in the device system.
-pub struct GetterStateDeviceWrapper<'a, T: Getter<State, E>, E: Clone + Debug> {
+pub struct GetterStateDeviceWrapper<'a, T: Getter<AngularState, E>, E: Clone + Debug> {
     inner: T,
     terminal: RefCell<Terminal<'a, E>>,
 }
-impl<'a, T: Getter<State, E>, E: Clone + Debug> GetterStateDeviceWrapper<'a, T, E> {
+impl<'a, T: Getter<AngularState, E>, E: Clone + Debug> GetterStateDeviceWrapper<'a, T, E> {
     ///Constructor for [`GetterStateDeviceWrapper`].
     pub const fn new(inner: T) -> Self {
         Self {
@@ -62,13 +62,17 @@ impl<'a, T: Getter<State, E>, E: Clone + Debug> GetterStateDeviceWrapper<'a, T, 
         unsafe { &*(&self.terminal as *const RefCell<Terminal<'a, E>>) }
     }
 }
-impl<T: Getter<State, E>, E: Clone + Debug> Device<E> for GetterStateDeviceWrapper<'_, T, E> {
+impl<T: Getter<AngularState, E>, E: Clone + Debug> Device<E>
+    for GetterStateDeviceWrapper<'_, T, E>
+{
     fn update_terminals(&mut self) -> NothingOrError<E> {
         self.terminal.borrow_mut().update()?;
         Ok(())
     }
 }
-impl<T: Getter<State, E>, E: Clone + Debug> Updatable<E> for GetterStateDeviceWrapper<'_, T, E> {
+impl<T: Getter<AngularState, E>, E: Clone + Debug> Updatable<E>
+    for GetterStateDeviceWrapper<'_, T, E>
+{
     fn update(&mut self) -> NothingOrError<E> {
         self.inner.update()?;
         self.update_terminals()?;

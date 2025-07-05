@@ -456,7 +456,7 @@ impl<E: Clone + Debug> Updatable<E> for Time {
 ///A place where a device can connect to another.
 #[cfg(feature = "devices")]
 pub struct Terminal<'a, E: Clone + Debug> {
-    last_request_state: Option<Datum<State>>,
+    last_request_state: Option<Datum<AngularState>>,
     last_request_command: Option<Datum<AngularCommand>>,
     other: Option<&'a RefCell<Terminal<'a, E>>>,
 }
@@ -491,8 +491,8 @@ impl<E: Clone + Debug> Terminal<'_, E> {
     }
 }
 #[cfg(feature = "devices")]
-impl<E: Clone + Debug> Settable<Datum<State>, E> for Terminal<'_, E> {
-    fn set(&mut self, state: Datum<State>) -> NothingOrError<E> {
+impl<E: Clone + Debug> Settable<Datum<AngularState>, E> for Terminal<'_, E> {
+    fn set(&mut self, state: Datum<AngularState>) -> NothingOrError<E> {
         self.last_request_state = Some(state);
         Ok(())
     }
@@ -505,9 +505,9 @@ impl<E: Clone + Debug> Settable<Datum<AngularCommand>, E> for Terminal<'_, E> {
     }
 }
 #[cfg(feature = "devices")]
-impl<E: Clone + Debug> Getter<State, E> for Terminal<'_, E> {
-    fn get(&self) -> Output<State, E> {
-        let mut addends: [core::mem::MaybeUninit<Datum<State>>; 2] =
+impl<E: Clone + Debug> Getter<AngularState, E> for Terminal<'_, E> {
+    fn get(&self) -> Output<AngularState, E> {
+        let mut addends: [core::mem::MaybeUninit<Datum<AngularState>>; 2] =
             [core::mem::MaybeUninit::uninit(); 2];
         let mut addend_count = 0usize;
         match self.last_request_state {
@@ -632,7 +632,7 @@ pub struct TerminalData {
     ///Optional command from the terminal.
     pub command: Option<AngularCommand>,
     ///Optional state from the terminal.
-    pub state: Option<State>,
+    pub state: Option<AngularState>,
 }
 #[cfg(feature = "devices")]
 impl TryFrom<TerminalData> for Datum<AngularCommand> {
@@ -645,9 +645,9 @@ impl TryFrom<TerminalData> for Datum<AngularCommand> {
     }
 }
 #[cfg(feature = "devices")]
-impl TryFrom<TerminalData> for Datum<State> {
+impl TryFrom<TerminalData> for Datum<AngularState> {
     type Error = error::CannotConvert;
-    fn try_from(value: TerminalData) -> Result<Datum<State>, error::CannotConvert> {
+    fn try_from(value: TerminalData) -> Result<Datum<AngularState>, error::CannotConvert> {
         match value.state {
             Some(state) => Ok(Datum::new(value.time, state)),
             None => Err(error::CannotConvert),

@@ -298,7 +298,7 @@ build_command_enum!(
     Millimeter<f32>,
     MillimeterPerSecond<f32>,
     MillimeterPerSecondSquared<f32>,
-    State
+    LinearState
 );
 build_command_enum!(
     AngularCommand,

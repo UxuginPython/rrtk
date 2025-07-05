@@ -282,7 +282,7 @@ macro_rules! build_state_struct {
     };
 }
 build_state_struct!(
-    State,
+    LinearState,
     Millimeter<f32>,
     MillimeterPerSecond<f32>,
     MillimeterPerSecondSquared<f32>
@@ -294,16 +294,16 @@ build_state_struct!(
     InverseSecondSquared<f32>
 );
 impl Mul<Millimeter<f32>> for AngularState {
-    type Output = State;
-    fn mul(self, rhs: Millimeter<f32>) -> State {
-        State {
+    type Output = LinearState;
+    fn mul(self, rhs: Millimeter<f32>) -> LinearState {
+        LinearState {
             position: self.position * rhs,
             velocity: self.velocity * rhs,
             acceleration: self.acceleration * rhs,
         }
     }
 }
-impl Div<Millimeter<f32>> for State {
+impl Div<Millimeter<f32>> for LinearState {
     type Output = AngularState;
     fn div(self, rhs: Millimeter<f32>) -> AngularState {
         AngularState {
