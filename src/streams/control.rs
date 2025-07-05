@@ -81,7 +81,7 @@ impl<G: Getter<f32, E>, E: Clone + Debug> Updatable<E> for PIDControllerStream<G
         Ok(())
     }
 }
-/*pub use command_pid::CommandPID;
+pub use command_pid::CommandPID;
 mod command_pid {
     use super::*;
     #[derive(Clone, Debug, PartialEq)]
@@ -100,17 +100,17 @@ mod command_pid {
     ///Automatically integrates the command variable of a PID controller based on the position
     ///derivative of a [`Command`]. Designed to make it easier to use a standard DC motor and an encoder
     ///as a de facto servo.
-    pub struct CommandPID<G: Getter<State, E>, E: Clone + Debug> {
+    pub struct CommandPID<G: Getter<C::CorrespondingState, E>, C: GenericCommand, E: Clone + Debug> {
         input: G,
-        command: Command,
+        command: C,
         kvals: PositionDerivativeDependentPIDKValues,
         update_state: Result<Option<Update0>, E>,
     }
-    impl<G: Getter<State, E>, E: Clone + Debug> CommandPID<G, E> {
+    impl<G: Getter<C::CorrespondingState, E>, C: GenericCommand, E: Clone + Debug> CommandPID<G, C, E> {
         ///Constructor for `CommandPID`.
         pub const fn new(
             input: G,
-            command: Command,
+            command: C,
             kvalues: PositionDerivativeDependentPIDKValues,
         ) -> Self {
             Self {
@@ -129,7 +129,7 @@ mod command_pid {
             self.update_state = Ok(None);
         }
     }
-    impl<G: Getter<State, E>, E: Clone + Debug> Settable<Command, E> for CommandPID<G, E> {
+    /*impl<G: Getter<State, E>, E: Clone + Debug> Settable<Command, E> for CommandPID<G, E> {
         fn set(&mut self, command: Command) -> NothingOrError<E> {
             if command != self.command {
                 self.reset();
@@ -137,8 +137,8 @@ mod command_pid {
             }
             Ok(())
         }
-    }
-    impl<G: Getter<State, E>, E: Clone + Debug> Getter<f32, E> for CommandPID<G, E> {
+    }*/
+    /*impl<G: Getter<State, E>, E: Clone + Debug> Getter<f32, E> for CommandPID<G, E> {
         fn get(&self) -> Output<f32, E> {
             match &self.update_state {
                 Err(error) => Err(error.clone()),
@@ -165,8 +165,10 @@ mod command_pid {
                 },
             }
         }
-    }
-    impl<G: Getter<State, E>, E: Clone + Debug> Updatable<E> for CommandPID<G, E> {
+    }*/
+    impl<G: Getter<C::CorrespondingState, E>, C: GenericCommand, E: Clone + Debug> Updatable<E>
+        for CommandPID<G, C, E>
+    {
         fn update(&mut self) -> NothingOrError<E> {
             self.input.update()?;
             let raw_get = self.input.get();
@@ -266,7 +268,7 @@ mod command_pid {
             Ok(())
         }
     }
-}*/
+}
 ///An Exponentially Weighted Moving Average stream for use with the stream system. See <https://www.itl.nist.gov/div898/handbook/pmc/section3/pmc324.htm> for more information. Because a standard EWMA requires that new data always arrive at the same interval, this implementation uses λ=1-(1-`smoothing_constant`)^Δt instead of the usual weighting factor.
 #[cfg(feature = "internal_enhanced_float")]
 pub struct EWMAStream<T, G, E>
