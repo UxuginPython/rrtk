@@ -3,7 +3,7 @@
 use super::*;
 //You can add pretty much whatever bounds here as long as they're implemented for Command and
 //AngularCommand. Most of the strange or redundant seeming ones here have to do with MotionProfile.
-///This trait allows one to write code generically over [`Command`] and [`AngularCommand`]. Each of
+///This trait allows one to write code generically over [`LinearCommand`] and [`AngularCommand`]. Each of
 ///those has a corresponding method to each method of this trait without the `generic_` prefix.
 ///This is necessary because many of the implementations should be const fn and can't be in a
 ///trait. Calling the direct methods (without `generic_`) is preferred where possible.

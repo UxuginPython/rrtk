@@ -98,8 +98,8 @@ mod command_pid {
         pub output_int_int: Option<f32>,
     }
     ///Automatically integrates the command variable of a PID controller based on the position
-    ///derivative of a [`Command`]. Designed to make it easier to use a standard DC motor and an encoder
-    ///as a de facto servo.
+    ///derivative of a [`LinearCommand`] or [`AngularCommand]. Designed to make it easier to use a
+    ///standard DC motor and an encoder as a de facto servo.
     pub struct CommandPID<G: Getter<C::CorrespondingState, E>, C: GenericCommand, E: Clone + Debug> {
         input: G,
         command: C,

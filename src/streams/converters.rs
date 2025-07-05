@@ -186,7 +186,7 @@ mod acceleration_to_state {
         velocity: V,
         update_2_position: Option<P>,
     }
-    ///Doubly integrates an acceleration to create a full [`State`] object. Uses trapezoidal
+    ///Doubly integrates an acceleration to create a full state object. Uses trapezoidal
     ///integration.
     pub struct AccelerationToState<G, S: GenericState> {
         input: G,
@@ -291,7 +291,7 @@ mod velocity_to_state {
         position: P,
         acceleration: A,
     }
-    ///Integrates and takes the derivative of a velocity to create a full [`State`] object. Uses
+    ///Integrates and takes the derivative of a velocity to create a full state object. Uses
     ///trapezoidal integration.
     pub struct VelocityToState<G, S: GenericState> {
         input: G,
@@ -377,7 +377,7 @@ mod position_to_state {
         velocity: V,
         update_2_acceleration: Option<A>,
     }
-    ///Takes the second derivative of a position to create a full [`State`] object.
+    ///Takes the second derivative of a position to create a full state object.
     pub struct PositionToState<G, S: GenericState> {
         input: G,
         update_0: Option<Update0<S::Position, S::Velocity, S::Acceleration>>,
