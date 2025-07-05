@@ -282,22 +282,22 @@ mod acceleration_to_state {
 pub use velocity_to_state::*;
 mod velocity_to_state {
     use super::*;
-    struct Update0 {
+    struct Update0<P, V, A> {
         last_update_time: Time,
-        velocity: MillimeterPerSecond<f32>,
-        update_1: Option<Update1>,
+        velocity: V,
+        update_1: Option<Update1<P, A>>,
     }
-    struct Update1 {
-        position: Millimeter<f32>,
-        acceleration: MillimeterPerSecondSquared<f32>,
+    struct Update1<P, A> {
+        position: P,
+        acceleration: A,
     }
     ///Integrates and takes the derivative of a velocity to create a full [`State`] object. Uses
     ///trapezoidal integration.
-    pub struct VelocityToState<G> {
+    pub struct VelocityToState<G, S: GenericState> {
         input: G,
-        update_0: Option<Update0>,
+        update_0: Option<Update0<S::Position, S::Velocity, S::Acceleration>>,
     }
-    impl<G> VelocityToState<G> {
+    impl<G, S: GenericState> VelocityToState<G, S> {
         ///Constructor for `VelocityToState`.
         pub const fn new(input: G) -> Self {
             Self {
@@ -306,23 +306,25 @@ mod velocity_to_state {
             }
         }
     }
-    impl<G, E: Clone + Debug> Getter<State, E> for VelocityToState<G>
+    impl<G, S: GenericState, E: Clone + Debug> Getter<S, E> for VelocityToState<G, S>
     where
         Self: Updatable<E>,
     {
-        fn get(&self) -> Output<State, E> {
+        fn get(&self) -> Output<S, E> {
             if let Some(update_0) = &self.update_0 {
                 if let Some(update_1) = &update_0.update_1 {
                     return Ok(Some(Datum::new(
                         update_0.last_update_time,
-                        State::new(update_1.position, update_0.velocity, update_1.acceleration),
+                        S::generic_new(update_1.position, update_0.velocity, update_1.acceleration),
                     )));
                 }
             }
             Ok(None)
         }
     }
-    impl<G: Getter<MillimeterPerSecond<f32>, E>, E: Clone + Debug> Updatable<E> for VelocityToState<G> {
+    impl<G: Getter<S::Velocity, E>, S: GenericState, E: Clone + Debug> Updatable<E>
+        for VelocityToState<G, S>
+    {
         fn update(&mut self) -> NothingOrError<E> {
             self.input.update()?;
             match self.input.get() {
