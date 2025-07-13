@@ -17,16 +17,17 @@ pub struct System<const N: usize> {
     global_id: u8,
 }
 impl<const N: usize> System<N> {
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         let id = unsafe { NEXT_SYSTEM_ID };
         unsafe {
             NEXT_SYSTEM_ID += 1;
         }
         Self {
-            terminals: [MaybeTerminal::default(); N],
+            terminals: [MaybeTerminal::Uninitialized; N],
             global_id: id,
         }
     }
+    //This could probably be const if you enumerated manually.
     pub fn initialize_terminal(&mut self) -> Option<TerminalID> {
         for (i, maybe_terminal) in self.terminals.iter_mut().enumerate() {
             if *maybe_terminal == MaybeTerminal::Uninitialized {
