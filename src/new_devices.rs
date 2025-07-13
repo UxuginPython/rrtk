@@ -99,4 +99,19 @@ impl<const N: usize> System<N> {
             panic!();
         }
     }
+    pub const fn iter(&mut self) -> SystemIter<N> {
+        SystemIter {
+            //self is an &mut reference.
+            system: self,
+        }
+    }
+}
+pub struct SystemIter<'a, const N: usize> {
+    system: &'a mut System<N>,
+}
+impl<const N: usize> Iterator for SystemIter<'_, N> {
+    type Item = TerminalID;
+    fn next(&mut self) -> Option<TerminalID> {
+        self.system.initialize_terminal()
+    }
 }
