@@ -87,11 +87,12 @@ impl<const N: usize> System<N> {
         }
         eventually_root
     }
-    pub fn set_terminal_state(&mut self, id: TerminalID, state: Datum<AngularState>) {
+    pub const fn set_terminal_state(&mut self, id: TerminalID, state: Datum<AngularState>) {
         self.verify_terminal_id(id);
         let root = self.get_root(id);
         if let MaybeTerminal::Root(ref mut terminal_state) = self.terminals[root] {
-            if terminal_state.time < state.time {
+            //Time PartialOrd does not work in const fn, but i64 PartialOrd does.
+            if terminal_state.time.as_nanoseconds() < state.time.as_nanoseconds() {
                 *terminal_state = state;
             }
         } else {
