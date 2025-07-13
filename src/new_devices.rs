@@ -27,17 +27,30 @@ impl<const N: usize> System<N> {
             global_id: id,
         }
     }
-    //This could probably be const if you enumerated manually.
-    pub fn initialize_terminal(&mut self) -> Option<TerminalID> {
-        for (i, maybe_terminal) in self.terminals.iter_mut().enumerate() {
-            if *maybe_terminal == MaybeTerminal::Uninitialized {
-                *maybe_terminal =
-                    MaybeTerminal::Root(Datum::new(Time::ZERO, AngularState::default()));
+    //It would be very much preferable to write this with
+    //```
+    //for (i, maybe_terminal) in self.terminals.iter_mut().enumerate()
+    //```
+    //but that does not currently work in const. The same is true for using AngularState::default()
+    //instead of constructing it like this.
+    pub const fn initialize_terminal(&mut self) -> Option<TerminalID> {
+        let mut i = 0;
+        while i < N {
+            if let MaybeTerminal::Uninitialized = self.terminals[i] {
+                self.terminals[i] = MaybeTerminal::Root(Datum::new(
+                    Time::ZERO,
+                    AngularState::new(
+                        Dimensionless::new(0.0),
+                        InverseSecond::new(0.0),
+                        InverseSecondSquared::new(0.0),
+                    ),
+                ));
                 return Some(TerminalID {
                     system: self.global_id,
                     terminal: i,
                 });
             }
+            i += 1;
         }
         None
     }
