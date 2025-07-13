@@ -42,11 +42,12 @@ impl<const N: usize> System<N> {
         None
     }
     #[inline]
+    pub fn has(&self, id: TerminalID) -> bool {
+        self.global_id == id.system
+    }
+    #[inline]
     fn verify_terminal_id(&self, id: TerminalID) {
-        assert_eq!(
-            self.global_id, id.system,
-            "This terminal is not a part of this system."
-        );
+        assert!(self.has(id), "This terminal is not a part of this system.");
     }
     pub fn release_terminal(&mut self, id: TerminalID) {
         self.verify_terminal_id(id);
