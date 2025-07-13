@@ -1,4 +1,15 @@
 use super::*;
+//There is a crate that does this, but the implementation is so simple that it is preferable to
+//avoid the external dependency.
+macro_rules! const_for {
+    ($i: ident, $min: expr, $max: expr, $code: tt) => {
+        let mut $i = $min;
+        while $i < $max {
+            $code
+            $i += 1;
+        }
+    }
+}
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct TerminalID {
     system: u8,
@@ -34,8 +45,7 @@ impl<const N: usize> System<N> {
     //but that does not currently work in const. The same is true for using AngularState::default()
     //instead of constructing it like this.
     pub const fn initialize_terminal(&mut self) -> Option<TerminalID> {
-        let mut i = 0;
-        while i < N {
+        const_for!(i, 0, N, {
             if let MaybeTerminal::Uninitialized = self.terminals[i] {
                 self.terminals[i] = MaybeTerminal::Root(Datum::new(
                     Time::ZERO,
@@ -50,8 +60,7 @@ impl<const N: usize> System<N> {
                     terminal: i,
                 });
             }
-            i += 1;
-        }
+        });
         None
     }
     #[inline]
@@ -105,18 +114,20 @@ impl<const N: usize> System<N> {
             system: self,
         }
     }
-    pub fn initialize_multiple_terminals<const Q: usize>(&mut self) -> Option<[TerminalID; Q]> {
+    pub const fn initialize_multiple_terminals<const Q: usize>(
+        &mut self,
+    ) -> Option<[TerminalID; Q]> {
         let mut ids = [core::mem::MaybeUninit::uninit(); Q];
-        for i in 0..Q {
+        const_for!(i, 0, Q, {
             if let Some(id) = self.initialize_terminal() {
                 ids[i].write(id);
             } else {
-                for j in 0..i {
+                const_for!(j, 0, i, {
                     self.release_terminal(unsafe { ids[j].assume_init() });
-                }
+                });
                 return None;
             }
-        }
+        });
         //core::mem::transmute doesn't work well with const generics, so this does the same thing
         //through pointers instead. This should be changed to use the transpose method if it's ever
         //stabilized.
