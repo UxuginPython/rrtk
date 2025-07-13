@@ -77,10 +77,10 @@ impl<const N: usize> System<N> {
     pub fn set_terminal_state(&mut self, id: TerminalID, state: Datum<AngularState>) {
         self.verify_terminal_id(id);
         let root = self.get_root(id);
-        if let MaybeTerminal::Root(ref mut terminal_state) = self.terminals[root]
-            && terminal_state.time < state.time
-        {
-            *terminal_state = state;
+        if let MaybeTerminal::Root(ref mut terminal_state) = self.terminals[root] {
+            if terminal_state.time < state.time {
+                *terminal_state = state;
+            }
         } else {
             panic!();
         }
