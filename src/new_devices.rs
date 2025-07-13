@@ -55,18 +55,18 @@ impl<const N: usize> System<N> {
         None
     }
     #[inline]
-    pub fn has(&self, id: TerminalID) -> bool {
+    pub const fn has(&self, id: TerminalID) -> bool {
         self.global_id == id.system
     }
     #[inline]
-    fn verify_terminal_id(&self, id: TerminalID) {
+    const fn verify_terminal_id(&self, id: TerminalID) {
         assert!(self.has(id), "This terminal is not a part of this system.");
     }
-    pub fn release_terminal(&mut self, id: TerminalID) {
+    pub const fn release_terminal(&mut self, id: TerminalID) {
         self.verify_terminal_id(id);
         self.terminals[id.terminal] = MaybeTerminal::Uninitialized;
     }
-    pub fn connect_terminals(&mut self, id_a: TerminalID, id_b: TerminalID) {
+    pub const fn connect_terminals(&mut self, id_a: TerminalID, id_b: TerminalID) {
         self.verify_terminal_id(id_a);
         self.verify_terminal_id(id_b);
         if id_a.terminal > id_b.terminal {
@@ -75,7 +75,7 @@ impl<const N: usize> System<N> {
             self.terminals[id_b.terminal] = MaybeTerminal::Connected(id_a.terminal);
         }
     }
-    fn get_root(&self, id: TerminalID) -> usize {
+    const fn get_root(&self, id: TerminalID) -> usize {
         //This is a private method, so we don't verify_terminal_id to improve performance.
         let mut eventually_root = id.terminal;
         loop {
