@@ -41,22 +41,20 @@ impl<const N: usize> System<N> {
         }
         None
     }
-    pub fn release_terminal(&mut self, id: TerminalID) {
+    #[inline]
+    fn verify_terminal_id(&self, id: TerminalID) {
         assert_eq!(
             self.global_id, id.system,
             "This terminal is not a part of this system."
         );
+    }
+    pub fn release_terminal(&mut self, id: TerminalID) {
+        self.verify_terminal_id(id);
         self.terminals[id.terminal] = MaybeTerminal::Uninitialized;
     }
     pub fn connect_terminals(&mut self, id_a: TerminalID, id_b: TerminalID) {
-        assert_eq!(
-            self.global_id, id_a.system,
-            "id_a terminal is not a part of this system."
-        );
-        assert_eq!(
-            self.global_id, id_b.system,
-            "id_b terminal is not a part of this system."
-        );
+        self.verify_terminal_id(id_a);
+        self.verify_terminal_id(id_b);
         if id_a.terminal > id_b.terminal {
             self.terminals[id_a.terminal] = MaybeTerminal::Connected(id_b.terminal);
         } else if id_b.terminal > id_a.terminal {
@@ -64,10 +62,7 @@ impl<const N: usize> System<N> {
         }
     }
     pub fn set_terminal_state(&mut self, id: TerminalID, state: Datum<AngularState>) {
-        assert_eq!(
-            self.global_id, id.system,
-            "This terminal is not a part of this system."
-        );
+        self.verify_terminal_id(id);
         let mut to_set_id = id.terminal;
         loop {
             match self.terminals[to_set_id] {
