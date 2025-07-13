@@ -105,6 +105,23 @@ impl<const N: usize> System<N> {
             system: self,
         }
     }
+    pub fn initialize_multiple_terminals<const Q: usize>(&mut self) -> Option<[TerminalID; Q]> {
+        let mut ids = [core::mem::MaybeUninit::uninit(); Q];
+        for i in 0..Q {
+            if let Some(id) = self.initialize_terminal() {
+                ids[i].write(id);
+            } else {
+                for j in 0..i {
+                    self.release_terminal(unsafe { ids[j].assume_init() });
+                }
+                return None;
+            }
+        }
+        //core::mem::transmute doesn't work well with const generics, so this does the same thing
+        //through pointers instead. This should be changed to use the transpose method if it's ever
+        //stabilized.
+        Some(unsafe { ids.as_ptr().cast::<[TerminalID; Q]>().read() })
+    }
 }
 pub struct SystemIter<'a, const N: usize> {
     system: &'a mut System<N>,
