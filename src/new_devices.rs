@@ -61,20 +61,25 @@ impl<const N: usize> System<N> {
             self.terminals[id_b.terminal] = MaybeTerminal::Connected(id_a.terminal);
         }
     }
+    fn get_root(&self, id: TerminalID) -> usize {
+        //This is a private method, so we don't verify_terminal_id to improve performance.
+        let mut eventually_root = id.terminal;
+        loop {
+            match self.terminals[eventually_root] {
+                MaybeTerminal::Root(_) => break,
+                MaybeTerminal::Connected(connected_index) => eventually_root = connected_index,
+                MaybeTerminal::Uninitialized => panic!("This terminal has been released."),
+            }
+        }
+        eventually_root
+    }
     pub fn set_terminal_state(&mut self, id: TerminalID, state: Datum<AngularState>) {
         self.verify_terminal_id(id);
-        let mut to_set_id = id.terminal;
-        loop {
-            match self.terminals[to_set_id] {
-                MaybeTerminal::Root(ref mut terminal_state) => {
-                    *terminal_state = state;
-                    break;
-                }
-                MaybeTerminal::Connected(connected_id) => to_set_id = connected_id,
-                MaybeTerminal::Uninitialized => panic!(
-                    "This terminal is uninitialized or is connected to an uninitialized terminal."
-                ),
-            }
+        let root = self.get_root(id);
+        if let MaybeTerminal::Root(ref mut terminal_state) = self.terminals[root] {
+            *terminal_state = state;
+        } else {
+            panic!();
         }
     }
 }
