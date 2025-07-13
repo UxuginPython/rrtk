@@ -62,4 +62,23 @@ impl<const N: usize> System<N> {
             self.terminals[id_b.terminal] = MaybeTerminal::Connected(id_a.terminal);
         }
     }
+    pub fn set_terminal_state(&mut self, id: TerminalID, state: Datum<AngularState>) {
+        assert_eq!(
+            self.global_id, id.system,
+            "This terminal is not a part of this system."
+        );
+        let mut to_set_id = id.terminal;
+        loop {
+            match self.terminals[to_set_id] {
+                MaybeTerminal::Root(ref mut terminal_state) => {
+                    *terminal_state = state;
+                    break;
+                }
+                MaybeTerminal::Connected(connected_id) => to_set_id = connected_id,
+                MaybeTerminal::Uninitialized => panic!(
+                    "This terminal is uninitialized or is connected to an uninitialized terminal."
+                ),
+            }
+        }
+    }
 }
