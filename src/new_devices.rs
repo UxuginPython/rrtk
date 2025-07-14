@@ -21,26 +21,26 @@ struct IIdentifyAsAVec<const N: usize> {
     length: usize,
 }
 impl<const N: usize> IIdentifyAsAVec<N> {
-    fn new() -> Self {
+    const fn new() -> Self {
         Self {
             inner: [MaybeUninit::uninit(); N],
             length: 0,
         }
     }
-    fn push(&mut self, id: TerminalID) {
+    const fn push(&mut self, id: TerminalID) {
         if self.length >= N {
             panic!("You overflowed an IIdentifyAsAVec.");
         }
         self.inner[self.length].write(id);
         self.length += 1;
     }
-    fn get(&self, index: usize) -> TerminalID {
+    const fn get(&self, index: usize) -> TerminalID {
         if index >= self.length {
             panic!("This index is out of range.");
         }
         unsafe { self.inner[index].assume_init() }
     }
-    fn pop(&mut self) -> TerminalID {
+    const fn pop(&mut self) -> TerminalID {
         if self.length == 0 {
             panic!("You tried to pop from an empty IIdentifyAsAVec.");
         }
@@ -48,7 +48,7 @@ impl<const N: usize> IIdentifyAsAVec<N> {
         self.length -= 1;
         output
     }
-    fn as_array(&self) -> [TerminalID; N] {
+    const fn as_array(&self) -> [TerminalID; N] {
         if self.length != N {
             panic!("You tried to convert a non-full IIdentifyAsAVec to an array.");
         }
