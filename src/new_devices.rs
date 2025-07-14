@@ -189,6 +189,15 @@ impl<const N: usize> System<N> {
         }
         eventually_root
     }
+    pub const fn get_terminal_state(&self, id: TerminalID) -> Datum<AngularState> {
+        self.verify_terminal_id(id);
+        let root = self.get_root(id);
+        if let MaybeTerminal::Root(state) = self.terminals[root] {
+            state
+        } else {
+            panic!();
+        }
+    }
     pub const fn set_terminal_state(&mut self, id: TerminalID, state: Datum<AngularState>) {
         self.verify_terminal_id(id);
         let root = self.get_root(id);
@@ -233,4 +242,34 @@ impl<const N: usize> Iterator for SystemIter<'_, N> {
 }
 pub trait DeviceUpdatable<E> {
     fn update_device<const N: usize>(&mut self, system: &mut System<N>) -> NothingOrError<E>;
+}
+pub struct Differential {
+    side_a: TerminalID,
+    side_b: TerminalID,
+    sum_side: TerminalID,
+}
+impl Differential {
+    pub const fn new<const N: usize>(system: &mut System<N>) -> Option<Self> {
+        let terminals = if let Some(terminals) = system.initialize_multiple_terminals::<3>() {
+            terminals
+        } else {
+            return None;
+        };
+        let [side_a, side_b, sum_side] = terminals;
+        Some(Self {
+            side_a,
+            side_b,
+            sum_side,
+        })
+    }
+}
+impl<E> DeviceUpdatable<E> for Differential {
+    fn update_device<const N: usize>(&mut self, system: &mut System<N>) -> NothingOrError<E> {
+        //This is a pretty bad way of doing this.
+        system.set_terminal_state(
+            self.sum_side,
+            system.get_terminal_state(self.side_a) + system.get_terminal_state(self.side_b),
+        );
+        Ok(())
+    }
 }
