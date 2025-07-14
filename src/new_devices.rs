@@ -52,6 +52,9 @@ impl<const N: usize> IIdentifyAsAVec<N> {
         if self.length != N {
             panic!("You tried to convert a non-full IIdentifyAsAVec to an array.");
         }
+        //core::mem::transmute doesn't work well with const generics, so this does the same thing
+        //through pointers instead. This should be changed to use the transpose method if it's ever
+        //stabilized.
         unsafe { self.inner.as_ptr().cast::<[TerminalID; N]>().read() }
     }
 }
@@ -157,21 +160,18 @@ impl<const N: usize> System<N> {
     pub const fn initialize_multiple_terminals<const Q: usize>(
         &mut self,
     ) -> Option<[TerminalID; Q]> {
-        let mut ids = [core::mem::MaybeUninit::uninit(); Q];
+        let mut ids = IIdentifyAsAVec::<Q>::new();
         const_for!(i, 0, Q, {
             if let Some(id) = self.initialize_terminal() {
-                ids[i].write(id);
+                ids.push(id);
             } else {
                 const_for!(j, 0, i, {
-                    self.release_terminal(unsafe { ids[j].assume_init() });
+                    self.release_terminal(ids.get(i));
                 });
                 return None;
             }
         });
-        //core::mem::transmute doesn't work well with const generics, so this does the same thing
-        //through pointers instead. This should be changed to use the transpose method if it's ever
-        //stabilized.
-        Some(unsafe { ids.as_ptr().cast::<[TerminalID; Q]>().read() })
+        Some(ids.as_array())
     }
 }
 pub struct SystemIter<'a, const N: usize> {
