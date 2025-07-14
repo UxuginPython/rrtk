@@ -1,4 +1,5 @@
 use super::*;
+use core::mem::MaybeUninit;
 //There is a crate that does this, but the implementation is so simple that it is preferable to
 //avoid the external dependency.
 macro_rules! const_for {
@@ -14,6 +15,45 @@ macro_rules! const_for {
 pub struct TerminalID {
     system: u8,
     terminal: usize,
+}
+struct IIdentifyAsAVec<const N: usize> {
+    inner: [MaybeUninit<TerminalID>; N],
+    length: usize,
+}
+impl<const N: usize> IIdentifyAsAVec<N> {
+    fn new() -> Self {
+        Self {
+            inner: [MaybeUninit::uninit(); N],
+            length: 0,
+        }
+    }
+    fn push(&mut self, id: TerminalID) {
+        if self.length >= N {
+            panic!("You overflowed an IIdentifyAsAVec.");
+        }
+        self.inner[self.length].write(id);
+        self.length += 1;
+    }
+    fn get(&self, index: usize) -> TerminalID {
+        if index >= self.length {
+            panic!("This index is out of range.");
+        }
+        unsafe { self.inner[index].assume_init() }
+    }
+    fn pop(&mut self) -> TerminalID {
+        if self.length == 0 {
+            panic!("You tried to pop from an empty IIdentifyAsAVec.");
+        }
+        let output = unsafe { self.inner[self.length - 1].assume_init() };
+        self.length -= 1;
+        output
+    }
+    fn as_array(&self) -> [TerminalID; N] {
+        if self.length != N {
+            panic!("You tried to convert a non-full IIdentifyAsAVec to an array.");
+        }
+        unsafe { self.inner.as_ptr().cast::<[TerminalID; N]>().read() }
+    }
 }
 #[derive(Clone, Copy, Default, PartialEq)]
 enum MaybeTerminal {
