@@ -27,7 +27,7 @@ fn main() {
     system.set_terminal_state(
         differential.side_a,
         Datum::new(
-            Time::from_nanoseconds(1),
+            Time::from_seconds(Second::new(1.0)),
             AngularState::new(
                 Dimensionless::new(1.0),
                 InverseSecond::new(1.0),
