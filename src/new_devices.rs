@@ -128,10 +128,6 @@ impl<const N: usize> System<N> {
     const fn verify_terminal_id(&self, id: TerminalID) {
         assert!(self.has(id), "This terminal is not a part of this system.");
     }
-    pub const fn release_terminal(&mut self, id: TerminalID) {
-        self.verify_terminal_id(id);
-        self.terminals[id.terminal] = MaybeTerminal::Uninitialized;
-    }
     #[inline]
     const fn index_to_id(&self, index: usize) -> TerminalID {
         TerminalID {
@@ -151,6 +147,10 @@ impl<const N: usize> System<N> {
             }
         });
         output
+    }
+    pub const fn release_terminal(&mut self, id: TerminalID) {
+        self.verify_terminal_id(id);
+        self.terminals[id.terminal] = MaybeTerminal::Uninitialized;
     }
     pub const fn connect_terminals(&mut self, id_a: TerminalID, id_b: TerminalID) {
         self.verify_terminal_id(id_a);
