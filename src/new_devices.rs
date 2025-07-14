@@ -244,9 +244,9 @@ pub trait DeviceUpdatable<E> {
     fn update_device<const N: usize>(&mut self, system: &mut System<N>) -> NothingOrError<E>;
 }
 pub struct Differential {
-    side_a: TerminalID,
-    side_b: TerminalID,
-    sum_side: TerminalID,
+    pub side_a: TerminalID,
+    pub side_b: TerminalID,
+    pub sum_side: TerminalID,
 }
 impl Differential {
     pub const fn new<const N: usize>(system: &mut System<N>) -> Option<Self> {
@@ -263,8 +263,11 @@ impl Differential {
         })
     }
 }
-impl<E> DeviceUpdatable<E> for Differential {
-    fn update_device<const N: usize>(&mut self, system: &mut System<N>) -> NothingOrError<E> {
+impl DeviceUpdatable<core::convert::Infallible> for Differential {
+    fn update_device<const N: usize>(
+        &mut self,
+        system: &mut System<N>,
+    ) -> NothingOrError<core::convert::Infallible> {
         //This is a pretty bad way of doing this.
         system.set_terminal_state(
             self.sum_side,
