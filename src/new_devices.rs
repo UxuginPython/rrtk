@@ -152,10 +152,10 @@ impl<const N: usize> System<N> {
         self.verify_terminal_id(id);
         if let MaybeTerminal::Root(state) = self.terminals[id.terminal] {
             let connected = self.get_connected(id);
-            let new_root = connected.get(1);
-            self.terminals[new_root.terminal] = MaybeTerminal::Root(state);
+            let new_root = connected.get(1).terminal;
+            self.terminals[new_root] = MaybeTerminal::Root(state);
             const_for!(i, 2, connected.len(), {
-                self.connect_terminals(new_root, connected.get(i));
+                self.terminals[connected.get(i).terminal] = MaybeTerminal::Connected(new_root);
             });
         }
         self.terminals[id.terminal] = MaybeTerminal::Uninitialized;
