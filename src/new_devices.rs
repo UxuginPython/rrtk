@@ -143,3 +143,6 @@ impl<const N: usize> Iterator for SystemIter<'_, N> {
         self.system.initialize_terminal()
     }
 }
+pub trait DeviceUpdatable<E> {
+    fn update_device<const N: usize>(&mut self, system: &mut System<N>) -> NothingOrError<E>;
+}
