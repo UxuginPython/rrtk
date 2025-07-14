@@ -123,6 +123,26 @@ impl<const N: usize> System<N> {
         self.verify_terminal_id(id);
         self.terminals[id.terminal] = MaybeTerminal::Uninitialized;
     }
+    #[inline]
+    const fn index_to_id(&self, index: usize) -> TerminalID {
+        TerminalID {
+            system: self.global_id,
+            terminal: index,
+        }
+    }
+    const fn get_connected(&self, id: TerminalID) -> IIdentifyAsAVec<N> {
+        let root = self.get_root(id);
+        let mut output = IIdentifyAsAVec::new();
+        output.push(self.index_to_id(root));
+        const_for!(i, 0, N, {
+            if let MaybeTerminal::Connected(rooot) = self.terminals[i]
+                && root == rooot
+            {
+                output.push(self.index_to_id(i));
+            }
+        });
+        output
+    }
     pub const fn connect_terminals(&mut self, id_a: TerminalID, id_b: TerminalID) {
         self.verify_terminal_id(id_a);
         self.verify_terminal_id(id_b);
