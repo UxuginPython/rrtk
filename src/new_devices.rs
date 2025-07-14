@@ -157,17 +157,15 @@ impl<const N: usize> System<N> {
         self.verify_terminal_id(id_b);
         let a_connected = self.get_connected(id_a);
         let b_connected = self.get_connected(id_b);
-        let a_root = a_connected.get(0);
-        let b_root = b_connected.get(0);
-        if a_root.terminal > b_root.terminal {
+        let a_root = a_connected.get(0).terminal;
+        let b_root = b_connected.get(0).terminal;
+        if a_root > b_root {
             const_for!(i, 0, a_connected.len(), {
-                self.terminals[a_connected.get(i).terminal] =
-                    MaybeTerminal::Connected(b_root.terminal);
+                self.terminals[a_connected.get(i).terminal] = MaybeTerminal::Connected(b_root);
             });
-        } else if id_b.terminal > id_a.terminal {
+        } else {
             const_for!(i, 0, b_connected.len(), {
-                self.terminals[b_connected.get(i).terminal] =
-                    MaybeTerminal::Connected(b_root.terminal);
+                self.terminals[b_connected.get(i).terminal] = MaybeTerminal::Connected(a_root);
             });
         }
     }
