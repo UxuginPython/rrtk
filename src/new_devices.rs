@@ -57,6 +57,11 @@ impl<const N: usize> IIdentifyAsAVec<N> {
         //stabilized.
         unsafe { self.inner.as_ptr().cast::<[TerminalID; N]>().read() }
     }
+    const fn release_all<const Q: usize>(&self, system: &mut System<Q>) {
+        const_for!(i, 0, self.length, {
+            system.release_terminal(self.get(i));
+        });
+    }
 }
 #[derive(Clone, Copy, Default, PartialEq)]
 enum MaybeTerminal {
@@ -165,9 +170,7 @@ impl<const N: usize> System<N> {
             if let Some(id) = self.initialize_terminal() {
                 ids.push(id);
             } else {
-                const_for!(j, 0, i, {
-                    self.release_terminal(ids.get(i));
-                });
+                ids.release_all(self);
                 return None;
             }
         });
