@@ -150,6 +150,9 @@ impl<const N: usize> System<N> {
     }
     pub const fn release_terminal(&mut self, id: TerminalID) {
         self.verify_terminal_id(id);
+        if let MaybeTerminal::Root(state) = self.terminals[id.terminal] {
+            todo!();
+        }
         self.terminals[id.terminal] = MaybeTerminal::Uninitialized;
     }
     pub const fn connect_terminals(&mut self, id_a: TerminalID, id_b: TerminalID) {
