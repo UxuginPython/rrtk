@@ -143,6 +143,11 @@ impl<const N: usize> System<N> {
     #[inline]
     const fn get_root(&self, index: usize) -> usize {
         if let Some(root) = self.terminals[index].unwrap().root {
+            //This checks that:
+            //1. the root terminal is initialized (unwrap()), and
+            //2. it itself does not have a root (asserting is_none()).
+            //Root terminals should never have roots themselves.
+            debug_assert!(self.terminals[root].unwrap().root.is_none());
             root
         } else {
             index
