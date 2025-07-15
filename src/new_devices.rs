@@ -114,12 +114,6 @@ impl<const N: usize> System<N> {
             global_id: id,
         }
     }
-    //It would be very much preferable to write this with
-    //```
-    //for (i, maybe_terminal) in self.terminals.iter_mut().enumerate()
-    //```
-    //but that does not currently work in const. The same is true for using AngularState::default()
-    //instead of constructing it like this.
     pub const fn initialize_terminal(&mut self) -> Option<TerminalID> {
         const_for!(i, 0, N, {
             if self.terminals[i].is_none() {
