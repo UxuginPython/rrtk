@@ -1,3 +1,4 @@
+#![allow(unused)]
 use super::*;
 use core::mem::MaybeUninit;
 //There is a crate that does this, but the implementation is so simple that it is preferable to
@@ -67,7 +68,7 @@ impl<T: Copy, const N: usize> IIdentifyAsAVec<T, N> {
         self.length
     }
 }
-impl<const N: usize> IIdentifyAsAVec<TerminalID, N> {
+/*impl<const N: usize> IIdentifyAsAVec<TerminalID, N> {
     ///Although this takes `&self` because it's not technically necessary to consume `self`, it is
     ///strongly recommended that you drop all uninitialized `TerminalID`s. They are useless and
     ///weird stuff might happen if you try to use them since the same ID may be reused.
@@ -75,6 +76,19 @@ impl<const N: usize> IIdentifyAsAVec<TerminalID, N> {
         const_for!(i, 0, self.length, {
             system.release_terminal(self.get(i));
         });
+    }
+}*/
+#[derive(Clone, Copy, PartialEq)]
+struct Terminal {
+    measurement: Option<Datum<AngularState>>,
+    root: Option<usize>,
+}
+impl Terminal {
+    const fn new() -> Self {
+        Self {
+            measurement: None,
+            root: None,
+        }
     }
 }
 #[derive(Clone, Copy, Default, PartialEq)]
@@ -86,7 +100,7 @@ enum MaybeTerminal {
 }
 static mut NEXT_SYSTEM_ID: u8 = 0;
 pub struct System<const N: usize> {
-    terminals: [MaybeTerminal; N],
+    terminals: [Option<Terminal>; N],
     global_id: u8,
 }
 impl<const N: usize> System<N> {
@@ -96,7 +110,7 @@ impl<const N: usize> System<N> {
             NEXT_SYSTEM_ID += 1;
         }
         Self {
-            terminals: [MaybeTerminal::Uninitialized; N],
+            terminals: [None; N],
             global_id: id,
         }
     }
@@ -108,15 +122,8 @@ impl<const N: usize> System<N> {
     //instead of constructing it like this.
     pub const fn initialize_terminal(&mut self) -> Option<TerminalID> {
         const_for!(i, 0, N, {
-            if let MaybeTerminal::Uninitialized = self.terminals[i] {
-                self.terminals[i] = MaybeTerminal::Root(Datum::new(
-                    Time::ZERO,
-                    AngularState::new(
-                        Dimensionless::new(0.0),
-                        InverseSecond::new(0.0),
-                        InverseSecondSquared::new(0.0),
-                    ),
-                ));
+            if self.terminals[i].is_none() {
+                self.terminals[i] = Some(Terminal::new());
                 return Some(TerminalID {
                     system: self.global_id,
                     terminal: i,
@@ -133,7 +140,7 @@ impl<const N: usize> System<N> {
     const fn verify_terminal_id(&self, id: TerminalID) {
         assert!(self.has(id), "This terminal is not a part of this system.");
     }
-    const fn get_connected(&self, id: TerminalID) -> IIdentifyAsAVec<usize, N> {
+    /*const fn get_connected(&self, id: TerminalID) -> IIdentifyAsAVec<usize, N> {
         let root = self.get_root(id);
         let mut output = IIdentifyAsAVec::new();
         output.push(root);
@@ -227,9 +234,9 @@ impl<const N: usize> System<N> {
             }
         });
         Some(ids.as_array())
-    }
+    }*/
 }
-pub struct SystemIter<'a, const N: usize> {
+/*pub struct SystemIter<'a, const N: usize> {
     system: &'a mut System<N>,
 }
 impl<const N: usize> Iterator for SystemIter<'_, N> {
@@ -273,4 +280,4 @@ impl DeviceUpdatable<core::convert::Infallible> for Differential {
         );
         Ok(())
     }
-}
+}*/
