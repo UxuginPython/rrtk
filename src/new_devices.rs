@@ -140,12 +140,21 @@ impl<const N: usize> System<N> {
     const fn verify_terminal_id(&self, id: TerminalID) {
         assert!(self.has(id), "This terminal is not a part of this system.");
     }
-    /*const fn get_connected(&self, id: TerminalID) -> IIdentifyAsAVec<usize, N> {
-        let root = self.get_root(id);
+    #[inline]
+    const fn get_root(&self, index: usize) -> usize {
+        if let Some(root) = self.terminals[index].unwrap().root {
+            root
+        } else {
+            index
+        }
+    }
+    const fn get_connected(&self, id: TerminalID) -> IIdentifyAsAVec<usize, N> {
+        let root = self.get_root(id.terminal);
         let mut output = IIdentifyAsAVec::new();
         output.push(root);
         const_for!(i, 0, N, {
-            if let MaybeTerminal::Connected(rooot) = self.terminals[i]
+            if let Some(terminal) = self.terminals[i]
+                && let Some(rooot) = terminal.root
                 && root == rooot
             {
                 output.push(i);
@@ -153,7 +162,7 @@ impl<const N: usize> System<N> {
         });
         output
     }
-    pub const fn release_terminal(&mut self, id: TerminalID) {
+    /*pub const fn release_terminal(&mut self, id: TerminalID) {
         self.verify_terminal_id(id);
         if let MaybeTerminal::Root(state) = self.terminals[id.terminal] {
             let connected = self.get_connected(id);
@@ -181,18 +190,6 @@ impl<const N: usize> System<N> {
                 self.terminals[b_connected.get(i)] = MaybeTerminal::Connected(a_root);
             });
         }
-    }
-    const fn get_root(&self, id: TerminalID) -> usize {
-        //This is a private method, so we don't verify_terminal_id to improve performance.
-        let mut eventually_root = id.terminal;
-        loop {
-            match self.terminals[eventually_root] {
-                MaybeTerminal::Root(_) => break,
-                MaybeTerminal::Connected(connected_index) => eventually_root = connected_index,
-                MaybeTerminal::Uninitialized => panic!("This terminal has been released."),
-            }
-        }
-        eventually_root
     }
     pub const fn get_terminal_state(&self, id: TerminalID) -> Datum<AngularState> {
         self.verify_terminal_id(id);
