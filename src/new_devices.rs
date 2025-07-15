@@ -137,15 +137,15 @@ impl<const N: usize> System<N> {
             terminal: index,
         }
     }
-    const fn get_connected(&self, id: TerminalID) -> IIdentifyAsAVec<TerminalID, N> {
+    const fn get_connected(&self, id: TerminalID) -> IIdentifyAsAVec<usize, N> {
         let root = self.get_root(id);
         let mut output = IIdentifyAsAVec::new();
-        output.push(self.index_to_id(root));
+        output.push(root);
         const_for!(i, 0, N, {
             if let MaybeTerminal::Connected(rooot) = self.terminals[i]
                 && root == rooot
             {
-                output.push(self.index_to_id(i));
+                output.push(i);
             }
         });
         output
@@ -154,10 +154,10 @@ impl<const N: usize> System<N> {
         self.verify_terminal_id(id);
         if let MaybeTerminal::Root(state) = self.terminals[id.terminal] {
             let connected = self.get_connected(id);
-            let new_root = connected.get(1).terminal;
+            let new_root = connected.get(1);
             self.terminals[new_root] = MaybeTerminal::Root(state);
             const_for!(i, 2, connected.len(), {
-                self.terminals[connected.get(i).terminal] = MaybeTerminal::Connected(new_root);
+                self.terminals[connected.get(i)] = MaybeTerminal::Connected(new_root);
             });
         }
         self.terminals[id.terminal] = MaybeTerminal::Uninitialized;
@@ -167,15 +167,15 @@ impl<const N: usize> System<N> {
         self.verify_terminal_id(id_b);
         let a_connected = self.get_connected(id_a);
         let b_connected = self.get_connected(id_b);
-        let a_root = a_connected.get(0).terminal;
-        let b_root = b_connected.get(0).terminal;
+        let a_root = a_connected.get(0);
+        let b_root = b_connected.get(0);
         if a_root > b_root {
             const_for!(i, 0, a_connected.len(), {
-                self.terminals[a_connected.get(i).terminal] = MaybeTerminal::Connected(b_root);
+                self.terminals[a_connected.get(i)] = MaybeTerminal::Connected(b_root);
             });
         } else {
             const_for!(i, 0, b_connected.len(), {
-                self.terminals[b_connected.get(i).terminal] = MaybeTerminal::Connected(a_root);
+                self.terminals[b_connected.get(i)] = MaybeTerminal::Connected(a_root);
             });
         }
     }
