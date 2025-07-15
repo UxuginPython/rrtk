@@ -180,7 +180,7 @@ impl<const N: usize> System<N> {
         }
         self.terminals[id.terminal] = None;
     }
-    /*pub const fn connect_terminals(&mut self, id_a: TerminalID, id_b: TerminalID) {
+    pub const fn connect_terminals(&mut self, id_a: TerminalID, id_b: TerminalID) {
         self.verify_terminal_id(id_a);
         self.verify_terminal_id(id_b);
         let a_connected = self.get_connected(id_a);
@@ -189,15 +189,15 @@ impl<const N: usize> System<N> {
         let b_root = b_connected.get(0);
         if a_root > b_root {
             const_for!(i, 0, a_connected.len(), {
-                self.terminals[a_connected.get(i)] = MaybeTerminal::Connected(b_root);
+                self.terminals[a_connected.get(i)].unwrap().root = Some(b_root);
             });
         } else {
             const_for!(i, 0, b_connected.len(), {
-                self.terminals[b_connected.get(i)] = MaybeTerminal::Connected(a_root);
+                self.terminals[b_connected.get(i)].unwrap().root = Some(a_root);
             });
         }
     }
-    pub const fn get_terminal_state(&self, id: TerminalID) -> Datum<AngularState> {
+    /*pub const fn get_terminal_state(&self, id: TerminalID) -> Datum<AngularState> {
         self.verify_terminal_id(id);
         let root = self.get_root(id);
         if let MaybeTerminal::Root(state) = self.terminals[root] {
