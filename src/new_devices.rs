@@ -147,6 +147,7 @@ impl<const N: usize> System<N> {
             index
         }
     }
+    //XXX: Should this just take the index rather than a TerminalID?
     const fn get_connected(&self, id: TerminalID) -> IIdentifyAsAVec<usize, N> {
         let root = self.get_root(id.terminal);
         let mut output = IIdentifyAsAVec::new();
@@ -161,19 +162,25 @@ impl<const N: usize> System<N> {
         });
         output
     }
-    /*pub const fn release_terminal(&mut self, id: TerminalID) {
+    pub const fn release_terminal(&mut self, id: TerminalID) {
         self.verify_terminal_id(id);
-        if let MaybeTerminal::Root(state) = self.terminals[id.terminal] {
+        if self.terminals[id.terminal]
+            //XXX: Should this really panic or just return? (I made it panic initially just for
+            //convenience. The MaybeTerminal version did not.)
+            .expect("You tried to release an already released terminal.")
+            .root
+            .is_none()
+        {
             let connected = self.get_connected(id);
             let new_root = connected.get(1);
-            self.terminals[new_root] = MaybeTerminal::Root(state);
+            self.terminals[new_root].unwrap().root = None;
             const_for!(i, 2, connected.len(), {
-                self.terminals[connected.get(i)] = MaybeTerminal::Connected(new_root);
+                self.terminals[connected.get(i)].unwrap().root = Some(i);
             });
         }
-        self.terminals[id.terminal] = MaybeTerminal::Uninitialized;
+        self.terminals[id.terminal] = None;
     }
-    pub const fn connect_terminals(&mut self, id_a: TerminalID, id_b: TerminalID) {
+    /*pub const fn connect_terminals(&mut self, id_a: TerminalID, id_b: TerminalID) {
         self.verify_terminal_id(id_a);
         self.verify_terminal_id(id_b);
         let a_connected = self.get_connected(id_a);
