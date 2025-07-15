@@ -16,11 +16,11 @@ pub struct TerminalID {
     system: u8,
     terminal: usize,
 }
-struct IIdentifyAsAVec<const N: usize> {
-    inner: [MaybeUninit<TerminalID>; N],
+struct IIdentifyAsAVec<T, const N: usize> {
+    inner: [MaybeUninit<T>; N],
     length: usize,
 }
-impl<const N: usize> IIdentifyAsAVec<N> {
+impl<T: Copy, const N: usize> IIdentifyAsAVec<T, N> {
     #[inline]
     const fn new() -> Self {
         Self {
@@ -29,7 +29,7 @@ impl<const N: usize> IIdentifyAsAVec<N> {
         }
     }
     #[inline]
-    const fn push(&mut self, id: TerminalID) {
+    const fn push(&mut self, id: T) {
         if self.length >= N {
             panic!("You overflowed an IIdentifyAsAVec.");
         }
@@ -37,14 +37,14 @@ impl<const N: usize> IIdentifyAsAVec<N> {
         self.length += 1;
     }
     #[inline]
-    const fn get(&self, index: usize) -> TerminalID {
+    const fn get(&self, index: usize) -> T {
         if index >= self.length {
             panic!("This index is out of range.");
         }
         unsafe { self.inner[index].assume_init() }
     }
     #[inline]
-    const fn pop(&mut self) -> TerminalID {
+    const fn pop(&mut self) -> T {
         if self.length == 0 {
             panic!("You tried to pop from an empty IIdentifyAsAVec.");
         }
@@ -53,23 +53,25 @@ impl<const N: usize> IIdentifyAsAVec<N> {
         output
     }
     #[inline]
-    const fn as_array(&self) -> [TerminalID; N] {
+    const fn as_array(&self) -> [T; N] {
         if self.length != N {
             panic!("You tried to convert a non-full IIdentifyAsAVec to an array.");
         }
         //core::mem::transmute doesn't work well with const generics, so this does the same thing
         //through pointers instead. This should be changed to use the transpose method if it's ever
         //stabilized.
-        unsafe { self.inner.as_ptr().cast::<[TerminalID; N]>().read() }
-    }
-    const fn release_all<const Q: usize>(&self, system: &mut System<Q>) {
-        const_for!(i, 0, self.length, {
-            system.release_terminal(self.get(i));
-        });
+        unsafe { self.inner.as_ptr().cast::<[T; N]>().read() }
     }
     #[inline]
     const fn len(&self) -> usize {
         self.length
+    }
+}
+impl<const N: usize> IIdentifyAsAVec<TerminalID, N> {
+    const fn release_all<const Q: usize>(&self, system: &mut System<Q>) {
+        const_for!(i, 0, self.length, {
+            system.release_terminal(self.get(i));
+        });
     }
 }
 #[derive(Clone, Copy, Default, PartialEq)]
@@ -135,7 +137,7 @@ impl<const N: usize> System<N> {
             terminal: index,
         }
     }
-    const fn get_connected(&self, id: TerminalID) -> IIdentifyAsAVec<N> {
+    const fn get_connected(&self, id: TerminalID) -> IIdentifyAsAVec<TerminalID, N> {
         let root = self.get_root(id);
         let mut output = IIdentifyAsAVec::new();
         output.push(self.index_to_id(root));
@@ -219,7 +221,7 @@ impl<const N: usize> System<N> {
     pub const fn initialize_multiple_terminals<const Q: usize>(
         &mut self,
     ) -> Option<[TerminalID; Q]> {
-        let mut ids = IIdentifyAsAVec::<Q>::new();
+        let mut ids = IIdentifyAsAVec::<TerminalID, Q>::new();
         const_for!(i, 0, Q, {
             if let Some(id) = self.initialize_terminal() {
                 ids.push(id);
