@@ -68,6 +68,9 @@ impl<T: Copy, const N: usize> IIdentifyAsAVec<T, N> {
     }
 }
 impl<const N: usize> IIdentifyAsAVec<TerminalID, N> {
+    ///Although this takes `&self` because it's not technically necessary to consume `self`, it is
+    ///strongly recommended that you drop all uninitialized `TerminalID`s. They are useless and
+    ///weird stuff might happen if you try to use them since the same ID may be reused.
     const fn release_all<const Q: usize>(&self, system: &mut System<Q>) {
         const_for!(i, 0, self.length, {
             system.release_terminal(self.get(i));
@@ -129,13 +132,6 @@ impl<const N: usize> System<N> {
     #[inline]
     const fn verify_terminal_id(&self, id: TerminalID) {
         assert!(self.has(id), "This terminal is not a part of this system.");
-    }
-    #[inline]
-    const fn index_to_id(&self, index: usize) -> TerminalID {
-        TerminalID {
-            system: self.global_id,
-            terminal: index,
-        }
     }
     const fn get_connected(&self, id: TerminalID) -> IIdentifyAsAVec<usize, N> {
         let root = self.get_root(id);
