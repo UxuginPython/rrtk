@@ -160,6 +160,20 @@ macro_rules! build_state_struct {
                     PositionDerivative::Acceleration => self.acceleration.into_inner(),
                 }
             }
+            pub const fn add_const(self, rhs: Self) -> Self {
+                Self::new(
+                    self.position.add_const(rhs.position),
+                    self.velocity.add_const(rhs.velocity),
+                    self.acceleration.add_const(rhs.acceleration),
+                )
+            }
+            pub const fn sub_const(self, rhs: Self) -> Self {
+                Self::new(
+                    self.position.sub_const(rhs.position),
+                    self.velocity.sub_const(rhs.velocity),
+                    self.acceleration.sub_const(rhs.acceleration),
+                )
+            }
         }
         impl Neg for $name {
             type Output = Self;

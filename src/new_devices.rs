@@ -213,14 +213,7 @@ impl<const N: usize> System<N> {
                             addend_state.time.as_nanoseconds()
                         },
                     ),
-                    AngularState::new(
-                        state.value.position.add_const(addend_state.value.position),
-                        state.value.velocity.add_const(addend_state.value.velocity),
-                        state
-                            .value
-                            .acceleration
-                            .add_const(addend_state.value.acceleration),
-                    ),
+                    state.value.add_const(addend_state.value),
                 );
                 contributing += 1;
             }
