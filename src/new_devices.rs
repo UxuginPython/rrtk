@@ -197,18 +197,44 @@ impl<const N: usize> System<N> {
             });
         }
     }
-    pub fn get_terminal_state(&self, id: TerminalID) -> Option<Datum<AngularState>> {
+    pub const fn get_terminal_state(&self, id: TerminalID) -> Option<Datum<AngularState>> {
         self.verify_terminal_id(id);
         let connected = self.get_connected(id);
         let mut state = Datum::new(Time::ZERO, AngularState::ZERO);
         let mut contributing = 0u8;
         const_for!(i, 0, connected.len(), {
             if let Some(addend_state) = self.terminals[connected.get(i)].unwrap().measurement {
-                state += addend_state;
+                //This entire statement is the const equivalent of `state += addend_state`.
+                state = Datum::new(
+                    Time::from_nanoseconds(
+                        if state.time.as_nanoseconds() > addend_state.time.as_nanoseconds() {
+                            state.time.as_nanoseconds()
+                        } else {
+                            addend_state.time.as_nanoseconds()
+                        },
+                    ),
+                    AngularState::new(
+                        Dimensionless::new(state.value.position.2 + addend_state.value.position.2),
+                        InverseSecond::new(state.value.velocity.2 + addend_state.value.velocity.2),
+                        InverseSecondSquared::new(
+                            state.value.acceleration.2 + addend_state.value.acceleration.2,
+                        ),
+                    ),
+                );
                 contributing += 1;
             }
         });
-        state /= Dimensionless::new(contributing as f32);
+        let contributing_f32 = contributing as f32;
+        //This entire statement is the const equivalent of
+        //`state /= Dimensionless::new(contributing_f32)`
+        state = Datum::new(
+            state.time,
+            AngularState::new(
+                Dimensionless::new(state.value.position.2 / contributing_f32),
+                InverseSecond::new(state.value.velocity.2 / contributing_f32),
+                InverseSecondSquared::new(state.value.acceleration.2 / contributing_f32),
+            ),
+        );
         if contributing >= 1 { Some(state) } else { None }
     }
     pub const fn set_terminal_state(&mut self, id: TerminalID, state: Datum<AngularState>) {

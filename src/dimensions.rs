@@ -243,7 +243,7 @@ pub use div;
 ///parameters' representations of unit exponents.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(transparent)]
-pub struct Quantity<T, MM: Integer, S: Integer>(PhantomData<MM>, PhantomData<S>, T);
+pub struct Quantity<T, MM: Integer, S: Integer>(PhantomData<MM>, PhantomData<S>, pub(crate) T);
 impl<T, MM: Integer, S: Integer> Quantity<T, MM, S> {
     ///Constructor for `Quantity`.
     #[inline]
