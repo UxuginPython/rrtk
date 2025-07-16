@@ -279,6 +279,32 @@ impl<T, MM: Integer, S: Integer> From<T> for Quantity<T, MM, S> {
         Self(PhantomData, PhantomData, was)
     }
 }
+macro_rules! impl_const_ops {
+    ($t: ty) => {
+        impl<MM: Integer, S: Integer> Quantity<$t, MM, S> {
+            pub const fn add_const(self, rhs: Self) -> Self {
+                Quantity::new(self.2 + rhs.2)
+            }
+            pub const fn sub_const(self, rhs: Self) -> Self {
+                Quantity::new(self.2 - rhs.2)
+            }
+        }
+    };
+}
+impl_const_ops!(f32);
+impl_const_ops!(f64);
+impl_const_ops!(u8);
+impl_const_ops!(u16);
+impl_const_ops!(u32);
+impl_const_ops!(u64);
+impl_const_ops!(u128);
+impl_const_ops!(usize);
+impl_const_ops!(i8);
+impl_const_ops!(i16);
+impl_const_ops!(i32);
+impl_const_ops!(i64);
+impl_const_ops!(i128);
+impl_const_ops!(isize);
 //FIXME: E0210
 /*impl<T, MM: Integer, S: Integer> From<Quantity<T, MM, S>> for T {
     fn from(was: Quantity<T, MM, S>) -> T {
