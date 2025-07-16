@@ -12,7 +12,7 @@ macro_rules! const_for {
         }
     }
 }
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct TerminalID {
     system: u8,
     terminal: usize,
@@ -203,7 +203,7 @@ impl<const N: usize> System<N> {
         let mut state = Datum::new(Time::ZERO, AngularState::ZERO);
         let mut contributing = 0u8;
         const_for!(i, 0, connected.len(), {
-            if let Some(addend_state) = self.terminals[i].unwrap().measurement {
+            if let Some(addend_state) = self.terminals[connected.get(i)].unwrap().measurement {
                 state += addend_state;
                 contributing += 1;
             }
