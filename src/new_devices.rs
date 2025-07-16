@@ -197,15 +197,20 @@ impl<const N: usize> System<N> {
             });
         }
     }
-    /*pub const fn get_terminal_state(&self, id: TerminalID) -> Datum<AngularState> {
+    pub fn get_terminal_state(&self, id: TerminalID) -> Datum<AngularState> {
         self.verify_terminal_id(id);
-        let root = self.get_root(id);
-        if let MaybeTerminal::Root(state) = self.terminals[root] {
-            state
-        } else {
-            panic!();
-        }
-    }*/
+        let connected = self.get_connected(id);
+        let mut state = Datum::new(Time::ZERO, AngularState::ZERO);
+        let mut contributing = 0u8;
+        const_for!(i, 0, connected.len(), {
+            if let Some(addend_state) = self.terminals[i].unwrap().measurement {
+                state += addend_state;
+                contributing += 1;
+            }
+        });
+        state /= Dimensionless::new(contributing as f32);
+        state
+    }
     pub const fn set_terminal_state(&mut self, id: TerminalID, state: Datum<AngularState>) {
         self.verify_terminal_id(id);
         self.terminals[id.terminal].unwrap().measurement = Some(state);

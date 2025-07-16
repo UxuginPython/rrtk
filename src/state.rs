@@ -108,6 +108,7 @@ macro_rules! build_state_struct {
             pub acceleration: $acc,
         }
         impl $name {
+            pub const ZERO: Self = Self::new(<$pos>::new(0.0), <$vel>::new(0.0), <$acc>::new(0.0));
             ///Constructor using [`Quantity`] objects for position, velocity, and acceleration.
             pub const fn new(position: $pos, velocity: $vel, acceleration: $acc) -> Self {
                 $name {
