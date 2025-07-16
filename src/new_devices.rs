@@ -68,7 +68,7 @@ impl<T: Copy, const N: usize> IIdentifyAsAVec<T, N> {
         self.length
     }
 }
-/*impl<const N: usize> IIdentifyAsAVec<TerminalID, N> {
+impl<const N: usize> IIdentifyAsAVec<TerminalID, N> {
     ///Although this takes `&self` because it's not technically necessary to consume `self`, it is
     ///strongly recommended that you drop all uninitialized `TerminalID`s. They are useless and
     ///weird stuff might happen if you try to use them since the same ID may be reused.
@@ -77,7 +77,7 @@ impl<T: Copy, const N: usize> IIdentifyAsAVec<T, N> {
             system.release_terminal(self.get(i));
         });
     }
-}*/
+}
 #[derive(Clone, Copy, PartialEq)]
 struct Terminal {
     measurement: Option<Datum<AngularState>>,
@@ -215,7 +215,7 @@ impl<const N: usize> System<N> {
         self.verify_terminal_id(id);
         self.terminals[id.terminal].unwrap().measurement = Some(state);
     }
-    /*pub const fn iter(&mut self) -> SystemIter<N> {
+    pub const fn iter(&mut self) -> SystemIter<N> {
         SystemIter {
             //self is an &mut reference.
             system: self,
@@ -234,9 +234,9 @@ impl<const N: usize> System<N> {
             }
         });
         Some(ids.as_array())
-    }*/
+    }
 }
-/*pub struct SystemIter<'a, const N: usize> {
+pub struct SystemIter<'a, const N: usize> {
     system: &'a mut System<N>,
 }
 impl<const N: usize> Iterator for SystemIter<'_, N> {
@@ -274,10 +274,11 @@ impl DeviceUpdatable<core::convert::Infallible> for Differential {
         system: &mut System<N>,
     ) -> NothingOrError<core::convert::Infallible> {
         //This is a pretty bad way of doing this.
-        system.set_terminal_state(
-            self.sum_side,
-            system.get_terminal_state(self.side_a) + system.get_terminal_state(self.side_b),
-        );
+        if let Some(a_state) = system.get_terminal_state(self.side_a)
+            && let Some(b_state) = system.get_terminal_state(self.side_b)
+        {
+            system.set_terminal_state(self.sum_side, a_state + b_state);
+        }
         Ok(())
     }
-}*/
+}
