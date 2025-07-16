@@ -197,7 +197,7 @@ impl<const N: usize> System<N> {
             });
         }
     }
-    pub fn get_terminal_state(&self, id: TerminalID) -> Datum<AngularState> {
+    pub fn get_terminal_state(&self, id: TerminalID) -> Option<Datum<AngularState>> {
         self.verify_terminal_id(id);
         let connected = self.get_connected(id);
         let mut state = Datum::new(Time::ZERO, AngularState::ZERO);
@@ -209,7 +209,7 @@ impl<const N: usize> System<N> {
             }
         });
         state /= Dimensionless::new(contributing as f32);
-        state
+        if contributing >= 1 { Some(state) } else { None }
     }
     pub const fn set_terminal_state(&mut self, id: TerminalID, state: Datum<AngularState>) {
         self.verify_terminal_id(id);
