@@ -213,6 +213,12 @@ impl<const N: usize> System<N> {
     }
     pub const fn set_terminal_state(&mut self, id: TerminalID, state: Datum<AngularState>) {
         self.verify_terminal_id(id);
+        //unwrap does not work with mutating.
+        if let Some(ref mut terminal) = self.terminals[id.terminal] {
+            terminal.measurement = Some(state);
+        } else {
+            panic!();
+        }
         self.terminals[id.terminal].unwrap().measurement = Some(state);
     }
     pub const fn iter(&mut self) -> SystemIter<N> {
