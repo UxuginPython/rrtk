@@ -214,11 +214,12 @@ impl<const N: usize> System<N> {
                         },
                     ),
                     AngularState::new(
-                        Dimensionless::new(state.value.position.2 + addend_state.value.position.2),
-                        InverseSecond::new(state.value.velocity.2 + addend_state.value.velocity.2),
-                        InverseSecondSquared::new(
-                            state.value.acceleration.2 + addend_state.value.acceleration.2,
-                        ),
+                        state.value.position.add_const(addend_state.value.position),
+                        state.value.velocity.add_const(addend_state.value.velocity),
+                        state
+                            .value
+                            .acceleration
+                            .add_const(addend_state.value.acceleration),
                     ),
                 );
                 contributing += 1;

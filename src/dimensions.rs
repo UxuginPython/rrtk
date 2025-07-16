@@ -282,9 +282,11 @@ impl<T, MM: Integer, S: Integer> From<T> for Quantity<T, MM, S> {
 macro_rules! impl_const_ops {
     ($t: ty) => {
         impl<MM: Integer, S: Integer> Quantity<$t, MM, S> {
+            #[inline]
             pub const fn add_const(self, rhs: Self) -> Self {
                 Quantity::new(self.2 + rhs.2)
             }
+            #[inline]
             pub const fn sub_const(self, rhs: Self) -> Self {
                 Quantity::new(self.2 - rhs.2)
             }
