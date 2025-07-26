@@ -1101,4 +1101,3 @@ impl<T, C: ?Sized + Chronology<T>> Chronology<T> for Mutex<C> {
             .get(time)
     }
 }
-//Hello. I always like to make at least one commit in the Chicago timezone.
