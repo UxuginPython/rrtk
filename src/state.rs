@@ -100,11 +100,11 @@ macro_rules! build_state_struct {
         ///A one-dimensional motion state with position, velocity, and acceleration.
         #[derive(Clone, Copy, Debug, Default, PartialEq)]
         pub struct $name {
-            ///Where you are. This should be in millimeters.
+            ///Where you are.
             pub position: $pos,
-            ///How fast you're going. This should be in millimeters per second.
+            ///How fast you're going.
             pub velocity: $vel,
-            ///How fast how fast you're going's changing. This should be in millimeters per second squared.
+            ///How fast how fast you're going's changing.
             pub acceleration: $acc,
         }
         impl $name {
