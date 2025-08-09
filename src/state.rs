@@ -108,6 +108,8 @@ macro_rules! build_state_struct {
             pub acceleration: $acc,
         }
         impl $name {
+            ///A state in which all position derivatives (position, velocity, and acceleration) are
+            ///equal to zero.
             pub const ZERO: Self = Self::new(<$pos>::new(0.0), <$vel>::new(0.0), <$acc>::new(0.0));
             ///Constructor using [`Quantity`] objects for position, velocity, and acceleration.
             pub const fn new(position: $pos, velocity: $vel, acceleration: $acc) -> Self {
@@ -160,6 +162,7 @@ macro_rules! build_state_struct {
                     PositionDerivative::Acceleration => self.acceleration.into_inner(),
                 }
             }
+            ///Exactly like `+` except that it works in a const context.
             pub const fn add_const(self, rhs: Self) -> Self {
                 Self::new(
                     self.position.add_const(rhs.position),
@@ -167,6 +170,7 @@ macro_rules! build_state_struct {
                     self.acceleration.add_const(rhs.acceleration),
                 )
             }
+            ///Exactly like `-` except that it works in a const context.
             pub const fn sub_const(self, rhs: Self) -> Self {
                 Self::new(
                     self.position.sub_const(rhs.position),
