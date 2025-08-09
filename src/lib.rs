@@ -8,8 +8,8 @@
 //!- `alloc` - Enable items requiring dynamic allocation through Rust's builtin `alloc` crate.
 //!- `std` - Enable items requiring the Rust standard library. Requires `alloc` feature. Enabled by default.
 //!- `devices` - Enable RRTK's graph-based device system.
-//!- `dim_check_debug` - Enable dimension checking in debug mode. Enabled by default.
-//!- `dim_check_release` - Enable dimension checking in both debug mode and release mode. Requires `dim_check_debug` feature.
+//!- `new_devices` - Enable the experimental new device system. In a future version, the old device
+//!system will be removed and this feature will be renamed `devices`.
 //!- `libm` - Use [`libm`](https://crates.io/crates/libm) for float exponentiation when `std` is not available.
 //!- `micromath` - Use [`micromath`](https://crates.io/crates/micromath) for float exponentiation
 //!  when `std` and `libm` are unavailable.
@@ -53,6 +53,7 @@ pub mod dimensions;
 mod enhanced_float;
 pub use dimensions::*;
 mod motion_profile;
+#[cfg(feature = "new_devices")]
 pub mod new_devices;
 mod state;
 pub mod streams;
