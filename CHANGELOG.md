@@ -283,3 +283,11 @@ Remove `Error` enum:
 - Add `And2` and `Or2` to still allow "and" and "or" operations on two getters of different types.
 - Make several more functions `const fn`. See the diff for details.
 - Minor documentation improvements.
+## 0.7.0-alpha.9
+*This release's list of changes may be incomplete due to the significant time since alpha 8 and the fact that the changelog was only updated immediately before the release.*
+- Remove runtime dimensional analysis introduced in RRTK 0.6.
+- Move all `compile_time_dimensions` items into `dimensions` module.
+- Separate linear and angular state and command.
+  - Add `GenericState` and `GenericCommand` traits.
+- Begin new device system.
+- Add compile-time integer and dimension aliases.

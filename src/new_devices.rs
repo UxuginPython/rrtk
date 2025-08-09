@@ -274,6 +274,7 @@ impl<const N: usize> Iterator for SystemIter<'_, N> {
 pub trait DeviceUpdatable<E> {
     fn update_device<const N: usize>(&mut self, system: &mut System<N>) -> NothingOrError<E>;
 }
+///This is a very basic proof of concept. Do not actually use it yet.
 pub struct Differential {
     pub side_a: TerminalID,
     pub side_b: TerminalID,
