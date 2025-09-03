@@ -259,7 +259,7 @@ impl<const N: usize> System<N> {
         self.terminals[id.terminal].unwrap().measurement = Some(state);
     }
     ///Returns an iterator returning uninitialized terminals until there are none remaining.
-    pub const fn iter(&mut self) -> SystemIter<N> {
+    pub const fn iter(&mut self) -> SystemIter<'_, N> {
         SystemIter {
             //self is an &mut reference.
             system: self,
