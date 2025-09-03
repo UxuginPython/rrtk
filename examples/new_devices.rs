@@ -1,5 +1,16 @@
+// SPDX-License-Identifier: BSD-3-Clause
+// Copyright 2024-2025 UxuginPython
+#[cfg(not(feature = "new_devices"))]
+fn main() {
+    println!(
+        "Enable the `new_devices` feature to run this example.\nAssuming you're using Cargo, add the `--features new_devices` flag to your command."
+    );
+}
+#[cfg(feature = "new_devices")]
 use rrtk::new_devices::*;
+#[cfg(feature = "new_devices")]
 use rrtk::*;
+#[cfg(feature = "new_devices")]
 fn display(system: &System<3>, differential: &Differential) {
     println!(
         "{:?} + {:?} = {:?}",
@@ -23,6 +34,7 @@ fn display(system: &System<3>, differential: &Differential) {
             .into_inner()
     );
 }
+#[cfg(feature = "new_devices")]
 fn main() {
     let mut system = System::<3>::new();
     let mut differential = Differential::new(&mut system).unwrap();
