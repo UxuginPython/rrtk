@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: BSD-3-Clause
+// Copyright 2024-2025 UxuginPython
+//!An experimental replacement for the previous device system (in the `devices` module). This
+//!system uses a single struct for each group of devices to store the states at different
+//!locations.
+//TODO: review this documentation and see if there's anything else you need to say
 #![allow(unused)]
 use super::*;
 use core::mem::MaybeUninit;
@@ -12,6 +18,7 @@ macro_rules! const_for {
         }
     }
 }
+///A global identifier of a terminal, which is a place where two mechanical devices connect.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct TerminalID {
     system: u8,
@@ -99,11 +106,14 @@ enum MaybeTerminal {
     Root(Datum<AngularState>),
 }
 static mut NEXT_SYSTEM_ID: u8 = 0;
+///A collection of terminals used by a set of mechanical devices. `N` is the number of terminals
+///the `System` can hold.
 pub struct System<const N: usize> {
     terminals: [Option<Terminal>; N],
     global_id: u8,
 }
 impl<const N: usize> System<N> {
+    ///Constructor for `System`.
     pub const fn new() -> Self {
         let id = unsafe { NEXT_SYSTEM_ID };
         unsafe {
@@ -114,6 +124,7 @@ impl<const N: usize> System<N> {
             global_id: id,
         }
     }
+    ///Get the ID of a terminal not connected to anything if one is available.
     pub const fn initialize_terminal(&mut self) -> Option<TerminalID> {
         const_for!(i, 0, N, {
             if self.terminals[i].is_none() {
@@ -126,6 +137,7 @@ impl<const N: usize> System<N> {
         });
         None
     }
+    ///Check if a terminal is a part of this system.
     #[inline]
     pub const fn has(&self, id: TerminalID) -> bool {
         self.global_id == id.system
@@ -162,6 +174,8 @@ impl<const N: usize> System<N> {
         });
         output
     }
+    ///Disconnect a terminal from every other terminal and allow it to be claimed again by
+    ///[`initialize_terminal`](Self::initialize_terminal).
     pub const fn release_terminal(&mut self, id: TerminalID) {
         self.verify_terminal_id(id);
         if self.terminals[id.terminal]
@@ -180,6 +194,7 @@ impl<const N: usize> System<N> {
         }
         self.terminals[id.terminal] = None;
     }
+    ///Connect two terminals together.
     pub const fn connect_terminals(&mut self, id_a: TerminalID, id_b: TerminalID) {
         self.verify_terminal_id(id_a);
         self.verify_terminal_id(id_b);
@@ -197,6 +212,7 @@ impl<const N: usize> System<N> {
             });
         }
     }
+    ///Get the current [`AngularState`] of a terminal if it is known along with a timestamp.
     pub const fn get_terminal_state(&self, id: TerminalID) -> Option<Datum<AngularState>> {
         self.verify_terminal_id(id);
         let connected = self.get_connected(id);
@@ -231,6 +247,7 @@ impl<const N: usize> System<N> {
         );
         if contributing >= 1 { Some(state) } else { None }
     }
+    ///Set the current state of a terminal including a timestamp.
     pub const fn set_terminal_state(&mut self, id: TerminalID, state: Datum<AngularState>) {
         self.verify_terminal_id(id);
         //unwrap does not work with mutating.
@@ -241,12 +258,14 @@ impl<const N: usize> System<N> {
         }
         self.terminals[id.terminal].unwrap().measurement = Some(state);
     }
+    ///Returns an iterator returning uninitialized terminals until there are none remaining.
     pub const fn iter(&mut self) -> SystemIter<N> {
         SystemIter {
             //self is an &mut reference.
             system: self,
         }
     }
+    ///Returns `Some` if and only if all `Q` terminals were successfully initialized.
     pub const fn initialize_multiple_terminals<const Q: usize>(
         &mut self,
     ) -> Option<[TerminalID; Q]> {
@@ -262,6 +281,8 @@ impl<const N: usize> System<N> {
         Some(ids.as_array())
     }
 }
+///Iterator returning uninitialized from a [`System`] terminals until there are none remaining.
+///Constructed with [`System::iter`].
 pub struct SystemIter<'a, const N: usize> {
     system: &'a mut System<N>,
 }
@@ -271,16 +292,25 @@ impl<const N: usize> Iterator for SystemIter<'_, N> {
         self.system.initialize_terminal()
     }
 }
+///This is a replacement for the [`Updatable`] trait that can be used by devices in a system. Since
+///devices typically need mutable access to their system when updating, this provides that access.
 pub trait DeviceUpdatable<E> {
+    ///Update the device. After this method is called, the terminals' states should be mechanically
+    ///valid, e.g., geared terminals maintain their ratio.
     fn update_device<const N: usize>(&mut self, system: &mut System<N>) -> NothingOrError<E>;
 }
-///This is a very basic proof of concept. Do not actually use it yet.
+///This is a very basic proof of concept. Do not actually use it yet. All devices from the old
+///system will be migrated before the stable release.
 pub struct Differential {
+    ///The terminal of one side of the differential.
     pub side_a: TerminalID,
+    ///The terminal of the other side of the differential.
     pub side_b: TerminalID,
+    ///The terminal of the side of the differential which adds the states of the two other sides.
     pub sum_side: TerminalID,
 }
 impl Differential {
+    ///Constructor for `Differential`.
     pub const fn new<const N: usize>(system: &mut System<N>) -> Option<Self> {
         let terminals = if let Some(terminals) = system.initialize_multiple_terminals::<3>() {
             terminals
