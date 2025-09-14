@@ -213,6 +213,44 @@ impl Mul<Time> for DimensionlessInteger {
         Time(self.0 * rhs.0)
     }
 }
+#[derive(Clone, Copy, Debug)]
+pub struct DimensionlessFraction(i64, i64);
+impl DimensionlessFraction {
+    #[inline]
+    pub fn reciprocal(&self) -> Self {
+        Self(self.1, self.0)
+    }
+}
+impl Neg for DimensionlessFraction {
+    type Output = Self;
+    fn neg(self) -> Self {
+        Self(-self.0, self.1)
+    }
+}
+impl Mul for DimensionlessFraction {
+    type Output = Self;
+    fn mul(self, rhs: Self) -> Self {
+        Self(self.0 * rhs.0, self.1 * rhs.1)
+    }
+}
+impl Div for DimensionlessFraction {
+    type Output = Self;
+    fn div(self, rhs: Self) -> Self {
+        self * rhs.reciprocal()
+    }
+}
+impl Add for DimensionlessFraction {
+    type Output = Self;
+    fn add(self, rhs: Self) -> Self {
+        Self(self.0 * rhs.1 + rhs.0 * self.1, self.1 * rhs.1)
+    }
+}
+impl Sub for DimensionlessFraction {
+    type Output = Self;
+    fn sub(self, rhs: Self) -> Self {
+        self + -rhs
+    }
+}
 ///Gets the resulting type from multiplying quantities of two types. Basically an alias for
 ///`<$a as Mul<$b>>::Output`. This is an important thing to be able to do when writing code that is
 ///generic over units as, since quantities of different units are technically different types, the
