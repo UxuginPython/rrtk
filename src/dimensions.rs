@@ -343,6 +343,12 @@ impl DivAssign<DimensionlessInteger> for DimensionlessFraction {
         *self = *self / rhs;
     }
 }
+impl Mul<Time> for DimensionlessFraction {
+    type Output = Time;
+    fn mul(self, rhs: Time) -> Time {
+        rhs * self.0 / self.1
+    }
+}
 ///Gets the resulting type from multiplying quantities of two types. Basically an alias for
 ///`<$a as Mul<$b>>::Output`. This is an important thing to be able to do when writing code that is
 ///generic over units as, since quantities of different units are technically different types, the
