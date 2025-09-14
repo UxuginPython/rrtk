@@ -214,11 +214,16 @@ impl Mul<Time> for DimensionlessInteger {
     }
 }
 #[derive(Clone, Copy, Debug)]
-pub struct DimensionlessFraction(i64, i64);
+pub struct DimensionlessFraction(DimensionlessInteger, DimensionlessInteger);
 impl DimensionlessFraction {
     #[inline]
-    pub fn reciprocal(&self) -> Self {
+    pub const fn reciprocal(&self) -> Self {
         Self(self.1, self.0)
+    }
+}
+impl From<DimensionlessInteger> for DimensionlessFraction {
+    fn from(was: DimensionlessInteger) -> Self {
+        Self(was, DimensionlessInteger::new(1))
     }
 }
 impl Neg for DimensionlessFraction {
@@ -249,6 +254,18 @@ impl Sub for DimensionlessFraction {
     type Output = Self;
     fn sub(self, rhs: Self) -> Self {
         self + -rhs
+    }
+}
+impl Mul<DimensionlessInteger> for DimensionlessFraction {
+    type Output = Self;
+    fn mul(self, rhs: DimensionlessInteger) -> Self {
+        Self(self.0 * rhs, self.1)
+    }
+}
+impl Div<DimensionlessInteger> for DimensionlessFraction {
+    type Output = Self;
+    fn div(self, rhs: DimensionlessInteger) -> Self {
+        Self(self.0, self.1 * rhs)
     }
 }
 ///Gets the resulting type from multiplying quantities of two types. Basically an alias for
