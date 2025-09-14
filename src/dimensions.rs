@@ -253,6 +253,24 @@ impl From<DimensionlessInteger> for DimensionlessFraction {
         Self(was, DimensionlessInteger::new(1))
     }
 }
+impl Ord for DimensionlessFraction {
+    fn cmp(&self, rhs: &Self) -> core::cmp::Ordering {
+        let a = self.0 * rhs.1;
+        let b = self.1 * rhs.0;
+        a.cmp(&b)
+    }
+}
+impl PartialEq for DimensionlessFraction {
+    fn eq(&self, rhs: &Self) -> bool {
+        self.cmp(rhs) == core::cmp::Ordering::Equal
+    }
+}
+impl Eq for DimensionlessFraction {}
+impl PartialOrd for DimensionlessFraction {
+    fn partial_cmp(&self, rhs: &Self) -> Option<core::cmp::Ordering> {
+        Some(self.cmp(rhs))
+    }
+}
 impl Neg for DimensionlessFraction {
     type Output = Self;
     fn neg(self) -> Self {
