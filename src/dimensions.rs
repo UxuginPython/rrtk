@@ -234,10 +234,20 @@ impl Mul for DimensionlessFraction {
         Self(self.0 * rhs.0, self.1 * rhs.1)
     }
 }
+impl MulAssign for DimensionlessFraction {
+    fn mul_assign(&mut self, rhs: Self) {
+        *self = *self * rhs;
+    }
+}
 impl Div for DimensionlessFraction {
     type Output = Self;
     fn div(self, rhs: Self) -> Self {
         self * rhs.reciprocal()
+    }
+}
+impl DivAssign for DimensionlessFraction {
+    fn div_assign(&mut self, rhs: Self) {
+        *self = *self / rhs;
     }
 }
 impl Add for DimensionlessFraction {
@@ -246,10 +256,20 @@ impl Add for DimensionlessFraction {
         Self(self.0 * rhs.1 + rhs.0 * self.1, self.1 * rhs.1)
     }
 }
+impl AddAssign for DimensionlessFraction {
+    fn add_assign(&mut self, rhs: Self) {
+        *self = *self + rhs;
+    }
+}
 impl Sub for DimensionlessFraction {
     type Output = Self;
     fn sub(self, rhs: Self) -> Self {
         self + -rhs
+    }
+}
+impl SubAssign for DimensionlessFraction {
+    fn sub_assign(&mut self, rhs: Self) {
+        *self = *self - rhs;
     }
 }
 impl Mul<DimensionlessInteger> for DimensionlessFraction {
@@ -258,10 +278,20 @@ impl Mul<DimensionlessInteger> for DimensionlessFraction {
         Self(self.0 * rhs, self.1)
     }
 }
+impl MulAssign<DimensionlessInteger> for DimensionlessFraction {
+    fn mul_assign(&mut self, rhs: DimensionlessInteger) {
+        *self = *self * rhs;
+    }
+}
 impl Div<DimensionlessInteger> for DimensionlessFraction {
     type Output = Self;
     fn div(self, rhs: DimensionlessInteger) -> Self {
         Self(self.0, self.1 * rhs)
+    }
+}
+impl DivAssign<DimensionlessInteger> for DimensionlessFraction {
+    fn div_assign(&mut self, rhs: DimensionlessInteger) {
+        *self = *self / rhs;
     }
 }
 ///Gets the resulting type from multiplying quantities of two types. Basically an alias for
