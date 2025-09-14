@@ -221,10 +221,19 @@ impl Mul<Time> for DimensionlessInteger {
 #[derive(Clone, Copy, Debug)]
 pub struct DimensionlessFraction(DimensionlessInteger, DimensionlessInteger);
 impl DimensionlessFraction {
+    ///Ensures that the denominator is not zero.
+    #[inline]
+    pub const fn is_valid(&self) -> bool {
+        !self.1.is_zero()
+    }
     #[inline]
     pub const fn new(num: DimensionlessInteger, denom: DimensionlessInteger) -> Self {
-        assert!(!denom.is_zero());
-        Self(num, denom)
+        let new = Self(num, denom);
+        if new.is_valid() {
+            new
+        } else {
+            panic!("attempted to construct a DimensionlessFraction with a zero denominator");
+        }
     }
     #[inline]
     pub const fn new_unchecked(num: DimensionlessInteger, denom: DimensionlessInteger) -> Self {
@@ -232,8 +241,7 @@ impl DimensionlessFraction {
     }
     #[inline]
     pub const fn reciprocal(&self) -> Self {
-        assert!(!self.0.is_zero());
-        Self(self.1, self.0)
+        Self::new(self.1, self.0)
     }
     #[inline]
     pub const fn reciprocal_unchecked(&self) -> Self {
