@@ -191,14 +191,10 @@ impl MulAssign for DimensionlessInteger {
     }
 }
 impl Div for DimensionlessInteger {
-    type Output = Self;
-    fn div(self, rhs: Self) -> Self {
-        Self(self.0 / rhs.0)
-    }
-}
-impl DivAssign for DimensionlessInteger {
-    fn div_assign(&mut self, rhs: Self) {
-        self.0 /= rhs.0;
+    type Output = DimensionlessFraction;
+    fn div(self, rhs: Self) -> DimensionlessFraction {
+        assert_ne!(rhs, Self::new(0));
+        DimensionlessFraction(self, rhs)
     }
 }
 impl Neg for DimensionlessInteger {
