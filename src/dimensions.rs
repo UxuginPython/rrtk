@@ -146,6 +146,9 @@ impl DimensionlessInteger {
     pub const fn new(value: i64) -> Self {
         Self(value)
     }
+    pub const fn const_eq(&self, rhs: &Self) -> bool {
+        self.0 == rhs.0
+    }
 }
 impl From<i64> for DimensionlessInteger {
     fn from(was: i64) -> Self {
@@ -213,7 +216,21 @@ impl Mul<Time> for DimensionlessInteger {
 pub struct DimensionlessFraction(DimensionlessInteger, DimensionlessInteger);
 impl DimensionlessFraction {
     #[inline]
+    pub const fn new(num: DimensionlessInteger, denom: DimensionlessInteger) -> Self {
+        assert!(!denom.const_eq(&DimensionlessInteger::new(0)));
+        Self(num, denom)
+    }
+    #[inline]
+    pub const fn new_unchecked(num: DimensionlessInteger, denom: DimensionlessInteger) -> Self {
+        Self(num, denom)
+    }
+    #[inline]
     pub const fn reciprocal(&self) -> Self {
+        assert!(!self.0.const_eq(&DimensionlessInteger::new(0)));
+        Self(self.1, self.0)
+    }
+    #[inline]
+    pub const fn reciprocal_unchecked(&self) -> Self {
         Self(self.1, self.0)
     }
 }
