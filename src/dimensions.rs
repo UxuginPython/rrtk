@@ -143,8 +143,19 @@ impl Div<Time> for f32 {
 pub struct DimensionlessInteger(pub i64);
 impl DimensionlessInteger {
     ///Constructor for [`DimensionlessInteger`].
+    #[inline]
     pub const fn new(value: i64) -> Self {
         Self(value)
+    }
+    ///`x.const_eq(y)` is exactly equivalent to `x == y` except that it works in const contexts.
+    #[inline]
+    pub const fn const_eq(&self, rhs: &Self) -> bool {
+        self.0 == rhs.0
+    }
+    ///Checks if the integer is zero.
+    #[inline]
+    pub const fn is_zero(&self) -> bool {
+        self.0 == 0
     }
 }
 impl From<i64> for DimensionlessInteger {
@@ -191,14 +202,10 @@ impl MulAssign for DimensionlessInteger {
     }
 }
 impl Div for DimensionlessInteger {
-    type Output = Self;
-    fn div(self, rhs: Self) -> Self {
-        Self(self.0 / rhs.0)
-    }
-}
-impl DivAssign for DimensionlessInteger {
-    fn div_assign(&mut self, rhs: Self) {
-        self.0 /= rhs.0;
+    type Output = DimensionlessFraction;
+    fn div(self, rhs: Self) -> DimensionlessFraction {
+        assert_ne!(rhs, Self::new(0));
+        DimensionlessFraction(self, rhs)
     }
 }
 impl Neg for DimensionlessInteger {
@@ -211,6 +218,259 @@ impl Mul<Time> for DimensionlessInteger {
     type Output = Time;
     fn mul(self, rhs: Time) -> Time {
         Time(self.0 * rhs.0)
+    }
+}
+///An exact rational number type for dimensionless quantities. Used almost exclusively when a
+///[`Time`] must be multiplied by a constant fractional factor.
+#[derive(Clone, Copy, Debug)]
+pub struct DimensionlessFraction(DimensionlessInteger, DimensionlessInteger);
+impl DimensionlessFraction {
+    ///Ensures that the denominator is not zero.
+    #[inline]
+    pub const fn is_valid(&self) -> bool {
+        !self.1.is_zero()
+    }
+    ///Constructor that verifies that the denominator is not zero and panics if it is.
+    #[inline]
+    pub const fn new(num: DimensionlessInteger, denom: DimensionlessInteger) -> Self {
+        let new = Self(num, denom);
+        if new.is_valid() {
+            new
+        } else {
+            panic!("attempted to construct a DimensionlessFraction with a zero denominator");
+        }
+    }
+    ///Constructor that does not check if the denominator is zero.
+    #[inline]
+    pub const fn new_unchecked(num: DimensionlessInteger, denom: DimensionlessInteger) -> Self {
+        Self(num, denom)
+    }
+    ///Reciprocal function (1/x) that panics if the new denominator is zero.
+    #[inline]
+    pub const fn reciprocal(&self) -> Self {
+        Self::new(self.1, self.0)
+    }
+    ///Reciprocal function (1/x) that does not check if the new denominator is zero.
+    #[inline]
+    pub const fn reciprocal_unchecked(&self) -> Self {
+        Self(self.1, self.0)
+    }
+    ///Converts the fraction to its closest `f32` approximation.
+    ///There is also a [`From`] implementation that does this.
+    #[inline]
+    pub const fn as_f32(&self) -> f32 {
+        self.0.0 as f32 / self.1.0 as f32
+    }
+    ///Converts the fraction to its closest `f64` approximation.
+    ///There is also a [`From`] implementation that does this.
+    #[inline]
+    pub const fn as_f64(&self) -> f64 {
+        self.0.0 as f64 / self.1.0 as f64
+    }
+    ///Wraps the output of [`as_f32`](Self::as_f32) in a `Dimensionless` wrapper.
+    ///There is also a [`From`] implementation that does this.
+    #[inline]
+    pub const fn as_quantity_f32(&self) -> Dimensionless<f32> {
+        Dimensionless::new(self.as_f32())
+    }
+    ///Wraps the output of [`as_f64`](Self::as_f64) in a `Dimensionless` wrapper.
+    ///There is also a [`From`] implementation that does this.
+    #[inline]
+    pub const fn as_quantity_f64(&self) -> Dimensionless<f64> {
+        Dimensionless::new(self.as_f64())
+    }
+}
+impl From<DimensionlessInteger> for DimensionlessFraction {
+    fn from(was: DimensionlessInteger) -> Self {
+        Self(was, DimensionlessInteger::new(1))
+    }
+}
+impl Ord for DimensionlessFraction {
+    fn cmp(&self, rhs: &Self) -> core::cmp::Ordering {
+        let a = self.0 * rhs.1;
+        let b = self.1 * rhs.0;
+        a.cmp(&b)
+    }
+}
+impl PartialEq for DimensionlessFraction {
+    fn eq(&self, rhs: &Self) -> bool {
+        self.cmp(rhs) == core::cmp::Ordering::Equal
+    }
+}
+impl Eq for DimensionlessFraction {}
+impl PartialOrd for DimensionlessFraction {
+    fn partial_cmp(&self, rhs: &Self) -> Option<core::cmp::Ordering> {
+        Some(self.cmp(rhs))
+    }
+}
+impl Neg for DimensionlessFraction {
+    type Output = Self;
+    fn neg(self) -> Self {
+        Self(-self.0, self.1)
+    }
+}
+impl Mul for DimensionlessFraction {
+    type Output = Self;
+    fn mul(self, rhs: Self) -> Self {
+        Self(self.0 * rhs.0, self.1 * rhs.1)
+    }
+}
+impl MulAssign for DimensionlessFraction {
+    fn mul_assign(&mut self, rhs: Self) {
+        *self = *self * rhs;
+    }
+}
+impl Div for DimensionlessFraction {
+    type Output = Self;
+    fn div(self, rhs: Self) -> Self {
+        self * rhs.reciprocal()
+    }
+}
+impl DivAssign for DimensionlessFraction {
+    fn div_assign(&mut self, rhs: Self) {
+        *self = *self / rhs;
+    }
+}
+impl Add for DimensionlessFraction {
+    type Output = Self;
+    fn add(self, rhs: Self) -> Self {
+        Self(self.0 * rhs.1 + rhs.0 * self.1, self.1 * rhs.1)
+    }
+}
+impl AddAssign for DimensionlessFraction {
+    fn add_assign(&mut self, rhs: Self) {
+        *self = *self + rhs;
+    }
+}
+impl Sub for DimensionlessFraction {
+    type Output = Self;
+    fn sub(self, rhs: Self) -> Self {
+        self + -rhs
+    }
+}
+impl SubAssign for DimensionlessFraction {
+    fn sub_assign(&mut self, rhs: Self) {
+        *self = *self - rhs;
+    }
+}
+impl Mul<DimensionlessInteger> for DimensionlessFraction {
+    type Output = Self;
+    fn mul(self, rhs: DimensionlessInteger) -> Self {
+        Self(self.0 * rhs, self.1)
+    }
+}
+impl MulAssign<DimensionlessInteger> for DimensionlessFraction {
+    fn mul_assign(&mut self, rhs: DimensionlessInteger) {
+        *self = *self * rhs;
+    }
+}
+impl Div<DimensionlessInteger> for DimensionlessFraction {
+    type Output = Self;
+    fn div(self, rhs: DimensionlessInteger) -> Self {
+        Self(self.0, self.1 * rhs)
+    }
+}
+impl DivAssign<DimensionlessInteger> for DimensionlessFraction {
+    fn div_assign(&mut self, rhs: DimensionlessInteger) {
+        *self = *self / rhs;
+    }
+}
+impl Add<DimensionlessInteger> for DimensionlessFraction {
+    type Output = Self;
+    fn add(self, rhs: DimensionlessInteger) -> Self {
+        self + Self::from(rhs)
+    }
+}
+impl AddAssign<DimensionlessInteger> for DimensionlessFraction {
+    fn add_assign(&mut self, rhs: DimensionlessInteger) {
+        *self = *self + rhs;
+    }
+}
+impl Sub<DimensionlessInteger> for DimensionlessFraction {
+    type Output = Self;
+    fn sub(self, rhs: DimensionlessInteger) -> Self {
+        self + Self::from(-rhs)
+    }
+}
+impl SubAssign<DimensionlessInteger> for DimensionlessFraction {
+    fn sub_assign(&mut self, rhs: DimensionlessInteger) {
+        *self = *self - rhs;
+    }
+}
+impl Mul<Time> for DimensionlessFraction {
+    type Output = Time;
+    fn mul(self, rhs: Time) -> Time {
+        rhs * self.0 / self.1
+    }
+}
+impl Mul<DimensionlessFraction> for DimensionlessInteger {
+    type Output = DimensionlessFraction;
+    fn mul(self, rhs: DimensionlessFraction) -> DimensionlessFraction {
+        rhs * self
+    }
+}
+impl Div<DimensionlessFraction> for DimensionlessInteger {
+    type Output = DimensionlessFraction;
+    fn div(self, rhs: DimensionlessFraction) -> DimensionlessFraction {
+        self * rhs.reciprocal()
+    }
+}
+impl Mul<DimensionlessFraction> for Time {
+    type Output = Self;
+    fn mul(self, rhs: DimensionlessFraction) -> Self {
+        rhs * self
+    }
+}
+impl MulAssign<DimensionlessFraction> for Time {
+    fn mul_assign(&mut self, rhs: DimensionlessFraction) {
+        *self = *self * rhs;
+    }
+}
+impl Div<DimensionlessFraction> for Time {
+    type Output = Self;
+    fn div(self, rhs: DimensionlessFraction) -> Self {
+        self * rhs.reciprocal()
+    }
+}
+impl DivAssign<DimensionlessFraction> for Time {
+    fn div_assign(&mut self, rhs: DimensionlessFraction) {
+        *self = *self / rhs;
+    }
+}
+impl Add<DimensionlessFraction> for DimensionlessInteger {
+    type Output = DimensionlessFraction;
+    fn add(self, rhs: DimensionlessFraction) -> DimensionlessFraction {
+        rhs + self
+    }
+}
+impl Sub<DimensionlessFraction> for DimensionlessInteger {
+    type Output = DimensionlessFraction;
+    fn sub(self, rhs: DimensionlessFraction) -> DimensionlessFraction {
+        DimensionlessFraction::from(self) - rhs
+    }
+}
+///This conversion is not lossless.
+impl From<DimensionlessFraction> for f32 {
+    fn from(was: DimensionlessFraction) -> Self {
+        was.as_f32()
+    }
+}
+///This conversion is not lossless.
+impl From<DimensionlessFraction> for f64 {
+    fn from(was: DimensionlessFraction) -> Self {
+        was.as_f64()
+    }
+}
+///This conversion is not lossless.
+impl From<DimensionlessFraction> for Dimensionless<f32> {
+    fn from(was: DimensionlessFraction) -> Self {
+        was.as_quantity_f32()
+    }
+}
+///This conversion is not lossless.
+impl From<DimensionlessFraction> for Dimensionless<f64> {
+    fn from(was: DimensionlessFraction) -> Self {
+        was.as_quantity_f64()
     }
 }
 ///Gets the resulting type from multiplying quantities of two types. Basically an alias for
