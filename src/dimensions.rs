@@ -359,6 +359,28 @@ impl DivAssign<DimensionlessInteger> for DimensionlessFraction {
         *self = *self / rhs;
     }
 }
+impl Add<DimensionlessInteger> for DimensionlessFraction {
+    type Output = Self;
+    fn add(self, rhs: DimensionlessInteger) -> Self {
+        self + Self::from(rhs)
+    }
+}
+impl AddAssign<DimensionlessInteger> for DimensionlessFraction {
+    fn add_assign(&mut self, rhs: DimensionlessInteger) {
+        *self = *self + rhs;
+    }
+}
+impl Sub<DimensionlessInteger> for DimensionlessFraction {
+    type Output = Self;
+    fn sub(self, rhs: DimensionlessInteger) -> Self {
+        self + Self::from(-rhs)
+    }
+}
+impl SubAssign<DimensionlessInteger> for DimensionlessFraction {
+    fn sub_assign(&mut self, rhs: DimensionlessInteger) {
+        *self = *self - rhs;
+    }
+}
 impl Mul<Time> for DimensionlessFraction {
     type Output = Time;
     fn mul(self, rhs: Time) -> Time {
@@ -397,6 +419,18 @@ impl Div<DimensionlessFraction> for Time {
 impl DivAssign<DimensionlessFraction> for Time {
     fn div_assign(&mut self, rhs: DimensionlessFraction) {
         *self = *self / rhs;
+    }
+}
+impl Add<DimensionlessFraction> for DimensionlessInteger {
+    type Output = DimensionlessFraction;
+    fn add(self, rhs: DimensionlessFraction) -> DimensionlessFraction {
+        rhs + self
+    }
+}
+impl Sub<DimensionlessFraction> for DimensionlessInteger {
+    type Output = DimensionlessFraction;
+    fn sub(self, rhs: DimensionlessFraction) -> DimensionlessFraction {
+        DimensionlessFraction::from(self) - rhs
     }
 }
 ///This conversion is not lossless.
