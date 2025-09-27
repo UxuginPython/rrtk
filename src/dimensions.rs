@@ -365,6 +365,40 @@ impl Mul<Time> for DimensionlessFraction {
         rhs * self.0 / self.1
     }
 }
+impl Mul<DimensionlessFraction> for DimensionlessInteger {
+    type Output = DimensionlessFraction;
+    fn mul(self, rhs: DimensionlessFraction) -> DimensionlessFraction {
+        rhs * self
+    }
+}
+impl Div<DimensionlessFraction> for DimensionlessInteger {
+    type Output = DimensionlessFraction;
+    fn div(self, rhs: DimensionlessFraction) -> DimensionlessFraction {
+        self * rhs.reciprocal()
+    }
+}
+impl Mul<DimensionlessFraction> for Time {
+    type Output = Self;
+    fn mul(self, rhs: DimensionlessFraction) -> Self {
+        rhs * self
+    }
+}
+impl MulAssign<DimensionlessFraction> for Time {
+    fn mul_assign(&mut self, rhs: DimensionlessFraction) {
+        *self = *self * rhs;
+    }
+}
+impl Div<DimensionlessFraction> for Time {
+    type Output = Self;
+    fn div(self, rhs: DimensionlessFraction) -> Self {
+        self * rhs.reciprocal()
+    }
+}
+impl DivAssign<DimensionlessFraction> for Time {
+    fn div_assign(&mut self, rhs: DimensionlessFraction) {
+        *self = *self / rhs;
+    }
+}
 ///This conversion is not lossless.
 impl From<DimensionlessFraction> for f32 {
     fn from(was: DimensionlessFraction) -> Self {
