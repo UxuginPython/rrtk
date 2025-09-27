@@ -147,10 +147,12 @@ impl DimensionlessInteger {
     pub const fn new(value: i64) -> Self {
         Self(value)
     }
+    ///`x.const_eq(y)` is exactly equivalent to `x == y` except that it works in const contexts.
     #[inline]
     pub const fn const_eq(&self, rhs: &Self) -> bool {
         self.0 == rhs.0
     }
+    ///Checks if the integer is zero.
     #[inline]
     pub const fn is_zero(&self) -> bool {
         self.0 == 0
@@ -218,6 +220,8 @@ impl Mul<Time> for DimensionlessInteger {
         Time(self.0 * rhs.0)
     }
 }
+///An exact rational number type for dimensionless quantities. Used almost exclusively when a
+///[`Time`] must be multiplied by a constant fractional factor.
 #[derive(Clone, Copy, Debug)]
 pub struct DimensionlessFraction(DimensionlessInteger, DimensionlessInteger);
 impl DimensionlessFraction {
@@ -226,6 +230,7 @@ impl DimensionlessFraction {
     pub const fn is_valid(&self) -> bool {
         !self.1.is_zero()
     }
+    ///Constructor that verifies that the denominator is not zero and panics if it is.
     #[inline]
     pub const fn new(num: DimensionlessInteger, denom: DimensionlessInteger) -> Self {
         let new = Self(num, denom);
@@ -235,30 +240,41 @@ impl DimensionlessFraction {
             panic!("attempted to construct a DimensionlessFraction with a zero denominator");
         }
     }
+    ///Constructor that does not check if the denominator is zero.
     #[inline]
     pub const fn new_unchecked(num: DimensionlessInteger, denom: DimensionlessInteger) -> Self {
         Self(num, denom)
     }
+    ///Reciprocal function (1/x) that panics if the new denominator is zero.
     #[inline]
     pub const fn reciprocal(&self) -> Self {
         Self::new(self.1, self.0)
     }
+    ///Reciprocal function (1/x) that does not check if the new denominator is zero.
     #[inline]
     pub const fn reciprocal_unchecked(&self) -> Self {
         Self(self.1, self.0)
     }
+    ///Converts the fraction to its closest `f32` approximation.
+    ///There is also a [`From`] implementation that does this.
     #[inline]
     pub const fn as_f32(&self) -> f32 {
         self.0.0 as f32 / self.1.0 as f32
     }
+    ///Converts the fraction to its closest `f64` approximation.
+    ///There is also a [`From`] implementation that does this.
     #[inline]
     pub const fn as_f64(&self) -> f64 {
         self.0.0 as f64 / self.1.0 as f64
     }
+    ///Wraps the output of [`as_f32`](Self::as_f32) in a `Dimensionless` wrapper.
+    ///There is also a [`From`] implementation that does this.
     #[inline]
     pub const fn as_quantity_f32(&self) -> Dimensionless<f32> {
         Dimensionless::new(self.as_f32())
     }
+    ///Wraps the output of [`as_f64`](Self::as_f64) in a `Dimensionless` wrapper.
+    ///There is also a [`From`] implementation that does this.
     #[inline]
     pub const fn as_quantity_f64(&self) -> Dimensionless<f64> {
         Dimensionless::new(self.as_f64())
