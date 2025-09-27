@@ -247,6 +247,14 @@ impl DimensionlessFraction {
     pub const fn reciprocal_unchecked(&self) -> Self {
         Self(self.1, self.0)
     }
+    #[inline]
+    pub const fn as_f32(&self) -> f32 {
+        self.0.0 as f32 / self.1.0 as f32
+    }
+    #[inline]
+    pub const fn as_f64(&self) -> f64 {
+        self.0.0 as f64 / self.1.0 as f64
+    }
 }
 impl From<DimensionlessInteger> for DimensionlessFraction {
     fn from(was: DimensionlessInteger) -> Self {
@@ -347,6 +355,18 @@ impl Mul<Time> for DimensionlessFraction {
     type Output = Time;
     fn mul(self, rhs: Time) -> Time {
         rhs * self.0 / self.1
+    }
+}
+///This conversion is not lossless.
+impl From<DimensionlessFraction> for f32 {
+    fn from(was: DimensionlessFraction) -> Self {
+        was.as_f32()
+    }
+}
+///This conversion is not lossless.
+impl From<DimensionlessFraction> for f64 {
+    fn from(was: DimensionlessFraction) -> Self {
+        was.as_f64()
     }
 }
 ///Gets the resulting type from multiplying quantities of two types. Basically an alias for
