@@ -255,6 +255,14 @@ impl DimensionlessFraction {
     pub const fn as_f64(&self) -> f64 {
         self.0.0 as f64 / self.1.0 as f64
     }
+    #[inline]
+    pub const fn as_quantity_f32(&self) -> Dimensionless<f32> {
+        Dimensionless::new(self.as_f32())
+    }
+    #[inline]
+    pub const fn as_quantity_f64(&self) -> Dimensionless<f64> {
+        Dimensionless::new(self.as_f64())
+    }
 }
 impl From<DimensionlessInteger> for DimensionlessFraction {
     fn from(was: DimensionlessInteger) -> Self {
@@ -367,6 +375,18 @@ impl From<DimensionlessFraction> for f32 {
 impl From<DimensionlessFraction> for f64 {
     fn from(was: DimensionlessFraction) -> Self {
         was.as_f64()
+    }
+}
+///This conversion is not lossless.
+impl From<DimensionlessFraction> for Dimensionless<f32> {
+    fn from(was: DimensionlessFraction) -> Self {
+        was.as_quantity_f32()
+    }
+}
+///This conversion is not lossless.
+impl From<DimensionlessFraction> for Dimensionless<f64> {
+    fn from(was: DimensionlessFraction) -> Self {
+        was.as_quantity_f64()
     }
 }
 ///Gets the resulting type from multiplying quantities of two types. Basically an alias for
