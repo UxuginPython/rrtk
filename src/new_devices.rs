@@ -4,7 +4,6 @@
 //!system uses a single struct for each group of devices to store the states at different
 //!locations.
 //TODO: review this documentation and see if there's anything else you need to say
-#![allow(unused)]
 use super::*;
 use core::mem::MaybeUninit;
 //There is a crate that does this, but the implementation is so simple that it is preferable to
@@ -51,6 +50,7 @@ impl<T: Copy, const N: usize> IIdentifyAsAVec<T, N> {
         }
         unsafe { self.inner[index].assume_init() }
     }
+    #[allow(unused)]
     #[inline]
     const fn pop(&mut self) -> T {
         if self.length == 0 {
@@ -97,13 +97,6 @@ impl Terminal {
             root: None,
         }
     }
-}
-#[derive(Clone, Copy, Default, PartialEq)]
-enum MaybeTerminal {
-    #[default]
-    Uninitialized,
-    Connected(usize),
-    Root(Datum<AngularState>),
 }
 static mut NEXT_SYSTEM_ID: u8 = 0;
 ///A collection of terminals used by a set of mechanical devices. `N` is the number of terminals
@@ -189,7 +182,8 @@ impl<const N: usize> System<N> {
             let new_root = connected.get(1);
             self.terminals[new_root].unwrap().root = None;
             const_for!(i, 2, connected.len(), {
-                self.terminals[connected.get(i)].unwrap().root = Some(i);
+                //XXX: I found this as Some(i), but that feels really wrong.
+                self.terminals[connected.get(i)].unwrap().root = Some(new_root);
             });
         }
         self.terminals[id.terminal] = None;
