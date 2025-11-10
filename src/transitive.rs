@@ -47,11 +47,13 @@ impl<T, const N: usize> VecArray<T, N> {
         if index >= self.length {
             panic!("rrtk::transitive::VecArray::swap_remove called out of bounds");
         }
-        let popped = self.pop().expect("We know that we have length > 0, and the only way pop returns None is when we have a length of 0.");
         if self.length == 1 {
-            return popped;
+            return self.pop().expect("We know that we have length > 0, and the only way pop returns None is when length == 0.");
         }
-        let to_return = replace(&mut self.inner[index], MaybeUninit::new(popped));
+        self.length -= 1;
+        //We pop manually instead of using the method here to leave it as a MaybeUninit.
+        let end_to_move = replace(&mut self.inner[self.length], MaybeUninit::uninit());
+        let to_return = replace(&mut self.inner[index], end_to_move);
         unsafe { to_return.assume_init() }
     }
 }
