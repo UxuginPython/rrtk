@@ -19,6 +19,10 @@ impl<T, const N: usize> VecArray<T, N> {
         self.length = 0;
     }
     #[inline]
+    pub const fn len(&self) -> usize {
+        self.length
+    }
+    #[inline]
     pub const fn get(&self, index: usize) -> &T {
         if index >= self.length {
             panic!("rrtk::transitive::VecArray::get called out of bounds");
@@ -55,5 +59,19 @@ impl<T, const N: usize> VecArray<T, N> {
         let end_to_move = replace(&mut self.inner[self.length], MaybeUninit::uninit());
         let to_return = replace(&mut self.inner[index], end_to_move);
         unsafe { to_return.assume_init() }
+    }
+}
+enum CacheAndGiveUp<T, const N: usize> {
+    Cache(VecArray<T, N>),
+    GiveUp,
+}
+impl<T, const N: usize> CacheAndGiveUp<T, N> {
+    #[inline]
+    pub const fn new() -> Self {
+        Self::Cache(VecArray::new())
+    }
+    #[inline]
+    pub const fn has_given_up(&self) -> bool {
+        if let Self::GiveUp = self { true } else { false }
     }
 }
