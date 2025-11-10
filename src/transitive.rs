@@ -61,6 +61,63 @@ impl<T, const N: usize> VecArray<T, N> {
         unsafe { to_return.assume_init() }
     }
 }
+impl<'a, T, const N: usize> IntoIterator for &'a VecArray<T, N> {
+    type Item = &'a T;
+    type IntoIter = VecArrayIterator<'a, T, N>;
+    #[inline]
+    fn into_iter(self) -> VecArrayIterator<'a, T, N> {
+        VecArrayIterator {
+            next_index: 0,
+            vec_array: self,
+        }
+    }
+}
+struct VecArrayIterator<'a, T, const N: usize> {
+    next_index: usize,
+    vec_array: &'a VecArray<T, N>,
+}
+impl<T, const N: usize> VecArrayIterator<'_, T, N> {
+    ///Operates exactly like [`Iterator::count`] except that it only requires `&self` rather than
+    ///`self` and it takes O(1) time rather than O(n). The default implementations of
+    ///[`Iterator::count`] and [`Iterator::size_hint`] have been overridden using this method.
+    ///Calling this method is preferred to calling either of those where possible.
+    #[inline]
+    pub const fn count_ref(&self) -> usize {
+        self.vec_array.len() - self.next_index
+    }
+}
+impl<'a, T, const N: usize> Iterator for VecArrayIterator<'a, T, N> {
+    type Item = &'a T;
+    fn next(&mut self) -> Option<&'a T> {
+        if self.next_index >= self.vec_array.len() {
+            return None;
+        }
+        self.next_index += 1;
+        Some(self.vec_array.get(self.next_index - 1))
+    }
+    ///The default implementation is overridden to use [`count_ref`](Self::count_ref). Calling that
+    ///method directly is preferred where possible.
+    #[inline]
+    fn count(self) -> usize {
+        self.count_ref()
+    }
+    ///This implementation returns an exact value using [`count_ref`](Self::count_ref). Calling
+    ///that method directly is preferred where possible.
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let size = self.count_ref();
+        (size, Some(size))
+    }
+    ///The default implementation is overridden to take O(1) time rather than O(n).
+    #[inline]
+    fn last(self) -> Option<&'a T> {
+        if self.count_ref() >= 1 {
+            Some(self.vec_array.get(self.vec_array.len() - 1))
+        } else {
+            None
+        }
+    }
+}
 enum CacheAndGiveUp<T, const N: usize> {
     Cache(VecArray<T, N>),
     GiveUp,
