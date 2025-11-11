@@ -6,9 +6,24 @@ pub struct NodeID {
     system: SystemID,
     node: LocalNodeID,
 }
-pub struct Node {
+impl NodeID {
+    //This is intentionally not pub.
+    #[inline]
+    const fn new(system: SystemID, node: LocalNodeID) -> Self {
+        Self { system, node }
+    }
+}
+struct Node {
     prev: Option<LocalNodeID>,
     next: Option<LocalNodeID>,
+}
+impl Node {
+    pub const fn new() -> Self {
+        Self {
+            prev: None,
+            next: None,
+        }
+    }
 }
 pub struct System<const N: usize> {
     system_id: SystemID,
@@ -26,6 +41,16 @@ impl<const N: usize> System<N> {
             system_id: system_id,
             nodes: [const { None }; N],
         }
+    }
+    //TODO: There's probably a way to make this const.
+    pub fn new_node(&mut self) -> Option<NodeID> {
+        for i in 0..N {
+            if self.nodes[i].is_none() {
+                self.nodes[i] = Some(Node::new());
+                return Some(NodeID::new(self.system_id, i));
+            }
+        }
+        None
     }
     const fn beginning(&self, node_id: LocalNodeID) -> LocalNodeID {
         let mut node_id = node_id;
