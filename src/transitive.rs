@@ -27,7 +27,7 @@ impl<const N: usize> System<N> {
             nodes: [const { None }; N],
         }
     }
-    fn beginning(&self, node_id: LocalNodeID) -> LocalNodeID {
+    const fn beginning(&self, node_id: LocalNodeID) -> LocalNodeID {
         let mut node_id = node_id;
         loop {
             if let Some(node) = &self.nodes[node_id] {
@@ -42,7 +42,7 @@ impl<const N: usize> System<N> {
         }
         node_id
     }
-    fn end(&self, node_id: LocalNodeID) -> LocalNodeID {
+    const fn end(&self, node_id: LocalNodeID) -> LocalNodeID {
         let mut node_id = node_id;
         loop {
             if let Some(node) = &self.nodes[node_id] {
