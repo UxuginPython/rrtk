@@ -58,6 +58,7 @@ pub mod new_devices;
 mod state;
 pub mod streams;
 pub mod stulta;
+pub mod transitive;
 mod vec_array;
 pub use command::*;
 pub use datum::*;
