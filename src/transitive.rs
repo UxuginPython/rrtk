@@ -25,6 +25,17 @@ impl Node {
         }
     }
 }
+//There is a crate that does this, but since it's so simple, we just do it here to avoid the
+//mandatory dependency.
+macro_rules! const_for {
+    (for $i: ident in ($min: expr, $max: expr) => $code: tt) => {
+        let mut $i = $min;
+        while $i < $max {
+            $code
+            $i += 1;
+        }
+    }
+}
 pub struct System<const N: usize> {
     system_id: SystemID,
     nodes: [Option<Node>; N],
@@ -42,14 +53,13 @@ impl<const N: usize> System<N> {
             nodes: [const { None }; N],
         }
     }
-    //TODO: There's probably a way to make this const.
-    pub fn new_node(&mut self) -> Option<NodeID> {
-        for i in 0..N {
+    pub const fn new_node(&mut self) -> Option<NodeID> {
+        const_for!(for i in (0, N) => {
             if self.nodes[i].is_none() {
                 self.nodes[i] = Some(Node::new());
                 return Some(NodeID::new(self.system_id, i));
             }
-        }
+        });
         None
     }
     const fn beginning(&self, node_id: LocalNodeID) -> LocalNodeID {
