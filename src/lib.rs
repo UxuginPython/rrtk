@@ -58,7 +58,7 @@ pub mod new_devices;
 mod state;
 pub mod streams;
 pub mod stulta;
-mod transitive;
+mod vec_array;
 pub use command::*;
 pub use datum::*;
 #[cfg(feature = "internal_enhanced_float")]
