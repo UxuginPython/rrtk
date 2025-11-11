@@ -81,23 +81,26 @@ impl<const N: usize> System<N> {
             panic!("rrtk System does not contain provided node");
         }
         let node_id = node_id.node;
+        let (maybe_prev_id, maybe_next_id);
         if let Some(node) = &self.nodes[node_id] {
-            if let Some(prev_id) = node.prev {
-                if let Some(ref mut prev) = self.nodes[prev_id] {
-                    prev.next = node.next;
-                } else {
-                    panic!("rrtk System invariant violated");
-                }
-            }
-            if let Some(next_id) = node.next {
-                if let Some(ref mut next) = self.nodes[next_id] {
-                    next.prev = node.prev;
-                } else {
-                    panic!("rrtk System invariant violated");
-                }
-            }
+            maybe_prev_id = node.prev;
+            maybe_next_id = node.next;
         } else {
             panic!("rrtk System provided invalid NodeID");
+        }
+        if let Some(prev_id) = maybe_prev_id {
+            if let Some(ref mut prev) = self.nodes[prev_id] {
+                prev.next = maybe_next_id;
+            } else {
+                panic!("rrtk System invariant violated");
+            }
+        }
+        if let Some(next_id) = maybe_next_id {
+            if let Some(ref mut next) = self.nodes[next_id] {
+                next.prev = maybe_prev_id;
+            } else {
+                panic!("rrtk System invariant violated");
+            }
         }
     }
 }
