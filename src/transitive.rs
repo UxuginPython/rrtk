@@ -57,4 +57,23 @@ impl<const N: usize> System<N> {
         }
         node_id
     }
+    pub const fn connect(&mut self, node_a_id: NodeID, node_b_id: NodeID) {
+        if !(node_a_id.system == self.system_id && node_b_id.system == self.system_id) {
+            panic!("rrtk System does not contain provided node");
+        }
+        let node_a_id = node_a_id.node;
+        let node_b_id = node_b_id.node;
+        let a_end_id = self.end(node_a_id);
+        let b_beginning_id = self.beginning(node_b_id);
+        if let Some(ref mut a_end) = self.nodes[a_end_id] {
+            a_end.next = Some(b_beginning_id);
+        } else {
+            panic!("rrtk System invariant violated");
+        }
+        if let Some(ref mut b_beginning) = self.nodes[b_beginning_id] {
+            b_beginning.prev = Some(a_end_id);
+        } else {
+            panic!("rrtk System invariant violated");
+        }
+    }
 }
