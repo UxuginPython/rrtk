@@ -206,4 +206,11 @@ impl<const N: usize> Iterator for ConnectedIterator<'_, N> {
             ConnectedIteratorState::Done => None,
         }
     }
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        if !matches!(self.state, ConnectedIteratorState::Done) {
+            (1, None)
+        } else {
+            (0, Some(0))
+        }
+    }
 }
