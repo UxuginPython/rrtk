@@ -86,15 +86,17 @@ impl<const N: usize> System<N> {
             panic!("rrtk System invariant violated");
         }
     }
-    ///Use this in calculations (as opposed to get_state_local or get_state_true).
-    pub fn get_state_connected(&self, node_id: NodeID) -> Option<AngularState> {
-        let node_id = self.assert_contains(node_id);
+    //TODO: Decide about #[inline] for this, get_state_connected, and get_state_true.
+    fn get_average_state_over_iterator<I: Iterator<Item = LocalNodeID>>(
+        &self,
+        iterator: I,
+    ) -> Option<AngularState> {
         let mut contributing = 0u16;
         let mut state = AngularState::ZERO;
-        for connected_id in self.iter_connected(node_id) {
-            if let Some(connected_node) = &self.nodes[connected_id] {
-                if let Some(connected_state_local) = connected_node.state_local {
-                    state += connected_state_local;
+        for node_id in iterator {
+            if let Some(node) = &self.nodes[node_id] {
+                if let Some(state_local) = node.state_local {
+                    state += state_local;
                     contributing += 1;
                 }
             } else {
@@ -107,29 +109,17 @@ impl<const N: usize> System<N> {
             None
         }
     }
+    ///Use this in calculations (as opposed to get_state_local or get_state_true).
+    pub fn get_state_connected(&self, node_id: NodeID) -> Option<AngularState> {
+        let node_id = self.assert_contains(node_id);
+        self.get_average_state_over_iterator(self.iter_connected(node_id))
+    }
     pub fn get_state_true(&self, node_id: NodeID) -> Option<AngularState> {
         let node_id = self.assert_contains(node_id);
-        let mut contributing = 0u16;
-        let mut state = AngularState::ZERO;
-        //This function is exactly identical to get_state_connected except for the following 4 lines.
-        for connected_id in self
-            .iter_connected(node_id)
-            .chain(core::iter::once(node_id))
-        {
-            if let Some(connected_node) = &self.nodes[connected_id] {
-                if let Some(connected_state_local) = connected_node.state_local {
-                    state += connected_state_local;
-                    contributing += 1;
-                }
-            } else {
-                panic!("rrtk System invariant violated");
-            }
-        }
-        if contributing >= 1 {
-            Some(state / Dimensionless::new(contributing as f32))
-        } else {
-            None
-        }
+        self.get_average_state_over_iterator(
+            self.iter_connected(node_id)
+                .chain(core::iter::once(node_id)),
+        )
     }
     pub const fn new_node(&mut self) -> Option<NodeID> {
         const_for!(for i in (0, N) => {
