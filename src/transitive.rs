@@ -92,6 +92,10 @@ impl<const N: usize> System<N> {
         }
         node_id
     }
+    #[inline]
+    fn iter_connected(&self, node_id: LocalNodeID) -> ConnectedIterator<'_, N> {
+        ConnectedIterator::new(self, node_id)
+    }
     pub const fn connect(&mut self, node_a_id: NodeID, node_b_id: NodeID) {
         if !(node_a_id.system == self.system_id && node_b_id.system == self.system_id) {
             panic!("rrtk System does not contain provided node");
@@ -136,6 +140,70 @@ impl<const N: usize> System<N> {
             } else {
                 panic!("rrtk System invariant violated");
             }
+        }
+    }
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[repr(u8)]
+enum ConnectedIteratorState {
+    Forward,
+    Backward,
+    Done,
+}
+struct ConnectedIterator<'a, const N: usize> {
+    system: &'a System<N>,
+    head_node: LocalNodeID,
+    node_to_return: LocalNodeID,
+    state: ConnectedIteratorState,
+}
+impl<'a, const N: usize> ConnectedIterator<'a, N> {
+    fn new(system: &'a System<N>, node: LocalNodeID) -> Self {
+        //We set node_to_return to the head node and then skip it.
+        let mut new_self = Self {
+            system,
+            head_node: node,
+            node_to_return: node,
+            state: ConnectedIteratorState::Forward,
+        };
+        new_self.next();
+        new_self
+    }
+}
+impl<const N: usize> Iterator for ConnectedIterator<'_, N> {
+    type Item = LocalNodeID;
+    fn next(&mut self) -> Option<LocalNodeID> {
+        match self.state {
+            ConnectedIteratorState::Forward => {
+                let to_return = self.node_to_return;
+                if let Some(to_return_node) = &self.system.nodes[to_return] {
+                    if let Some(next_to_return) = to_return_node.next {
+                        self.node_to_return = next_to_return;
+                    } else {
+                        //Basically the same thing as in the constructor. Set it to go backward,
+                        //set node_to_return to the head node, and then skip it.
+                        self.state = ConnectedIteratorState::Backward;
+                        self.node_to_return = self.head_node;
+                        self.next();
+                    }
+                } else {
+                    panic!("rrtk System invariant violated");
+                }
+                Some(to_return)
+            }
+            ConnectedIteratorState::Backward => {
+                let to_return = self.node_to_return;
+                if let Some(to_return_node) = &self.system.nodes[to_return] {
+                    if let Some(next_to_return) = to_return_node.prev {
+                        self.node_to_return = next_to_return;
+                    } else {
+                        self.state = ConnectedIteratorState::Done;
+                    }
+                } else {
+                    panic!("rrtk System invariant violated");
+                }
+                Some(to_return)
+            }
+            ConnectedIteratorState::Done => None,
         }
     }
 }
