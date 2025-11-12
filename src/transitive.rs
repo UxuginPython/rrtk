@@ -3,6 +3,7 @@ use super::*;
 type SystemID = u16;
 type LocalNodeID = usize;
 static mut NEXT_SYSTEM_ID: SystemID = 0;
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct NodeID {
     system: SystemID,
     node: LocalNodeID,
@@ -56,6 +57,17 @@ impl<const N: usize> System<N> {
             nodes: [const { None }; N],
         }
     }
+    #[inline]
+    pub const fn contains(&self, node_id: NodeID) -> bool {
+        self.system_id == node_id.system
+    }
+    #[inline]
+    pub const fn assert_contains(&self, node_id: NodeID) {
+        assert!(
+            self.contains(node_id),
+            "rrtk System does not contain provided node"
+        );
+    }
     pub const fn new_node(&mut self) -> Option<NodeID> {
         const_for!(for i in (0, N) => {
             if self.nodes[i].is_none() {
@@ -100,9 +112,8 @@ impl<const N: usize> System<N> {
         ConnectedIterator::new(self, node_id)
     }
     pub const fn connect(&mut self, node_a_id: NodeID, node_b_id: NodeID) {
-        if !(node_a_id.system == self.system_id && node_b_id.system == self.system_id) {
-            panic!("rrtk System does not contain provided node");
-        }
+        self.assert_contains(node_a_id);
+        self.assert_contains(node_b_id);
         let node_a_id = node_a_id.node;
         let node_b_id = node_b_id.node;
         let a_end_id = self.end(node_a_id);
@@ -119,9 +130,7 @@ impl<const N: usize> System<N> {
         }
     }
     pub const fn disconnect(&mut self, node_id: NodeID) {
-        if node_id.system != self.system_id {
-            panic!("rrtk System does not contain provided node");
-        }
+        self.assert_contains(node_id);
         let node_id = node_id.node;
         let (maybe_prev_id, maybe_next_id);
         if let Some(node) = &self.nodes[node_id] {
