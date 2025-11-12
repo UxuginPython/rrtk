@@ -1,4 +1,5 @@
 #![allow(missing_docs)]
+use super::*;
 type SystemID = u16;
 type LocalNodeID = usize;
 static mut NEXT_SYSTEM_ID: SystemID = 0;
@@ -16,12 +17,14 @@ impl NodeID {
 struct Node {
     prev: Option<LocalNodeID>,
     next: Option<LocalNodeID>,
+    state_local: Option<AngularState>,
 }
 impl Node {
     pub const fn new() -> Self {
         Self {
             prev: None,
             next: None,
+            state_local: None,
         }
     }
 }
