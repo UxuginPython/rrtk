@@ -69,6 +69,68 @@ impl<const N: usize> System<N> {
         );
         node_id.node
     }
+    pub const fn get_state_local(&self, node_id: NodeID) -> Option<AngularState> {
+        let node_id = self.assert_contains(node_id);
+        if let Some(node) = &self.nodes[node_id] {
+            node.state_local
+        } else {
+            //TODO: Should this have a more specific panic message?
+            panic!("rrtk System invariant violated");
+        }
+    }
+    pub const fn set_state_local(&mut self, node_id: NodeID, state: Option<AngularState>) {
+        let node_id = self.assert_contains(node_id);
+        if let Some(ref mut node) = self.nodes[node_id] {
+            node.state_local = state;
+        } else {
+            panic!("rrtk System invariant violated");
+        }
+    }
+    ///Use this in calculations (as opposed to get_state_local or get_state_true).
+    pub fn get_state_connected(&self, node_id: NodeID) -> Option<AngularState> {
+        let node_id = self.assert_contains(node_id);
+        let mut contributing = 0u16;
+        let mut state = AngularState::ZERO;
+        for connected_id in self.iter_connected(node_id) {
+            if let Some(connected_node) = &self.nodes[connected_id] {
+                if let Some(connected_state_local) = connected_node.state_local {
+                    state += connected_state_local;
+                    contributing += 1;
+                }
+            } else {
+                panic!("rrtk System invariant violated");
+            }
+        }
+        if contributing >= 1 {
+            Some(state / Dimensionless::new(contributing as f32))
+        } else {
+            None
+        }
+    }
+    pub fn get_state_true(&self, node_id: NodeID) -> Option<AngularState> {
+        let node_id = self.assert_contains(node_id);
+        let mut contributing = 0u16;
+        let mut state = AngularState::ZERO;
+        //This function is exactly identical to get_state_connected except for the following 4 lines.
+        for connected_id in self
+            .iter_connected(node_id)
+            .chain(core::iter::once(node_id))
+        {
+            if let Some(connected_node) = &self.nodes[connected_id] {
+                if let Some(connected_state_local) = connected_node.state_local {
+                    state += connected_state_local;
+                    contributing += 1;
+                }
+            } else {
+                panic!("rrtk System invariant violated");
+            }
+        }
+        if contributing >= 1 {
+            Some(state / Dimensionless::new(contributing as f32))
+        } else {
+            None
+        }
+    }
     pub const fn new_node(&mut self) -> Option<NodeID> {
         const_for!(for i in (0, N) => {
             if self.nodes[i].is_none() {
@@ -160,6 +222,7 @@ enum ConnectedIteratorState {
     Backward,
     Done,
 }
+///This iterator intentionally excludes the head node.
 struct ConnectedIterator<'a, const N: usize> {
     system: &'a System<N>,
     head_node: LocalNodeID,
