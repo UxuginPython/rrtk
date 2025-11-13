@@ -269,3 +269,25 @@ impl<const N: usize> Iterator for ConnectedIterator<'_, N> {
         }
     }
 }
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn connected_iterator() {
+        let mut system = System::<6>::new();
+        let [n0, n1, n2, n3, n4, n5] = [
+            system.new_node().unwrap(),
+            system.new_node().unwrap(),
+            system.new_node().unwrap(),
+            system.new_node().unwrap(),
+            system.new_node().unwrap(),
+            system.new_node().unwrap(),
+        ];
+        system.connect(n1, n3);
+        system.connect(n4, n3);
+        let mut iter = system.iter_connected(3);
+        assert_eq!(iter.next(), Some(1));
+        assert_eq!(iter.next(), Some(4));
+        assert_eq!(iter.next(), None);
+    }
+}
