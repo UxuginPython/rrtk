@@ -332,9 +332,9 @@ mod tests {
         assert_eq!(
             system.get_state_connected(n3),
             Some(AngularState::new(
-                Dimensionless::new(6.0),
-                InverseSecond::new(5.0),
-                InverseSecondSquared::new(2.0)
+                Dimensionless::new(6.0),        // (3 + 9) / 2
+                InverseSecond::new(5.0),        // (9 + 1) / 2
+                InverseSecondSquared::new(2.0)  // (1 + 3) / 2
             ))
         );
     }
