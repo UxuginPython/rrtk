@@ -271,6 +271,7 @@ impl<const N: usize> Iterator for ConnectedIterator<'_, N> {
 }
 #[cfg(test)]
 mod tests {
+    #![allow(unused)]
     use super::*;
     #[test]
     fn connected_iterator() {
@@ -289,5 +290,52 @@ mod tests {
         assert_eq!(iter.next(), Some(1));
         assert_eq!(iter.next(), Some(4));
         assert_eq!(iter.next(), None);
+    }
+    #[test]
+    fn state_connected() {
+        let mut system = System::<6>::new();
+        let [n0, n1, n2, n3, n4, n5] = [
+            system.new_node().unwrap(),
+            system.new_node().unwrap(),
+            system.new_node().unwrap(),
+            system.new_node().unwrap(),
+            system.new_node().unwrap(),
+            system.new_node().unwrap(),
+        ];
+        system.connect(n1, n3);
+        system.connect(n3, n2);
+        system.connect(n4, n1);
+        system.set_state_local(
+            n2,
+            Some(AngularState::new(
+                Dimensionless::new(3.0),
+                InverseSecond::new(9.0),
+                InverseSecondSquared::new(1.0),
+            )),
+        );
+        system.set_state_local(
+            n3,
+            Some(AngularState::new(
+                Dimensionless::new(3.0),
+                InverseSecond::new(1.0),
+                InverseSecondSquared::new(3.0),
+            )),
+        );
+        system.set_state_local(
+            n4,
+            Some(AngularState::new(
+                Dimensionless::new(9.0),
+                InverseSecond::new(1.0),
+                InverseSecondSquared::new(3.0),
+            )),
+        );
+        assert_eq!(
+            system.get_state_connected(n3),
+            Some(AngularState::new(
+                Dimensionless::new(6.0),
+                InverseSecond::new(5.0),
+                InverseSecondSquared::new(2.0)
+            ))
+        );
     }
 }
