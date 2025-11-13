@@ -42,7 +42,7 @@ impl<const N: usize> System<N> {
             NEXT_SYSTEM_ID += 1;
         }
         Self {
-            system_id: system_id,
+            system_id,
             nodes: [const { None }; N],
         }
     }
