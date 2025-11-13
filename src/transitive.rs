@@ -51,7 +51,7 @@ impl<const N: usize> System<N> {
         self.system_id == node_id.system
     }
     #[inline]
-    pub const fn assert_contains(&self, node_id: NodeID) -> LocalNodeID {
+    const fn assert_contains(&self, node_id: NodeID) -> LocalNodeID {
         assert!(
             self.contains(node_id),
             "rrtk System does not contain provided node"
