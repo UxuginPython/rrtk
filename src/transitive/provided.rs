@@ -81,3 +81,28 @@ impl DeviceUpdatable for Differential {
         );
     }
 }
+pub struct GearTrain {
+    node_a: NodeID,
+    node_b: NodeID,
+    ratio: Dimensionless<f32>,
+}
+impl DeviceUpdatable for GearTrain {
+    fn device_update<const N: usize>(&mut self, system: &mut System<N>) {
+        system.set_state_local(
+            self.node_b,
+            if let Some(a_state) = system.get_state_connected(self.node_a) {
+                Some(a_state * self.ratio)
+            } else {
+                None
+            },
+        );
+        system.set_state_local(
+            self.node_a,
+            if let Some(b_state) = system.get_state_connected(self.node_b) {
+                Some(b_state / self.ratio)
+            } else {
+                None
+            },
+        );
+    }
+}
