@@ -1,5 +1,6 @@
 #![allow(missing_docs)]
 use super::*;
+pub mod provided;
 type SystemID = u16;
 type LocalNodeID = usize;
 static mut NEXT_SYSTEM_ID: SystemID = 0;
@@ -268,6 +269,9 @@ impl<const N: usize> Iterator for ConnectedIterator<'_, N> {
             (0, Some(0))
         }
     }
+}
+pub trait DeviceUpdatable {
+    fn device_update<const N: usize>(&mut self, system: &mut System<N>);
 }
 #[cfg(test)]
 mod tests {

@@ -1,0 +1,83 @@
+use super::*;
+pub struct Coupling {
+    coupled: bool,
+    node_a: NodeID,
+    node_b: NodeID,
+}
+impl Coupling {
+    #[inline]
+    pub const fn new(node_a: NodeID, node_b: NodeID) -> Self {
+        Self {
+            coupled: false,
+            node_a,
+            node_b,
+        }
+    }
+    #[inline]
+    pub const fn set_coupled(&mut self, value: bool) {
+        self.coupled = value;
+    }
+}
+impl DeviceUpdatable for Coupling {
+    fn device_update<const N: usize>(&mut self, system: &mut System<N>) {
+        if self.coupled {
+            system.set_state_local(self.node_a, system.get_state_connected(self.node_b));
+            system.set_state_local(self.node_b, system.get_state_connected(self.node_a));
+        } else {
+            system.set_state_local(self.node_a, None);
+            system.set_state_local(self.node_b, None);
+        }
+    }
+}
+pub struct Differential {
+    node_left: NodeID,
+    node_right: NodeID,
+    node_sum: NodeID,
+}
+impl Differential {
+    #[inline]
+    pub const fn new(node_left: NodeID, node_right: NodeID, node_sum: NodeID) -> Self {
+        Self {
+            node_left,
+            node_right,
+            node_sum,
+        }
+    }
+}
+impl DeviceUpdatable for Differential {
+    fn device_update<const N: usize>(&mut self, system: &mut System<N>) {
+        let state_left = system.get_state_connected(self.node_left);
+        let state_right = system.get_state_connected(self.node_right);
+        let state_sum = system.get_state_connected(self.node_sum);
+        system.set_state_local(
+            self.node_sum,
+            if let Some(state_left) = state_left
+                && let Some(state_right) = state_right
+            {
+                Some(state_left + state_right)
+            } else {
+                None
+            },
+        );
+        system.set_state_local(
+            self.node_right,
+            if let Some(state_left) = state_left
+                && let Some(state_sum) = state_sum
+            {
+                Some(state_sum - state_left)
+            } else {
+                None
+            },
+        );
+        system.set_state_local(
+            self.node_left,
+            if let Some(state_right) = state_right
+                && let Some(state_sum) = state_sum
+            {
+                Some(state_sum - state_right)
+            } else {
+                None
+            },
+        );
+    }
+}
