@@ -1,4 +1,6 @@
 use super::*;
+///Device that either connects two axles or allows them to move independently depending on how it
+///is set.
 pub struct Clutch {
     connected: bool,
     node_a: NodeID,
@@ -29,6 +31,10 @@ impl DeviceUpdatable for Clutch {
         }
     }
 }
+///Device that enforces that the position, velocity, and acceleration of the sum node will equal
+///the sum of the left and right nodes. In other works,
+///X<sub>sum</sub>=X<sub>left</sub>+X<sub>right</sub> where X<sub>sum</sub>, X<sub>left</sub>, and
+///X<sub>right</sub> are the state vectors of their respective nodes.
 pub struct Differential {
     node_left: NodeID,
     node_right: NodeID,
@@ -81,12 +87,19 @@ impl DeviceUpdatable for Differential {
         );
     }
 }
+///Device that enforces that two nodes' positions, velocities, and accelerations are related by a
+///constant ratio.
 pub struct GearTrain {
     node_a: NodeID,
     node_b: NodeID,
     ratio: Dimensionless<f32>,
 }
 impl GearTrain {
+    ///Constructor. The device will enforce that node A's position, velocity, and acceleration
+    ///multiplied by the ratio will equal the respective value of node B.
+    ///In other works, rX<sub>a</sub>=X<sub>b</sub> where r=`ratio` and X<sub>a</sub> and
+    ///X<sub>b</sub> are the state vectors of their respective nodes. Use a negative value for
+    ///`ratio` if the states should be inverted relative to eachother.
     #[inline]
     pub const fn new(node_a: NodeID, node_b: NodeID, ratio: Dimensionless<f32>) -> Self {
         Self {
@@ -95,11 +108,17 @@ impl GearTrain {
             ratio,
         }
     }
+    ///Constructor that calculates the gear ratio from the numbers of teeth on the first and last
+    ///gears. If there is an even number of gears, the states will be inverted relative to
+    ///eachother.
     pub const fn from_teeth<const N: usize>(
         node_a: NodeID,
         node_b: NodeID,
         teeth: [f32; N],
     ) -> Self {
+        if N < 2 {
+            panic!("At least 2 gears are required to construct an RRTK GearTrain.");
+        }
         let ratio = teeth[0] / teeth[N - 1];
         let direction = if N % 2 == 0 { -1.0 } else { 1.0 };
         Self::new(node_a, node_b, Dimensionless::new(ratio * direction))
