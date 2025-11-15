@@ -23,7 +23,6 @@ micromath = { version = "2.1.0", default-features = false, optional = true }
 alloc = []
 std = ["alloc", "internal_enhanced_float"]
 devices = []
-new_devices = []
 libm = ["dep:libm", "internal_enhanced_float"]
 micromath = ["dep:micromath", "internal_enhanced_float"]
 internal_enhanced_float = []

@@ -53,12 +53,9 @@ pub mod dimensions;
 mod enhanced_float;
 pub use dimensions::*;
 mod motion_profile;
-#[cfg(feature = "new_devices")]
-pub mod new_devices;
 mod state;
 pub mod streams;
 pub mod stulta;
-pub mod transitive;
 mod vec_array;
 pub use command::*;
 pub use datum::*;
