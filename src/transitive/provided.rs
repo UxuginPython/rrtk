@@ -86,6 +86,16 @@ pub struct GearTrain {
     node_b: NodeID,
     ratio: Dimensionless<f32>,
 }
+impl GearTrain {
+    #[inline]
+    pub const fn new(node_a: NodeID, node_b: NodeID, ratio: Dimensionless<f32>) -> Self {
+        Self {
+            node_a,
+            node_b,
+            ratio,
+        }
+    }
+}
 impl DeviceUpdatable for GearTrain {
     fn device_update<const N: usize>(&mut self, system: &mut System<N>) {
         system.set_state_local(
