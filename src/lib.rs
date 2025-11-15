@@ -8,8 +8,6 @@
 //!- `alloc` - Enable items requiring dynamic allocation through Rust's builtin `alloc` crate.
 //!- `std` - Enable items requiring the Rust standard library. Requires `alloc` feature. Enabled by default.
 //!- `devices` - Enable RRTK's graph-based device system.
-//!- `new_devices` - Enable the experimental new device system. In a future version, the old device
-//!system will be removed and this feature will be renamed `devices`.
 //!- `libm` - Use [`libm`](https://crates.io/crates/libm) for float exponentiation when `std` is not available.
 //!- `micromath` - Use [`micromath`](https://crates.io/crates/micromath) for float exponentiation
 //!  when `std` and `libm` are unavailable.
