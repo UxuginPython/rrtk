@@ -1,335 +1,345 @@
-// SPDX-License-Identifier: BSD-3-Clause
-// Copyright 2024-2025 UxuginPython
-//!An experimental replacement for the previous device system (in the `devices` module). This
-//!system uses a single struct for each group of devices to store the states at different
-//!locations.
-//TODO: review this documentation and see if there's anything else you need to say
+#![allow(missing_docs)]
 use super::*;
-use core::mem::MaybeUninit;
-//There is a crate that does this, but the implementation is so simple that it is preferable to
-//avoid the external dependency.
-macro_rules! const_for {
-    ($i: ident, $min: expr, $max: expr, $code: tt) => {
-        let mut $i = $min;
-        while $i < $max {
-            $code
-            $i += 1;
-        }
-    }
-}
-///A global identifier of a terminal, which is a place where two mechanical devices connect.
+pub mod provided;
+type SystemID = u16;
+type LocalNodeID = usize;
+static mut NEXT_SYSTEM_ID: SystemID = 0;
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct TerminalID {
-    system: u8,
-    terminal: usize,
+pub struct NodeID {
+    system: SystemID,
+    node: LocalNodeID,
 }
-struct IIdentifyAsAVec<T, const N: usize> {
-    inner: [MaybeUninit<T>; N],
-    length: usize,
-}
-impl<T: Copy, const N: usize> IIdentifyAsAVec<T, N> {
+impl NodeID {
+    //This is intentionally not pub.
     #[inline]
-    const fn new() -> Self {
+    const fn new(system: SystemID, node: LocalNodeID) -> Self {
+        Self { system, node }
+    }
+}
+struct Node {
+    prev: Option<LocalNodeID>,
+    next: Option<LocalNodeID>,
+    state_local: Option<AngularState>,
+}
+impl Node {
+    pub const fn new() -> Self {
         Self {
-            inner: [MaybeUninit::uninit(); N],
-            length: 0,
-        }
-    }
-    #[inline]
-    const fn push(&mut self, id: T) {
-        if self.length >= N {
-            panic!("You overflowed an IIdentifyAsAVec.");
-        }
-        self.inner[self.length].write(id);
-        self.length += 1;
-    }
-    #[inline]
-    const fn get(&self, index: usize) -> T {
-        if index >= self.length {
-            panic!("This index is out of range.");
-        }
-        unsafe { self.inner[index].assume_init() }
-    }
-    #[allow(unused)]
-    #[inline]
-    const fn pop(&mut self) -> T {
-        if self.length == 0 {
-            panic!("You tried to pop from an empty IIdentifyAsAVec.");
-        }
-        let output = unsafe { self.inner[self.length - 1].assume_init() };
-        self.length -= 1;
-        output
-    }
-    #[inline]
-    const fn as_array(&self) -> [T; N] {
-        if self.length != N {
-            panic!("You tried to convert a non-full IIdentifyAsAVec to an array.");
-        }
-        //core::mem::transmute doesn't work well with const generics, so this does the same thing
-        //through pointers instead. This should be changed to use the transpose method if it's ever
-        //stabilized.
-        unsafe { self.inner.as_ptr().cast::<[T; N]>().read() }
-    }
-    #[inline]
-    const fn len(&self) -> usize {
-        self.length
-    }
-}
-impl<const N: usize> IIdentifyAsAVec<TerminalID, N> {
-    ///Although this takes `&self` because it's not technically necessary to consume `self`, it is
-    ///strongly recommended that you drop all uninitialized `TerminalID`s. They are useless and
-    ///weird stuff might happen if you try to use them since the same ID may be reused.
-    const fn release_all<const Q: usize>(&self, system: &mut System<Q>) {
-        const_for!(i, 0, self.length, {
-            system.release_terminal(self.get(i));
-        });
-    }
-}
-#[derive(Clone, Copy, PartialEq)]
-struct Terminal {
-    measurement: Option<Datum<AngularState>>,
-    root: Option<usize>,
-}
-impl Terminal {
-    const fn new() -> Self {
-        Self {
-            measurement: None,
-            root: None,
+            prev: None,
+            next: None,
+            state_local: None,
         }
     }
 }
-static mut NEXT_SYSTEM_ID: u8 = 0;
-///A collection of terminals used by a set of mechanical devices. `N` is the number of terminals
-///the `System` can hold.
 pub struct System<const N: usize> {
-    terminals: [Option<Terminal>; N],
-    global_id: u8,
+    system_id: SystemID,
+    nodes: [Option<Node>; N],
 }
 impl<const N: usize> System<N> {
-    ///Constructor for `System`.
+    #[inline]
     pub const fn new() -> Self {
-        let id = unsafe { NEXT_SYSTEM_ID };
+        let system_id;
         unsafe {
+            system_id = NEXT_SYSTEM_ID;
             NEXT_SYSTEM_ID += 1;
         }
         Self {
-            terminals: [None; N],
-            global_id: id,
+            system_id,
+            nodes: [const { None }; N],
         }
     }
-    ///Get the ID of a terminal not connected to anything if one is available.
-    pub const fn initialize_terminal(&mut self) -> Option<TerminalID> {
-        const_for!(i, 0, N, {
-            if self.terminals[i].is_none() {
-                self.terminals[i] = Some(Terminal::new());
-                return Some(TerminalID {
-                    system: self.global_id,
-                    terminal: i,
-                });
+    #[inline]
+    pub const fn contains(&self, node_id: NodeID) -> bool {
+        self.system_id == node_id.system
+    }
+    #[inline]
+    const fn assert_contains(&self, node_id: NodeID) -> LocalNodeID {
+        assert!(
+            self.contains(node_id),
+            "rrtk System does not contain provided node"
+        );
+        node_id.node
+    }
+    pub const fn get_state_local(&self, node_id: NodeID) -> Option<AngularState> {
+        let node_id = self.assert_contains(node_id);
+        if let Some(node) = &self.nodes[node_id] {
+            node.state_local
+        } else {
+            //TODO: Should this have a more specific panic message?
+            panic!("rrtk System invariant violated");
+        }
+    }
+    pub const fn set_state_local(&mut self, node_id: NodeID, state: Option<AngularState>) {
+        let node_id = self.assert_contains(node_id);
+        if let Some(ref mut node) = self.nodes[node_id] {
+            node.state_local = state;
+        } else {
+            panic!("rrtk System invariant violated");
+        }
+    }
+    //TODO: Decide about #[inline] for this, get_state_connected, and get_state_true.
+    fn get_average_state_over_iterator<I: Iterator<Item = LocalNodeID>>(
+        &self,
+        iterator: I,
+    ) -> Option<AngularState> {
+        let mut contributing = 0u16;
+        let mut state = AngularState::ZERO;
+        for node_id in iterator {
+            if let Some(node) = &self.nodes[node_id] {
+                if let Some(state_local) = node.state_local {
+                    state += state_local;
+                    contributing += 1;
+                }
+            } else {
+                panic!("rrtk System invariant violated");
             }
-        });
+        }
+        if contributing >= 1 {
+            Some(state / Dimensionless::new(contributing as f32))
+        } else {
+            None
+        }
+    }
+    ///Use this in calculations (as opposed to get_state_local or get_state_true).
+    pub fn get_state_connected(&self, node_id: NodeID) -> Option<AngularState> {
+        let node_id = self.assert_contains(node_id);
+        self.get_average_state_over_iterator(self.iter_connected(node_id))
+    }
+    pub fn get_state_true(&self, node_id: NodeID) -> Option<AngularState> {
+        let node_id = self.assert_contains(node_id);
+        self.get_average_state_over_iterator(
+            self.iter_connected(node_id)
+                .chain(core::iter::once(node_id)),
+        )
+    }
+    pub const fn new_node(&mut self) -> Option<NodeID> {
+        //A for loop over 0..N that works in a const context.
+        let mut i = 0usize;
+        while i < N {
+            if self.nodes[i].is_none() {
+                self.nodes[i] = Some(Node::new());
+                return Some(NodeID::new(self.system_id, i));
+            }
+            i += 1;
+        }
         None
     }
-    ///Check if a terminal is a part of this system.
-    #[inline]
-    pub const fn has(&self, id: TerminalID) -> bool {
-        self.global_id == id.system
-    }
-    #[inline]
-    const fn verify_terminal_id(&self, id: TerminalID) {
-        assert!(self.has(id), "This terminal is not a part of this system.");
-    }
-    #[inline]
-    const fn get_root(&self, index: usize) -> usize {
-        if let Some(root) = self.terminals[index].unwrap().root {
-            //This checks that:
-            //1. the root terminal is initialized (unwrap()), and
-            //2. it itself does not have a root (asserting is_none()).
-            //Root terminals should never have roots themselves.
-            debug_assert!(self.terminals[root].unwrap().root.is_none());
-            root
-        } else {
-            index
-        }
-    }
-    //XXX: Should this just take the index rather than a TerminalID?
-    const fn get_connected(&self, id: TerminalID) -> IIdentifyAsAVec<usize, N> {
-        let root = self.get_root(id.terminal);
-        let mut output = IIdentifyAsAVec::new();
-        output.push(root);
-        const_for!(i, 0, N, {
-            if let Some(terminal) = self.terminals[i]
-                && let Some(rooot) = terminal.root
-                && root == rooot
-            {
-                output.push(i);
-            }
-        });
-        output
-    }
-    ///Disconnect a terminal from every other terminal and allow it to be claimed again by
-    ///[`initialize_terminal`](Self::initialize_terminal).
-    pub const fn release_terminal(&mut self, id: TerminalID) {
-        self.verify_terminal_id(id);
-        if self.terminals[id.terminal]
-            //XXX: Should this really panic or just return? (I made it panic initially just for
-            //convenience. The MaybeTerminal version did not.)
-            .expect("You tried to release an already released terminal.")
-            .root
-            .is_none()
-        {
-            let connected = self.get_connected(id);
-            let new_root = connected.get(1);
-            self.terminals[new_root].unwrap().root = None;
-            const_for!(i, 2, connected.len(), {
-                //XXX: I found this as Some(i), but that feels really wrong.
-                self.terminals[connected.get(i)].unwrap().root = Some(new_root);
-            });
-        }
-        self.terminals[id.terminal] = None;
-    }
-    ///Connect two terminals together.
-    pub const fn connect_terminals(&mut self, id_a: TerminalID, id_b: TerminalID) {
-        self.verify_terminal_id(id_a);
-        self.verify_terminal_id(id_b);
-        let a_connected = self.get_connected(id_a);
-        let b_connected = self.get_connected(id_b);
-        let a_root = a_connected.get(0);
-        let b_root = b_connected.get(0);
-        if a_root > b_root {
-            const_for!(i, 0, a_connected.len(), {
-                self.terminals[a_connected.get(i)].unwrap().root = Some(b_root);
-            });
-        } else {
-            const_for!(i, 0, b_connected.len(), {
-                self.terminals[b_connected.get(i)].unwrap().root = Some(a_root);
-            });
-        }
-    }
-    ///Get the current [`AngularState`] of a terminal if it is known along with a timestamp.
-    pub const fn get_terminal_state(&self, id: TerminalID) -> Option<Datum<AngularState>> {
-        self.verify_terminal_id(id);
-        let connected = self.get_connected(id);
-        let mut state = Datum::new(Time::ZERO, AngularState::ZERO);
-        let mut contributing = 0u8;
-        const_for!(i, 0, connected.len(), {
-            if let Some(addend_state) = self.terminals[connected.get(i)].unwrap().measurement {
-                //This entire statement is the const equivalent of `state += addend_state`.
-                state = Datum::new(
-                    Time::from_nanoseconds(
-                        if state.time.as_nanoseconds() > addend_state.time.as_nanoseconds() {
-                            state.time.as_nanoseconds()
-                        } else {
-                            addend_state.time.as_nanoseconds()
-                        },
-                    ),
-                    state.value.add_const(addend_state.value),
-                );
-                contributing += 1;
-            }
-        });
-        let contributing_f32 = contributing as f32;
-        //This entire statement is the const equivalent of
-        //`state /= Dimensionless::new(contributing_f32)`
-        state = Datum::new(
-            state.time,
-            AngularState::new(
-                Dimensionless::new(state.value.position.2 / contributing_f32),
-                InverseSecond::new(state.value.velocity.2 / contributing_f32),
-                InverseSecondSquared::new(state.value.acceleration.2 / contributing_f32),
-            ),
-        );
-        if contributing >= 1 { Some(state) } else { None }
-    }
-    ///Set the current state of a terminal including a timestamp.
-    pub const fn set_terminal_state(&mut self, id: TerminalID, state: Datum<AngularState>) {
-        self.verify_terminal_id(id);
-        //unwrap does not work with mutating.
-        if let Some(ref mut terminal) = self.terminals[id.terminal] {
-            terminal.measurement = Some(state);
-        } else {
-            panic!();
-        }
-        self.terminals[id.terminal].unwrap().measurement = Some(state);
-    }
-    ///Returns an iterator returning uninitialized terminals until there are none remaining.
-    pub const fn iter(&mut self) -> SystemIter<'_, N> {
-        SystemIter {
-            //self is an &mut reference.
-            system: self,
-        }
-    }
-    ///Returns `Some` if and only if all `Q` terminals were successfully initialized.
-    pub const fn initialize_multiple_terminals<const Q: usize>(
-        &mut self,
-    ) -> Option<[TerminalID; Q]> {
-        let mut ids = IIdentifyAsAVec::<TerminalID, Q>::new();
-        const_for!(i, 0, Q, {
-            if let Some(id) = self.initialize_terminal() {
-                ids.push(id);
+    const fn beginning(&self, node_id: LocalNodeID) -> LocalNodeID {
+        let mut node_id = node_id;
+        loop {
+            if let Some(node) = &self.nodes[node_id] {
+                if let Some(prev_id) = node.prev {
+                    node_id = prev_id;
+                } else {
+                    break;
+                }
             } else {
-                ids.release_all(self);
-                return None;
+                panic!("rrtk System invariant violated");
             }
-        });
-        Some(ids.as_array())
-    }
-}
-///Iterator returning uninitialized from a [`System`] terminals until there are none remaining.
-///Constructed with [`System::iter`].
-pub struct SystemIter<'a, const N: usize> {
-    system: &'a mut System<N>,
-}
-impl<const N: usize> Iterator for SystemIter<'_, N> {
-    type Item = TerminalID;
-    fn next(&mut self) -> Option<TerminalID> {
-        self.system.initialize_terminal()
-    }
-}
-///This is a replacement for the [`Updatable`] trait that can be used by devices in a system. Since
-///devices typically need mutable access to their system when updating, this provides that access.
-pub trait DeviceUpdatable<E> {
-    ///Update the device. After this method is called, the terminals' states should be mechanically
-    ///valid, e.g., geared terminals maintain their ratio.
-    fn update_device<const N: usize>(&mut self, system: &mut System<N>) -> NothingOrError<E>;
-}
-///This is a very basic proof of concept. Do not actually use it yet. All devices from the old
-///system will be migrated before the stable release.
-pub struct Differential {
-    ///The terminal of one side of the differential.
-    pub side_a: TerminalID,
-    ///The terminal of the other side of the differential.
-    pub side_b: TerminalID,
-    ///The terminal of the side of the differential which adds the states of the two other sides.
-    pub sum_side: TerminalID,
-}
-impl Differential {
-    ///Constructor for `Differential`.
-    pub const fn new<const N: usize>(system: &mut System<N>) -> Option<Self> {
-        let terminals = if let Some(terminals) = system.initialize_multiple_terminals::<3>() {
-            terminals
-        } else {
-            return None;
-        };
-        let [side_a, side_b, sum_side] = terminals;
-        Some(Self {
-            side_a,
-            side_b,
-            sum_side,
-        })
-    }
-}
-impl DeviceUpdatable<core::convert::Infallible> for Differential {
-    fn update_device<const N: usize>(
-        &mut self,
-        system: &mut System<N>,
-    ) -> NothingOrError<core::convert::Infallible> {
-        //This is a pretty bad way of doing this.
-        if let Some(a_state) = system.get_terminal_state(self.side_a)
-            && let Some(b_state) = system.get_terminal_state(self.side_b)
-        {
-            system.set_terminal_state(self.sum_side, a_state + b_state);
         }
-        Ok(())
+        node_id
+    }
+    const fn end(&self, node_id: LocalNodeID) -> LocalNodeID {
+        let mut node_id = node_id;
+        loop {
+            if let Some(node) = &self.nodes[node_id] {
+                if let Some(next_id) = node.next {
+                    node_id = next_id;
+                } else {
+                    break;
+                }
+            } else {
+                panic!("rrtk System invariant violated");
+            }
+        }
+        node_id
+    }
+    #[inline]
+    fn iter_connected(&self, node_id: LocalNodeID) -> ConnectedIterator<'_, N> {
+        ConnectedIterator::new(self, node_id)
+    }
+    pub const fn connect(&mut self, node_a_id: NodeID, node_b_id: NodeID) {
+        let node_a_id = self.assert_contains(node_a_id);
+        let node_b_id = self.assert_contains(node_b_id);
+        let a_end_id = self.end(node_a_id);
+        let b_beginning_id = self.beginning(node_b_id);
+        if let Some(ref mut a_end) = self.nodes[a_end_id] {
+            a_end.next = Some(b_beginning_id);
+        } else {
+            panic!("rrtk System invariant violated");
+        }
+        if let Some(ref mut b_beginning) = self.nodes[b_beginning_id] {
+            b_beginning.prev = Some(a_end_id);
+        } else {
+            panic!("rrtk System invariant violated");
+        }
+    }
+    pub const fn disconnect(&mut self, node_id: NodeID) {
+        let node_id = self.assert_contains(node_id);
+        let (maybe_prev_id, maybe_next_id);
+        if let Some(node) = &self.nodes[node_id] {
+            maybe_prev_id = node.prev;
+            maybe_next_id = node.next;
+        } else {
+            panic!("rrtk System provided invalid NodeID");
+        }
+        if let Some(prev_id) = maybe_prev_id {
+            if let Some(ref mut prev) = self.nodes[prev_id] {
+                prev.next = maybe_next_id;
+            } else {
+                panic!("rrtk System invariant violated");
+            }
+        }
+        if let Some(next_id) = maybe_next_id {
+            if let Some(ref mut next) = self.nodes[next_id] {
+                next.prev = maybe_prev_id;
+            } else {
+                panic!("rrtk System invariant violated");
+            }
+        }
+    }
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[repr(u8)]
+enum ConnectedIteratorState {
+    Forward,
+    Backward,
+    Done,
+}
+///This iterator intentionally excludes the head node.
+struct ConnectedIterator<'a, const N: usize> {
+    system: &'a System<N>,
+    head_node: LocalNodeID,
+    node_to_return: LocalNodeID,
+    state: ConnectedIteratorState,
+}
+impl<'a, const N: usize> ConnectedIterator<'a, N> {
+    fn new(system: &'a System<N>, node: LocalNodeID) -> Self {
+        //We set node_to_return to the head node and then skip it.
+        let mut new_self = Self {
+            system,
+            head_node: node,
+            node_to_return: node,
+            state: ConnectedIteratorState::Forward,
+        };
+        new_self.next();
+        new_self
+    }
+}
+impl<const N: usize> Iterator for ConnectedIterator<'_, N> {
+    type Item = LocalNodeID;
+    fn next(&mut self) -> Option<LocalNodeID> {
+        match self.state {
+            ConnectedIteratorState::Forward => {
+                let to_return = self.node_to_return;
+                if let Some(to_return_node) = &self.system.nodes[to_return] {
+                    if let Some(next_to_return) = to_return_node.next {
+                        self.node_to_return = next_to_return;
+                    } else {
+                        //Basically the same thing as in the constructor. Set it to go backward,
+                        //set node_to_return to the head node, and then skip it.
+                        self.state = ConnectedIteratorState::Backward;
+                        self.node_to_return = self.head_node;
+                        self.next();
+                    }
+                } else {
+                    panic!("rrtk System invariant violated");
+                }
+                Some(to_return)
+            }
+            ConnectedIteratorState::Backward => {
+                let to_return = self.node_to_return;
+                if let Some(to_return_node) = &self.system.nodes[to_return] {
+                    if let Some(next_to_return) = to_return_node.prev {
+                        self.node_to_return = next_to_return;
+                    } else {
+                        self.state = ConnectedIteratorState::Done;
+                    }
+                } else {
+                    panic!("rrtk System invariant violated");
+                }
+                Some(to_return)
+            }
+            ConnectedIteratorState::Done => None,
+        }
+    }
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        if !matches!(self.state, ConnectedIteratorState::Done) {
+            (1, None)
+        } else {
+            (0, Some(0))
+        }
+    }
+}
+pub trait DeviceUpdatable {
+    fn device_update<const N: usize>(&mut self, system: &mut System<N>);
+}
+#[cfg(test)]
+mod tests {
+    #![allow(unused)]
+    use super::*;
+    #[test]
+    fn connected_iterator() {
+        let mut system = System::<6>::new();
+        let [n0, n1, n2, n3, n4, n5] = [
+            system.new_node().unwrap(),
+            system.new_node().unwrap(),
+            system.new_node().unwrap(),
+            system.new_node().unwrap(),
+            system.new_node().unwrap(),
+            system.new_node().unwrap(),
+        ];
+        system.connect(n1, n3);
+        system.connect(n4, n3);
+        let mut iter = system.iter_connected(3);
+        assert_eq!(iter.next(), Some(1));
+        assert_eq!(iter.next(), Some(4));
+        assert_eq!(iter.next(), None);
+    }
+    #[test]
+    fn state_connected() {
+        let mut system = System::<6>::new();
+        let [n0, n1, n2, n3, n4, n5] = [
+            system.new_node().unwrap(),
+            system.new_node().unwrap(),
+            system.new_node().unwrap(),
+            system.new_node().unwrap(),
+            system.new_node().unwrap(),
+            system.new_node().unwrap(),
+        ];
+        system.connect(n1, n3);
+        system.connect(n3, n2);
+        system.connect(n4, n1);
+        system.set_state_local(
+            n2,
+            Some(AngularState::new(
+                Dimensionless::new(3.0),
+                InverseSecond::new(9.0),
+                InverseSecondSquared::new(1.0),
+            )),
+        );
+        system.set_state_local(
+            n3,
+            Some(AngularState::new(
+                Dimensionless::new(3.0),
+                InverseSecond::new(1.0),
+                InverseSecondSquared::new(3.0),
+            )),
+        );
+        system.set_state_local(
+            n4,
+            Some(AngularState::new(
+                Dimensionless::new(9.0),
+                InverseSecond::new(1.0),
+                InverseSecondSquared::new(3.0),
+            )),
+        );
+        assert_eq!(
+            system.get_state_connected(n3),
+            Some(AngularState::new(
+                Dimensionless::new(6.0),        // (3 + 9) / 2
+                InverseSecond::new(5.0),        // (9 + 1) / 2
+                InverseSecondSquared::new(2.0)  // (1 + 3) / 2
+            ))
+        );
     }
 }
