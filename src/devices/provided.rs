@@ -1,3 +1,7 @@
+// SPDX-License-Identifier: BSD-3-Clause
+// Copyright 2024-2025 UxuginPython
+//!A few common, simple mechanical devices that work with the device system. The source of this
+//!module is simple enough to be treated as an example of how to implement your own devices.
 use super::*;
 ///Device that either connects two axles or allows them to move independently depending on how it
 ///is set.

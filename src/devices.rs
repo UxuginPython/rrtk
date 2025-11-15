@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BSD-3-Clause
+// Copyright 2024-2025 UxuginPython
 #![allow(missing_docs)]
 use super::*;
 pub mod provided;

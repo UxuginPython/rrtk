@@ -291,3 +291,5 @@ Remove `Error` enum:
   - Add `GenericState` and `GenericCommand` traits.
 - Begin new device system.
 - Add compile-time integer and dimension aliases.
+## 0.7.0-alpha.10
+Replace the device system again.
