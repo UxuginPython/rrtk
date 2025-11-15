@@ -4,6 +4,8 @@ pub mod provided;
 type SystemID = u16;
 type LocalNodeID = usize;
 static mut NEXT_SYSTEM_ID: SystemID = 0;
+///A unique identifier for a node of a [`System`]. The internal value is not accessible. `NodeID`
+///is used to interact with nodes through the `System`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct NodeID {
     system: SystemID,
@@ -30,11 +32,14 @@ impl Node {
         }
     }
 }
+///A struct that tracks the states of axles throughout your robot. It is based on a system of nodes
+///that can be connected. `N` is the maximum number of nodes.
 pub struct System<const N: usize> {
     system_id: SystemID,
     nodes: [Option<Node>; N],
 }
 impl<const N: usize> System<N> {
+    ///Constructor.
     #[inline]
     pub const fn new() -> Self {
         let system_id;
@@ -47,6 +52,7 @@ impl<const N: usize> System<N> {
             nodes: [const { None }; N],
         }
     }
+    ///Returns true only if this system contains the provided node.
     #[inline]
     pub const fn contains(&self, node_id: NodeID) -> bool {
         self.system_id == node_id.system
@@ -59,6 +65,8 @@ impl<const N: usize> System<N> {
         );
         node_id.node
     }
+    ///Returns the last state a node has been directly set to using
+    ///[`set_state_local`](Self::set_state_local). This does not account for connected nodes.
     pub const fn get_state_local(&self, node_id: NodeID) -> Option<AngularState> {
         let node_id = self.assert_contains(node_id);
         if let Some(node) = &self.nodes[node_id] {
@@ -68,6 +76,7 @@ impl<const N: usize> System<N> {
             panic!("rrtk System invariant violated");
         }
     }
+    ///Set the state of a node. The set value can be accessed by [`get_state_local`](Self::get_state_local).
     pub const fn set_state_local(&mut self, node_id: NodeID, state: Option<AngularState>) {
         let node_id = self.assert_contains(node_id);
         if let Some(ref mut node) = self.nodes[node_id] {
@@ -99,11 +108,18 @@ impl<const N: usize> System<N> {
             None
         }
     }
-    ///Use this in calculations (as opposed to get_state_local or get_state_true).
+    ///Returns the average state of all nodes connected to the provided node, **excluding** the
+    ///provided node itself. To avoid feedback loops, this is the recommended function to use in
+    ///your calculations (as opposed to [`get_state_local`](Self::get_state_local) or
+    ///[`get_state_true`](Self::get_state_true)).
     pub fn get_state_connected(&self, node_id: NodeID) -> Option<AngularState> {
         let node_id = self.assert_contains(node_id);
         self.get_average_state_over_iterator(self.iter_connected(node_id))
     }
+    ///Returns the average state of all nodes connected to the provided nodes, **including** the
+    ///provided node itself. This value is most useful for displaying information and generally not
+    ///be used directly in calculations. [`get_state_connected`](Self::get_state_connected) is
+    ///recommended instead to avoid feedback loops.
     pub fn get_state_true(&self, node_id: NodeID) -> Option<AngularState> {
         let node_id = self.assert_contains(node_id);
         self.get_average_state_over_iterator(
@@ -111,6 +127,7 @@ impl<const N: usize> System<N> {
                 .chain(core::iter::once(node_id)),
         )
     }
+    ///Returns the ID for a new node if there is capacity for one.
     pub const fn new_node(&mut self) -> Option<NodeID> {
         //A for loop over 0..N that works in a const context.
         let mut i = 0usize;
@@ -157,6 +174,9 @@ impl<const N: usize> System<N> {
     fn iter_connected(&self, node_id: LocalNodeID) -> ConnectedIterator<'_, N> {
         ConnectedIterator::new(self, node_id)
     }
+    ///Connects two nodes. The order of the two may marginally affect performance but will not
+    ///change behavior beyond that. Connections between nodes are transitive (i.e. if A is
+    ///connected to B and B is connected to C then A is connected to C.).
     pub const fn connect(&mut self, node_a_id: NodeID, node_b_id: NodeID) {
         let node_a_id = self.assert_contains(node_a_id);
         let node_b_id = self.assert_contains(node_b_id);
@@ -173,6 +193,9 @@ impl<const N: usize> System<N> {
             panic!("rrtk System invariant violated");
         }
     }
+    ///Disconnects a node from all other nodes connected to it. Connected nodes will stay connected
+    ///to eachother. (e.g. if A is connected to B and B is connected to C, A will stay connected to
+    ///C if B is disconnected.)
     pub const fn disconnect(&mut self, node_id: NodeID) {
         let node_id = self.assert_contains(node_id);
         let (maybe_prev_id, maybe_next_id);

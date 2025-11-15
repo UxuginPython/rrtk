@@ -1,26 +1,26 @@
 use super::*;
-pub struct Coupling {
-    coupled: bool,
+pub struct Clutch {
+    connected: bool,
     node_a: NodeID,
     node_b: NodeID,
 }
-impl Coupling {
+impl Clutch {
     #[inline]
     pub const fn new(node_a: NodeID, node_b: NodeID) -> Self {
         Self {
-            coupled: false,
+            connected: false,
             node_a,
             node_b,
         }
     }
     #[inline]
-    pub const fn set_coupled(&mut self, value: bool) {
-        self.coupled = value;
+    pub const fn set_connected(&mut self, value: bool) {
+        self.connected = value;
     }
 }
-impl DeviceUpdatable for Coupling {
+impl DeviceUpdatable for Clutch {
     fn device_update<const N: usize>(&mut self, system: &mut System<N>) {
-        if self.coupled {
+        if self.connected {
             system.set_state_local(self.node_a, system.get_state_connected(self.node_b));
             system.set_state_local(self.node_b, system.get_state_connected(self.node_a));
         } else {
