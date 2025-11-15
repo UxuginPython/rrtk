@@ -95,6 +95,15 @@ impl GearTrain {
             ratio,
         }
     }
+    pub const fn from_teeth<const N: usize>(
+        node_a: NodeID,
+        node_b: NodeID,
+        teeth: [f32; N],
+    ) -> Self {
+        let ratio = teeth[0] / teeth[N - 1];
+        let direction = if N % 2 == 0 { -1.0 } else { 1.0 };
+        Self::new(node_a, node_b, Dimensionless::new(ratio * direction))
+    }
 }
 impl DeviceUpdatable for GearTrain {
     fn device_update<const N: usize>(&mut self, system: &mut System<N>) {
