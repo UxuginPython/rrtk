@@ -67,25 +67,34 @@ impl<const N: usize> System<N> {
         );
         node_id.node
     }
+    #[inline]
+    const fn node_ref_from_local_id(&self, node_id: LocalNodeID) -> &Node {
+        if let Some(node) = &self.nodes[node_id] {
+            node
+        } else {
+            panic!("rrtk System invariant violated");
+        }
+    }
+    #[inline]
+    const fn node_mut_from_local_id(&mut self, node_id: LocalNodeID) -> &mut Node {
+        if let Some(ref mut node) = self.nodes[node_id] {
+            node
+        } else {
+            panic!("rrtk System invariant violated");
+        }
+    }
     ///Returns the last state a node has been directly set to using
     ///[`set_state_local`](Self::set_state_local). This does not account for connected nodes.
     pub const fn get_state_local(&self, node_id: NodeID) -> Option<AngularState> {
         let node_id = self.assert_contains(node_id);
-        if let Some(node) = &self.nodes[node_id] {
-            node.state_local
-        } else {
-            //TODO: Should this have a more specific panic message?
-            panic!("rrtk System invariant violated");
-        }
+        let node = self.node_ref_from_local_id(node_id);
+        node.state_local
     }
     ///Set the state of a node. The set value can be accessed by [`get_state_local`](Self::get_state_local).
     pub const fn set_state_local(&mut self, node_id: NodeID, state: Option<AngularState>) {
         let node_id = self.assert_contains(node_id);
-        if let Some(ref mut node) = self.nodes[node_id] {
-            node.state_local = state;
-        } else {
-            panic!("rrtk System invariant violated");
-        }
+        let node = self.node_mut_from_local_id(node_id);
+        node.state_local = state;
     }
     //TODO: Decide about #[inline] for this, get_state_connected, and get_state_true.
     fn get_average_state_over_iterator<I: Iterator<Item = LocalNodeID>>(
@@ -95,13 +104,10 @@ impl<const N: usize> System<N> {
         let mut contributing = 0u16;
         let mut state = AngularState::ZERO;
         for node_id in iterator {
-            if let Some(node) = &self.nodes[node_id] {
-                if let Some(state_local) = node.state_local {
-                    state += state_local;
-                    contributing += 1;
-                }
-            } else {
-                panic!("rrtk System invariant violated");
+            let node = self.node_ref_from_local_id(node_id);
+            if let Some(state_local) = node.state_local {
+                state += state_local;
+                contributing += 1;
             }
         }
         if contributing >= 1 {
@@ -145,14 +151,11 @@ impl<const N: usize> System<N> {
     const fn beginning(&self, node_id: LocalNodeID) -> LocalNodeID {
         let mut node_id = node_id;
         loop {
-            if let Some(node) = &self.nodes[node_id] {
-                if let Some(prev_id) = node.prev {
-                    node_id = prev_id;
-                } else {
-                    break;
-                }
+            let node = self.node_ref_from_local_id(node_id);
+            if let Some(prev_id) = node.prev {
+                node_id = prev_id;
             } else {
-                panic!("rrtk System invariant violated");
+                break;
             }
         }
         node_id
@@ -160,14 +163,11 @@ impl<const N: usize> System<N> {
     const fn end(&self, node_id: LocalNodeID) -> LocalNodeID {
         let mut node_id = node_id;
         loop {
-            if let Some(node) = &self.nodes[node_id] {
-                if let Some(next_id) = node.next {
-                    node_id = next_id;
-                } else {
-                    break;
-                }
+            let node = self.node_ref_from_local_id(node_id);
+            if let Some(next_id) = node.next {
+                node_id = next_id;
             } else {
-                panic!("rrtk System invariant violated");
+                break;
             }
         }
         node_id
@@ -184,42 +184,26 @@ impl<const N: usize> System<N> {
         let node_b_id = self.assert_contains(node_b_id);
         let a_end_id = self.end(node_a_id);
         let b_beginning_id = self.beginning(node_b_id);
-        if let Some(ref mut a_end) = self.nodes[a_end_id] {
-            a_end.next = Some(b_beginning_id);
-        } else {
-            panic!("rrtk System invariant violated");
-        }
-        if let Some(ref mut b_beginning) = self.nodes[b_beginning_id] {
-            b_beginning.prev = Some(a_end_id);
-        } else {
-            panic!("rrtk System invariant violated");
-        }
+        let a_end = self.node_mut_from_local_id(a_end_id);
+        a_end.next = Some(b_beginning_id);
+        let b_beginning = self.node_mut_from_local_id(b_beginning_id);
+        b_beginning.prev = Some(a_end_id);
     }
     ///Disconnects a node from all other nodes connected to it. Connected nodes will stay connected
     ///to eachother. (e.g. if A is connected to B and B is connected to C, A will stay connected to
     ///C if B is disconnected.)
     pub const fn disconnect(&mut self, node_id: NodeID) {
         let node_id = self.assert_contains(node_id);
-        let (maybe_prev_id, maybe_next_id);
-        if let Some(node) = &self.nodes[node_id] {
-            maybe_prev_id = node.prev;
-            maybe_next_id = node.next;
-        } else {
-            panic!("rrtk System provided invalid NodeID");
-        }
+        let node = self.node_ref_from_local_id(node_id);
+        let maybe_prev_id = node.prev;
+        let maybe_next_id = node.next;
         if let Some(prev_id) = maybe_prev_id {
-            if let Some(ref mut prev) = self.nodes[prev_id] {
-                prev.next = maybe_next_id;
-            } else {
-                panic!("rrtk System invariant violated");
-            }
+            let prev = self.node_mut_from_local_id(prev_id);
+            prev.next = maybe_next_id;
         }
         if let Some(next_id) = maybe_next_id {
-            if let Some(ref mut next) = self.nodes[next_id] {
-                next.prev = maybe_prev_id;
-            } else {
-                panic!("rrtk System invariant violated");
-            }
+            let next = self.node_mut_from_local_id(next_id);
+            next.prev = maybe_prev_id;
         }
     }
 }
