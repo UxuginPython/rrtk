@@ -240,31 +240,25 @@ impl<const N: usize> Iterator for ConnectedIterator<'_, N> {
         match self.state {
             ConnectedIteratorState::Forward => {
                 let to_return = self.node_to_return;
-                if let Some(to_return_node) = &self.system.nodes[to_return] {
-                    if let Some(next_to_return) = to_return_node.next {
-                        self.node_to_return = next_to_return;
-                    } else {
-                        //Basically the same thing as in the constructor. Set it to go backward,
-                        //set node_to_return to the head node, and then skip it.
-                        self.state = ConnectedIteratorState::Backward;
-                        self.node_to_return = self.head_node;
-                        self.next();
-                    }
+                let to_return_node = self.system.node_ref_from_local_id(to_return);
+                if let Some(next_to_return) = to_return_node.next {
+                    self.node_to_return = next_to_return;
                 } else {
-                    panic!("rrtk System invariant violated");
+                    //Basically the same thing as in the constructor. Set it to go backward,
+                    //set node_to_return to the head node, and then skip it.
+                    self.state = ConnectedIteratorState::Backward;
+                    self.node_to_return = self.head_node;
+                    self.next();
                 }
                 Some(to_return)
             }
             ConnectedIteratorState::Backward => {
                 let to_return = self.node_to_return;
-                if let Some(to_return_node) = &self.system.nodes[to_return] {
-                    if let Some(next_to_return) = to_return_node.prev {
-                        self.node_to_return = next_to_return;
-                    } else {
-                        self.state = ConnectedIteratorState::Done;
-                    }
+                let to_return_node = self.system.node_ref_from_local_id(to_return);
+                if let Some(next_to_return) = to_return_node.prev {
+                    self.node_to_return = next_to_return;
                 } else {
-                    panic!("rrtk System invariant violated");
+                    self.state = ConnectedIteratorState::Done;
                 }
                 Some(to_return)
             }
