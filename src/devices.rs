@@ -35,7 +35,8 @@ impl Node {
     }
 }
 ///A struct that tracks the states of axles throughout your robot. It is based on a system of nodes
-///that can be connected. `N` is the maximum number of nodes.
+///that can be connected. `N` is the maximum number of nodes. The structure is implemented using a
+///form of doubly linked list.
 pub struct System<const N: usize> {
     system_id: SystemID,
     nodes: [Option<Node>; N],
@@ -118,10 +119,11 @@ impl<const N: usize> System<N> {
         let node_id = self.assert_contains(node_id);
         self.get_average_state_over_iterator(self.iter_connected(node_id))
     }
-    ///Returns the average state of all nodes connected to the provided nodes, **including** the
-    ///provided node itself. This value is most useful for displaying information and generally not
-    ///be used directly in calculations. [`get_state_connected`](Self::get_state_connected) is
-    ///recommended instead to avoid feedback loops.
+    ///Returns the average state of all nodes connected to the provided node, **including** the
+    ///provided node itself. This value is mostly useful when displaying information and should
+    ///generally not be used directly in calculations due to feedback loops.
+    ///[`get_state_connected`](Self::get_state_connected) is recommended instead to avoid this
+    ///issue.
     pub fn get_state_true(&self, node_id: NodeID) -> Option<AngularState> {
         let node_id = self.assert_contains(node_id);
         self.get_average_state_over_iterator(
@@ -129,7 +131,7 @@ impl<const N: usize> System<N> {
                 .chain(core::iter::once(node_id)),
         )
     }
-    ///Returns the ID for a new node if there is capacity for one.
+    ///Returns the ID for a new node if the `System` has capacity for one.
     pub const fn new_node(&mut self) -> Option<NodeID> {
         //A for loop over 0..N that works in a const context.
         let mut i = 0usize;
@@ -178,7 +180,7 @@ impl<const N: usize> System<N> {
     }
     ///Connects two nodes. The order of the two may marginally affect performance but will not
     ///change behavior beyond that. Connections between nodes are transitive (i.e. if A is
-    ///connected to B and B is connected to C then A is connected to C.).
+    ///connected to B and B is connected to C then A is connected to C) and bidirectional.
     pub const fn connect(&mut self, node_a_id: NodeID, node_b_id: NodeID) {
         let node_a_id = self.assert_contains(node_a_id);
         let node_b_id = self.assert_contains(node_b_id);
