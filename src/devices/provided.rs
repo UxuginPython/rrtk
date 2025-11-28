@@ -11,6 +11,7 @@ pub struct Clutch {
     node_b: NodeID,
 }
 impl Clutch {
+    ///Constructor. The clutch is set open by default.
     #[inline]
     pub const fn new(node_a: NodeID, node_b: NodeID) -> Self {
         Self {
@@ -19,6 +20,7 @@ impl Clutch {
             node_b,
         }
     }
+    ///Sets the clutch open or closed. `false` sets the clutch open; `true` sets it closed.
     #[inline]
     pub const fn set_connected(&mut self, value: bool) {
         self.connected = value;
@@ -45,6 +47,7 @@ pub struct Differential {
     node_sum: NodeID,
 }
 impl Differential {
+    ///Constructor. See struct documentation for details.
     #[inline]
     pub const fn new(node_left: NodeID, node_right: NodeID, node_sum: NodeID) -> Self {
         Self {

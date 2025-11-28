@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // Copyright 2024-2025 UxuginPython
-#![allow(missing_docs)]
+//!A graph-based system for tracking the rotational states of mechanical components throughout your
+//!robot.
 use super::*;
 pub mod provided;
 type SystemID = u16;
@@ -278,6 +279,7 @@ impl<const N: usize> Iterator for ConnectedIterator<'_, N> {
 ///Very similar to the [`Updatable`] trait except that it requires a mutable reference to the
 ///system controlling the device's nodes and it is, currently, infallible.
 pub trait DeviceUpdatable {
+    ///Update the states of the device's terminals based on the device's mechanical constraints.
     fn device_update<const N: usize>(&mut self, system: &mut System<N>);
 }
 #[cfg(test)]
