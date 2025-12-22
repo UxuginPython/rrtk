@@ -791,11 +791,11 @@ macro_rules! as_dyn_chronology {
 ///the original `PointerDereferencer`. Unfortunately `T` currently must be `Sized` due to language
 ///limitations.
 impl<T> PointerDereferencer<*mut T> {
-    as_dyn_updatable!(*mut dyn Updatable<E>);
-    as_dyn_getter!(*mut dyn Getter<U, E>);
-    as_dyn_settable!(*mut dyn Settable<U, E>);
-    as_dyn_time_getter!(*mut dyn TimeGetter<E>);
-    as_dyn_chronology!(*mut dyn Chronology<U>);
+    as_dyn_updatable!(*mut (dyn Updatable<E> + '_));
+    as_dyn_getter!(*mut (dyn Getter<U, E> + '_));
+    as_dyn_settable!(*mut (dyn Settable<U, E> + '_));
+    as_dyn_time_getter!(*mut (dyn TimeGetter<E> + '_));
+    as_dyn_chronology!(*mut (dyn Chronology<U> + '_));
 }
 ///These functions get a `PointerDereferencer<*const RwLock<dyn Trait>>` from a
 ///`PointerDereferencer<*const RwLock<T>>` where `T: Trait`. Because raw pointers are `Copy`, they
@@ -803,10 +803,10 @@ impl<T> PointerDereferencer<*mut T> {
 ///currently must be `Sized` due to language limitations.
 #[cfg(feature = "std")]
 impl<T> PointerDereferencer<*const RwLock<T>> {
-    as_dyn_updatable!(*const RwLock<dyn Updatable<E>>);
-    as_dyn_getter!(*const RwLock<dyn Getter<U, E>>);
-    as_dyn_settable!(*const RwLock<dyn Settable<U, E>>);
-    as_dyn_time_getter!(*const RwLock<dyn TimeGetter<E>>);
+    as_dyn_updatable!(*const RwLock<dyn Updatable<E> + '_>);
+    as_dyn_getter!(*const RwLock<dyn Getter<U, E> + '_>);
+    as_dyn_settable!(*const RwLock<dyn Settable<U, E> + '_>);
+    as_dyn_time_getter!(*const RwLock<dyn TimeGetter<E> + '_>);
 }
 ///These functions get a `PointerDereferencer<*const Mutex<dyn Trait>>` from a
 ///`PointerDereferencer<*const Mutex<T>>` where `T: Trait`. Because raw pointers are `Copy`, they
@@ -814,16 +814,16 @@ impl<T> PointerDereferencer<*const RwLock<T>> {
 ///currently must be `Sized` due to language limitations.
 #[cfg(feature = "std")]
 impl<T> PointerDereferencer<*const Mutex<T>> {
-    as_dyn_updatable!(*const Mutex<dyn Updatable<E>>);
-    as_dyn_getter!(*const Mutex<dyn Getter<U, E>>);
-    as_dyn_settable!(*const Mutex<dyn Settable<U, E>>);
-    as_dyn_time_getter!(*const Mutex<dyn TimeGetter<E>>);
+    as_dyn_updatable!(*const Mutex<dyn Updatable<E> + '_>);
+    as_dyn_getter!(*const Mutex<dyn Getter<U, E> + '_>);
+    as_dyn_settable!(*const Mutex<dyn Settable<U, E> + '_>);
+    as_dyn_time_getter!(*const Mutex<dyn TimeGetter<E> + '_>);
 }
 //There are Chronology impls for RwLock<C> and Mutex<C> where C: Chronology. It is necessary to
 //implement Updatable etc. for *const RwLock<T> and *const Mutex<T> directly rather than doing it
 //more generically like for Chronology because they require mutability.
 impl<T> PointerDereferencer<*const T> {
-    as_dyn_chronology!(*const dyn Chronology<U>);
+    as_dyn_chronology!(*const (dyn Chronology<U> + '_));
 }
 //FIXME: Make one of these work if you can, preferably From since it implies Into.
 /*impl<P> From<PointerDereferencer<P>> for P {
