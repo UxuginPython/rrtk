@@ -293,3 +293,5 @@ Remove `Error` enum:
 - Add compile-time integer and dimension aliases.
 ## 0.7.0-alpha.10
 Replace the device system again.
+## 0.7.0-alpha.11
+Start cleaning up a [really big mess](http://rrtk.org/notice/).

@@ -1,6 +1,8 @@
 # Rust Robotics ToolKit
 **A set of algorithms and other tools for robotics in Rust.**
 
+[**IMPORTANT NOTICE** for users of rrtk 0.7.0 prereleases and/or Rust 1.94 (nightly at the time of this version's publishing)](http://rrtk.org/notice/)
+
 It is almost entirely `no_std` and most things work without `alloc`. It does not currently integrate with any API directly. This may be added in the future, probably through another crate.
 
 ## License: BSD 3-Clause
