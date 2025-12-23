@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // Copyright 2024-2025 UxuginPython
+#[cfg(feature = "devices")]
 use rrtk::devices::provided::Differential;
+#[cfg(feature = "devices")]
 use rrtk::devices::*;
+#[cfg(feature = "devices")]
 use rrtk::*;
-#[cfg(not(feature = "devices"))]
-compile_error!("Enable the `devices` feature to run this example.");
 ///Format [`AngularState`] like a row vector for ease of reading.
+#[cfg(feature = "devices")]
 fn format_state(state: AngularState) -> String {
     format!(
         "[ {} {} {} ]",
@@ -14,6 +16,7 @@ fn format_state(state: AngularState) -> String {
         state.acceleration.into_inner()
     )
 }
+#[cfg(feature = "devices")]
 fn main() {
     let mut system = System::<6>::new();
     let diff_left = system.new_node().unwrap();
@@ -62,5 +65,11 @@ fn main() {
         format_state(enc_left_state),
         format_state(enc_right_state),
         format_state(demo_state)
+    );
+}
+#[cfg(not(feature = "devices"))]
+fn main() {
+    println!(
+        "Enable the `devices` feature to run this example.\nAssuming you're using Cargo, add the `--features devices` flag to your command."
     );
 }
