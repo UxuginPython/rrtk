@@ -1,9 +1,6 @@
 #!/bin/bash
 #Generated automatically by rrtk 0.7.0-alpha.11
 set -e
-echo Manually added note:
-echo These tests are known to currently fail to run due to changes in the behavior of \`PointerDereferencer\` due to a recent patch.
-echo More information can be found here: http://rrtk.org/notice/
 echo
 cargo test --no-default-features
 echo alloc
