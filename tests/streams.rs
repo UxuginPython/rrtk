@@ -1210,7 +1210,7 @@ fn moving_average_stream() {
         assert_eq!(stream.get().unwrap().unwrap().value, 106.6);
     }
 }
-/*#[test]
+#[test]
 fn latest() {
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]
     struct Error;
@@ -1275,9 +1275,11 @@ fn latest() {
         let stream1 = PointerDereferencer::new(core::ptr::addr_of_mut!(STREAM_1));
         static mut STREAM_2: Stream2 = Stream2::new();
         let stream2 = PointerDereferencer::new(core::ptr::addr_of_mut!(STREAM_2));
+        let stream1_binding = stream1.clone();
+        let stream2_binding = stream2.clone();
         let mut latest = Latest::new([
-            stream1.clone().as_dyn_getter(),
-            stream2.clone().as_dyn_getter(),
+            stream1_binding.as_dyn_getter(),
+            stream2_binding.as_dyn_getter(),
         ]);
         assert_eq!(
             latest.get(),
@@ -1368,7 +1370,9 @@ fn and_stream() {
         let in2 = PointerDereferencer::new(core::ptr::addr_of_mut!(IN_2));
         //TODO: Maybe revise this test to better suit the new AndStream. This is a pretty patchy
         //fix.
-        let mut and = AndStream::new([in1.clone().as_dyn_getter(), in2.clone().as_dyn_getter()]);
+        let in1_binding = in1.clone();
+        let in2_binding = in2.clone();
+        let mut and = AndStream::new([in1_binding.as_dyn_getter(), in2_binding.as_dyn_getter()]);
         assert_eq!(and.get().unwrap().unwrap().value, false);
         and.update().unwrap();
         assert_eq!(and.get().unwrap().unwrap().value, false);
@@ -1534,7 +1538,9 @@ fn or_stream() {
         let in2 = PointerDereferencer::new(core::ptr::addr_of_mut!(IN_2));
         //TODO: Maybe revise this test to better suit the new OrStream. This is a pretty patchy
         //fix.
-        let mut or = OrStream::new([in1.clone().as_dyn_getter(), in2.clone().as_dyn_getter()]);
+        let in1_binding = in1.clone();
+        let in2_binding = in2.clone();
+        let mut or = OrStream::new([in1_binding.as_dyn_getter(), in2_binding.as_dyn_getter()]);
         assert_eq!(or.get().unwrap().unwrap().value, false);
         or.update().unwrap();
         assert_eq!(or.get().unwrap(), None);
@@ -1919,4 +1925,4 @@ fn command_pid() {
             assert_eq!(pid.get().unwrap().unwrap().value, 20.225);
         }
     }
-}*/
+}
