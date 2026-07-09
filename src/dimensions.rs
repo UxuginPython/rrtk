@@ -255,6 +255,23 @@ impl DimensionlessFraction {
     pub const fn reciprocal_unchecked(&self) -> Self {
         Self(self.1, self.0)
     }
+    ///Converts the fraction into a tuple `(numerator, denominator)`.
+    ///
+    ///The following code is guaranteed to leave mutable `DimensionlessInteger` variables `x` and
+    ///`y` with the same values that they had before the code was run.
+    ///```
+    ///# use rrtk::{DimensionlessFraction, DimensionlessInteger};
+    ///# let mut x = DimensionlessInteger(2);
+    ///# let mut y = DimensionlessInteger(3);
+    ///let frac = DimensionlessFraction::new_unchecked(x, y);
+    ///(x, y) = frac.into_components();
+    ///# assert_eq!(x.0, 2);
+    ///# assert_eq!(y.0, 3);
+    ///```
+    #[inline]
+    pub const fn into_components(self) -> (DimensionlessInteger, DimensionlessInteger) {
+        (self.0, self.1)
+    }
     ///Converts the fraction to its closest `f32` approximation.
     ///There is also a [`From`] implementation that does this.
     #[inline]
