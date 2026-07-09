@@ -56,7 +56,6 @@ mod motion_profile;
 mod state;
 pub mod streams;
 pub mod stulta;
-mod vec_array;
 pub use command::*;
 pub use datum::*;
 #[cfg(feature = "internal_enhanced_float")]
