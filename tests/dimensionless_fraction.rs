@@ -77,9 +77,42 @@ fn as_quantity_f64() {
     assert_eq!(x.as_quantity_f64(), Dimensionless::new(1.5f64));
 }
 #[test]
+fn neg() {
+    let x = dimensionless_fraction!(1, 2);
+    assert_eq!(-x, dimensionless_fraction!(-1, 2));
+}
+#[test]
+fn neg_zero() {
+    let x = dimensionless_fraction!(0, 1);
+    assert_eq!(-x, x);
+}
+#[test]
 fn add_self() {
     let x = dimensionless_fraction!(2, 3);
     let y = dimensionless_fraction!(1, 2);
     let z = dimensionless_fraction!(7, 6);
     assert_eq!(x + y, z);
+}
+#[test]
+fn add_assign_self() {
+    let mut x = dimensionless_fraction!(2, 3);
+    let y = dimensionless_fraction!(1, 2);
+    let z = dimensionless_fraction!(7, 6);
+    x += y;
+    assert_eq!(x, z);
+}
+#[test]
+fn sub_self() {
+    let x = dimensionless_fraction!(2, 3);
+    let y = dimensionless_fraction!(1, 2);
+    let z = dimensionless_fraction!(1, 6);
+    assert_eq!(x - y, z);
+}
+#[test]
+fn sub_assign_self() {
+    let mut x = dimensionless_fraction!(2, 3);
+    let y = dimensionless_fraction!(1, 2);
+    let z = dimensionless_fraction!(1, 6);
+    x -= y;
+    assert_eq!(x, z);
 }
