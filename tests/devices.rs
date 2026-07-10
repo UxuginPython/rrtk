@@ -23,6 +23,7 @@ fn clutch() {
     );
     system.set_state_local(a_test, Some(A));
     system.set_state_local(b_test, Some(B));
+
     let mut clutch = Clutch::new(a_clutch, b_clutch);
     clutch.device_update(&mut system);
     assert!(system.get_state_connected(a_test).is_none());
@@ -35,4 +36,45 @@ fn clutch() {
     clutch.device_update(&mut system);
     assert!(system.get_state_connected(a_test).is_none());
     assert!(system.get_state_connected(b_test).is_none());
+}
+#[test]
+fn gear_train() {
+    let mut system = System::<4>::new();
+    let a_test = system.new_node().unwrap();
+    let a_gear_train = system.new_node().unwrap();
+    system.connect(a_test, a_gear_train);
+    let b_test = system.new_node().unwrap();
+    let b_gear_train = system.new_node().unwrap();
+    system.connect(b_test, b_gear_train);
+    const A: AngularState = AngularState::new(
+        Dimensionless::new(1.0),
+        InverseSecond::new(2.0),
+        InverseSecondSquared::new(3.0),
+    );
+    const B: AngularState = AngularState::new(
+        Dimensionless::new(4.0),
+        InverseSecond::new(5.0),
+        InverseSecondSquared::new(6.0),
+    );
+    system.set_state_local(a_test, Some(A));
+    system.set_state_local(b_test, Some(B));
+
+    let mut gear_train = GearTrain::new(a_gear_train, b_gear_train, Dimensionless::new(2.0));
+    gear_train.device_update(&mut system);
+    assert_eq!(
+        system.get_state_connected(a_test),
+        Some(AngularState::new(
+            Dimensionless::new(2.0),
+            InverseSecond::new(2.5),
+            InverseSecondSquared::new(3.0),
+        ))
+    );
+    assert_eq!(
+        system.get_state_connected(b_test),
+        Some(AngularState::new(
+            Dimensionless::new(2.0),
+            InverseSecond::new(4.0),
+            InverseSecondSquared::new(6.0),
+        ))
+    );
 }
