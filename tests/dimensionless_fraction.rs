@@ -204,3 +204,55 @@ fn sub_assign_self() {
     x -= y;
     assert_eq!(x, z);
 }
+#[test]
+fn mul_int() {
+    assert_eq!(
+        dimensionless_fraction!(5, 3) * DimensionlessInteger(2),
+        dimensionless_fraction!(10, 3)
+    );
+}
+#[test]
+fn mul_assign_int() {
+    let mut x = dimensionless_fraction!(5, 3);
+    x *= DimensionlessInteger(2);
+    assert_eq!(x, dimensionless_fraction!(10, 3));
+}
+#[test]
+fn div_int() {
+    assert_eq!(
+        dimensionless_fraction!(5, 3) / DimensionlessInteger(2),
+        dimensionless_fraction!(5, 6)
+    );
+}
+#[test]
+fn div_assign_int() {
+    let mut x = dimensionless_fraction!(5, 3);
+    x /= DimensionlessInteger(2);
+    assert_eq!(x, dimensionless_fraction!(5, 6));
+}
+#[test]
+fn add_int() {
+    assert_eq!(
+        dimensionless_fraction!(5, 3) + DimensionlessInteger(2),
+        dimensionless_fraction!(11, 3)
+    );
+}
+#[test]
+fn add_assign_int() {
+    let mut x = dimensionless_fraction!(5, 3);
+    x += DimensionlessInteger(2);
+    assert_eq!(x, dimensionless_fraction!(11, 3));
+}
+#[test]
+fn sub_int() {
+    assert_eq!(
+        dimensionless_fraction!(5, 3) - DimensionlessInteger(2),
+        dimensionless_fraction!(-1, 3)
+    );
+}
+#[test]
+fn sub_assign_int() {
+    let mut x = dimensionless_fraction!(5, 3);
+    x -= DimensionlessInteger(2);
+    assert_eq!(x, dimensionless_fraction!(-1, 3));
+}
