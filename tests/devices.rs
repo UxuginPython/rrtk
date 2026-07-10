@@ -78,3 +78,40 @@ fn gear_train() {
         ))
     );
 }
+#[test]
+fn differential() {
+    let mut system = System::<6>::new();
+    let a_test = system.new_node().unwrap();
+    let a_differential = system.new_node().unwrap();
+    system.connect(a_test, a_differential);
+    let b_test = system.new_node().unwrap();
+    let b_differential = system.new_node().unwrap();
+    system.connect(b_test, b_differential);
+    let c_test = system.new_node().unwrap();
+    let c_differential = system.new_node().unwrap();
+    system.connect(c_test, c_differential);
+    const A: AngularState = AngularState::new(
+        Dimensionless::new(1.0),
+        InverseSecond::new(2.0),
+        InverseSecondSquared::new(3.0),
+    );
+    const B: AngularState = AngularState::new(
+        Dimensionless::new(4.0),
+        InverseSecond::new(5.0),
+        InverseSecondSquared::new(6.0),
+    );
+    const C: AngularState = AngularState::new(
+        Dimensionless::new(7.0),
+        InverseSecond::new(8.0),
+        InverseSecondSquared::new(9.0),
+    );
+    system.set_state_local(a_test, Some(A));
+    system.set_state_local(b_test, Some(B));
+    system.set_state_local(c_test, Some(C));
+
+    let mut differential = Differential::new(a_differential, b_differential, c_differential);
+    differential.device_update(&mut system);
+    assert_eq!(system.get_state_connected(a_test), Some(C - B));
+    assert_eq!(system.get_state_connected(b_test), Some(C - A));
+    assert_eq!(system.get_state_connected(c_test), Some(A + B));
+}
