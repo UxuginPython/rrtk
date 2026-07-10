@@ -60,21 +60,25 @@ fn reciprocal_unchecked() {
 fn as_f32() {
     let x = dimensionless_fraction!(3, 2);
     assert_eq!(x.as_f32(), 1.5f32);
+    assert_eq!(f32::from(x), 1.5f32);
 }
 #[test]
 fn as_f64() {
     let x = dimensionless_fraction!(3, 2);
     assert_eq!(x.as_f64(), 1.5f64);
+    assert_eq!(f64::from(x), 1.5f64);
 }
 #[test]
 fn as_quantity_f32() {
     let x = dimensionless_fraction!(3, 2);
     assert_eq!(x.as_quantity_f32(), Dimensionless::new(1.5f32));
+    assert_eq!(Dimensionless::<f32>::from(x), Dimensionless::new(1.5f32));
 }
 #[test]
 fn as_quantity_f64() {
     let x = dimensionless_fraction!(3, 2);
     assert_eq!(x.as_quantity_f64(), Dimensionless::new(1.5f64));
+    assert_eq!(Dimensionless::<f64>::from(x), Dimensionless::new(1.5f64));
 }
 #[test]
 fn neg() {
