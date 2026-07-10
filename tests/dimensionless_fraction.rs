@@ -24,6 +24,11 @@ fn div_by_zero_constructor_validation() {
     let _ = DimensionlessFraction::new(DimensionlessInteger(1), DimensionlessInteger(0));
 }
 #[test]
+#[should_panic]
+fn div_by_zero_constructor_validation_macro() {
+    let _ = dimensionless_fraction!(1, 0);
+}
+#[test]
 fn is_valid() {
     let x = DimensionlessFraction::new(DimensionlessInteger(-1), DimensionlessInteger(2));
     assert!(x.is_valid());
