@@ -298,3 +298,17 @@ fn time_div_by_dim_frac_assign() {
     x /= dimensionless_fraction!(2, 3);
     assert_eq!(x, Time::from_nanoseconds(9_000_000));
 }
+#[test]
+fn add_int_reverse() {
+    assert_eq!(
+        DimensionlessInteger(2) + dimensionless_fraction!(5, 3),
+        dimensionless_fraction!(11, 3)
+    );
+}
+#[test]
+fn sub_int_reverse() {
+    assert_eq!(
+        DimensionlessInteger(2) - dimensionless_fraction!(5, 3),
+        dimensionless_fraction!(1, 3)
+    );
+}
