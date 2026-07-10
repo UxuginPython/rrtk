@@ -256,3 +256,45 @@ fn sub_assign_int() {
     x -= DimensionlessInteger(2);
     assert_eq!(x, dimensionless_fraction!(-1, 3));
 }
+#[test]
+fn mul_time() {
+    let x = dimensionless_fraction!(2, 3);
+    let y = Time::from_nanoseconds(6_000_000);
+    assert_eq!(x * y, Time::from_nanoseconds(4_000_000));
+}
+#[test]
+fn mul_int_reverse() {
+    let x = DimensionlessInteger(2);
+    let y = dimensionless_fraction!(5, 3);
+    assert_eq!(x * y, dimensionless_fraction!(10, 3));
+}
+#[test]
+fn div_int_reverse() {
+    let x = DimensionlessInteger(2);
+    let y = dimensionless_fraction!(5, 3);
+    assert_eq!(x / y, dimensionless_fraction!(6, 5));
+}
+#[test]
+fn mul_time_reverse() {
+    let x = Time::from_nanoseconds(6_000_000);
+    let y = dimensionless_fraction!(2, 3);
+    assert_eq!(x * y, Time::from_nanoseconds(4_000_000));
+}
+#[test]
+fn mul_time_reverse_assign() {
+    let mut x = Time::from_nanoseconds(6_000_000);
+    x *= dimensionless_fraction!(2, 3);
+    assert_eq!(x, Time::from_nanoseconds(4_000_000));
+}
+#[test]
+fn time_div_by_dim_frac() {
+    let x = Time::from_nanoseconds(6_000_000);
+    let y = dimensionless_fraction!(2, 3);
+    assert_eq!(x / y, Time::from_nanoseconds(9_000_000));
+}
+#[test]
+fn time_div_by_dim_frac_assign() {
+    let mut x = Time::from_nanoseconds(6_000_000);
+    x /= dimensionless_fraction!(2, 3);
+    assert_eq!(x, Time::from_nanoseconds(9_000_000));
+}

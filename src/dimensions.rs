@@ -745,3 +745,4 @@ impl<T: stulta::AbsoluteValue, MM: Integer, S: Integer> stulta::AbsoluteValue
         Self::new(self.2.rrtk_abs())
     }
 }
+//TODO: One annoyance: DimensionlessFraction cannot be divided by Time.
