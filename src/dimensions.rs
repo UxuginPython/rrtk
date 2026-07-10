@@ -220,6 +220,23 @@ impl Mul<Time> for DimensionlessInteger {
         Time(self.0 * rhs.0)
     }
 }
+#[macro_export]
+macro_rules! dimensionless_fraction {
+    ($num: expr, $denom: expr) => {
+        DimensionlessFraction::new(DimensionlessInteger($num), DimensionlessInteger($denom))
+    };
+}
+pub use dimensionless_fraction;
+#[macro_export]
+macro_rules! dimensionless_fraction_unchecked {
+    ($num: expr, $denom: expr) => {
+        DimensionlessFraction::new_unchecked(
+            DimensionlessInteger($num),
+            DimensionlessInteger($denom),
+        )
+    };
+}
+pub use dimensionless_fraction_unchecked;
 ///An exact rational number type for dimensionless quantities. Used almost exclusively when a
 ///[`Time`] must be multiplied by a constant fractional factor.
 #[derive(Clone, Copy, Debug)]

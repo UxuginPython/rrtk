@@ -65,3 +65,10 @@ fn as_quantity_f64() {
     let x = DimensionlessFraction::new(DimensionlessInteger(3), DimensionlessInteger(2));
     assert_eq!(x.as_quantity_f64(), Dimensionless::new(1.5f64));
 }
+#[test]
+fn add_self() {
+    let x = DimensionlessFraction::new(DimensionlessInteger(2), DimensionlessInteger(3));
+    let y = DimensionlessFraction::new(DimensionlessInteger(1), DimensionlessInteger(2));
+    let z = DimensionlessFraction::new(DimensionlessInteger(7), DimensionlessInteger(6));
+    assert_eq!(x + y, z);
+}
