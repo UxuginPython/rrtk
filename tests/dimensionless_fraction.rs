@@ -82,6 +82,19 @@ fn neg() {
     assert_eq!(-x, dimensionless_fraction!(-1, 2));
 }
 #[test]
+fn equality() {
+    let x = dimensionless_fraction!(1, 2);
+    let y = dimensionless_fraction!(2, 4);
+    let z = dimensionless_fraction!(2, 5);
+    assert_eq!(x, y);
+    assert!(x != z);
+    assert!(y != z)
+}
+#[test]
+fn order() {
+    todo!();
+}
+#[test]
 fn neg_zero() {
     let x = dimensionless_fraction!(0, 1);
     assert_eq!(-x, x);
@@ -90,14 +103,14 @@ fn neg_zero() {
 fn mul_self() {
     let x = dimensionless_fraction!(2, 3);
     let y = dimensionless_fraction!(1, 2);
-    let z = dimensionless_fraction!(2, 6);
+    let z = dimensionless_fraction!(1, 3);
     assert_eq!(x * y, z);
 }
 #[test]
 fn mul_assign_self() {
     let mut x = dimensionless_fraction!(2, 3);
     let y = dimensionless_fraction!(1, 2);
-    let z = dimensionless_fraction!(2, 6);
+    let z = dimensionless_fraction!(1, 3);
     x *= y;
     assert_eq!(x, z);
 }
