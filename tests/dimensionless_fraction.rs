@@ -92,7 +92,52 @@ fn equality() {
 }
 #[test]
 fn order() {
-    todo!();
+    let mut fracs = [
+        dimensionless_fraction!(-2, 6),
+        dimensionless_fraction!(-20, 5),
+        dimensionless_fraction!(81, 4),
+        dimensionless_fraction!(-3, 9),
+        dimensionless_fraction!(1, 300),
+        dimensionless_fraction!(2, 400),
+        dimensionless_fraction!(5000, 400),
+        dimensionless_fraction!(-3, 5),
+        dimensionless_fraction!(160, 8),
+        dimensionless_fraction!(80, 4),
+        dimensionless_fraction!(5000, 1),
+        dimensionless_fraction!(0, 3),
+        dimensionless_fraction!(-4, 1),
+        dimensionless_fraction!(5000, 2),
+        dimensionless_fraction!(0, 5),
+        dimensionless_fraction!(1, 200),
+        dimensionless_fraction!(2, 300),
+        dimensionless_fraction!(0, 2),
+        dimensionless_fraction!(-1, 3),
+        dimensionless_fraction!(1, 100),
+    ];
+    let fracs_correct = [
+        dimensionless_fraction!(-20, 5),
+        dimensionless_fraction!(-4, 1),
+        dimensionless_fraction!(-3, 5),
+        dimensionless_fraction!(-2, 6),
+        dimensionless_fraction!(-3, 9),
+        dimensionless_fraction!(-1, 3),
+        dimensionless_fraction!(0, 3),
+        dimensionless_fraction!(0, 5),
+        dimensionless_fraction!(0, 2),
+        dimensionless_fraction!(1, 300),
+        dimensionless_fraction!(2, 400),
+        dimensionless_fraction!(1, 200),
+        dimensionless_fraction!(2, 300),
+        dimensionless_fraction!(1, 100),
+        dimensionless_fraction!(5000, 400),
+        dimensionless_fraction!(160, 8),
+        dimensionless_fraction!(80, 4),
+        dimensionless_fraction!(81, 4),
+        dimensionless_fraction!(5000, 2),
+        dimensionless_fraction!(5000, 1),
+    ];
+    fracs.sort();
+    assert_eq!(fracs, fracs_correct);
 }
 #[test]
 fn neg_zero() {
