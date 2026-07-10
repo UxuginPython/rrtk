@@ -7,6 +7,18 @@ fn new_new_unchecked_eq() {
     let _ = DimensionlessFraction::new_unchecked(DimensionlessInteger(1), DimensionlessInteger(0));
 }
 #[test]
+fn constructor_macro() {
+    let x = DimensionlessFraction::new(DimensionlessInteger(1), DimensionlessInteger(4));
+    let y = dimensionless_fraction!(1, 4);
+    assert_eq!(x, y);
+}
+#[test]
+fn constructor_macro_unchecked() {
+    let x = DimensionlessFraction::new_unchecked(DimensionlessInteger(1), DimensionlessInteger(0));
+    let y = dimensionless_fraction_unchecked!(1, 0);
+    assert_eq!(x, y);
+}
+#[test]
 #[should_panic]
 fn div_by_zero_constructor_validation() {
     let _ = DimensionlessFraction::new(DimensionlessInteger(1), DimensionlessInteger(0));
@@ -67,8 +79,8 @@ fn as_quantity_f64() {
 }
 #[test]
 fn add_self() {
-    let x = DimensionlessFraction::new(DimensionlessInteger(2), DimensionlessInteger(3));
-    let y = DimensionlessFraction::new(DimensionlessInteger(1), DimensionlessInteger(2));
-    let z = DimensionlessFraction::new(DimensionlessInteger(7), DimensionlessInteger(6));
+    let x = dimensionless_fraction!(2, 3);
+    let y = dimensionless_fraction!(1, 2);
+    let z = dimensionless_fraction!(7, 6);
     assert_eq!(x + y, z);
 }

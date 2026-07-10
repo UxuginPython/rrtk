@@ -220,6 +220,9 @@ impl Mul<Time> for DimensionlessInteger {
         Time(self.0 * rhs.0)
     }
 }
+///Alias for `DimensionlessFraction::new(DimensionlessInteger($num), DimensionlessInteger($denom))`.
+///This means that you can, for example, construct a [`DimensionlessFraction`] of 2/3 with
+///`dimensionless_fraction!(2, 3)`.
 #[macro_export]
 macro_rules! dimensionless_fraction {
     ($num: expr, $denom: expr) => {
@@ -227,6 +230,11 @@ macro_rules! dimensionless_fraction {
     };
 }
 pub use dimensionless_fraction;
+///Alias for `DimensionlessFraction::new_unchecked(DimensionlessInteger($num), DimensionlessInteger($denom))`.
+///This means that you can, for example, construct a [`DimensionlessFraction`] of 2/3 with
+///`dimensionless_fraction_unchecked!(2, 3)`. The difference between this and the
+///[`dimensionless_fraction`] macro is that this one does not check if the denominator is zero.
+///E.g., it is possible to construct 1/0 with this macro but not with `dimensionless_fraction!`.
 #[macro_export]
 macro_rules! dimensionless_fraction_unchecked {
     ($num: expr, $denom: expr) => {
