@@ -80,3 +80,25 @@ fn as_dyn_settable() {
     deref_dyn.set(90).unwrap();
     assert_eq!(value, 90);
 }
+const RETURN_4: TimeOutput<()> = Ok(Time::from_nanoseconds(5_000_000_000));
+struct TestTimeGetter4;
+impl Updatable<()> for TestTimeGetter4 {
+    fn update(&mut self) -> NothingOrError<()> {
+        Ok(())
+    }
+}
+impl TimeGetter<()> for TestTimeGetter4 {
+    fn get(&self) -> TimeOutput<()> {
+        RETURN_4
+    }
+}
+#[test]
+fn as_dyn_time_getter() {
+    let mut original = TestTimeGetter4;
+    assert_eq!(original.get(), RETURN_4);
+    let ptr = &raw mut original;
+    let deref = unsafe { PointerDereferencer::new(ptr) };
+    assert_eq!(deref.get(), RETURN_4);
+    let deref_dyn = deref.as_dyn_time_getter();
+    assert_eq!(deref_dyn.get(), RETURN_4);
+}
