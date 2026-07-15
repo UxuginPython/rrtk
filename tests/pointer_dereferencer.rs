@@ -20,6 +20,7 @@ fn pointer_dereferencer() {
     let deref = unsafe { PointerDereferencer::new(ptr) };
     assert_eq!(deref.get(), RETURN_1);
 }
+//TODO: Make sure it's not the case that the only reason these work is that they're ZSTs.
 #[test]
 fn as_dyn_getter() {
     let mut original = TestGetter1;
@@ -101,4 +102,23 @@ fn as_dyn_time_getter() {
     assert_eq!(deref.get(), RETURN_4);
     let deref_dyn = deref.as_dyn_time_getter();
     assert_eq!(deref_dyn.get(), RETURN_4);
+}
+const TIME: Time = Time::from_nanoseconds(200_000_000);
+const RETURN_5: Option<Datum<u8>> = Some(Datum::new(TIME, 3));
+struct TestChronology5;
+impl Chronology<u8> for TestChronology5 {
+    fn get(&self, time: Time) -> Option<Datum<u8>> {
+        assert_eq!(time, TIME);
+        RETURN_5
+    }
+}
+#[test]
+fn as_dyn_chronology() {
+    let original = TestChronology5;
+    assert_eq!(original.get(TIME), RETURN_5);
+    let ptr = &raw const original;
+    let deref = unsafe { PointerDereferencer::new(ptr) };
+    assert_eq!(deref.get(TIME), RETURN_5);
+    let deref_dyn = deref.as_dyn_chronology();
+    assert_eq!(deref_dyn.get(TIME), RETURN_5);
 }
