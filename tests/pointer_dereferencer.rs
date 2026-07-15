@@ -31,3 +31,24 @@ fn as_dyn_getter() {
     let deref_dyn = deref.as_dyn_getter();
     assert_eq!(deref_dyn.get(), RETURN_1);
 }
+struct TestUpdatable2(*mut u8);
+impl Updatable<()> for TestUpdatable2 {
+    fn update(&mut self) -> NothingOrError<()> {
+        *unsafe { self.0.as_mut() }.unwrap() += 1;
+        Ok(())
+    }
+}
+#[test]
+fn as_dyn_updatable() {
+    let mut value = 23u8;
+    let mut original = TestUpdatable2(&raw mut value);
+    original.update().unwrap();
+    assert_eq!(value, 24);
+    let ptr = &raw mut original;
+    let mut deref = unsafe { PointerDereferencer::new(ptr) };
+    deref.update().unwrap();
+    assert_eq!(value, 25);
+    let mut deref_dyn = deref.as_dyn_updatable();
+    deref_dyn.update().unwrap();
+    assert_eq!(value, 26);
+}
