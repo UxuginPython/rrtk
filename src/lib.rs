@@ -477,31 +477,29 @@ impl<P> PointerDereferencer<P> {
     pub const unsafe fn new(pointer: P) -> Self {
         Self { pointer }
     }
-    //XXX: Is it clear that *_inner means the pointer and not the target of the pointer, or should
-    //these functions be renamed?
     ///Returns the inner pointer that the wrapper contains by consuming it. Due to the fact that
-    ///pointers are `Copy`, [`copy_inner`](Self::copy_inner), which does not consume `self` and is
+    ///pointers are `Copy`, [`copy_ptr`](Self::copy_ptr), which does not consume `self` and is
     ///`const fn`, is preferred in almost all cases however.
     #[inline]
-    pub fn into_inner(self) -> P {
+    pub fn into_ptr(self) -> P {
         self.pointer
     }
 }
 impl<P: Clone> PointerDereferencer<P> {
     ///Clones and returns the inner pointer that the wrapper contains. Due to the fact that
-    ///pointers are `Copy`, [`copy_inner`](Self::copy_inner) is nearly always preferred both for
+    ///pointers are `Copy`, [`copy_ptr`](Self::copy_ptr) is nearly always preferred both for
     ///clarity and because it is `const fn` however.
     #[inline]
-    pub fn clone_inner(&self) -> P {
+    pub fn clone_ptr(&self) -> P {
         self.pointer.clone()
     }
 }
 impl<P: Copy> PointerDereferencer<P> {
     ///This function is be identical to [`clone_inner`](Self::clone_inner) when `P: Copy`. However,
-    ///`copy_inner` should be preferred where possible because, unlike `clone_inner`, it is
+    ///`copy_ptr` should be preferred where possible because, unlike `clone_inner`, it is
     ///`const fn`. It is also clearer that the clone is very light.
     #[inline]
-    pub const fn copy_inner(&self) -> P {
+    pub const fn copy_ptr(&self) -> P {
         self.pointer
     }
 }
@@ -515,7 +513,7 @@ macro_rules! as_dyn_updatable {
         where
             T: Updatable<E>,
         {
-            let ptr = self.copy_inner() as $return_type;
+            let ptr = self.copy_ptr() as $return_type;
             unsafe { PointerDereferencer::new(ptr) }
         }
     };
@@ -528,7 +526,7 @@ macro_rules! as_dyn_getter {
         where
             T: Getter<U, E>,
         {
-            let ptr = self.copy_inner() as $return_type;
+            let ptr = self.copy_ptr() as $return_type;
             unsafe { PointerDereferencer::new(ptr) }
         }
     };
@@ -543,7 +541,7 @@ macro_rules! as_dyn_settable {
         where
             T: Settable<U, E>,
         {
-            let ptr = self.copy_inner() as $return_type;
+            let ptr = self.copy_ptr() as $return_type;
             unsafe { PointerDereferencer::new(ptr) }
         }
     };
@@ -558,7 +556,7 @@ macro_rules! as_dyn_time_getter {
         where
             T: TimeGetter<E>,
         {
-            let ptr = self.copy_inner() as $return_type;
+            let ptr = self.copy_ptr() as $return_type;
             unsafe { PointerDereferencer::new(ptr) }
         }
     };
@@ -574,7 +572,7 @@ macro_rules! as_dyn_chronology {
         where
             T: Chronology<U>,
         {
-            let ptr = self.copy_inner() as $return_type;
+            let ptr = self.copy_ptr() as $return_type;
             unsafe { PointerDereferencer::new(ptr) }
         }
     };
