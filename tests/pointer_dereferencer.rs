@@ -52,3 +52,31 @@ fn as_dyn_updatable() {
     deref_dyn.update().unwrap();
     assert_eq!(value, 26);
 }
+struct TestSettable3(*mut u8);
+impl Updatable<()> for TestSettable3 {
+    fn update(&mut self) -> NothingOrError<()> {
+        Ok(())
+    }
+}
+impl Settable<u8, ()> for TestSettable3 {
+    fn set(&mut self, value: u8) -> NothingOrError<()> {
+        unsafe {
+            *self.0 = value;
+        }
+        Ok(())
+    }
+}
+#[test]
+fn as_dyn_settable() {
+    let mut value = 4u8;
+    let mut original = TestSettable3(&raw mut value);
+    original.set(6).unwrap();
+    assert_eq!(value, 6);
+    let ptr = &raw mut original;
+    let mut deref = unsafe { PointerDereferencer::new(ptr) };
+    deref.set(7).unwrap();
+    assert_eq!(value, 7);
+    let mut deref_dyn = deref.as_dyn_settable();
+    deref_dyn.set(90).unwrap();
+    assert_eq!(value, 90);
+}
