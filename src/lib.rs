@@ -17,7 +17,7 @@
 //!
 //!RRTK prefers **`std`** over **`libm`** and `libm` over **`micromath`** when multiple are
 //!available.
-#![warn(missing_docs)]
+//#![warn(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
 #[cfg(all(
     feature = "internal_enhanced_float",
@@ -65,9 +65,27 @@ pub use state::*;
 ///Error types used for various things in RRTK. Currently they are only zero-sized types, but this
 ///may change.
 pub mod error {
+    use super::*;
     ///The error type used when a `TryFrom` fails.
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]
     pub struct CannotConvert;
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    pub enum PossibleDoubleError<E> {
+        A(E),
+        B(E),
+        AB(E, E),
+    }
+    impl<E> PossibleDoubleError<E> {
+        #[inline]
+        pub fn from_options(a: Option<E>, b: Option<E>) -> Option<Self> {
+            match (a, b) {
+                (None, None) => None,
+                (Some(a), None) => Some(Self::A(a)),
+                (None, Some(b)) => Some(Self::B(b)),
+                (Some(a), Some(b)) => Some(Self::AB(a, b)),
+            }
+        }
+    }
 }
 ///A derivative of position: position, velocity, or acceleration.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -164,6 +182,30 @@ pub type Output<T, E> = Result<Option<Datum<T>>, E>;
 pub type TimeOutput<E> = Result<Time, E>;
 ///Returned when something may return either nothing or an error.
 pub type NothingOrError<E> = Result<(), E>;
+pub trait NothingOrErrorExt<E> {
+    fn from_option(option: Option<E>) -> Self;
+    fn into_option(self) -> Option<E>;
+}
+impl<E> NothingOrErrorExt<E> for NothingOrError<E> {
+    fn from_option(option: Option<E>) -> Self {
+        match option {
+            None => Ok(()),
+            Some(x) => {
+                core::hint::cold_path();
+                Err(x)
+            }
+        }
+    }
+    fn into_option(self) -> Option<E> {
+        match self {
+            Ok(()) => None,
+            Err(x) => {
+                core::hint::cold_path();
+                Some(x)
+            }
+        }
+    }
+}
 ///An object for getting the absolute time.
 pub trait TimeGetter<E: Clone + Debug>: Updatable<E> {
     ///Get the time.
@@ -189,6 +231,11 @@ pub trait Updatable<E: Clone + Debug> {
 pub trait Getter<G, E: Clone + Debug>: Updatable<E> {
     ///Get something.
     fn get(&self) -> Output<G, E>;
+    ///Update with [`Updatable`] and then call [`get`](Getter::get).
+    fn update_and_get(&mut self) -> Output<G, E> {
+        self.update()?;
+        self.get()
+    }
 }
 ///Something with a [`set`](Settable::set) method. Usually used for motors and other mechanical components and
 ///systems. This trait too is fairly broad.
@@ -224,21 +271,37 @@ where
         }
     }
 }
-impl<T, G, S, E> Updatable<E> for Feeder<T, G, S, E>
+impl<T, G, S, E> Updatable<error::PossibleDoubleError<E>> for Feeder<T, G, S, E>
 where
     G: Getter<T, E>,
     S: Settable<T, E>,
     E: Clone + Debug,
 {
-    fn update(&mut self) -> NothingOrError<E> {
-        //TODO: Currently, this just returns if anything fails, which can skip settable.update. Do
-        //      you really want this?
-        self.getter.update()?;
-        if let Some(datum) = self.getter.get()? {
-            self.settable.set(datum.value)?
+    fn update(&mut self) -> NothingOrError<error::PossibleDoubleError<E>> {
+        let gotten = self.getter.update_and_get();
+        let (gotten_ok, gotten_err) = match gotten {
+            Ok(Some(datum)) => (Some(datum.value), None),
+            Ok(None) => (None, None),
+            Err(err) => (None, Some(err)),
         };
-        self.settable.update()?;
-        Ok(())
+        //We can't use the parameters from the outer item, so we use these parameters, which are
+        //the same types respectively, to make the compiler happy.
+        fn settable_side<Si, Ti, Ei>(settable: &mut Si, set_value: Option<Ti>) -> NothingOrError<Ei>
+        where
+            Si: Settable<Ti, Ei>,
+            Ei: Clone + Debug,
+        {
+            if let Some(value) = set_value {
+                settable.set(value)?;
+            }
+            settable.update()
+        }
+        let settable_out = settable_side(&mut self.settable, gotten_ok);
+        let settable_err = settable_out.err();
+        NothingOrError::from_option(error::PossibleDoubleError::from_options(
+            gotten_err,
+            settable_err,
+        ))
     }
 }
 ///Because [`Getter`]s always return a timestamp (as long as they don't return `Err(_)` or
