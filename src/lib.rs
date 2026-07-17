@@ -258,10 +258,30 @@ pub trait Settable<S, E: Clone + Debug>: Updatable<E> {
 }
 ///Feeds the output of a [`Getter`] into a [`Settable`].
 ///
-///There are two ways of thinking about how this does error handling. You may prefer this flowchart:
+///There are two ways of thinking about how this does error handling. The first way is this
+///flowchart:
 #[doc = include_str!("../feeder-flowchart.svg")]
 ///
-///Or to think of it like this, which is closer to how the code is actually written:
+///Here is corresponding pseudocode. This is one of few cases that could probably be simplified if
+///Rust had goto.
+///```text
+///getter.update();
+///if (update errored) {
+///    goto X;
+///}
+///getter.get();
+///if (get returned Ok(Some(_)) ) {
+///    settable.set(value get returned);
+///    if (set errored) {
+///        goto Y;
+///    }
+///}
+///X: settable.update();
+///Y: error_collection_magic()
+///```
+///
+///The second way to think about this error handling is closer to how the code is actually written.
+///Here it is:
 ///
 ///There is a Getter Side and a Settable Side. The Getter Side calls `update` on the getter and, if
 ///that didn't fail, calls `get`. The Getter Side is literally just [`Getter::update_and_get`] and a
