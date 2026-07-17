@@ -17,7 +17,7 @@
 //!
 //!RRTK prefers **`std`** over **`libm`** and `libm` over **`micromath`** when multiple are
 //!available.
-//#![warn(missing_docs)]
+#![warn(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
 #[cfg(all(
     feature = "internal_enhanced_float",
@@ -69,13 +69,23 @@ pub mod error {
     ///The error type used when a `TryFrom` fails.
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]
     pub struct CannotConvert;
+    ///A type for when multiple things may error independently and both errors must be able to be
+    ///returned. This only keeps track of when at least one has errored; it should usually be used
+    ///in combination with [`Option`], [`Result`], or the [`NothingOrError`] type alias of `Result`.
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]
     pub enum PossibleDoubleError<E> {
+        ///The variant for when Side A errors and Side B does not.
         A(E),
+        ///The variant for when Side B errors and Side A does not.
         B(E),
+        ///The variant for when both Side A and Side B error.
         AB(E, E),
     }
     impl<E> PossibleDoubleError<E> {
+        ///Constructs `PossibleDoubleError` from a possible Side A error and a possible Side B
+        ///error. Returns `None` if neither side has an error and `Some(PossibleDoubleError)` if at
+        ///least one side does. You may want to use this in conjunction with
+        ///[`NothingOrErrorExt::from_option`].
         #[inline]
         pub fn from_options(a: Option<E>, b: Option<E>) -> Option<Self> {
             match (a, b) {
@@ -182,8 +192,11 @@ pub type Output<T, E> = Result<Option<Datum<T>>, E>;
 pub type TimeOutput<E> = Result<Time, E>;
 ///Returned when something may return either nothing or an error.
 pub type NothingOrError<E> = Result<(), E>;
+///An extension trait for [`NothingOrError`].
 pub trait NothingOrErrorExt<E> {
+    ///Converts from `Option<E>` to `NothingOrError<E>`.
     fn from_option(option: Option<E>) -> Self;
+    ///Converts from `NothingOrError<E>` to `Option<E>`.
     fn into_option(self) -> Option<E>;
 }
 impl<E> NothingOrErrorExt<E> for NothingOrError<E> {
@@ -558,7 +571,7 @@ impl<P: Clone> PointerDereferencer<P> {
     }
 }
 impl<P: Copy> PointerDereferencer<P> {
-    ///This function is be identical to [`clone_inner`](Self::clone_inner) when `P: Copy`. However,
+    ///This function is be identical to [`clone_ptr`](Self::clone_ptr) when `P: Copy`. However,
     ///`copy_ptr` should be preferred where possible because, unlike `clone_inner`, it is
     ///`const fn`. It is also clearer that the clone is very light.
     #[inline]
