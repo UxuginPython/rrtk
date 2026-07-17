@@ -257,6 +257,38 @@ pub trait Settable<S, E: Clone + Debug>: Updatable<E> {
     fn set(&mut self, value: S) -> NothingOrError<E>;
 }
 ///Feeds the output of a [`Getter`] into a [`Settable`].
+///
+///There are two ways of thinking about how this does error handling. You may prefer this flowchart:
+#[doc = include_str!("../feeder-flowchart.svg")]
+///
+///Or to think of it like this, which is closer to how the code is actually written:
+///There is a Getter Side and a Settable Side. The Getter Side calls `update` on the getter and, if
+///that didn't fail, calls `get`. The Settable Side calls `set` on the settable if `get` ran and got
+///`Ok(Some(_))` and then calls `update` on the settable as long as `set` either didn't run or
+///succeeded. There's then some more magic to collect the possible errors into
+///[`PossibleDoubleError`](error::PossibleDoubleError).
+///That's pretty hard to parse in English, so here's some Rust-like pseudocode.
+///```text
+///fn getter_side {
+///    getter.update()?;
+///    getter.get()?;
+///}
+///fn settable_side {
+///    //true as long as both:
+///    //1. getter.get() ran, i.e., getter.update() didn't error
+///    //2. getter.get() returned Ok(Some(_))
+///    if have_something_from_getter {
+///        settable.set(something_from_getter)?;
+///    }
+///    //The only way for settable_side to return before here is if both:
+///    //1. settable.set() ran (see previous comment)
+///    //2. settable.set() errored directly
+///    settable.update()?;
+///}
+///getter_side();
+///settable_side();
+///error_collection_magic();
+///```
 pub struct Feeder<T, G, S, E>
 where
     G: Getter<T, E>,
@@ -291,12 +323,14 @@ where
     E: Clone + Debug,
 {
     fn update(&mut self) -> NothingOrError<error::PossibleDoubleError<E>> {
+        //"Getter Side"
         let gotten = self.getter.update_and_get();
         let (gotten_ok, gotten_err) = match gotten {
             Ok(Some(datum)) => (Some(datum.value), None),
             Ok(None) => (None, None),
             Err(err) => (None, Some(err)),
         };
+        //"Settable Side"
         //We can't use the parameters from the outer item, so we use these parameters, which are
         //the same types respectively, to make the compiler happy.
         fn settable_side<Si, Ti, Ei>(settable: &mut Si, set_value: Option<Ti>) -> NothingOrError<Ei>
@@ -311,6 +345,7 @@ where
         }
         let settable_out = settable_side(&mut self.settable, gotten_ok);
         let settable_err = settable_out.err();
+        //"error collection magic"
         NothingOrError::from_option(error::PossibleDoubleError::from_options(
             gotten_err,
             settable_err,
