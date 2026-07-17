@@ -289,6 +289,14 @@ pub trait Settable<S, E: Clone + Debug>: Updatable<E> {
 ///settable_side();
 ///error_collection_magic();
 ///```
+///Here's a flowchart for this version:
+#[doc = include_str!("../feeder-flowchart-2.svg")]
+///
+///(For some reason, this flowchart svg doesn't show up quite correctly in Rustdoc. Inkscape,
+///Firefox, and Chromium all read it fine.)
+///
+///As for `PossibleDoubleError`, Side A corresponds to the Getter Side and Side B corresponds to the
+///Settable Side.
 pub struct Feeder<T, G, S, E>
 where
     G: Getter<T, E>,
