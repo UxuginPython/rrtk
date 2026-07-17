@@ -262,12 +262,17 @@ pub trait Settable<S, E: Clone + Debug>: Updatable<E> {
 #[doc = include_str!("../feeder-flowchart.svg")]
 ///
 ///Or to think of it like this, which is closer to how the code is actually written:
+///
 ///There is a Getter Side and a Settable Side. The Getter Side calls `update` on the getter and, if
-///that didn't fail, calls `get`. The Settable Side calls `set` on the settable if `get` ran and got
+///that didn't fail, calls `get`. The Getter Side is literally just [`Getter::update_and_get`] and a
+///little logic for feeding into the Settable Side.
+///
+///The Settable Side calls `set` on the settable if `get` ran and got
 ///`Ok(Some(_))` and then calls `update` on the settable as long as `set` either didn't run or
 ///succeeded. There's then some more magic to collect the possible errors into
 ///[`PossibleDoubleError`](error::PossibleDoubleError).
-///That's pretty hard to parse in English, so here's some Rust-like pseudocode.
+///
+///That's pretty hard to parse in English, so here's some Rust-like pseudocode:
 ///```text
 ///fn getter_side {
 ///    getter.update()?;
@@ -289,7 +294,7 @@ pub trait Settable<S, E: Clone + Debug>: Updatable<E> {
 ///settable_side();
 ///error_collection_magic();
 ///```
-///Here's a flowchart for this version:
+///Also, here's a flowchart:
 #[doc = include_str!("../feeder-flowchart-2.svg")]
 ///
 ///(For some reason, this flowchart svg doesn't show up quite correctly in Rustdoc. Inkscape,
