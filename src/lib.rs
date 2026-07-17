@@ -312,7 +312,7 @@ pub trait Settable<S, E: Clone + Debug>: Updatable<E> {
 ///}
 ///getter_side();
 ///settable_side();
-///error_collection_magic();
+///error_collection_magic()
 ///```
 ///Also, here's a flowchart:
 #[doc = include_str!("../feeder-flowchart-2.svg")]
