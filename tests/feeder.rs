@@ -98,3 +98,64 @@ fn getter_update_fail_settable_update_fail() {
     let test = feeder.update();
     assert_eq!(test, Err(error::PossibleDoubleError::AB(1, 4)));
 }
+#[test]
+fn getter_get_fail_settable_update_ok() {
+    struct MyGetter;
+    impl Updatable<u8> for MyGetter {
+        fn update(&mut self) -> NothingOrError<u8> {
+            Ok(())
+        }
+    }
+    impl Getter<u8, u8> for MyGetter {
+        fn get(&self) -> Output<u8, u8> {
+            Err(2)
+        }
+    }
+    struct MySettable;
+    impl Settable<u8, u8> for MySettable {
+        fn set(&mut self, _: u8) -> NothingOrError<u8> {
+            panic!("Since MyGetter::get fails, this shouldn't run.");
+        }
+    }
+    static mut MY_SETTABLE_UPDATE_UPDATE_CALL_COUNT: u8 = 0;
+    impl Updatable<u8> for MySettable {
+        fn update(&mut self) -> NothingOrError<u8> {
+            unsafe {
+                MY_SETTABLE_UPDATE_UPDATE_CALL_COUNT += 1;
+            }
+            Ok(())
+        }
+    }
+    let mut feeder = Feeder::new(MyGetter, MySettable);
+    let test = feeder.update();
+    assert_eq!(test, Err(error::PossibleDoubleError::A(2)));
+    assert_eq!(unsafe { MY_SETTABLE_UPDATE_UPDATE_CALL_COUNT }, 1);
+}
+#[test]
+fn getter_get_fail_settable_update_fail() {
+    struct MyGetter;
+    impl Updatable<u8> for MyGetter {
+        fn update(&mut self) -> NothingOrError<u8> {
+            Ok(())
+        }
+    }
+    impl Getter<u8, u8> for MyGetter {
+        fn get(&self) -> Output<u8, u8> {
+            Err(2)
+        }
+    }
+    struct MySettable;
+    impl Settable<u8, u8> for MySettable {
+        fn set(&mut self, _: u8) -> NothingOrError<u8> {
+            panic!("Since MyGetter::get fails, this shouldn't run.");
+        }
+    }
+    impl Updatable<u8> for MySettable {
+        fn update(&mut self) -> NothingOrError<u8> {
+            Err(4)
+        }
+    }
+    let mut feeder = Feeder::new(MyGetter, MySettable);
+    let test = feeder.update();
+    assert_eq!(test, Err(error::PossibleDoubleError::AB(2, 4)));
+}
