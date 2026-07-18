@@ -1,3 +1,8 @@
+//In this module, the following numbers are used for errors (x: y = y returns x error number):
+//1: getter.update()
+//2: getter.get()
+//3: settable.set()
+//4: settable.update()
 use rrtk::*;
 #[test]
 fn everything_ok() {
@@ -86,10 +91,10 @@ fn getter_update_fail_settable_update_fail() {
     }
     impl Updatable<u8> for MySettable {
         fn update(&mut self) -> NothingOrError<u8> {
-            Err(2)
+            Err(4)
         }
     }
     let mut feeder = Feeder::new(MyGetter, MySettable);
     let test = feeder.update();
-    assert_eq!(test, Err(error::PossibleDoubleError::AB(1, 2)));
+    assert_eq!(test, Err(error::PossibleDoubleError::AB(1, 4)));
 }
