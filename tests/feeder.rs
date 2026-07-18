@@ -56,11 +56,11 @@ fn getter_update_fail_settable_update_ok() {
             panic!("Since MyGetter::get doesn't run, this shouldn't either.");
         }
     }
-    static mut MY_SETTABLE_UPDATE_UPDATE_CALL_COUNT: u8 = 0;
+    static mut MY_SETTABLE_UPDATE_CALL_COUNT: u8 = 0;
     impl Updatable<u8> for MySettable {
         fn update(&mut self) -> NothingOrError<u8> {
             unsafe {
-                MY_SETTABLE_UPDATE_UPDATE_CALL_COUNT += 1;
+                MY_SETTABLE_UPDATE_CALL_COUNT += 1;
             }
             Ok(())
         }
@@ -68,7 +68,7 @@ fn getter_update_fail_settable_update_ok() {
     let mut feeder = Feeder::new(MyGetter, MySettable);
     let test = feeder.update();
     assert_eq!(test, Err(error::PossibleDoubleError::A(1)));
-    assert_eq!(unsafe { MY_SETTABLE_UPDATE_UPDATE_CALL_COUNT }, 1);
+    assert_eq!(unsafe { MY_SETTABLE_UPDATE_CALL_COUNT }, 1);
 }
 #[test]
 fn getter_update_fail_settable_update_fail() {
@@ -121,11 +121,11 @@ fn getter_get_fail_settable_update_ok() {
             panic!("Since MyGetter::get fails, this shouldn't run.");
         }
     }
-    static mut MY_SETTABLE_UPDATE_UPDATE_CALL_COUNT: u8 = 0;
+    static mut MY_SETTABLE_UPDATE_CALL_COUNT: u8 = 0;
     impl Updatable<u8> for MySettable {
         fn update(&mut self) -> NothingOrError<u8> {
             unsafe {
-                MY_SETTABLE_UPDATE_UPDATE_CALL_COUNT += 1;
+                MY_SETTABLE_UPDATE_CALL_COUNT += 1;
             }
             Ok(())
         }
@@ -134,7 +134,7 @@ fn getter_get_fail_settable_update_ok() {
     let test = feeder.update();
     assert_eq!(test, Err(error::PossibleDoubleError::A(2)));
     assert_eq!(unsafe { MY_GETTER_UPDATE_CALL_COUNT }, 1);
-    assert_eq!(unsafe { MY_SETTABLE_UPDATE_UPDATE_CALL_COUNT }, 1);
+    assert_eq!(unsafe { MY_SETTABLE_UPDATE_CALL_COUNT }, 1);
 }
 #[test]
 fn getter_get_fail_settable_update_fail() {
