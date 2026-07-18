@@ -1,0 +1,67 @@
+use rrtk::*;
+#[test]
+fn everything_ok() {
+    const VALUE: Output<u8, ()> = Ok(Some(Datum::new(Time::from_nanoseconds(300_000_000), 57)));
+    struct MyGetter;
+    impl Updatable<()> for MyGetter {
+        fn update(&mut self) -> NothingOrError<()> {
+            Ok(())
+        }
+    }
+    impl Getter<u8, ()> for MyGetter {
+        fn get(&self) -> Output<u8, ()> {
+            VALUE
+        }
+    }
+    static mut TEST_VALUE: u8 = 5;
+    struct MySettable;
+    impl Updatable<()> for MySettable {
+        fn update(&mut self) -> NothingOrError<()> {
+            Ok(())
+        }
+    }
+    impl Settable<u8, ()> for MySettable {
+        fn set(&mut self, value: u8) -> NothingOrError<()> {
+            unsafe {
+                TEST_VALUE = value;
+            }
+            Ok(())
+        }
+    }
+    let mut feeder = Feeder::new(MyGetter, MySettable);
+    feeder.update().unwrap();
+    assert_eq!(unsafe { TEST_VALUE }, 57);
+}
+#[test]
+fn getter_update_fail_settable_update_ok() {
+    struct MyGetter;
+    impl Updatable<u8> for MyGetter {
+        fn update(&mut self) -> NothingOrError<u8> {
+            Err(1)
+        }
+    }
+    impl Getter<u8, u8> for MyGetter {
+        fn get(&self) -> Output<u8, u8> {
+            panic!("Since MyGetter::update returns Err, this should never be called.");
+        }
+    }
+    struct MySettable;
+    impl Settable<u8, u8> for MySettable {
+        fn set(&mut self, _: u8) -> NothingOrError<u8> {
+            panic!("Since MyGetter::get doesn't run, this shouldn't either.");
+        }
+    }
+    static mut MY_SETTABLE_UPDATE_UPDATE_CALL_COUNT: u8 = 0;
+    impl Updatable<u8> for MySettable {
+        fn update(&mut self) -> NothingOrError<u8> {
+            unsafe {
+                MY_SETTABLE_UPDATE_UPDATE_CALL_COUNT += 1;
+            }
+            Ok(())
+        }
+    }
+    let mut feeder = Feeder::new(MyGetter, MySettable);
+    let test = feeder.update();
+    assert_eq!(test, Err(error::PossibleDoubleError::A(1)));
+    assert_eq!(unsafe { MY_SETTABLE_UPDATE_UPDATE_CALL_COUNT }, 1);
+}

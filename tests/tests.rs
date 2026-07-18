@@ -1115,36 +1115,3 @@ fn none_getter() {
     <NoneGetter as Updatable<()>>::update(&mut getter).unwrap();
     assert_eq!(<NoneGetter as Getter<(), ()>>::get(&getter), Ok(None));
 }
-#[test]
-fn feeder() {
-    const VALUE: Output<u8, ()> = Ok(Some(Datum::new(Time::from_nanoseconds(300_000_000), 57)));
-    struct MyGetter;
-    impl Updatable<()> for MyGetter {
-        fn update(&mut self) -> NothingOrError<()> {
-            Ok(())
-        }
-    }
-    impl Getter<u8, ()> for MyGetter {
-        fn get(&self) -> Output<u8, ()> {
-            VALUE
-        }
-    }
-    static mut TEST_VALUE: u8 = 5;
-    struct MySettable;
-    impl Updatable<()> for MySettable {
-        fn update(&mut self) -> NothingOrError<()> {
-            Ok(())
-        }
-    }
-    impl Settable<u8, ()> for MySettable {
-        fn set(&mut self, value: u8) -> NothingOrError<()> {
-            unsafe {
-                TEST_VALUE = value;
-            }
-            Ok(())
-        }
-    }
-    let mut feeder = Feeder::new(MyGetter, MySettable);
-    feeder.update().unwrap();
-    assert_eq!(unsafe { TEST_VALUE }, 57);
-}
