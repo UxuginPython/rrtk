@@ -4,29 +4,29 @@
 //3: settable.set()
 //4: settable.update()
 use rrtk::*;
+const CORRECT_VALUE: Output<u8, u8> = Ok(Some(Datum::new(Time::from_nanoseconds(300_000_000), 39)));
 #[test]
 fn everything_ok() {
-    const VALUE: Output<u8, ()> = Ok(Some(Datum::new(Time::from_nanoseconds(300_000_000), 57)));
     struct MyGetter;
-    impl Updatable<()> for MyGetter {
-        fn update(&mut self) -> NothingOrError<()> {
+    impl Updatable<u8> for MyGetter {
+        fn update(&mut self) -> NothingOrError<u8> {
             Ok(())
         }
     }
-    impl Getter<u8, ()> for MyGetter {
-        fn get(&self) -> Output<u8, ()> {
-            VALUE
+    impl Getter<u8, u8> for MyGetter {
+        fn get(&self) -> Output<u8, u8> {
+            CORRECT_VALUE
         }
     }
     static mut TEST_VALUE: u8 = 5;
     struct MySettable;
-    impl Updatable<()> for MySettable {
-        fn update(&mut self) -> NothingOrError<()> {
+    impl Updatable<u8> for MySettable {
+        fn update(&mut self) -> NothingOrError<u8> {
             Ok(())
         }
     }
-    impl Settable<u8, ()> for MySettable {
-        fn set(&mut self, value: u8) -> NothingOrError<()> {
+    impl Settable<u8, u8> for MySettable {
+        fn set(&mut self, value: u8) -> NothingOrError<u8> {
             unsafe {
                 TEST_VALUE = value;
             }
@@ -35,7 +35,7 @@ fn everything_ok() {
     }
     let mut feeder = Feeder::new(MyGetter, MySettable);
     feeder.update().unwrap();
-    assert_eq!(unsafe { TEST_VALUE }, 57);
+    assert_eq!(unsafe { TEST_VALUE }, 39);
 }
 #[test]
 fn getter_update_fail_settable_update_ok() {
@@ -168,4 +168,43 @@ fn getter_get_fail_settable_update_fail() {
     let test = feeder.update();
     assert_eq!(test, Err(error::PossibleDoubleError::AB(2, 4)));
     assert_eq!(unsafe { MY_GETTER_UPDATE_CALL_COUNT }, 1);
+}
+#[test]
+fn settable_set_fail() {
+    struct MyGetter;
+    static mut MY_GETTER_UPDATE_CALL_COUNT: u8 = 0;
+    impl Updatable<u8> for MyGetter {
+        fn update(&mut self) -> NothingOrError<u8> {
+            unsafe {
+                MY_GETTER_UPDATE_CALL_COUNT += 1;
+            }
+            Ok(())
+        }
+    }
+    static mut MY_GETTER_GET_CALL_COUNT: u8 = 0;
+    impl Getter<u8, u8> for MyGetter {
+        fn get(&self) -> Output<u8, u8> {
+            unsafe {
+                MY_GETTER_GET_CALL_COUNT += 1;
+            }
+            CORRECT_VALUE
+        }
+    }
+    struct MySettable;
+    impl Settable<u8, u8> for MySettable {
+        fn set(&mut self, value: u8) -> NothingOrError<u8> {
+            assert_eq!(value, 39);
+            Err(3)
+        }
+    }
+    impl Updatable<u8> for MySettable {
+        fn update(&mut self) -> NothingOrError<u8> {
+            panic!("Since Self::set fails, this should never run.");
+        }
+    }
+    let mut feeder = Feeder::new(MyGetter, MySettable);
+    let test = feeder.update();
+    assert_eq!(test, Err(error::PossibleDoubleError::B(3)));
+    assert_eq!(unsafe { MY_GETTER_UPDATE_CALL_COUNT }, 1);
+    assert_eq!(unsafe { MY_GETTER_GET_CALL_COUNT }, 1);
 }
