@@ -23,3 +23,16 @@ mod possible_double_error {
         assert_eq!(test, Some(PossibleDoubleError::AB(83, 34)));
     }
 }
+mod nothing_or_error_ext {
+    use super::*;
+    #[test]
+    fn from_option_none() {
+        let test = NothingOrError::<u8>::from_option(None);
+        assert_eq!(test, Ok(()));
+    }
+    #[test]
+    fn from_option_some() {
+        let test = NothingOrError::<u8>::from_option(Some(13));
+        assert_eq!(test, Err(13));
+    }
+}
