@@ -35,4 +35,16 @@ mod nothing_or_error_ext {
         let test = NothingOrError::<u8>::from_option(Some(13));
         assert_eq!(test, Err(13));
     }
+    #[test]
+    fn into_option_ok() {
+        let original: NothingOrError<u8> = Ok(());
+        let test = original.into_option();
+        assert!(test.is_none());
+    }
+    #[test]
+    fn into_option_err() {
+        let original: NothingOrError<u8> = Err(98);
+        let test = original.into_option();
+        assert_eq!(test, Some(98));
+    }
 }
