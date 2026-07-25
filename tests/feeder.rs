@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BSD-3-Clause
+// Copyright 2024-2026 UxuginPython
 //In this module, the following numbers are used for errors (x: y = y returns x error number):
 //1: getter.update()
 //2: getter.get()

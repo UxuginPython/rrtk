@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-// Copyright 2024-2025 UxuginPython
+// Copyright 2024-2026 UxuginPython
 //!A few common, simple mechanical devices that work with the device system. The source of this
 //!module is simple enough to be treated as an example of how to implement your own devices.
 use super::*;

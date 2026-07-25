@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-// Copyright 2024-2025 UxuginPython
+// Copyright 2024-2026 UxuginPython
 use crate::*;
 ///This trait allows one to write code generically over [`LinearState`] and [`AngularState`]. Each of
 ///those has a corresponding method to each method of this trait without the `generic_` prefix.

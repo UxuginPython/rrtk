@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-// Copyright 2024-2025 UxuginPython
+// Copyright 2024-2026 UxuginPython
 //!A graph-based system for tracking the rotational states of mechanical components throughout your
 //!robot.
 use super::*;

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-// Copyright 2024-2025 UxuginPython
+// Copyright 2024-2026 UxuginPython
 use crate::*;
 use stulta::AbsoluteValue;
 ///Where you are in following a motion profile.

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-// Copyright 2024-2025 UxuginPython
+// Copyright 2024-2026 UxuginPython
 use super::*;
 //You can add pretty much whatever bounds here as long as they're implemented for Command and
 //AngularCommand. Most of the strange or redundant seeming ones here have to do with MotionProfile.

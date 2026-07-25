@@ -1,4 +1,6 @@
 #!/bin/bash
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright 2024-2026 UxuginPython
 set -e
 echo no default features
 cargo check --no-default-features

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-// Copyright 2024-2025 UxuginPython
+// Copyright 2024-2026 UxuginPython
 //Make sure to never let rustfmt touch this file. There's an attribute in the super module which
 //unfortunately can't be here for some reason.
 //!Type aliases for [`Quantity`] types of different dimensions.

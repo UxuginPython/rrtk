@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BSD-3-Clause
+// Copyright 2024-2026 UxuginPython
 use rrtk::error::*;
 use rrtk::*;
 mod possible_double_error {

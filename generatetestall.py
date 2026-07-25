@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 # SPDX-License-Identifier: BSD-3-Clause
-# Copyright 2024-2025 UxuginPython
+# Copyright 2024-2026 UxuginPython
 from itertools import *
 import re
 from os import system

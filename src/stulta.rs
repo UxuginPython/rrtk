@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-// Copyright 2024-2025 UxuginPython
+// Copyright 2024-2026 UxuginPython
 //!"The stupid things" (Latin). These items really shouldn't exist but currently must, mostly
 //!either due to language limitations or a desire to minimize external dependencies.
 ///A trait for getting half of a number or other quantity object.

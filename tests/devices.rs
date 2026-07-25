@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BSD-3-Clause
+// Copyright 2024-2026 UxuginPython
 #![cfg(feature = "devices")]
 use rrtk::devices::provided::*;
 use rrtk::devices::*;

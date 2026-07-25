@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BSD-3-Clause
+// Copyright 2024-2026 UxuginPython
 use rrtk::*;
 const RETURN_1: Output<u8, ()> = Ok(Some(Datum::new(Time::from_nanoseconds(0), 5)));
 struct TestGetter1;
