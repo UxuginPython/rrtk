@@ -3,8 +3,6 @@
 //!# Rust Robotics ToolKit
 //!**A set of algorithms and other tools for robotics in Rust.**
 //!
-//![**IMPORTANT NOTICE** for users of rrtk 0.7.0 prereleases and/or Rust 1.94 (nightly at the time of this version's publishing)](http://rrtk.org/1-94-fix-docs.html)
-//!
 //!It is almost entirely `no_std` and most things work without `alloc`. It does not currently integrate with any API directly. This may be added in the future, probably through another crate.
 //!## Feature Flags
 //!- `alloc` - Enable items requiring dynamic allocation through Rust's builtin `alloc` crate.
@@ -726,10 +724,6 @@ macro_rules! as_dyn_chronology {
 ///where `T: Trait`. Because raw pointers are `Copy`, they only require `&self` and do not consume
 ///the original `PointerDereferencer`. Unfortunately `T` currently must be `Sized` due to language
 ///limitations.
-///
-///These functions may currently behave differently than expected due to a patch fixing compilation
-///on Rust 1.94+. Details are still being worked out.
-///More information may be available on RRTK's [website](http://rrtk.org/1-94-fix-docs.html).
 impl<T> PointerDereferencer<*mut T> {
     as_dyn_updatable!(*mut (dyn Updatable<E> + '_));
     as_dyn_getter!(*mut (dyn Getter<U, E> + '_));
@@ -741,10 +735,6 @@ impl<T> PointerDereferencer<*mut T> {
 ///`PointerDereferencer<*const RwLock<T>>` where `T: Trait`. Because raw pointers are `Copy`, they
 ///only require `&self` and do not consume the original `PointerDereferencer`. Unfortunately `T`
 ///currently must be `Sized` due to language limitations.
-///
-///These functions may currently behave differently than expected due to a patch fixing compilation
-///on Rust 1.94+. Details are still being worked out.
-///More information may be available on RRTK's [website](http://rrtk.org/1-94-fix-docs.html).
 #[cfg(feature = "std")]
 impl<T> PointerDereferencer<*const RwLock<T>> {
     as_dyn_updatable!(*const RwLock<dyn Updatable<E> + '_>);
@@ -756,10 +746,6 @@ impl<T> PointerDereferencer<*const RwLock<T>> {
 ///`PointerDereferencer<*const Mutex<T>>` where `T: Trait`. Because raw pointers are `Copy`, they
 ///only require `&self` and do not consume the original `PointerDereferencer`. Unfortunately `T`
 ///currently must be `Sized` due to language limitations.
-///
-///These functions may currently behave differently than expected due to a patch fixing compilation
-///on Rust 1.94+. Details are still being worked out.
-///More information may be available on RRTK's [website](http://rrtk.org/1-94-fix-docs.html).
 #[cfg(feature = "std")]
 impl<T> PointerDereferencer<*const Mutex<T>> {
     as_dyn_updatable!(*const Mutex<dyn Updatable<E> + '_>);
@@ -770,9 +756,6 @@ impl<T> PointerDereferencer<*const Mutex<T>> {
 //There are Chronology impls for RwLock<C> and Mutex<C> where C: Chronology. It is necessary to
 //implement Updatable etc. for *const RwLock<T> and *const Mutex<T> directly rather than doing it
 //more generically like for Chronology because they require mutability.
-///These functions may currently behave differently than expected due to a patch fixing compilation
-///on Rust 1.94+. Details are still being worked out.
-///More information may be available on RRTK's [website](http://rrtk.org/1-94-fix-docs.html).
 impl<T> PointerDereferencer<*const T> {
     as_dyn_chronology!(*const (dyn Chronology<U> + '_));
 }
