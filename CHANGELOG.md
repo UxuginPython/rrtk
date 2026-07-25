@@ -295,3 +295,12 @@ Remove `Error` enum:
 Replace the device system again.
 ## 0.7.0-alpha.11
 Start cleaning up a [really big mess](http://rrtk.org/notice/).
+## 0.7.0-beta.0
+- Almost entirely rewrite `Feeder` for better error handling.
+- Add `error::PossibleDoubleError`, an error type for when two things may error independently and have their errors reported together.
+- Add `NothingOrErrorExt` extension trait for `NothingOrError` with methods for converting between `NothingOrError<E>` (a type alias for `Result<(), E>`) and `Option<E>`.
+- Add `Getter::update_and_get`. Because `Getter<T, E>: Updatable<E>`, it is possible to add this method that calls `<Self as Updatable<E>>::update()` (handling errors appropriately) and then returns the value of `<Self as Getter<T, E>>::get()`.
+- Rename `PointerDereferencer`'s `(copy|clone|into)_inner` methods to `(copy|clone|into)_ptr` for clarity because, although it is possible to construct `PointerDereferencer` with non-pointer types, it is not recommended, and `*_inner` may be misunderstood as methods that return the referent.
+- Add `DimensionlessFraction::into_components`, which returns the numerator and denominator as a tuple.
+- Remove some code from the previous device system that was accidentally left in the last prerelease.
+- Significantly improve testing.
