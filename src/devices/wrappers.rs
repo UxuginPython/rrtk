@@ -1,4 +1,12 @@
+// SPDX-License-Identifier: BSD-3-Clause
+// Copyright 2024-2026 UxuginPython
+//!Wrappers that connect [`Getter`]s and [`Settable`]s to the device system.
 use super::*;
+///Call the getter's `get` method and, if it returns `Ok(Some(_))`, write the value to a node in the
+///system.
+///
+///If `get` does not return a value (`Ok(None)` or `Err(_)`), the node's state is set to `None`.
+///If `get` returns an error, it is returned.
 pub fn get_and_write_to_node<
     G: Getter<AngularState, E> + ?Sized,
     const N: usize,
@@ -18,6 +26,8 @@ pub fn get_and_write_to_node<
     system.set_state_local(node, to_set);
     Ok(())
 }
+///Write the current state of a node in the system to a settable. This uses
+///[`System::get_state_connected`].
 pub fn set_to_node_state<
     S: Settable<AngularState, E> + ?Sized,
     const N: usize,
