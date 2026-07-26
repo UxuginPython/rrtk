@@ -745,4 +745,14 @@ impl<T: stulta::AbsoluteValue, MM: Integer, S: Integer> stulta::AbsoluteValue
         Self::new(self.2.rrtk_abs())
     }
 }
-//TODO: One annoyance: DimensionlessFraction cannot be divided by Time.
+//FIXME? It is a little weird that this just makes stuff a float when everything could in theory
+//stay integer. It's just a lot easier to do one-off types for dimensionless and time quantities
+//than it is to maintain a whole other side of the dimensional analysis system for exact values.
+//Also, most of this is going to change in 0.8 or 0.9 anyway. Probably it will be changed to a
+//system using optional external crates somehow and avoiding these kinds of special cases.
+impl Div<Time> for DimensionlessFraction {
+    type Output = InverseSecond<f32>;
+    fn div(self, rhs: Time) -> InverseSecond<f32> {
+        self.as_quantity_f32() / rhs
+    }
+}
