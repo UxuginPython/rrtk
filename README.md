@@ -17,8 +17,8 @@ RRTK is free and open source software licensed under the permissive BSD 3-Clause
     - New streams can be added easily with the `Getter` trait.
 - Graph-based device control system
     - Devices hold terminals which can be connected together
-    - Differential, axle, and direction reversal builtin
-    - Easily connect streams to the device system through wrappers
+    - Differential, gear train, and clutch provided
+    - Coming soon: easily connect streams to the device system through wrappers
 - Trapezoidal motion profile following
 
 ## Related Crates
