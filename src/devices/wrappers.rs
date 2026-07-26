@@ -45,3 +45,14 @@ impl<G: Getter<AngularState, E>, E: Clone + Debug> DeviceUpdatable for GetterWra
         get_and_write_to_node(&self.getter, system, self.node);
     }
 }
+pub struct SettableWrapper<S, E> {
+    settable: S,
+    node: NodeID,
+    phantom_e: PhantomData<E>,
+}
+impl<S: Settable<AngularState, E>, E: Clone + Debug> DeviceUpdatable for SettableWrapper<S, E> {
+    fn device_update<const N: usize>(&mut self, system: &mut System<N>) {
+        self.settable.update();
+        set_to_node_state(&mut self.settable, system, self.node);
+    }
+}
