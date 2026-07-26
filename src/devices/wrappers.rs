@@ -33,3 +33,15 @@ pub fn set_to_node_state<
         Ok(())
     }
 }
+pub struct GetterWrapper<G, E> {
+    getter: G,
+    node: NodeID,
+    phantom_e: PhantomData<E>,
+}
+//FIXME: error handling
+impl<G: Getter<AngularState, E>, E: Clone + Debug> DeviceUpdatable for GetterWrapper<G, E> {
+    fn device_update<const N: usize>(&mut self, system: &mut System<N>) {
+        self.getter.update();
+        get_and_write_to_node(&self.getter, system, self.node);
+    }
+}
