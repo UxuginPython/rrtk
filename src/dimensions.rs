@@ -612,15 +612,10 @@ impl_const_ops!(i64);
 impl_const_ops!(i128);
 impl_const_ops!(isize);
 //FIXME: E0210
+//There's a very similar commented out impl in lib.rs.
 /*impl<T, MM: Integer, S: Integer> From<Quantity<T, MM, S>> for T {
     fn from(was: Quantity<T, MM, S>) -> T {
         was.2
-    }
-}*/
-//or, if you can't, FIXME instead: E0119
-/*impl<T, MM: Integer, S: Integer> Into<T> for Quantity<T, MM, S> {
-    fn into(self) -> T {
-        self.2
     }
 }*/
 impl<T: Neg<Output = O>, O, MM: Integer, S: Integer> Neg for Quantity<T, MM, S> {
