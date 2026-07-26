@@ -719,7 +719,6 @@ macro_rules! as_dyn_chronology {
         }
     };
 }
-//TODO: Remove the notices below the docs when you do actually learn more.
 ///These functions get a `PointerDereferencer<*mut dyn Trait>` from a `PointerDereferencer<*mut T>`
 ///where `T: Trait`. Because raw pointers are `Copy`, they only require `&self` and do not consume
 ///the original `PointerDereferencer`. Unfortunately `T` currently must be `Sized` due to language
@@ -759,15 +758,10 @@ impl<T> PointerDereferencer<*const Mutex<T>> {
 impl<T> PointerDereferencer<*const T> {
     as_dyn_chronology!(*const (dyn Chronology<U> + '_));
 }
-//FIXME: Make one of these work if you can, preferably From since it implies Into.
+//FIXME: Make this work if you can.
 /*impl<P> From<PointerDereferencer<P>> for P {
     fn from(was: PointerDereferencer<P>) -> Self {
         was.into_inner()
-    }
-}*/
-/*impl<P> Into<P> for PointerDereferencer<P> {
-    fn into(self) -> P {
-        self.into_inner()
     }
 }*/
 impl<U: ?Sized + Updatable<E>, E: Clone + Debug> Updatable<E> for PointerDereferencer<*mut U> {
