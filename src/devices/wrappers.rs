@@ -63,21 +63,22 @@ impl<S: Settable<AngularState, E>, E: Clone + Debug> DeviceUpdatable<E> for Sett
         set_to_node_state(&mut self.settable, system, self.node)
     }
 }
-/*
 pub struct GetterSettableWrapper<T, E> {
     getter_settable: T,
     node: NodeID,
     phantom_e: PhantomData<E>,
 }
-impl<T, E> DeviceUpdatable for GetterSettableWrapper<T, E>
+impl<T, E> DeviceUpdatable<E> for GetterSettableWrapper<T, E>
 where
     T: Getter<AngularState, E> + Settable<AngularState, E>,
     E: Clone + Debug,
 {
-    fn device_update<const N: usize>(&mut self, system: &mut System<N>) {
-        self.getter_settable.update();
-        set_to_node_state(&mut self.getter_settable, system, self.node);
-        get_and_write_to_node(&self.getter_settable, system, self.node);
+    fn device_update<const N: usize>(&mut self, system: &mut System<N>) -> NothingOrError<E> {
+        error_handle_update!(self.getter_settable, system, self.node);
+        if let Err(error) = set_to_node_state(&mut self.getter_settable, system, self.node) {
+            system.set_state_local(self.node, None);
+            return Err(error);
+        }
+        get_and_write_to_node(&self.getter_settable, system, self.node)
     }
 }
-*/
