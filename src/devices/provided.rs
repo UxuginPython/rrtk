@@ -2,6 +2,8 @@
 // Copyright 2024-2026 UxuginPython
 //!A few common, simple mechanical devices that work with the device system. The source of this
 //!module is simple enough to be treated as an example of how to implement your own devices.
+//!
+//!All implementations of [`DeviceUpdatable`] in this module are infallible.
 use super::*;
 ///Device that either connects two axles or allows them to move independently depending on how it
 ///is set.
@@ -26,8 +28,8 @@ impl Clutch {
         self.connected = value;
     }
 }
-impl DeviceUpdatable for Clutch {
-    fn device_update<const N: usize>(&mut self, system: &mut System<N>) {
+impl<E> DeviceUpdatable<E> for Clutch {
+    fn device_update<const N: usize>(&mut self, system: &mut System<N>) -> NothingOrError<E> {
         if self.connected {
             system.set_state_local(self.node_a, system.get_state_connected(self.node_b));
             system.set_state_local(self.node_b, system.get_state_connected(self.node_a));
@@ -35,6 +37,7 @@ impl DeviceUpdatable for Clutch {
             system.set_state_local(self.node_a, None);
             system.set_state_local(self.node_b, None);
         }
+        Ok(())
     }
 }
 ///Device that enforces that the position, velocity, and acceleration of the sum node will equal
@@ -57,8 +60,8 @@ impl Differential {
         }
     }
 }
-impl DeviceUpdatable for Differential {
-    fn device_update<const N: usize>(&mut self, system: &mut System<N>) {
+impl<E> DeviceUpdatable<E> for Differential {
+    fn device_update<const N: usize>(&mut self, system: &mut System<N>) -> NothingOrError<E> {
         let state_left = system.get_state_connected(self.node_left);
         let state_right = system.get_state_connected(self.node_right);
         let state_sum = system.get_state_connected(self.node_sum);
@@ -92,6 +95,7 @@ impl DeviceUpdatable for Differential {
                 None
             },
         );
+        Ok(())
     }
 }
 ///Device that enforces that two nodes' positions, velocities, and accelerations are related by a
@@ -131,8 +135,8 @@ impl GearTrain {
         Self::new(node_a, node_b, Dimensionless::new(ratio * direction))
     }
 }
-impl DeviceUpdatable for GearTrain {
-    fn device_update<const N: usize>(&mut self, system: &mut System<N>) {
+impl<E> DeviceUpdatable<E> for GearTrain {
+    fn device_update<const N: usize>(&mut self, system: &mut System<N>) -> NothingOrError<E> {
         system.set_state_local(
             self.node_b,
             if let Some(a_state) = system.get_state_connected(self.node_a) {
@@ -149,5 +153,6 @@ impl DeviceUpdatable for GearTrain {
                 None
             },
         );
+        Ok(())
     }
 }

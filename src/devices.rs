@@ -4,7 +4,7 @@
 //!robot.
 use super::*;
 pub mod provided;
-pub mod wrappers;
+//pub mod wrappers;
 type SystemID = u16;
 type LocalNodeID = usize;
 static mut NEXT_SYSTEM_ID: SystemID = 0;
@@ -278,10 +278,10 @@ impl<const N: usize> Iterator for ConnectedIterator<'_, N> {
     }
 }
 ///Very similar to the [`Updatable`] trait except that it requires a mutable reference to the
-///system controlling the device's nodes and it is, currently, infallible.
-pub trait DeviceUpdatable {
+///system controlling the device's nodes.
+pub trait DeviceUpdatable<E> {
     ///Update the states of the device's terminals based on the device's mechanical constraints.
-    fn device_update<const N: usize>(&mut self, system: &mut System<N>);
+    fn device_update<const N: usize>(&mut self, system: &mut System<N>) -> NothingOrError<E>;
 }
 #[cfg(test)]
 mod tests {
