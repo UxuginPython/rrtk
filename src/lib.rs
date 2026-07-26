@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // Copyright 2024-2026 UxuginPython
 //!# Rust Robotics ToolKit
-//!**A set of algorithms and other tools for robotics in Rust.**
+//!**Systems and tools for robotics programming in Rust.**
 //!
-//!It is almost entirely `no_std` and most things work without `alloc`. It does not currently integrate with any API directly. This may be added in the future, probably through another crate.
+//!RRTK works almost entirely without `std` and `alloc`. It is not specific to any device or API.
 //!## Feature Flags
 //!- `alloc` - Enable items requiring dynamic allocation through Rust's builtin `alloc` crate.
 //!- `std` - Enable items requiring the Rust standard library. Requires `alloc` feature. Enabled by default.
