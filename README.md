@@ -1,7 +1,7 @@
 # Rust Robotics ToolKit
-**A set of algorithms and other tools for robotics in Rust.**
+**Systems and tools for robotics programming in Rust.**
 
-It is almost entirely `no_std` and most things work without `alloc`. It does not currently integrate with any API directly. This may be added in the future, probably through another crate.
+RRTK works almost entirely without `std` and `alloc`. It is not specific to any device or API.
 
 ## License: BSD 3-Clause
 RRTK is free and open source software licensed under the permissive BSD 3-Clause "New" or "Revised" License. See the LICENSE file in the repository for more information.
@@ -9,12 +9,12 @@ RRTK is free and open source software licensed under the permissive BSD 3-Clause
 ## Features
 - Architecture based on `Getter`, `Settable`, and `Updatable` traits
 - Node-like stream system for data processing
-    - Basic arithmetic + integral and derivative
+    - Basic arithmetic, exponentiation, and integral and derivative
     - Logic and control flow management
-    - PID
+    - PID control
     - Moving average
-    - EWMA
-    - Trait for making your own
+    - Exponentially weighted moving average (EWMA)
+    - New streams can be added easily with the `Getter` trait.
 - Graph-based device control system
     - Devices hold terminals which can be connected together
     - Differential, axle, and direction reversal builtin
@@ -26,6 +26,6 @@ Currently, neither of these works very well with the 0.7.* release series. They 
 
 [RRTK Stream Builder](https://crates.io/crates/rrtk_stream_builder): Code generation from visual nodes for the stream system.
 
-[RRTK Procedural Macros](https://crates.io/crates/rrtk_proc) [HIGHLY EXPERIMENTAL]: Procedural `math!` macro making the stream system easier to use.
+[RRTK Procedural Macros](https://crates.io/crates/rrtk_proc): Procedural `math!` macro making the stream system easier to use.
 
 The changelog has been moved to CHANGELOG.md.
