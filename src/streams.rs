@@ -10,27 +10,16 @@ pub mod flow;
 pub mod logic;
 pub mod math;
 ///Returns the output of whichever input has the latest time.
-pub struct Latest<T, const C: usize, G: Getter<T, E>, E: Clone + Debug> {
+pub struct Latest<const C: usize, G> {
     inputs: [G; C],
-    //TODO: If you do decide to remove a bunch of bounds, including G: Getter<T, E>, the T and E
-    //parameters may be able to be removed from the struct itself.
-    phantom_t: PhantomData<T>,
-    phantom_e: PhantomData<E>,
 }
-impl<T, const C: usize, G: Getter<T, E>, E: Clone + Debug> Latest<T, C, G, E> {
+impl<const C: usize, G> Latest<C, G> {
     ///Constructor for [`Latest`].
     pub const fn new(inputs: [G; C]) -> Self {
-        if C < 1 {
-            panic!("rrtk::streams::Latest C must be at least 1.");
-        }
-        Self {
-            inputs,
-            phantom_t: PhantomData,
-            phantom_e: PhantomData,
-        }
+        Self { inputs }
     }
 }
-impl<T, const C: usize, G: Getter<T, E>, E: Clone + Debug> Getter<T, E> for Latest<T, C, G, E> {
+impl<T, const C: usize, G: Getter<T, E>, E: Clone + Debug> Getter<T, E> for Latest<C, G> {
     fn get(&self) -> Output<T, E> {
         let mut output: Option<Datum<T>> = None;
         for getter in &self.inputs {
@@ -51,7 +40,7 @@ impl<T, const C: usize, G: Getter<T, E>, E: Clone + Debug> Getter<T, E> for Late
         Ok(output)
     }
 }
-impl<T, const C: usize, G: Getter<T, E>, E: Clone + Debug> Updatable<E> for Latest<T, C, G, E> {
+impl<const C: usize, G: Updatable<E>, E: Clone + Debug> Updatable<E> for Latest<C, G> {
     fn update(&mut self) -> NothingOrError<E> {
         for getter in &mut self.inputs {
             getter.update()?;

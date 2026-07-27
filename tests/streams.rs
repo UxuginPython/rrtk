@@ -1303,11 +1303,6 @@ fn latest() {
     }
 }
 #[test]
-#[should_panic]
-fn empty_latest() {
-    let _: Latest<(), 0, NoneGetter, ()> = Latest::new([]);
-}
-#[test]
 fn and_stream() {
     struct In1 {
         index: u8,
