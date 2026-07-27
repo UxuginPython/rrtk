@@ -52,10 +52,8 @@ impl<C: GenericCommand> Chronology<C> for MotionProfile<C> {
         Some(Datum::new(time, command))
     }
 }
-//Unfortunately this is one of the times when you might be able to get a bit more functionality
-//(more const fns in this case) but at the significant expense of readability and simplicity. The
-//real solution here is to stop using runtime Quantity, which will happen at some point. When that
-//happens, TODO review what can be const fn again.
+//Depending on how you change State in the future, it's possible that some of these will be able to
+//become const fn.
 impl<C: GenericCommand> MotionProfile<C> {
     ///Constructor for [`MotionProfile`] using start and end states.
     pub fn new(
