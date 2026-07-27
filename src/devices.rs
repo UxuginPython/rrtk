@@ -279,13 +279,9 @@ impl<const N: usize> Iterator for ConnectedIterator<'_, N> {
 }
 ///Very similar to the [`Updatable`] trait except that it requires a mutable reference to the
 ///system controlling the device's nodes.
-pub trait DeviceUpdatable {
-    type Error;
+pub trait DeviceUpdatable<E> {
     ///Update the states of the device's terminals based on the device's mechanical constraints.
-    fn device_update<const N: usize>(
-        &mut self,
-        system: &mut System<N>,
-    ) -> NothingOrError<Self::Error>;
+    fn device_update<const N: usize>(&mut self, system: &mut System<N>) -> NothingOrError<E>;
 }
 #[cfg(test)]
 mod tests {

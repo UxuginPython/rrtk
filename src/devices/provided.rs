@@ -5,7 +5,6 @@
 //!
 //!All implementations of [`DeviceUpdatable`] in this module are infallible.
 use super::*;
-use core::convert::Infallible;
 ///Device that either connects two axles or allows them to move independently depending on how it
 ///is set.
 pub struct Clutch {
@@ -29,12 +28,8 @@ impl Clutch {
         self.connected = value;
     }
 }
-impl DeviceUpdatable for Clutch {
-    type Error = Infallible;
-    fn device_update<const N: usize>(
-        &mut self,
-        system: &mut System<N>,
-    ) -> NothingOrError<Infallible> {
+impl<E> DeviceUpdatable<E> for Clutch {
+    fn device_update<const N: usize>(&mut self, system: &mut System<N>) -> NothingOrError<E> {
         if self.connected {
             system.set_state_local(self.node_a, system.get_state_connected(self.node_b));
             system.set_state_local(self.node_b, system.get_state_connected(self.node_a));
@@ -65,12 +60,8 @@ impl Differential {
         }
     }
 }
-impl DeviceUpdatable for Differential {
-    type Error = Infallible;
-    fn device_update<const N: usize>(
-        &mut self,
-        system: &mut System<N>,
-    ) -> NothingOrError<Infallible> {
+impl<E> DeviceUpdatable<E> for Differential {
+    fn device_update<const N: usize>(&mut self, system: &mut System<N>) -> NothingOrError<E> {
         let state_left = system.get_state_connected(self.node_left);
         let state_right = system.get_state_connected(self.node_right);
         let state_sum = system.get_state_connected(self.node_sum);
@@ -144,12 +135,8 @@ impl GearTrain {
         Self::new(node_a, node_b, Dimensionless::new(ratio * direction))
     }
 }
-impl DeviceUpdatable for GearTrain {
-    type Error = Infallible;
-    fn device_update<const N: usize>(
-        &mut self,
-        system: &mut System<N>,
-    ) -> NothingOrError<Infallible> {
+impl<E> DeviceUpdatable<E> for GearTrain {
+    fn device_update<const N: usize>(&mut self, system: &mut System<N>) -> NothingOrError<E> {
         system.set_state_local(
             self.node_b,
             if let Some(a_state) = system.get_state_connected(self.node_a) {
