@@ -52,7 +52,12 @@ fn main() {
     //call device_update for all your devices in a loop. The order of the devices in this loop
     //shouldn't usually matter significantly, but you may want to experiment with it if you need
     //the utmost updating speed.
-    differential.device_update(&mut system);
+    //As for the fully qualified syntax, it's needed right now because of the way that the
+    //infallible devices are implemented. It will not be needed in a future version.
+    <Differential as DeviceUpdatable<core::convert::Infallible>>::device_update(
+        &mut differential,
+        &mut system,
+    );
     //We directly set the encoder states, so we use get_state_local to access them.
     let enc_left_state = system.get_state_local(enc_left).unwrap();
     let enc_right_state = system.get_state_local(enc_right).unwrap();

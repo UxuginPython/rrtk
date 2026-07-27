@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // Copyright 2024-2026 UxuginPython
 #![cfg(feature = "devices")]
+use core::convert::Infallible;
 use rrtk::devices::provided::*;
 use rrtk::devices::*;
 use rrtk::*;
@@ -27,15 +28,15 @@ fn clutch() {
     system.set_state_local(b_test, Some(B));
 
     let mut clutch = Clutch::new(a_clutch, b_clutch);
-    clutch.device_update(&mut system);
+    <Clutch as DeviceUpdatable<Infallible>>::device_update(&mut clutch, &mut system);
     assert!(system.get_state_connected(a_test).is_none());
     assert!(system.get_state_connected(b_test).is_none());
     clutch.set_connected(true);
-    clutch.device_update(&mut system);
+    <Clutch as DeviceUpdatable<Infallible>>::device_update(&mut clutch, &mut system);
     assert_eq!(system.get_state_connected(a_test), Some(B));
     assert_eq!(system.get_state_connected(b_test), Some(A));
     clutch.set_connected(false);
-    clutch.device_update(&mut system);
+    <Clutch as DeviceUpdatable<Infallible>>::device_update(&mut clutch, &mut system);
     assert!(system.get_state_connected(a_test).is_none());
     assert!(system.get_state_connected(b_test).is_none());
 }
@@ -62,7 +63,7 @@ fn gear_train() {
     system.set_state_local(b_test, Some(B));
 
     let mut gear_train = GearTrain::new(a_gear_train, b_gear_train, Dimensionless::new(2.0));
-    gear_train.device_update(&mut system);
+    <GearTrain as DeviceUpdatable<Infallible>>::device_update(&mut gear_train, &mut system);
     assert_eq!(
         system.get_state_connected(a_test),
         Some(AngularState::new(
@@ -112,7 +113,7 @@ fn differential() {
     system.set_state_local(c_test, Some(C));
 
     let mut differential = Differential::new(a_differential, b_differential, c_differential);
-    differential.device_update(&mut system);
+    <Differential as DeviceUpdatable<Infallible>>::device_update(&mut differential, &mut system);
     assert_eq!(system.get_state_connected(a_test), Some(C - B));
     assert_eq!(system.get_state_connected(b_test), Some(C - A));
     assert_eq!(system.get_state_connected(c_test), Some(A + B));
