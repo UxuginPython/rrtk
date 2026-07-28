@@ -300,11 +300,49 @@ macro_rules! make_gate {
                 Self { input1, input2 }
             }
         }
-        impl<G1: Updatable<E>, G2: Updatable<E>, E: Clone + Debug> Updatable<E> for $name<G1, G2> {
+        impl<G1, G2, E> Updatable<E> for $name<G1, G2>
+        where
+            G1: Updatable<E>,
+            G2: Updatable<E>,
+            E: Clone + Debug,
+        {
             fn update(&mut self) -> NothingOrError<E> {
                 self.input1.update()?;
                 self.input2.update()?;
                 Ok(())
+            }
+        }
+        impl<G1, G2, E> Getter<bool, E> for $name<G1, G2>
+        where
+            G1: Getter<bool, E>,
+            G2: Getter<bool, E>,
+            E: Clone + Debug,
+        {
+            fn get(&self) -> Output<bool, E> {
+                let mut logic_state = LogicState::from_bool($default);
+                let mut time = Time::ZERO;
+                macro_rules! error_handle_input {
+                    ($input: ident, $skip_time_check: literal) => {
+                        match self.$input.get()? {
+                            None => logic_state.not_returnable_with_value($default),
+                            Some(datum) => {
+                                if $skip_time_check || datum.time > time {
+                                    time = datum.time;
+                                }
+                                if datum.value {
+                                    logic_state = LogicState::from_bool(!$default);
+                                }
+                            }
+                        }
+                    };
+                }
+                error_handle_input!(input1, true);
+                error_handle_input!(input2, false);
+                Ok(match logic_state {
+                    LogicState::ReturnableTrue => Some(Datum::new(time, true)),
+                    LogicState::ReturnableFalse => Some(Datum::new(time, false)),
+                    LogicState::NeitherReturnable => None,
+                })
             }
         }
     };
