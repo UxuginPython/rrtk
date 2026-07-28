@@ -21,6 +21,16 @@ impl LogicState {
             *self = Self::NeitherReturnable;
         }
     }
+    #[inline]
+    const fn as_bool(&self) -> bool {
+        match self {
+            Self::ReturnableFalse => false,
+            Self::ReturnableTrue => true,
+            Self::NeitherReturnable => {
+                panic!("tried to convert LogicState without a final value to bool")
+            }
+        }
+    }
 }
 ///Performs a logical "and" operation on an arbitrary number of inputs. More specifically, follows
 ///these rules, starting at the top and proceeding as needed:
