@@ -456,18 +456,15 @@ mod position_to_state {
         }
     }
 }
-//TODO: Decide if you want to make this and DimensionRemover use where clauses too. It makes it a
-//bit less clear what's a real type vs what's just a compile-time integer, but it's more in line
-//with the other types and might be a bit easier to read.
 ///Adds a [`Quantity`] wrapper with a specific unit around a number.
-pub struct DimensionAdder<T, MM: Integer, S: Integer, G: Getter<T, E>, E: Clone + Debug> {
+pub struct DimensionAdder<T, MM, S, G, E> {
     input: G,
     phantom_t: PhantomData<T>,
     phantom_mm: PhantomData<MM>,
     phantom_s: PhantomData<S>,
     phantom_e: PhantomData<E>,
 }
-impl<T, MM: Integer, S: Integer, G: Getter<T, E>, E: Clone + Debug> DimensionAdder<T, MM, S, G, E> {
+impl<T, MM, S, G, E> DimensionAdder<T, MM, S, G, E> {
     ///Constructor for `DimensionAdder`.
     pub const fn new(input: G) -> Self {
         Self {
@@ -479,8 +476,12 @@ impl<T, MM: Integer, S: Integer, G: Getter<T, E>, E: Clone + Debug> DimensionAdd
         }
     }
 }
-impl<T, MM: Integer, S: Integer, G: Getter<T, E>, E: Clone + Debug> Getter<Quantity<T, MM, S>, E>
-    for DimensionAdder<T, MM, S, G, E>
+impl<T, MM, S, G, E> Getter<Quantity<T, MM, S>, E> for DimensionAdder<T, MM, S, G, E>
+where
+    MM: Integer,
+    S: Integer,
+    G: Getter<T, E>,
+    E: Clone + Debug,
 {
     fn get(&self) -> Output<Quantity<T, MM, S>, E> {
         match self.input.get()? {
@@ -489,8 +490,12 @@ impl<T, MM: Integer, S: Integer, G: Getter<T, E>, E: Clone + Debug> Getter<Quant
         }
     }
 }
-impl<T, MM: Integer, S: Integer, G: Getter<T, E>, E: Clone + Debug> Updatable<E>
-    for DimensionAdder<T, MM, S, G, E>
+impl<T, MM, S, G, E> Updatable<E> for DimensionAdder<T, MM, S, G, E>
+where
+    MM: Integer,
+    S: Integer,
+    G: Updatable<E>,
+    E: Clone + Debug,
 {
     fn update(&mut self) -> NothingOrError<E> {
         self.input.update()?;
