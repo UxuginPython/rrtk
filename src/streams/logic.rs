@@ -38,13 +38,9 @@ impl LogicState {
         }
     }
     #[inline]
-    fn not_returnable_with_value(&mut self, value: bool) {
-        println!("not returnable with {:?}", value);
+    const fn not_returnable_with_value(&mut self, value: bool) {
         if Self::from_bool(value).const_eq(self) {
             *self = Self::NeitherReturnable;
-            println!("setting NeitherReturnable");
-        } else {
-            println!("NOT setting NeitherReturnable");
         }
     }
 }
@@ -211,11 +207,8 @@ macro_rules! make_gate {
                         }
                     };
                 }
-                dbg!(logic_state);
                 error_handle_input!(input1, true);
-                dbg!(logic_state);
                 error_handle_input!(input2, false);
-                dbg!(logic_state);
                 Ok(match logic_state {
                     LogicState::ReturnableTrue => Some(Datum::new(time, true)),
                     LogicState::ReturnableFalse => Some(Datum::new(time, false)),
