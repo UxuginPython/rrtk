@@ -31,9 +31,11 @@ impl LogicState {
     }
     #[inline]
     const fn const_eq(&self, other: &Self) -> bool {
-        (matches!(self, Self::ReturnableFalse) && matches!(other, Self::ReturnableFalse))
-            || (matches!(self, Self::NeitherReturnable) && matches!(other, Self::NeitherReturnable))
-            || (matches!(self, Self::ReturnableTrue) && matches!(other, Self::ReturnableTrue))
+        match self {
+            Self::ReturnableFalse => matches!(other, Self::ReturnableFalse),
+            Self::NeitherReturnable => matches!(other, Self::ReturnableFalse),
+            Self::ReturnableTrue => matches!(other, Self::ReturnableFalse),
+        }
     }
     #[inline]
     const fn not_returnable_with_value(&mut self, value: bool) {
