@@ -29,6 +29,18 @@ impl LogicState {
             Self::ReturnableFalse
         }
     }
+    #[inline]
+    const fn const_eq(&self, other: &Self) -> bool {
+        (matches!(self, Self::ReturnableFalse) && matches!(other, Self::ReturnableFalse))
+            || (matches!(self, Self::NeitherReturnable) && matches!(other, Self::NeitherReturnable))
+            || (matches!(self, Self::ReturnableTrue) && matches!(other, Self::ReturnableTrue))
+    }
+    #[inline]
+    const fn not_returnable_with_value(&mut self, value: bool) {
+        if Self::from_bool(value).const_eq(self) {
+            *self = Self::NeitherReturnable;
+        }
+    }
 }
 ///Performs a logical "and" operation on an arbitrary number of inputs. More specifically, follows
 ///these rules, starting at the top and proceeding as needed:
