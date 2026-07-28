@@ -207,8 +207,11 @@ macro_rules! make_gate {
                         }
                     };
                 }
+                dbg!(logic_state);
                 error_handle_input!(input1, true);
+                dbg!(logic_state);
                 error_handle_input!(input2, false);
+                dbg!(logic_state);
                 Ok(match logic_state {
                     LogicState::ReturnableTrue => Some(Datum::new(time, true)),
                     LogicState::ReturnableFalse => Some(Datum::new(time, false)),
@@ -220,7 +223,7 @@ macro_rules! make_gate {
 }
 make_gate!(
     Or2,
-    true,
+    false,
     r#"Performs a logical "or" operation on two input getters which can be of different types. More
 specifically, follows these rules, starting at the top and proceeding as needed:
 1. If an input returns an error, return the error.
@@ -236,7 +239,7 @@ If you need more than two inputs, you may consider using [`OrStream`] instead of
 );
 make_gate!(
     And2,
-    false,
+    true,
     r#"Performs a logical "and" operation on two input getters which can be of different types. More
 specifically, follows these rules, starting at the top and proceeding as needed:
 1. If an input returns an error, return the error.
