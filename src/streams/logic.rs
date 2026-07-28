@@ -288,6 +288,28 @@ impl<G1: Getter<bool, E>, G2: Getter<bool, E>, E: Clone + Debug> Getter<bool, E>
         })
     }
 }
+macro_rules! make_gate {
+    ($name: ident, $default: literal) => {
+        ///Do not use
+        pub struct $name<G1, G2> {
+            input1: G1,
+            input2: G2,
+        }
+        impl<G1, G2> $name<G1, G2> {
+            pub const fn new(input1: G1, input2: G2) -> Self {
+                Self { input1, input2 }
+            }
+        }
+        impl<G1: Updatable<E>, G2: Updatable<E>, E: Clone + Debug> Updatable<E> for $name<G1, G2> {
+            fn update(&mut self) -> NothingOrError<E> {
+                self.input1.update()?;
+                self.input2.update()?;
+                Ok(())
+            }
+        }
+    };
+}
+make_gate!(NewOr2, true);
 ///Performs a not operation on a boolean getter.
 pub struct NotStream<G: Getter<bool, E>, E: Clone + Debug> {
     input: G,
