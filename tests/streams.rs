@@ -1456,6 +1456,7 @@ fn and2() {
         and.update().unwrap();
         assert_eq!(and.get().unwrap().unwrap().value, false);
         and.update().unwrap();
+        println!("STARTING PROBlEMATING THING");
         assert_eq!(and.get().unwrap().unwrap().value, false);
         and.update().unwrap();
         assert_eq!(and.get().unwrap(), None);

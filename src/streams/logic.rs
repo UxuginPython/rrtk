@@ -38,9 +38,13 @@ impl LogicState {
         }
     }
     #[inline]
-    const fn not_returnable_with_value(&mut self, value: bool) {
+    fn not_returnable_with_value(&mut self, value: bool) {
+        println!("not returnable with {:?}", value);
         if Self::from_bool(value).const_eq(self) {
             *self = Self::NeitherReturnable;
+            println!("setting NeitherReturnable");
+        } else {
+            println!("NOT setting NeitherReturnable");
         }
     }
 }
@@ -277,4 +281,33 @@ impl<G: Getter<bool, E>, E: Clone + Debug> Updatable<E> for NotStream<G, E> {
         self.input.update()?;
         Ok(())
     }
+}
+#[test]
+fn logic_state_const_eq() {
+    const LOGIC_STATES: [LogicState; 3] = [
+        LogicState::ReturnableFalse,
+        LogicState::NeitherReturnable,
+        LogicState::ReturnableTrue,
+    ];
+    for (a, state_a) in LOGIC_STATES.into_iter().enumerate() {
+        for (b, state_b) in LOGIC_STATES.into_iter().enumerate() {
+            assert_eq!(a == b, state_a == state_b);
+        }
+    }
+}
+#[test]
+fn not_returnable_with_value() {
+    macro_rules! perform_test {
+        ($start: ident, $not_returnable_with: literal, $end: ident) => {
+            let mut x = LogicState::$start;
+            x.not_returnable_with_value($not_returnable_with);
+            assert_eq!(x, LogicState::$end);
+        };
+    }
+    perform_test!(ReturnableFalse, false, NeitherReturnable);
+    perform_test!(NeitherReturnable, false, NeitherReturnable);
+    perform_test!(ReturnableTrue, false, ReturnableTrue);
+    perform_test!(ReturnableFalse, true, ReturnableFalse);
+    perform_test!(NeitherReturnable, true, NeitherReturnable);
+    perform_test!(ReturnableTrue, true, NeitherReturnable);
 }
