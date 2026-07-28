@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // Copyright 2024-2026 UxuginPython
-//!Wrappers that connect [`Getter`]s and [`Settable`]s to the device system.
+//!Wrappers that connect [`Getter`]s and [`Settable`]s to the device system. There are two functions
+//!and three wrappers that call the functions in their [`DeviceUpdatable`] implementations. The
+//!three wrappers cannot be unified into one because that would require specialization.
 use super::*;
 ///Call the getter's `get` method and, if it returns `Ok(Some(_))`, write the value to a node in the
 ///system.
@@ -77,9 +79,7 @@ impl<S: Settable<AngularState, E>, E: Clone + Debug> DeviceUpdatable<E> for Sett
         set_to_node_state(&mut self.settable, system, self.node)
     }
 }
-//TODO: Clean this up. These sentences could be in a better order.
-///Combines the functionality of [`GetterWrapper`] and [`SettableWrapper`]. These three wrappers
-///have to be separate because unifying them would require specialization. The getter-settable is
+///Combines the functionality of [`GetterWrapper`] and [`SettableWrapper`]. The getter-settable is
 ///`set` to the state of the node from [`System::get_state_connected`] **before** the state to be
 ///written with [`System::set_state_local`] is gotten with `get`. This uses both
 ///[`set_to_node_state`] and [`get_and_write_to_node`] internally.
