@@ -329,7 +329,7 @@ macro_rules! make_gate {
                                 if $skip_time_check || datum.time > time {
                                     time = datum.time;
                                 }
-                                if datum.value {
+                                if $default ^ datum.value {
                                     logic_state = LogicState::from_bool(!$default);
                                 }
                             }
@@ -348,6 +348,7 @@ macro_rules! make_gate {
     };
 }
 make_gate!(NewOr2, true);
+make_gate!(NewAnd2, false);
 ///Performs a not operation on a boolean getter.
 pub struct NotStream<G: Getter<bool, E>, E: Clone + Debug> {
     input: G,
