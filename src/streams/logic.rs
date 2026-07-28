@@ -101,72 +101,6 @@ impl<const N: usize, G: Getter<bool, E>, E: Clone + Debug> Getter<bool, E> for A
         })
     }
 }
-///Performs a logical "and" operation on two input getters which can be of different types. More
-///specifically, follows these rules, starting at the top and proceeding as needed:
-///1. If an input returns an error, return the error.
-///2. If neither input returns an error, if an input returns false, return false.
-///3. If neither input returns false, if an input returns None, return None.
-///4. If neither input returns None (both returned true), return true.
-///
-///Returns the later timestamp of the two inputs if they both return Some.
-///
-///If you need more than two inputs, you may consider using [`AndStream`] instead of a chain of
-///`And2`, especially if the inputs are of the same type.
-pub struct And2<G1: Getter<bool, E>, G2: Getter<bool, E>, E: Clone + Debug> {
-    input1: G1,
-    input2: G2,
-    phantom_e: PhantomData<E>,
-}
-impl<G1: Getter<bool, E>, G2: Getter<bool, E>, E: Clone + Debug> And2<G1, G2, E> {
-    pub const fn new(input1: G1, input2: G2) -> Self {
-        Self {
-            input1,
-            input2,
-            phantom_e: PhantomData,
-        }
-    }
-}
-impl<G1: Getter<bool, E>, G2: Getter<bool, E>, E: Clone + Debug> Updatable<E> for And2<G1, G2, E> {
-    fn update(&mut self) -> NothingOrError<E> {
-        self.input1.update()?;
-        self.input2.update()?;
-        Ok(())
-    }
-}
-impl<G1: Getter<bool, E>, G2: Getter<bool, E>, E: Clone + Debug> Getter<bool, E>
-    for And2<G1, G2, E>
-{
-    fn get(&self) -> Output<bool, E> {
-        let mut logic_state = LogicState::ReturnableTrue;
-        let mut time = Time::ZERO;
-        //TODO: See if there's a way to repeat less code.
-        match self.input1.get()? {
-            None => logic_state.not_returnable_true(),
-            Some(datum) => {
-                time = datum.time;
-                if !datum.value {
-                    logic_state = LogicState::ReturnableFalse;
-                }
-            }
-        }
-        match self.input2.get()? {
-            None => logic_state.not_returnable_true(),
-            Some(datum) => {
-                if datum.time > time {
-                    time = datum.time;
-                }
-                if !datum.value {
-                    logic_state = LogicState::ReturnableFalse;
-                }
-            }
-        }
-        Ok(match logic_state {
-            LogicState::ReturnableTrue => Some(Datum::new(time, true)),
-            LogicState::ReturnableFalse => Some(Datum::new(time, false)),
-            LogicState::NeitherReturnable => None,
-        })
-    }
-}
 ///Performs a logical "or" operation on an arbitrary number of inputs. More specifically, follows
 ///these rules, starting at the top and proceeding as needed:
 ///1. If an input returns an error, return the error.
@@ -217,68 +151,6 @@ impl<const N: usize, G: Getter<bool, E>, E: Clone + Debug> Getter<bool, E> for O
                 }
             }
         }
-        Ok(match logic_state {
-            LogicState::ReturnableTrue => Some(Datum::new(time, true)),
-            LogicState::ReturnableFalse => Some(Datum::new(time, false)),
-            LogicState::NeitherReturnable => None,
-        })
-    }
-}
-///Performs a logical "or" operation on two input getters which can be of different types. More
-///specifically, follows these rules, starting at the top and proceeding as needed:
-///1. If an input returns an error, return the error.
-///2. If neither input returns an error, if an input returns true, return true.
-///3. If neither input returns true, if an input returns None, return None.
-///4. If neither input returns None (both returned false), return false.
-///
-///Returns the later timestamp of the two inputs if they both return Some.
-///
-///If you need more than two inputs, you may consider using [`OrStream`] instead of a chain of
-///`Or2`, especially if the inputs are of the same type.
-pub struct Or2<G1: Getter<bool, E>, G2: Getter<bool, E>, E: Clone + Debug> {
-    input1: G1,
-    input2: G2,
-    phantom_e: PhantomData<E>,
-}
-impl<G1: Getter<bool, E>, G2: Getter<bool, E>, E: Clone + Debug> Or2<G1, G2, E> {
-    pub const fn new(input1: G1, input2: G2) -> Self {
-        Self {
-            input1,
-            input2,
-            phantom_e: PhantomData,
-        }
-    }
-}
-impl<G1: Getter<bool, E>, G2: Getter<bool, E>, E: Clone + Debug> Updatable<E> for Or2<G1, G2, E> {
-    fn update(&mut self) -> NothingOrError<E> {
-        self.input1.update()?;
-        self.input2.update()?;
-        Ok(())
-    }
-}
-impl<G1: Getter<bool, E>, G2: Getter<bool, E>, E: Clone + Debug> Getter<bool, E>
-    for Or2<G1, G2, E>
-{
-    fn get(&self) -> Output<bool, E> {
-        let mut logic_state = LogicState::ReturnableFalse;
-        let mut time = Time::ZERO;
-        macro_rules! error_handle_input {
-            ($input: ident, $skip_time_check: literal) => {
-                match self.$input.get()? {
-                    None => logic_state.not_returnable_false(),
-                    Some(datum) => {
-                        if $skip_time_check || datum.time > time {
-                            time = datum.time;
-                        }
-                        if datum.value {
-                            logic_state = LogicState::ReturnableTrue;
-                        }
-                    }
-                }
-            };
-        }
-        error_handle_input!(input1, true);
-        error_handle_input!(input2, false);
         Ok(match logic_state {
             LogicState::ReturnableTrue => Some(Datum::new(time, true)),
             LogicState::ReturnableFalse => Some(Datum::new(time, false)),
@@ -347,7 +219,7 @@ macro_rules! make_gate {
     };
 }
 make_gate!(
-    NewOr2,
+    Or2,
     true,
     r#"Performs a logical "or" operation on two input getters which can be of different types. More
 specifically, follows these rules, starting at the top and proceeding as needed:
@@ -363,7 +235,7 @@ If you need more than two inputs, you may consider using [`OrStream`] instead of
     "Constructor for `Or2`. Unlike [`OrStream`], its inputs can be of different types."
 );
 make_gate!(
-    NewAnd2,
+    And2,
     false,
     r#"Performs a logical "and" operation on two input getters which can be of different types. More
 specifically, follows these rules, starting at the top and proceeding as needed:
