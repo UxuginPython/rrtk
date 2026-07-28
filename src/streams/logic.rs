@@ -349,13 +349,33 @@ macro_rules! make_gate {
 make_gate!(
     NewOr2,
     true,
-    "or struct",
+    r#"Performs a logical "or" operation on two input getters which can be of different types. More
+specifically, follows these rules, starting at the top and proceeding as needed:
+1. If an input returns an error, return the error.
+2. If neither input returns an error, if an input returns true, return true.
+3. If neither input returns true, if an input returns None, return None.
+4. If neither input returns None (both returned false), return false.
+
+Returns the later timestamp of the two inputs if they both return Some.
+
+If you need more than two inputs, you may consider using [`OrStream`] instead of a chain of
+`Or2`, especially if the inputs are of the same type."#,
     "Constructor for `Or2`. Unlike [`OrStream`], its inputs can be of different types."
 );
 make_gate!(
     NewAnd2,
     false,
-    "and s",
+    r#"Performs a logical "and" operation on two input getters which can be of different types. More
+specifically, follows these rules, starting at the top and proceeding as needed:
+1. If an input returns an error, return the error.
+2. If neither input returns an error, if an input returns false, return false.
+3. If neither input returns false, if an input returns None, return None.
+4. If neither input returns None (both returned true), return true.
+
+Returns the later timestamp of the two inputs if they both return Some.
+
+If you need more than two inputs, you may consider using [`AndStream`] instead of a chain of
+`And2`, especially if the inputs are of the same type."#,
     "Constructor for `And2`. Unlike [`AndStream`], its inputs can be of different types."
 );
 ///Performs a not operation on a boolean getter.
