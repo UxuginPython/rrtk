@@ -118,7 +118,6 @@ pub struct And2<G1: Getter<bool, E>, G2: Getter<bool, E>, E: Clone + Debug> {
     phantom_e: PhantomData<E>,
 }
 impl<G1: Getter<bool, E>, G2: Getter<bool, E>, E: Clone + Debug> And2<G1, G2, E> {
-    ///Constructor for `And2`. Unlike [`AndStream`], its inputs can be of different types.
     pub const fn new(input1: G1, input2: G2) -> Self {
         Self {
             input1,
@@ -242,7 +241,6 @@ pub struct Or2<G1: Getter<bool, E>, G2: Getter<bool, E>, E: Clone + Debug> {
     phantom_e: PhantomData<E>,
 }
 impl<G1: Getter<bool, E>, G2: Getter<bool, E>, E: Clone + Debug> Or2<G1, G2, E> {
-    ///Constructor for `Or2`. Unlike [`OrStream`], its inputs can be of different types.
     pub const fn new(input1: G1, input2: G2) -> Self {
         Self {
             input1,
@@ -289,13 +287,14 @@ impl<G1: Getter<bool, E>, G2: Getter<bool, E>, E: Clone + Debug> Getter<bool, E>
     }
 }
 macro_rules! make_gate {
-    ($name: ident, $default: literal) => {
-        ///Do not use
+    ($name: ident, $default: literal, $struct_doc: literal, $constructor_doc: literal) => {
+        #[doc = $struct_doc]
         pub struct $name<G1, G2> {
             input1: G1,
             input2: G2,
         }
         impl<G1, G2> $name<G1, G2> {
+            #[doc = $constructor_doc]
             pub const fn new(input1: G1, input2: G2) -> Self {
                 Self { input1, input2 }
             }
@@ -347,8 +346,18 @@ macro_rules! make_gate {
         }
     };
 }
-make_gate!(NewOr2, true);
-make_gate!(NewAnd2, false);
+make_gate!(
+    NewOr2,
+    true,
+    "or struct",
+    "Constructor for `Or2`. Unlike [`OrStream`], its inputs can be of different types."
+);
+make_gate!(
+    NewAnd2,
+    false,
+    "and s",
+    "Constructor for `And2`. Unlike [`AndStream`], its inputs can be of different types."
+);
 ///Performs a not operation on a boolean getter.
 pub struct NotStream<G: Getter<bool, E>, E: Clone + Debug> {
     input: G,
