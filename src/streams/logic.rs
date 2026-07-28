@@ -33,8 +33,8 @@ impl LogicState {
     const fn const_eq(&self, other: &Self) -> bool {
         match self {
             Self::ReturnableFalse => matches!(other, Self::ReturnableFalse),
-            Self::NeitherReturnable => matches!(other, Self::ReturnableFalse),
-            Self::ReturnableTrue => matches!(other, Self::ReturnableFalse),
+            Self::NeitherReturnable => matches!(other, Self::NeitherReturnable),
+            Self::ReturnableTrue => matches!(other, Self::ReturnableTrue),
         }
     }
     #[inline]
