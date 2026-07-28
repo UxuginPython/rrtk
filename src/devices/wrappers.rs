@@ -51,6 +51,8 @@ macro_rules! error_handle_update {
         }
     };
 }
+///Writes a state gotten from a [`Getter`] to a node. This uses [`get_and_write_to_node`]
+///internally.
 pub struct GetterWrapper<G, E> {
     getter: G,
     node: NodeID,
@@ -62,6 +64,8 @@ impl<G: Getter<AngularState, E>, E: Clone + Debug> DeviceUpdatable<E> for Getter
         get_and_write_to_node(&self.getter, system, self.node)
     }
 }
+///Sets a [`Settable`] to the state of a node gotten using [`System::get_state_connected`].
+///This uses [`set_to_node_state`] internally.
 pub struct SettableWrapper<S, E> {
     settable: S,
     node: NodeID,
@@ -73,6 +77,12 @@ impl<S: Settable<AngularState, E>, E: Clone + Debug> DeviceUpdatable<E> for Sett
         set_to_node_state(&mut self.settable, system, self.node)
     }
 }
+//TODO: Clean this up. These sentences could be in a better order.
+///Combines the functionality of [`GetterWrapper`] and [`SettableWrapper`]. These three wrappers
+///have to be separate because unifying them would require specialization. The getter-settable is
+///`set` to the state of the node from [`System::get_state_connected`] **before** the state to be
+///written with [`System::set_state_local`] is gotten with `get`. This uses both
+///[`set_to_node_state`] and [`get_and_write_to_node`] internally.
 pub struct GetterSettableWrapper<T, E> {
     getter_settable: T,
     node: NodeID,
