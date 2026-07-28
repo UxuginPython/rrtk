@@ -292,6 +292,7 @@ fn logic_state_const_eq() {
     for (a, state_a) in LOGIC_STATES.into_iter().enumerate() {
         for (b, state_b) in LOGIC_STATES.into_iter().enumerate() {
             assert_eq!(a == b, state_a == state_b);
+            assert_eq!(a == b, state_a.const_eq(&state_b));
         }
     }
 }
