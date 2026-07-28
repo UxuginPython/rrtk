@@ -22,13 +22,11 @@ impl LogicState {
         }
     }
     #[inline]
-    const fn as_bool(&self) -> bool {
-        match self {
-            Self::ReturnableFalse => false,
-            Self::ReturnableTrue => true,
-            Self::NeitherReturnable => {
-                panic!("tried to convert LogicState without a final value to bool")
-            }
+    const fn from_bool(was: bool) -> Self {
+        if was {
+            Self::ReturnableTrue
+        } else {
+            Self::ReturnableFalse
         }
     }
 }
