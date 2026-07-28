@@ -242,27 +242,23 @@ impl<G1: Getter<bool, E>, G2: Getter<bool, E>, E: Clone + Debug> Getter<bool, E>
     fn get(&self) -> Output<bool, E> {
         let mut logic_state = LogicState::ReturnableFalse;
         let mut time = Time::ZERO;
-        //TODO: See if there's a way to repeat less code.
-        match self.input1.get()? {
-            None => logic_state.not_returnable_false(),
-            Some(datum) => {
-                time = datum.time;
-                if datum.value {
-                    logic_state = LogicState::ReturnableTrue;
+        macro_rules! error_handle_input {
+            ($input: ident, $skip_time_check: literal) => {
+                match self.$input.get()? {
+                    None => logic_state.not_returnable_false(),
+                    Some(datum) => {
+                        if $skip_time_check || datum.time > time {
+                            time = datum.time;
+                        }
+                        if datum.value {
+                            logic_state = LogicState::ReturnableTrue;
+                        }
+                    }
                 }
-            }
+            };
         }
-        match self.input2.get()? {
-            None => logic_state.not_returnable_false(),
-            Some(datum) => {
-                if datum.time > time {
-                    time = datum.time;
-                }
-                if datum.value {
-                    logic_state = LogicState::ReturnableTrue;
-                }
-            }
-        }
+        error_handle_input!(input1, true);
+        error_handle_input!(input2, false);
         Ok(match logic_state {
             LogicState::ReturnableTrue => Some(Datum::new(time, true)),
             LogicState::ReturnableFalse => Some(Datum::new(time, false)),
