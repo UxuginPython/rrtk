@@ -274,23 +274,21 @@ where
     E: Clone + Debug,
 {
     fn get(&self) -> Output<T, E> {
-        let mut outputs = [MaybeUninit::uninit(); N];
-        let mut outputs_filled = 0;
-        for i in &self.factors {
-            if let Some(x) = i.get()? {
-                outputs[outputs_filled].write(x);
-                outputs_filled += 1;
+        let mut factor_values = [MaybeUninit::uninit(); N];
+        for (i, input) in self.factors.iter().enumerate() {
+            let gotten = input.get();
+            if let Ok(Some(value)) = gotten {
+                factor_values[i].write(value);
+            } else {
+                return gotten;
             }
-        }
-        if outputs_filled == 0 {
-            return Ok(None);
         }
         unsafe {
-            let mut value = outputs[0].assume_init();
-            for i in 1..outputs_filled {
-                value *= outputs[i].assume_init();
+            let mut product = factor_values[0].assume_init();
+            for factor_value in factor_values.into_iter().skip(1) {
+                product *= factor_value.assume_init();
             }
-            Ok(Some(value))
+            Ok(Some(product))
         }
     }
 }
