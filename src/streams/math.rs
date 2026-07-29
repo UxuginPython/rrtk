@@ -7,6 +7,7 @@ use core::mem::MaybeUninit;
 //everyone. Either require Default and return that when all inputs return Ok(None) or return
 //Ok(None) when any input returns Ok(None). This is the worst possible combination.
 //Probably make them return Ok(None) if any inputs do to match Sum2 etc.
+//TODO fix docs
 ///A stream that adds all its inputs. If one input returns `Ok(None)`, it is excluded. If all inputs
 ///return `Ok(None)`, returns `Ok(None)`. If this is not the desired behavior, use
 ///[`NoneToValue`](converters::NoneToValue) or [`NoneToError`](converters::NoneToError).
@@ -49,28 +50,21 @@ where
     E: Clone + Debug,
 {
     fn get(&self) -> Output<T, E> {
-        //Err(...) -> return Err immediately
-        //Ok(None) -> skip
-        //Ok(Some(...)) -> add to value
-        let mut outputs = [MaybeUninit::uninit(); N];
-        //This is always equal to the index of the next uninitialized slot if there is one.
-        let mut outputs_filled = 0;
-        for i in &self.addends {
-            if let Some(x) = i.get()? {
-                outputs[outputs_filled].write(x);
-                outputs_filled += 1;
+        let mut addend_values = [MaybeUninit::uninit(); N];
+        for (i, input) in self.addends.iter().enumerate() {
+            let gotten = input.get();
+            if let Ok(Some(value)) = gotten {
+                addend_values[i].write(value);
+            } else {
+                return gotten;
             }
         }
-        if outputs_filled == 0 {
-            return Ok(None);
-        }
-        //We can safely assume_init on outputs indexes within 0..outputs_filled.
         unsafe {
-            let mut value = outputs[0].assume_init();
-            for i in 1..outputs_filled {
-                value += outputs[i].assume_init();
+            let mut total = addend_values[0].assume_init();
+            for addend_value in addend_values.into_iter().skip(1) {
+                total += addend_value.assume_init();
             }
-            Ok(Some(value))
+            Ok(Some(total))
         }
     }
 }
