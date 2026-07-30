@@ -3,15 +3,15 @@
 //!Streams that perform mathematical operations.
 use crate::streams::*;
 use core::mem::MaybeUninit;
-//TODO: The behavior of SumStream and friends in relation to Ok(None) is maximally unhelpful for
-//everyone. Either require Default and return that when all inputs return Ok(None) or return
-//Ok(None) when any input returns Ok(None). This is the worst possible combination.
-//Probably make them return Ok(None) if any inputs do to match Sum2 etc.
-//TODO fix docs
-///A stream that adds all its inputs. If one input returns `Ok(None)`, it is excluded. If all inputs
-///return `Ok(None)`, returns `Ok(None)`. If this is not the desired behavior, use
-///[`NoneToValue`](converters::NoneToValue) or [`NoneToError`](converters::NoneToError).
-///[`Sum2`] may also be a bit faster if you are only adding the outputs of two streams.
+///A stream that adds all its inputs sequentially with `AddAssign`. For this stream to return a
+///value, all of its inputs must return the `Ok(Some(_))` variant; if an input returns `Ok(None)` or
+///`Err(_)`, that value is returned immediately.
+///
+///If your usecase requires excluding `None` values from the sum as opposed to this behavior,
+///consider wrapping inputs in [`converters::NoneToDefault`] or [`converters::NoneToValue`].
+///
+///If you are only adding the outputs of two getters or if your input getters are of different
+///types, consider using [`Sum2`] instead.
 pub struct SumStream<T, const N: usize, G, E>
 where
     T: AddAssign + Copy,
@@ -234,6 +234,7 @@ where
         Ok(())
     }
 }
+//TODO fix docs
 ///A stream that multiplies its inputs. If an input returns `Ok(None)`, it is excluded from the
 ///calculation, effectively treating it as though it had returned 1. If this is not the desired
 ///behavior, use [`rrtk::streams::converters::NoneToValue`](streams::converters::NoneToValue) or
