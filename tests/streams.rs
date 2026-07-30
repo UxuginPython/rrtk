@@ -358,12 +358,10 @@ fn sum_stream() {
     }
     impl Getter<f32, Error> for ErroringStream {
         fn get(&self) -> Output<f32, Error> {
-            if self.index == 0 {
-                return Err(Error);
-            } else if self.index == 1 {
-                return Ok(None);
-            } else {
-                return Ok(Some(Datum::new(Time::from_nanoseconds(2), 1.0)));
+            match self.index {
+                0 => Err(Error),
+                1 => Ok(None),
+                _ => Ok(Some(Datum::new(Time::from_nanoseconds(2), 1.0))),
             }
         }
     }
@@ -403,11 +401,7 @@ fn sum_stream() {
         assert!(stream.get().is_err());
         //normal does not need update
         erroring.update().unwrap();
-        assert_eq!(
-            stream.get().unwrap().unwrap().time,
-            Time::from_nanoseconds(1)
-        );
-        assert_eq!(stream.get().unwrap().unwrap().value, 1.0);
+        assert!(stream.get().unwrap().is_none());
         erroring.update().unwrap();
         assert_eq!(
             stream.get().unwrap().unwrap().time,
@@ -613,12 +607,10 @@ fn product_stream() {
     }
     impl Getter<f32, Error> for ErroringStream {
         fn get(&self) -> Output<f32, Error> {
-            if self.index == 0 {
-                return Err(Error);
-            } else if self.index == 1 {
-                return Ok(None);
-            } else {
-                return Ok(Some(Datum::new(Time::from_nanoseconds(2), 3.0)));
+            match self.index {
+                0 => Err(Error),
+                1 => Ok(None),
+                _ => Ok(Some(Datum::new(Time::from_nanoseconds(2), 3.0))),
             }
         }
     }
@@ -658,11 +650,7 @@ fn product_stream() {
         assert!(stream.get().is_err());
         //normal does not need update
         erroring.update().unwrap();
-        assert_eq!(
-            stream.get().unwrap().unwrap().time,
-            Time::from_nanoseconds(1)
-        );
-        assert_eq!(stream.get().unwrap().unwrap().value, 5.0);
+        assert!(stream.get().unwrap().is_none());
         erroring.update().unwrap();
         assert_eq!(
             stream.get().unwrap().unwrap().time,
