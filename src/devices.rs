@@ -99,7 +99,6 @@ impl<const N: usize> System<N> {
         let node = self.node_mut_from_local_id(node_id);
         node.state_local = state;
     }
-    //TODO: Decide about #[inline] for this, get_state_connected, and get_state_true.
     fn get_average_state_over_iterator<I: Iterator<Item = LocalNodeID>>(
         &self,
         iterator: I,
@@ -123,6 +122,7 @@ impl<const N: usize> System<N> {
     ///provided node itself. To avoid feedback loops, this is the recommended function to use in
     ///your calculations (as opposed to [`get_state_local`](Self::get_state_local) or
     ///[`get_state_true`](Self::get_state_true)).
+    #[inline] //Inlining this function itself; not inlining get_average_state_over_iterator.
     pub fn get_state_connected(&self, node_id: NodeID) -> Option<AngularState> {
         let node_id = self.assert_contains(node_id);
         self.get_average_state_over_iterator(self.iter_connected(node_id))
@@ -132,6 +132,7 @@ impl<const N: usize> System<N> {
     ///generally not be used directly in calculations due to feedback loops.
     ///[`get_state_connected`](Self::get_state_connected) is recommended instead to avoid this
     ///issue.
+    #[inline] //same as get_state_connected
     pub fn get_state_true(&self, node_id: NodeID) -> Option<AngularState> {
         let node_id = self.assert_contains(node_id);
         self.get_average_state_over_iterator(
