@@ -8,7 +8,8 @@ use core::mem::MaybeUninit;
 ///`Err(_)`, that value is returned immediately.
 ///
 ///If your usecase requires excluding `None` values from the sum as opposed to this behavior,
-///consider wrapping inputs in [`converters::NoneToDefault`] or [`converters::NoneToValue`].
+///consider wrapping inputs in [`converters::NoneToDefault`] or [`converters::NoneToValue`] with a
+///value of 0 for the `None` variant.
 ///
 ///If you are only adding the outputs of two getters or if your input getters are of different
 ///types, consider using [`Sum2`] instead.
@@ -234,12 +235,15 @@ where
         Ok(())
     }
 }
-//TODO fix docs
-///A stream that multiplies its inputs. If an input returns `Ok(None)`, it is excluded from the
-///calculation, effectively treating it as though it had returned 1. If this is not the desired
-///behavior, use [`rrtk::streams::converters::NoneToValue`](streams::converters::NoneToValue) or
-///[`rrtk::streams::converters::NoneToError`](streams::converters::NoneToError). [`Product2`] may
-///also be a bit faster if you are only multiplying the outputs of two streams.
+///A stream that multiplies all its inputs sequentially with `MulAssign`. For this stream to return a
+///value, all of its inputs must return the `Ok(Some(_))` variant; if an input returns `Ok(None)` or
+///`Err(_)`, that value is returned immediately.
+///
+///If your usecase requires excluding `None` values from the product as opposed to this behavior,
+///consider wrapping inputs in [`converters::NoneToValue`] with a value of 1 for the `None` variant.
+///
+///If you are only multiplying the outputs of two getters or if your input getters are of different
+///types, consider using [`Product2`] instead.
 pub struct ProductStream<T, const N: usize, G, E>
 where
     T: MulAssign + Copy,
