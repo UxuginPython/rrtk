@@ -53,6 +53,8 @@ impl LogicState {
 ///
 ///Returns the latest timestamp of any input (if not Err or None).
 ///
+///With no inputs, i.e. with `N == 0`, always returns `Ok(None)`.
+///
 ///If you only need two inputs, you should probably use [`And2`] instead, which may be slightly
 ///faster and allows its inputs to have different types.
 pub struct AndStream<const N: usize, G: Getter<bool, E>, E: Clone + Debug> {
@@ -77,8 +79,10 @@ impl<const N: usize, G: Getter<bool, E>, E: Clone + Debug> Updatable<E> for AndS
     }
 }
 impl<const N: usize, G: Getter<bool, E>, E: Clone + Debug> Getter<bool, E> for AndStream<N, G, E> {
-    //FIXME: Define what happens with 0 inputs.
     fn get(&self) -> Output<bool, E> {
+        if N == 0 {
+            return Ok(None);
+        }
         let mut logic_state = LogicState::ReturnableTrue;
         let mut time = Time::ZERO;
         for getter in &self.inputs {
@@ -110,6 +114,8 @@ impl<const N: usize, G: Getter<bool, E>, E: Clone + Debug> Getter<bool, E> for A
 ///
 ///Returns the latest timestamp of any input (if not Err or None).
 ///
+///With no inputs, i.e. with `N == 0`, always returns `Ok(None)`.
+///
 ///If you only need two inputs, you should probably use [`Or2`] instead, which may be slightly
 ///faster and allows its inputs to have different types.
 pub struct OrStream<const N: usize, G: Getter<bool, E>, E: Clone + Debug> {
@@ -134,8 +140,10 @@ impl<const N: usize, G: Getter<bool, E>, E: Clone + Debug> Updatable<E> for OrSt
     }
 }
 impl<const N: usize, G: Getter<bool, E>, E: Clone + Debug> Getter<bool, E> for OrStream<N, G, E> {
-    //FIXME: Define what happens with 0 inputs.
     fn get(&self) -> Output<bool, E> {
+        if N == 0 {
+            return Ok(None);
+        }
         let mut logic_state = LogicState::ReturnableFalse;
         let mut time = Time::ZERO;
         for getter in &self.inputs {

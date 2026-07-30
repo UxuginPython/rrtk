@@ -1291,6 +1291,25 @@ fn latest() {
     }
 }
 #[test]
+fn inputless_gates() {
+    struct GetBool;
+    impl Updatable<()> for GetBool {
+        fn update(&mut self) -> NothingOrError<()> {
+            panic!("There should be no instances of GetBool to update.");
+        }
+    }
+    impl Getter<bool, ()> for GetBool {
+        fn get(&self) -> Output<bool, ()> {
+            panic!("There should be no instances of GetBool to get from.");
+        }
+    }
+    const INPUTS: [GetBool; 0] = [];
+    let and = AndStream::new(INPUTS);
+    assert_eq!(and.get(), Ok(None));
+    let or = OrStream::new(INPUTS);
+    assert_eq!(or.get(), Ok(None));
+}
+#[test]
 fn and_stream() {
     struct In1 {
         index: u8,
