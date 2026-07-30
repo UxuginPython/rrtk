@@ -275,15 +275,7 @@ mod command_pid {
 }
 ///An Exponentially Weighted Moving Average stream for use with the stream system. See <https://www.itl.nist.gov/div898/handbook/pmc/section3/pmc324.htm> for more information. Because a standard EWMA requires that new data always arrive at the same interval, this implementation uses λ=1-(1-`smoothing_constant`)^Δt instead of the usual weighting factor.
 #[cfg(feature = "internal_enhanced_float")]
-pub struct EWMAStream<T, G, E>
-where
-    //TODO: Bound this as Mul<f32> or similar when runtime Quantity goes away.
-    //Of course, if you decide to remove all not strictly necessary bounds, things change.
-    //Actually, preferably, "expand" it like Sum2 etc., but that's a lot harder here.
-    T: Clone + Add<Output = T>,
-    G: Getter<T, E>,
-    E: Clone + Debug,
-{
+pub struct EWMAStream<T, G, E> {
     input: G,
     //As data may not come in at regular intervals as is assumed by a standard EWMA, this value
     //will be multiplied by delta time before being used.
@@ -292,12 +284,7 @@ where
     update_time: Option<Time>,
 }
 #[cfg(feature = "internal_enhanced_float")]
-impl<T, G, E> EWMAStream<T, G, E>
-where
-    T: Clone + Add<Output = T>,
-    G: Getter<T, E>,
-    E: Clone + Debug,
-{
+impl<T, G, E> EWMAStream<T, G, E> {
     ///Constructor for [`EWMAStream`].
     pub const fn new(input: G, smoothing_constant: f32) -> Self {
         Self {
@@ -311,9 +298,8 @@ where
 #[cfg(feature = "internal_enhanced_float")]
 impl<T, G, E> Getter<T, E> for EWMAStream<T, G, E>
 where
-    EWMAStream<T, G, E>: Updatable<E>,
-    T: Clone + Add<Output = T>,
-    G: Getter<T, E>,
+    EWMAStream<T, G, E>: Updatable<E>, //<- This implies both of | these, but you still need to write them explicitly apparently.
+    T: Clone,                          //<-----------------------/
     E: Clone + Debug,
 {
     fn get(&self) -> Output<T, E> {
