@@ -304,3 +304,14 @@ Start cleaning up a [really big mess](http://rrtk.org/notice/).
 - Add `DimensionlessFraction::into_components`, which returns the numerator and denominator as a tuple.
 - Remove some code from the previous device system that was accidentally left in the last prerelease.
 - Significantly improve testing.
+## 0.7.0-beta.1
+- Add wrappers for connecting getters and settables to the current device system.
+- Implement `Div<Time>` for `DimensionlessFraction`. It returns an `f32`-based `Quantity` of inverse seconds.
+- Remove two type parameters from `Latest`, simplify its bounds, and allow constructing it with zero inputs.
+- Remove unnecessary bounds from `DimensionAdder` and use where clauses for some of its remaining bounds.
+- Use macros to generate code for `And2` and `Or2` to repeat less code.
+- Make `SumStream` and `ProductStream` return `Ok(None)` if any of their inputs do as opposed to skipping those inputs.
+- Make bounds on `EWMAStream` more consistent.
+- Define `AndStream`'s behavior with zero inputs.
+- Remove unnecessary bounds from `EWMAStream` and clarify with comments.
+- Add `#[inline]` to a couple of methods of `System`.
