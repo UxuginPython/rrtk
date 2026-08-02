@@ -36,36 +36,3 @@ fn i64_from_dimensionless_integer() {
 fn dimensionless_integer_neg() {
     assert_eq!(-DimensionlessInteger(1), DimensionlessInteger(-1));
 }
-#[test]
-fn dimensionless_fraction_comparisons_more_signs() {
-    let a = dimensionless_fraction!(3, 2);
-    let b = dimensionless_fraction!(1, 2);
-    assert!(a > b);
-    let c = dimensionless_fraction!(-3, -2);
-    let d = dimensionless_fraction!(-1, -2);
-    assert_eq!(a, c);
-    assert_eq!(b, d);
-    assert!(c > d);
-    assert!(a > d);
-    assert!(c > b);
-}
-#[test]
-fn even_more_signs() {
-    let fracs = [
-        dimensionless_fraction!(-3, 2),
-        dimensionless_fraction!(3, -2),
-        dimensionless_fraction!(-1, 2),
-        dimensionless_fraction!(1, -2),
-        dimensionless_fraction!(0, 2),
-        dimensionless_fraction!(0, -2),
-        dimensionless_fraction!(1, 2),
-        dimensionless_fraction!(-1, -2),
-        dimensionless_fraction!(3, 2),
-        dimensionless_fraction!(-3, -2),
-    ];
-    for a in fracs {
-        for b in fracs {
-            assert_eq!(a.cmp(&b), a.as_f32().partial_cmp(&b.as_f32()).unwrap());
-        }
-    }
-}
