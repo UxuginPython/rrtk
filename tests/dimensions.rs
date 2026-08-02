@@ -49,3 +49,23 @@ fn dimensionless_fraction_comparisons_more_signs() {
     assert!(a > d);
     assert!(c > b);
 }
+#[test]
+fn even_more_signs() {
+    let fracs = [
+        dimensionless_fraction!(-3, 2),
+        dimensionless_fraction!(3, -2),
+        dimensionless_fraction!(-1, 2),
+        dimensionless_fraction!(1, -2),
+        dimensionless_fraction!(0, 2),
+        dimensionless_fraction!(0, -2),
+        dimensionless_fraction!(1, 2),
+        dimensionless_fraction!(-1, -2),
+        dimensionless_fraction!(3, 2),
+        dimensionless_fraction!(-3, -2),
+    ];
+    for a in fracs {
+        for b in fracs {
+            assert_eq!(a.cmp(&b), a.as_f32().partial_cmp(&b.as_f32()).unwrap());
+        }
+    }
+}
