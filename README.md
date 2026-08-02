@@ -20,6 +20,9 @@ RRTK is free and open source software licensed under the permissive BSD 3-Clause
     - Differential, gear train, and clutch provided
     - Easily connect streams to the device system through wrappers
 - Trapezoidal motion profile following
+- No dependencies by default, but support for [libm](https://crates.io/crates/libm) and [micromath](https://crates.io/crates/micromath) available
+  - No features of libm or micromath enabled
+- Compile-time dimensional analysis system
 
 ## Related Crates
 Currently, neither of these works very well with the 0.7.* release series. They will be updated eventually, but improving RRTK itself is being prioritized more right now.
