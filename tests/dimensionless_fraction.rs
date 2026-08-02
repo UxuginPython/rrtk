@@ -18,7 +18,23 @@ fn constructor_macro() {
 fn constructor_macro_unchecked() {
     let x = DimensionlessFraction::new_unchecked(DimensionlessInteger(1), DimensionlessInteger(0));
     let y = dimensionless_fraction_unchecked!(1, 0);
-    assert_eq!(x, y);
+    assert!(x.raw_eq(&y));
+}
+#[test]
+fn raw_eq() {
+    assert!(dimensionless_fraction!(2, 3).raw_eq(&dimensionless_fraction!(2, 3)));
+    assert!(!dimensionless_fraction!(1, 3).raw_eq(&dimensionless_fraction!(1, 2)));
+    assert!(!dimensionless_fraction!(1, 3).raw_eq(&dimensionless_fraction!(2, 3)));
+    assert!(!dimensionless_fraction!(1, 3).raw_eq(&dimensionless_fraction!(3, 4)));
+    assert!(!dimensionless_fraction!(1, 2).raw_eq(&dimensionless_fraction!(2, 4)));
+    assert!(!dimensionless_fraction!(0, 1).raw_eq(&dimensionless_fraction!(0, 2)));
+    assert!(!dimensionless_fraction!(1, 2).raw_eq(&dimensionless_fraction!(-1, -2)));
+    assert!(
+        !dimensionless_fraction_unchecked!(1, 0).raw_eq(&dimensionless_fraction_unchecked!(2, 0))
+    );
+    assert!(
+        dimensionless_fraction_unchecked!(2, 0).raw_eq(&dimensionless_fraction_unchecked!(2, 0))
+    );
 }
 #[test]
 #[should_panic]
@@ -53,9 +69,9 @@ fn reciprocal_unchecked() {
     let x = dimensionless_fraction!(2, -3);
     assert_eq!(x.reciprocal_unchecked(), dimensionless_fraction!(-3, 2),);
     let y = dimensionless_fraction!(0, -3);
-    assert_eq!(
-        y.reciprocal_unchecked(),
-        dimensionless_fraction_unchecked!(-3, 0),
+    assert!(
+        y.reciprocal_unchecked()
+            .raw_eq(&dimensionless_fraction_unchecked!(-3, 0))
     );
 }
 #[test]

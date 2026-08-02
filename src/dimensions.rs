@@ -321,6 +321,15 @@ impl DimensionlessFraction {
     pub const fn as_quantity_f64(&self) -> Dimensionless<f64> {
         Dimensionless::new(self.as_f64())
     }
+    ///Returns true if the numerators and denominators are directly equal. For example, for
+    ///fractions a/b and c/d, the `PartialEq` implementation tests for whether a/b=c/d, but this
+    ///method tests whether a=c and b=d. Although `DimensionlessFraction` values with zero
+    ///denominator shouldn't exist, this method does not panic when it receives one of them, unlike
+    ///that impl.
+    #[inline]
+    pub const fn raw_eq(&self, rhs: &Self) -> bool {
+        self.0.const_eq(&rhs.0) && self.1.const_eq(&rhs.1)
+    }
 }
 impl From<DimensionlessInteger> for DimensionlessFraction {
     fn from(was: DimensionlessInteger) -> Self {
@@ -331,7 +340,12 @@ impl Ord for DimensionlessFraction {
     fn cmp(&self, rhs: &Self) -> core::cmp::Ordering {
         let a = self.0 * rhs.1;
         let b = self.1 * rhs.0;
-        a.cmp(&b)
+        let cmp = a.cmp(&b);
+        match (self.1 * rhs.1).0 {
+            1..=i64::MAX => cmp,
+            i64::MIN..=-1 => cmp.reverse(),
+            0 => panic!("division by zero when comparing DimensionlessFraction"),
+        }
     }
 }
 impl PartialEq for DimensionlessFraction {
