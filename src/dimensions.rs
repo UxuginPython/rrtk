@@ -323,9 +323,7 @@ impl DimensionlessFraction {
     }
     ///Returns true if the numerators and denominators are directly equal. For example, for
     ///fractions a/b and c/d, the `PartialEq` implementation tests for whether a/b=c/d, but this
-    ///method tests whether a=c and b=d. Although `DimensionlessFraction` values with zero
-    ///denominator shouldn't exist, this method does not panic when it receives one of them, unlike
-    ///the `PartialEq` impl.
+    ///method tests whether a=c and b=d.
     #[inline]
     pub const fn raw_eq(&self, rhs: &Self) -> bool {
         self.0.const_eq(&rhs.0) && self.1.const_eq(&rhs.1)
