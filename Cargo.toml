@@ -13,7 +13,7 @@ description = "Rust Robotics ToolKit"
 keywords = ["robotics", "control"]
 categories = ["science::robotics", "no-std"]
 # We can't exclude the SVGs because they're needed for building the docs.
-exclude = ["generatetestall.py", "testall.sh", "checkall.sh"]
+exclude = ["generatetestall.py", "testall.sh", "checkall.sh", "exclude"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
