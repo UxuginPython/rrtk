@@ -325,7 +325,7 @@ impl DimensionlessFraction {
     ///fractions a/b and c/d, the `PartialEq` implementation tests for whether a/b=c/d, but this
     ///method tests whether a=c and b=d. Although `DimensionlessFraction` values with zero
     ///denominator shouldn't exist, this method does not panic when it receives one of them, unlike
-    ///that impl.
+    ///the `PartialEq` impl.
     #[inline]
     pub const fn raw_eq(&self, rhs: &Self) -> bool {
         self.0.const_eq(&rhs.0) && self.1.const_eq(&rhs.1)
@@ -341,10 +341,11 @@ impl Ord for DimensionlessFraction {
         let a = self.0 * rhs.1;
         let b = self.1 * rhs.0;
         let cmp = a.cmp(&b);
-        match (self.1 * rhs.1).0 {
-            1..=i64::MAX => cmp,
-            i64::MIN..=-1 => cmp.reverse(),
-            0 => panic!("division by zero when comparing DimensionlessFraction"),
+        //This is true if the signs of the denominators match.
+        if (self.1 < DimensionlessInteger(0)) == (rhs.1 < DimensionlessInteger(0)) {
+            cmp
+        } else {
+            cmp.reverse()
         }
     }
 }
