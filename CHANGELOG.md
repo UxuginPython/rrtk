@@ -315,3 +315,7 @@ Start cleaning up a [really big mess](http://rrtk.org/notice/).
 - Define `AndStream`'s behavior with zero inputs.
 - Remove unnecessary bounds from `EWMAStream` and clarify with comments.
 - Add `#[inline]` to a couple of methods of `System`.
+## 0.7.0-beta.2
+- Fix bug where `DimensionlessFraction`'s `Ord` implementation would incorrectly compare fractions with denominators of different signs.
+- Add `DimensionlessFraction::raw_eq` method for directly checking the numerators and denominators for equality instead of the values of the fractions. For example, `dimensionless_fraction!(1, 2)` is equal to `dimensionless_fraction!(2, 4)` with `PartialEq` but not with `raw_eq`.
+- Move `NotDatum` to the `stulta` module.
