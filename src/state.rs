@@ -120,6 +120,17 @@ macro_rules! build_state_struct {
                     acceleration,
                 }
             }
+            ///Constructor from raw `f32` values. These values are immediately converted to
+            ///`Quantity`. This method intentionally does not have an equivalent in the
+            ///[`GenericState`] trait.
+            #[inline]
+            pub const fn from_raw(position: f32, velocity: f32, acceleration: f32) -> Self {
+                Self::new(
+                    <$pos>::new(position),
+                    <$vel>::new(velocity),
+                    <$acc>::new(acceleration),
+                )
+            }
             //This could maybe be const fn if you're willing to let the code get a bit messy, maybe give up a
             //slight bit of performance (or not depending on optimization), and give up some of the
             //dimension guarantees here.
