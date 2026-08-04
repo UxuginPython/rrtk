@@ -17,16 +17,8 @@ fn get_and_write_to_node() {
             Ok(())
         }
     }
-    const STATE_1: AngularState = AngularState::new(
-        Dimensionless::new(1.0),
-        InverseSecond::new(2.0),
-        InverseSecondSquared::new(3.0),
-    );
-    const STATE_2: AngularState = AngularState::new(
-        Dimensionless::new(4.0),
-        InverseSecond::new(5.0),
-        InverseSecondSquared::new(6.0),
-    );
+    const STATE_1: AngularState = AngularState::from_raw(1.0, 2.0, 3.0);
+    const STATE_2: AngularState = AngularState::from_raw(4.0, 5.0, 6.0);
     impl Getter<AngularState, MyError> for MyGetter {
         fn get(&self) -> Output<AngularState, MyError> {
             match self.index {
