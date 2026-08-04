@@ -47,3 +47,69 @@ fn get_and_write_to_node() {
     assert!(wrappers::get_and_write_to_node(&getter, &mut system, node).is_err());
     assert!(system.get_state_local(node).is_none());
 }
+#[test]
+fn set_to_node_state() {
+    #[derive(Clone, Copy, Debug)]
+    struct MyError;
+    struct MySettable {
+        index: u8,
+    }
+    impl Updatable<MyError> for MySettable {
+        fn update(&mut self) -> NothingOrError<MyError> {
+            self.index += 1;
+            Ok(())
+        }
+    }
+    const STATE: AngularState = AngularState::from_raw(2.0, 3.0, 5.0);
+    static mut SET_CALLS: u8 = 0;
+    impl Settable<AngularState, MyError> for MySettable {
+        fn set(&mut self, value: AngularState) -> NothingOrError<MyError> {
+            unsafe {
+                SET_CALLS += 1;
+            }
+            match self.index {
+                0 => {
+                    panic!("set shouldn't be called when the node is node");
+                }
+                1 => {
+                    assert_eq!(value, STATE);
+                }
+                2 => {
+                    return Err(MyError);
+                }
+                _ => unimplemented!(),
+            }
+            Ok(())
+        }
+    }
+    let mut system = System::<2>::new();
+    let node_a = system.new_node().unwrap();
+    let node_b = system.new_node().unwrap();
+    system.connect(node_a, node_b);
+    let mut settable = MySettable { index: 0 };
+
+    //Everything is None. set shouldn't be called.
+    wrappers::set_to_node_state(&mut settable, &mut system, node_a).unwrap();
+    assert_eq!(unsafe { SET_CALLS }, 0);
+
+    //get_state_connected should only read node_b, which is None. set shouldn't be called.
+    system.set_state_local(node_a, Some(AngularState::from_raw(1000.0, 2000.0, 3000.0)));
+    wrappers::set_to_node_state(&mut settable, &mut system, node_a).unwrap();
+    assert_eq!(unsafe { SET_CALLS }, 0);
+
+    //Now node_b is Some. set should be called but should not error yet.
+    settable.update().unwrap();
+    system.set_state_local(node_b, Some(STATE));
+    wrappers::set_to_node_state(&mut settable, &mut system, node_a).unwrap();
+    assert_eq!(unsafe { SET_CALLS }, 1);
+
+    //Now set should be erroring.
+    settable.update().unwrap();
+    assert!(wrappers::set_to_node_state(&mut settable, &mut system, node_a).is_err());
+    assert_eq!(unsafe { SET_CALLS }, 2);
+
+    //Now set shouldn't be called and so shouldn't error.
+    system.set_state_local(node_b, None);
+    wrappers::set_to_node_state(&mut settable, &mut system, node_a).unwrap();
+    assert_eq!(unsafe { SET_CALLS }, 2);
+}
