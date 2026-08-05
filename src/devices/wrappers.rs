@@ -78,7 +78,7 @@ macro_rules! constructor {
 constructor!(
     GetterWrapper,
     getter,
-    "Constructor for `GetterWrapper.` Although it is possible to construct the wrapper without `getter` implementing `Getter`, there is no reason to do this as the object would be useless."
+    "Constructor for `GetterWrapper`. Although it is possible to construct the wrapper without `getter` implementing `Getter`, there is no reason to do this as the object would be useless."
 );
 impl<G: Getter<AngularState, E>, E: Clone + Debug> DeviceUpdatable<E> for GetterWrapper<G, E> {
     fn device_update<const N: usize>(&mut self, system: &mut System<N>) -> NothingOrError<E> {
