@@ -191,4 +191,62 @@ mod getter_wrapper {
         assert!(system.get_state_local(node).is_none());
         assert_eq!(unsafe { UPDATE_CALLS }, 1);
     }
+    #[test]
+    fn ok_some_1() {
+        #[derive(Clone, Copy, Debug)]
+        struct MyError;
+        struct MyGetter;
+        static mut UPDATE_CALLS: u8 = 0;
+        impl Updatable<MyError> for MyGetter {
+            fn update(&mut self) -> NothingOrError<MyError> {
+                unsafe {
+                    UPDATE_CALLS += 1;
+                }
+                Ok(())
+            }
+        }
+        const GET_STATE: AngularState = AngularState::from_raw(1.0, 2.0, 4.0);
+        impl Getter<AngularState, MyError> for MyGetter {
+            fn get(&self) -> Output<AngularState, MyError> {
+                Ok(Some(Datum::new(Time::ZERO, GET_STATE)))
+            }
+        }
+        let mut system = System::<1>::new();
+        let node = system.new_node().unwrap();
+        system.set_state_local(node, Some(AngularState::from_raw(9.0, 8.0, 7.0)));
+        let mut wrapper = wrappers::GetterWrapper::new(node, MyGetter);
+        assert!(wrapper.device_update(&mut system).is_ok());
+        assert_eq!(system.get_state_local(node), Some(GET_STATE));
+        assert_eq!(unsafe { UPDATE_CALLS }, 1);
+    }
+    #[test]
+    fn ok_some_2() {
+        #[derive(Clone, Copy, Debug)]
+        struct MyError;
+        struct MyGetter;
+        static mut UPDATE_CALLS: u8 = 0;
+        impl Updatable<MyError> for MyGetter {
+            fn update(&mut self) -> NothingOrError<MyError> {
+                unsafe {
+                    UPDATE_CALLS += 1;
+                }
+                Ok(())
+            }
+        }
+        const GET_STATE: AngularState = AngularState::from_raw(1.0, 2.0, 4.0);
+        impl Getter<AngularState, MyError> for MyGetter {
+            fn get(&self) -> Output<AngularState, MyError> {
+                Ok(Some(Datum::new(Time::ZERO, GET_STATE)))
+            }
+        }
+        let mut system = System::<1>::new();
+        let node = system.new_node().unwrap();
+        //This is the only difference between ok_some_1 and ok_some_2. ok_some_1 has the node's
+        //local state filled before the wrapper is applied, and ok_some_2 has it as None.
+        assert!(system.get_state_local(node).is_none());
+        let mut wrapper = wrappers::GetterWrapper::new(node, MyGetter);
+        assert!(wrapper.device_update(&mut system).is_ok());
+        assert_eq!(system.get_state_local(node), Some(GET_STATE));
+        assert_eq!(unsafe { UPDATE_CALLS }, 1);
+    }
 }
