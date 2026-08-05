@@ -60,17 +60,22 @@ pub struct GetterWrapper<G, E> {
     node: NodeID,
     phantom_e: PhantomData<E>,
 }
-impl<G, E> GetterWrapper<G, E> {
-    ///Constructor for `GetterWrapper`.
-    #[inline]
-    pub const fn new(node: NodeID, getter: G) -> Self {
-        Self {
-            getter,
-            node,
-            phantom_e: PhantomData,
+macro_rules! constructor {
+    ($name: ident, $wrapped_field: ident, $documentation: literal) => {
+        impl<T, E> $name<T, E> {
+            #[doc = $documentation]
+            #[inline]
+            pub const fn new(node: NodeID, $wrapped_field: T) -> Self {
+                Self {
+                    $wrapped_field,
+                    node,
+                    phantom_e: PhantomData,
+                }
+            }
         }
-    }
+    };
 }
+constructor!(GetterWrapper, getter, "Constructor for `GetterWrapper.`");
 impl<G: Getter<AngularState, E>, E: Clone + Debug> DeviceUpdatable<E> for GetterWrapper<G, E> {
     fn device_update<const N: usize>(&mut self, system: &mut System<N>) -> NothingOrError<E> {
         error_handle_update!(self.getter, system, self.node);
@@ -84,17 +89,11 @@ pub struct SettableWrapper<S, E> {
     node: NodeID,
     phantom_e: PhantomData<E>,
 }
-impl<S, E> SettableWrapper<S, E> {
-    ///Constructor for `SettableWrapper`.
-    #[inline]
-    pub const fn new(node: NodeID, settable: S) -> Self {
-        Self {
-            settable,
-            node,
-            phantom_e: PhantomData,
-        }
-    }
-}
+constructor!(
+    SettableWrapper,
+    settable,
+    "Constructor for `SettableWrapper`."
+);
 impl<S: Settable<AngularState, E>, E: Clone + Debug> DeviceUpdatable<E> for SettableWrapper<S, E> {
     fn device_update<const N: usize>(&mut self, system: &mut System<N>) -> NothingOrError<E> {
         error_handle_update!(self.settable, system, self.node);
@@ -110,17 +109,11 @@ pub struct GetterSettableWrapper<T, E> {
     node: NodeID,
     phantom_e: PhantomData<E>,
 }
-impl<T, E> GetterSettableWrapper<T, E> {
-    ///Constructor for `GetterSettableWrapper`.
-    #[inline]
-    pub const fn new(node: NodeID, getter_settable: T) -> Self {
-        Self {
-            getter_settable,
-            node,
-            phantom_e: PhantomData,
-        }
-    }
-}
+constructor!(
+    GetterSettableWrapper,
+    getter_settable,
+    "Constructor for `GetterSettableWrapper`."
+);
 impl<T, E> DeviceUpdatable<E> for GetterSettableWrapper<T, E>
 where
     T: Getter<AngularState, E> + Settable<AngularState, E>,
