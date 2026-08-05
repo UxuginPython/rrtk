@@ -137,4 +137,31 @@ mod getter_wrapper {
         assert!(wrapper.device_update(&mut system).is_err());
         assert!(system.get_state_local(node).is_none());
     }
+    #[test]
+    fn get_error() {
+        #[derive(Clone, Copy, Debug)]
+        struct MyError;
+        struct MyGetter;
+        static mut UPDATE_CALLS: u8 = 0;
+        impl Updatable<MyError> for MyGetter {
+            fn update(&mut self) -> NothingOrError<MyError> {
+                unsafe {
+                    UPDATE_CALLS += 1;
+                }
+                Ok(())
+            }
+        }
+        impl Getter<AngularState, MyError> for MyGetter {
+            fn get(&self) -> Output<AngularState, MyError> {
+                Err(MyError)
+            }
+        }
+        let mut system = System::<1>::new();
+        let node = system.new_node().unwrap();
+        system.set_state_local(node, Some(AngularState::from_raw(9.0, 8.0, 7.0)));
+        let mut wrapper = wrappers::GetterWrapper::new(node, MyGetter);
+        assert!(wrapper.device_update(&mut system).is_err());
+        assert!(system.get_state_local(node).is_none());
+        assert_eq!(unsafe { UPDATE_CALLS }, 1);
+    }
 }
