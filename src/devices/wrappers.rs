@@ -75,7 +75,11 @@ macro_rules! constructor {
         }
     };
 }
-constructor!(GetterWrapper, getter, "Constructor for `GetterWrapper.`");
+constructor!(
+    GetterWrapper,
+    getter,
+    "Constructor for `GetterWrapper.` Although it is possible to construct the wrapper without `getter` implementing `Getter`, there is no reason to do this as the object would be useless."
+);
 impl<G: Getter<AngularState, E>, E: Clone + Debug> DeviceUpdatable<E> for GetterWrapper<G, E> {
     fn device_update<const N: usize>(&mut self, system: &mut System<N>) -> NothingOrError<E> {
         error_handle_update!(self.getter, system, self.node);
@@ -92,7 +96,7 @@ pub struct SettableWrapper<S, E> {
 constructor!(
     SettableWrapper,
     settable,
-    "Constructor for `SettableWrapper`."
+    "Constructor for `SettableWrapper`. Although it is possible to construct the wrapper without `settable` implementing `Settable`, there is no reason to do this as the object would be useless."
 );
 impl<S: Settable<AngularState, E>, E: Clone + Debug> DeviceUpdatable<E> for SettableWrapper<S, E> {
     fn device_update<const N: usize>(&mut self, system: &mut System<N>) -> NothingOrError<E> {
@@ -112,7 +116,7 @@ pub struct GetterSettableWrapper<T, E> {
 constructor!(
     GetterSettableWrapper,
     getter_settable,
-    "Constructor for `GetterSettableWrapper`."
+    "Constructor for `GetterSettableWrapper`. Although it is possible to construct the wrapper without `getter_settable` implementing `Getter` and `Settable`, there is no reason to do this as the object would be useless.\n\nNote that the wrapper requires that `getter_settable` implement both traits to be usable. Other wrappers are available in the [module](self) for types only implementing one of the traits."
 );
 impl<T, E> DeviceUpdatable<E> for GetterSettableWrapper<T, E>
 where
