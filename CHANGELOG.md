@@ -319,3 +319,6 @@ Start cleaning up a [really big mess](http://rrtk.org/notice/).
 - Fix bug where `DimensionlessFraction`'s `Ord` implementation would incorrectly compare fractions with denominators of different signs.
 - Add `DimensionlessFraction::raw_eq` method for directly checking the numerators and denominators for equality instead of the values of the fractions. For example, `dimensionless_fraction!(1, 2)` is equal to `dimensionless_fraction!(2, 4)` with `PartialEq` but not with `raw_eq`.
 - Move `NotDatum` to the `stulta` module.
+## 0.7.0-beta.3
+- Add constructors for the device wrappers. (These were forgotten in 0.7.0-beta.1.)
+- Add `from_raw` method for `AngularState` and `LinearState` allowing them to be constructed from raw `f32` values for position, velocity, and acceleration.
