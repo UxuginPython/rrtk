@@ -267,11 +267,17 @@ mod settable_wrapper {
                 panic!("update errors, so set must not be called");
             }
         }
-        let mut system = System::<1>::new();
-        let node = system.new_node().unwrap();
-        let mut wrapper = wrappers::SettableWrapper::new(node, MySettable);
+        let mut system = System::<2>::new();
+        let node_a = system.new_node().unwrap();
+        let node_b = system.new_node().unwrap();
+        system.connect(node_a, node_b);
+        system.set_state_local(node_a, Some(AngularState::from_raw(400.0, -5.0, 23.0)));
+        let mut wrapper = wrappers::SettableWrapper::new(node_a, MySettable);
         assert!(wrapper.device_update(&mut system).is_err());
-        system.set_state_local(node, Some(AngularState::from_raw(1.0, 3.0, 5.0)));
+        //Neither node state we set should be used. The only reason the two nodes are different is
+        //to change what get_state_connected would hypothetically return since it's always None
+        //with only one node.
+        system.set_state_local(node_b, Some(AngularState::from_raw(1.0, 3.0, 5.0)));
         assert!(wrapper.device_update(&mut system).is_err());
     }
     #[test]
