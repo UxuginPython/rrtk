@@ -322,4 +322,33 @@ mod settable_wrapper {
         assert!(wrapper.device_update(&mut system).is_err());
         assert_eq!(unsafe { SET_CALLS }, 1);
     }
+    #[test]
+    fn everything_ok_but_none() {
+        #[derive(Clone, Copy, Debug)]
+        struct MyError;
+        struct MySettable;
+        static mut UPDATE_CALLS: u8 = 0;
+        impl Updatable<MyError> for MySettable {
+            fn update(&mut self) -> NothingOrError<MyError> {
+                unsafe {
+                    UPDATE_CALLS += 1;
+                }
+                Ok(())
+            }
+        }
+        impl Settable<AngularState, MyError> for MySettable {
+            fn set(&mut self, _: AngularState) -> NothingOrError<MyError> {
+                panic!("set must not be called if the node is None");
+            }
+        }
+        let mut system = System::<1>::new();
+        let node = system.new_node().unwrap();
+        let mut wrapper = wrappers::SettableWrapper::new(node, MySettable);
+        assert!(wrapper.device_update(&mut system).is_ok());
+        assert_eq!(unsafe { UPDATE_CALLS }, 1);
+        system.set_state_local(node, Some(AngularState::from_raw(-6.0, -7.0, 1800.0)));
+        //The wrapper uses get_state_connected, so the local state of the node shouldn't matter.
+        assert!(wrapper.device_update(&mut system).is_ok());
+        assert_eq!(unsafe { UPDATE_CALLS }, 2);
+    }
 }
