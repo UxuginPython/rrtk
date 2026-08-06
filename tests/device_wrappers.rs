@@ -351,4 +351,44 @@ mod settable_wrapper {
         assert!(wrapper.device_update(&mut system).is_ok());
         assert_eq!(unsafe { UPDATE_CALLS }, 2);
     }
+    #[test]
+    fn everything_ok() {
+        #[derive(Clone, Copy, Debug)]
+        struct MyError;
+        struct MySettable;
+        static mut UPDATE_CALLS: u8 = 0;
+        impl Updatable<MyError> for MySettable {
+            fn update(&mut self) -> NothingOrError<MyError> {
+                unsafe {
+                    UPDATE_CALLS += 1;
+                }
+                Ok(())
+            }
+        }
+        const STATE: AngularState = AngularState::from_raw(1.0, 7.0, 3.0);
+        static mut SET_CALLS: u8 = 0;
+        impl Settable<AngularState, MyError> for MySettable {
+            fn set(&mut self, value: AngularState) -> NothingOrError<MyError> {
+                unsafe {
+                    SET_CALLS += 1;
+                }
+                assert_eq!(value, STATE);
+                Ok(())
+            }
+        }
+        let mut system = System::<2>::new();
+        let node_a = system.new_node().unwrap();
+        let node_b = system.new_node().unwrap();
+        system.connect(node_a, node_b);
+        system.set_state_local(node_b, Some(STATE));
+        let mut wrapper = wrappers::SettableWrapper::new(node_a, MySettable);
+        assert!(wrapper.device_update(&mut system).is_ok());
+        assert_eq!(unsafe { UPDATE_CALLS }, 1);
+        assert_eq!(unsafe { SET_CALLS }, 1);
+        //Again, this state shouldn't do anything because the wrapper uses get_state_connected.
+        system.set_state_local(node_a, Some(AngularState::from_raw(-1000.0, -100.0, -0.01)));
+        assert!(wrapper.device_update(&mut system).is_ok());
+        assert_eq!(unsafe { UPDATE_CALLS }, 2);
+        assert_eq!(unsafe { SET_CALLS }, 2);
+    }
 }
