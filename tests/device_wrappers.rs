@@ -392,54 +392,71 @@ mod settable_wrapper {
         assert_eq!(unsafe { SET_CALLS }, 2);
     }
 }
-#[test]
-fn getter_settable_wrapper() {
-    #[derive(Clone, Copy, Debug)]
-    struct MyError(u8);
-    struct MyGetterSettable {
-        index: u8,
-    }
-    static mut UPDATE_CALLS: u8 = 0;
-    impl Updatable<MyError> for MyGetterSettable {
-        fn update(&mut self) -> NothingOrError<MyError> {
-            unsafe {
-                UPDATE_CALLS += 1;
-            }
-            let output = if self.index == 0 {
-                Err(MyError(0))
-            } else {
-                Ok(())
-            };
-            self.index += 1;
-            output
-        }
-    }
-    impl Settable<AngularState, MyError> for MyGetterSettable {
-        fn set(&mut self, state: AngularState) -> NothingOrError<MyError> {
-            match self.index {
-                0 => panic!("set must not be called if update errors"),
-                1 => {
-                    assert_eq!(state, todo!());
-                    Err(MyError(1))
+mod getter_settable_wrapper {
+    use super::*;
+    macro_rules! getter_settable_test {
+        //a is always the node that the wrapper is given to work with, and b is always connected to a.
+        //This means that get_state_connected on a returns b's local state.
+        ($name: ident, $update_ok: literal, $set_ok: literal, $get_return: expr, $a_prev_state: expr, $b_prev_state: expr, $return_value: expr, $a_end_state: expr, $end_update_count: literal, $end_set_count: literal, $end_get_count: literal) => {
+            #[test]
+            fn $name() {
+                #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+                struct MyError;
+                struct MyGetterSettable;
+                static mut UPDATE_CALLS: u8 = 0;
+                impl Updatable<MyError> for MyGetterSettable {
+                    fn update(&mut self) -> NothingOrError<MyError> {
+                        unsafe {
+                            UPDATE_CALLS += 1;
+                        }
+                        const { if $update_ok { Ok(()) } else { Err(MyError) } }
+                    }
                 }
-                2 => {
-                    assert_eq!(state, todo!());
-                    Ok(())
+                static mut SET_CALLS: u8 = 0;
+                impl Settable<AngularState, MyError> for MyGetterSettable {
+                    fn set(&mut self, _: AngularState) -> NothingOrError<MyError> {
+                        unsafe {
+                            SET_CALLS += 1;
+                        }
+                        //TODO: maybe make this assert_eq! the value
+                        const { if $set_ok { Ok(()) } else { Err(MyError) } }
+                    }
                 }
-                _ => todo!(),
+                static mut GET_CALLS: u8 = 0;
+                impl Getter<AngularState, MyError> for MyGetterSettable {
+                    fn get(&self) -> Output<AngularState, MyError> {
+                        unsafe {
+                            GET_CALLS += 1;
+                        }
+                        $get_return
+                    }
+                }
+                let mut system = System::<2>::new();
+                let node_a = system.new_node().unwrap();
+                let node_b = system.new_node().unwrap();
+                system.connect(node_a, node_b);
+                system.set_state_local(node_a, $a_prev_state);
+                system.set_state_local(node_b, $b_prev_state);
+                let mut wrapper = wrappers::GetterSettableWrapper::new(node_a, MyGetterSettable);
+                assert_eq!(wrapper.device_update(&mut system), $return_value);
+                assert_eq!(system.get_state_local(node_a), $a_end_state);
+                assert_eq!(unsafe { UPDATE_CALLS }, $end_update_count);
+                assert_eq!(unsafe { SET_CALLS }, $end_set_count);
+                assert_eq!(unsafe { GET_CALLS }, $end_get_count);
             }
-        }
+        };
     }
-    impl Getter<AngularState, MyError> for MyGetterSettable {
-        fn get(&self) -> Output<AngularState, MyError> {
-            match self.index {
-                0 | 1 => panic!("get must not be called if set or update errors"),
-                2 => Err(MyError(2)),
-                3 => Ok(None),
-                4 => Ok(Some(todo!())),
-                _ => todo!(),
-            }
-        }
-    }
-    todo!();
+    getter_settable_test!(
+        update_error,
+        false,
+        false,
+        Err(MyError),
+        None,
+        None,
+        Err(MyError),
+        None,
+        1,
+        0,
+        0
+    );
 }
