@@ -392,3 +392,54 @@ mod settable_wrapper {
         assert_eq!(unsafe { SET_CALLS }, 2);
     }
 }
+#[test]
+fn getter_settable_wrapper() {
+    #[derive(Clone, Copy, Debug)]
+    struct MyError(u8);
+    struct MyGetterSettable {
+        index: u8,
+    }
+    static mut UPDATE_CALLS: u8 = 0;
+    impl Updatable<MyError> for MyGetterSettable {
+        fn update(&mut self) -> NothingOrError<MyError> {
+            unsafe {
+                UPDATE_CALLS += 1;
+            }
+            let output = if self.index == 0 {
+                Err(MyError(0))
+            } else {
+                Ok(())
+            };
+            self.index += 1;
+            output
+        }
+    }
+    impl Settable<AngularState, MyError> for MyGetterSettable {
+        fn set(&mut self, state: AngularState) -> NothingOrError<MyError> {
+            match self.index {
+                0 => panic!("set must not be called if update errors"),
+                1 => {
+                    assert_eq!(state, todo!());
+                    Err(MyError(1))
+                }
+                2 => {
+                    assert_eq!(state, todo!());
+                    Ok(())
+                }
+                _ => todo!(),
+            }
+        }
+    }
+    impl Getter<AngularState, MyError> for MyGetterSettable {
+        fn get(&self) -> Output<AngularState, MyError> {
+            match self.index {
+                0 | 1 => panic!("get must not be called if set or update errors"),
+                2 => Err(MyError(2)),
+                3 => Ok(None),
+                4 => Ok(Some(todo!())),
+                _ => todo!(),
+            }
+        }
+    }
+    todo!();
+}
