@@ -475,4 +475,62 @@ mod getter_settable_wrapper {
         1,
         0
     );
+    getter_settable_test!(
+        get_error,
+        true,
+        true,
+        Err(MyError),
+        Some(AngularState::from_raw(1.0, 2.0, 3.0)),
+        Some(AngularState::from_raw(4.0, 5.0, 6.0)),
+        Err(MyError),
+        None,
+        1,
+        1,
+        1
+    );
+    getter_settable_test!(
+        get_none,
+        true,
+        true,
+        Ok(None),
+        Some(AngularState::from_raw(1.0, 2.0, 3.0)),
+        Some(AngularState::from_raw(4.0, 5.0, 6.0)),
+        Ok(()),
+        None,
+        1,
+        1,
+        1
+    );
+    getter_settable_test!(
+        get_some,
+        true,
+        true,
+        Ok(Some(Datum::new(
+            Time::ZERO,
+            AngularState::from_raw(0.0, 7.0, 0.0)
+        ))),
+        Some(AngularState::from_raw(1.0, 2.0, 3.0)),
+        Some(AngularState::from_raw(4.0, 5.0, 6.0)),
+        Ok(()),
+        Some(AngularState::from_raw(0.0, 7.0, 0.0)),
+        1,
+        1,
+        1
+    );
+    getter_settable_test!(
+        set_error_moot,
+        true,
+        false,
+        Ok(Some(Datum::new(
+            Time::ZERO,
+            AngularState::from_raw(0.0, 7.0, 4.0)
+        ))),
+        Some(AngularState::from_raw(1.0, 2.0, 3.0)),
+        None,
+        Ok(()),
+        Some(AngularState::from_raw(0.0, 7.0, 4.0)),
+        1,
+        0,
+        1
+    );
 }
