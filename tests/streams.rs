@@ -945,7 +945,11 @@ fn exponent_stream() {
         //Some, Some
         if let Ok(Some(x)) = stream.get() {
             assert_eq!(x.time, Time::from_nanoseconds(2));
+            //This appears to be an instance of https://github.com/rust-lang/miri/issues/4208
+            #[cfg(not(miri))]
             assert_eq!(x.value, 125.0);
+            #[cfg(miri)]
+            assert!(124.99995 < x.value && x.value < 125.00005);
         } else {
             panic!();
         }
