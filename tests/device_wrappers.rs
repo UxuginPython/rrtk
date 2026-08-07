@@ -414,11 +414,14 @@ mod getter_settable_wrapper {
                 }
                 static mut SET_CALLS: u8 = 0;
                 impl Settable<AngularState, MyError> for MyGetterSettable {
-                    fn set(&mut self, _: AngularState) -> NothingOrError<MyError> {
+                    fn set(&mut self, value: AngularState) -> NothingOrError<MyError> {
                         unsafe {
                             SET_CALLS += 1;
                         }
-                        //TODO: maybe make this assert_eq! the value
+                        assert_eq!(
+                            value,
+                            $b_prev_state.expect("set was called when b's state is None")
+                        );
                         const { if $set_ok { Ok(()) } else { Err(MyError) } }
                     }
                 }
