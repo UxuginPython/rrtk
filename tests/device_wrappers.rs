@@ -459,4 +459,17 @@ mod getter_settable_wrapper {
         0,
         0
     );
+    getter_settable_test!(
+        set_error,
+        true,
+        false,
+        panic!("get must not be called since set errors"),
+        Some(AngularState::from_raw(1.0, 2.0, 3.0)),
+        Some(AngularState::from_raw(4.0, 5.0, 6.0)),
+        Err(MyError),
+        None,
+        1,
+        1,
+        0
+    );
 }
