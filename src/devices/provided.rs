@@ -156,3 +156,27 @@ impl<E> DeviceUpdatable<E> for GearTrain {
         Ok(())
     }
 }
+#[test]
+fn ratio_from_teeth() {
+    let mut system = System::<2>::new();
+    let node_a = system.new_node().unwrap();
+    let node_b = system.new_node().unwrap();
+    //You would never create two different gear trains between the same nodes in a real system. You
+    //wouldn't even have devices sharing nodes. However, this is OK for the test since nothing is
+    //ever updated.
+    let gear_train_1 = GearTrain::from_teeth(node_a, node_b, [100.0, 50.0]);
+    assert_eq!(gear_train_1.ratio.into_inner(), -2.0);
+    let gear_train_2 = GearTrain::from_teeth(node_a, node_b, [20.0, 8.0, 60.0]);
+    assert_eq!(gear_train_2.ratio.into_inner(), 1.0 / 3.0);
+}
+#[test]
+#[should_panic]
+fn not_enough_teeth() {
+    let mut system = System::<2>::new();
+    //We don't use unwrap() because, if it failed, it would make the test return ok.
+    #[rustfmt::skip]
+    let node_a = if let Some(node) = system.new_node() { node } else { return; };
+    #[rustfmt::skip]
+    let node_b = if let Some(node) = system.new_node() { node } else { return; };
+    let _gear_train = GearTrain::from_teeth(node_a, node_b, [100.0]);
+}
