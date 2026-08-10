@@ -15,6 +15,8 @@ impl<T> Datum<T> {
     pub const fn new(time: Time, value: T) -> Datum<T> {
         Datum { time, value }
     }
+    //It *might* be possible to make this const fn with a little unsafe code similar to that in
+    //Quantity::into_inner.
     ///Replaces `self` with `maybe_replace_with` if `maybe_replace_with`'s timestamp is newer than
     ///`self`'s. Returns true if `self` was replaced and false otherwise.
     pub fn replace_if_older_than(&mut self, maybe_replace_with: Self) -> bool {

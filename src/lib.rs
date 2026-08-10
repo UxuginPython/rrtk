@@ -619,6 +619,9 @@ impl<P> PointerDereferencer<P> {
     pub const unsafe fn new(pointer: P) -> Self {
         Self { pointer }
     }
+    //It would probably be possible to make this const fn in a similar way to Quantity::into_inner.
+    //Whether that makes sense to do given that copy_ptr exists and is almost always preferred is
+    //another question.
     ///Returns the inner pointer that the wrapper contains by consuming it. Due to the fact that
     ///pointers are `Copy`, [`copy_ptr`](Self::copy_ptr), which does not consume `self` and is
     ///`const fn`, is preferred in almost all cases however.
