@@ -167,7 +167,7 @@ macro_rules! build_state_struct {
             //Might you want to rename Command to something more broad and make this return that?
             ///States contain a position, velocity, and acceleration. This gets the respective field of a
             ///given position derivative.
-            pub fn get_value(&self, position_derivative: PositionDerivative) -> f32 {
+            pub const fn get_value(&self, position_derivative: PositionDerivative) -> f32 {
                 match position_derivative {
                     PositionDerivative::Position => self.position.into_inner(),
                     PositionDerivative::Velocity => self.velocity.into_inner(),

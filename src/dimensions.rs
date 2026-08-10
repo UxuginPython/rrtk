@@ -560,10 +560,20 @@ impl<T, MM: Integer, S: Integer> Quantity<T, MM, S> {
     pub const fn new(inner: T) -> Self {
         Self(PhantomData, PhantomData, inner)
     }
+    //This is not as simple as returning self.2 because of E0493 saying that Quantity's destructor
+    //cannot be evaluated at compile-time. Quantity, however, has no Drop impl and is
+    //#[repr(transparent)], so "drop glue" is unnecessary. This is the way of telling the compiler
+    //that. Also, core::mem::transmute doesn't work because of the generic type.
     ///Converts the `Quantity` into its inner contained object, consuming it.
     #[inline]
-    pub fn into_inner(self) -> T {
-        self.2
+    pub const fn into_inner(self) -> T {
+        //XXX: This explicitly skips any Drop code for Quantity. It will probably have to stop
+        //being const fn if Drop is ever implemented.
+        use core::mem::ManuallyDrop;
+        let x: ManuallyDrop<Self> = ManuallyDrop::new(self);
+        let x_ptr: *const ManuallyDrop<Self> = &raw const x;
+        let y_ptr: *const T = x_ptr.cast();
+        unsafe { core::ptr::read(y_ptr) }
     }
 }
 macro_rules! impl_quantity_abs {
