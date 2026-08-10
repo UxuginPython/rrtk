@@ -9,13 +9,13 @@ fn new_new_unchecked_eq() {
     let _ = DimensionlessFraction::new_unchecked(DimensionlessInteger(1), DimensionlessInteger(0));
 }
 #[test]
-fn constructor_macro() {
+fn from_raw() {
     let x = DimensionlessFraction::new(DimensionlessInteger(1), DimensionlessInteger(4));
     let y = DimensionlessFraction::from_raw(1, 4);
     assert_eq!(x, y);
 }
 #[test]
-fn constructor_macro_unchecked() {
+fn from_raw_unchecked() {
     let x = DimensionlessFraction::new_unchecked(DimensionlessInteger(1), DimensionlessInteger(0));
     let y = DimensionlessFraction::from_raw_unchecked(1, 0);
     assert!(x.raw_eq(&y));
