@@ -220,31 +220,6 @@ impl Mul<Time> for DimensionlessInteger {
         Time(self.0 * rhs.0)
     }
 }
-///Alias for `DimensionlessFraction::new(DimensionlessInteger($num), DimensionlessInteger($denom))`.
-///This means that you can, for example, construct a [`DimensionlessFraction`] of 2/3 with
-///`dimensionless_fraction!(2, 3)`.
-#[macro_export]
-macro_rules! dimensionless_fraction {
-    ($num: expr, $denom: expr) => {
-        DimensionlessFraction::new(DimensionlessInteger($num), DimensionlessInteger($denom))
-    };
-}
-pub use dimensionless_fraction;
-///Alias for `DimensionlessFraction::new_unchecked(DimensionlessInteger($num), DimensionlessInteger($denom))`.
-///This means that you can, for example, construct a [`DimensionlessFraction`] of 2/3 with
-///`dimensionless_fraction_unchecked!(2, 3)`. The difference between this and the
-///[`dimensionless_fraction`] macro is that this one does not check if the denominator is zero.
-///E.g., it is possible to construct 1/0 with this macro but not with `dimensionless_fraction!`.
-#[macro_export]
-macro_rules! dimensionless_fraction_unchecked {
-    ($num: expr, $denom: expr) => {
-        DimensionlessFraction::new_unchecked(
-            DimensionlessInteger($num),
-            DimensionlessInteger($denom),
-        )
-    };
-}
-pub use dimensionless_fraction_unchecked;
 ///An exact rational number type for dimensionless quantities. Used almost exclusively when a
 ///[`Time`] must be multiplied by a constant fractional factor.
 #[derive(Clone, Copy, Debug)]
@@ -269,6 +244,26 @@ impl DimensionlessFraction {
     #[inline]
     pub const fn new_unchecked(num: DimensionlessInteger, denom: DimensionlessInteger) -> Self {
         Self(num, denom)
+    }
+    ///Constructor from raw `i64` values for numerator and denominator. They are immediately
+    ///converted to [`DimensionlessInteger`]. This constructor verifies that the denominator is
+    ///nonzero and panics otherwise.
+    #[inline]
+    pub const fn from_raw(num: i64, denom: i64) -> Self {
+        Self::new(
+            DimensionlessInteger::new(num),
+            DimensionlessInteger::new(denom),
+        )
+    }
+    ///Constructor from raw `i64` values for numerator and denominator. They are immediately
+    ///converted to [`DimensionlessInteger`]. This constructor does **not** verify that the
+    ///denominator is nonzero.
+    #[inline]
+    pub const fn from_raw_unchecked(num: i64, denom: i64) -> Self {
+        Self::new_unchecked(
+            DimensionlessInteger::new(num),
+            DimensionlessInteger::new(denom),
+        )
     }
     ///Reciprocal function (1/x) that panics if the new denominator is zero.
     #[inline]
