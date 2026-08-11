@@ -253,25 +253,23 @@ If you need more than two inputs, you may consider using [`AndStream`] instead o
     "Constructor for `And2`. Unlike [`AndStream`], its inputs can be of different types."
 );
 ///Performs a not operation on a boolean getter.
-pub struct NotStream<G: Getter<bool, E>, E: Clone + Debug> {
+pub struct NotStream<G> {
     input: G,
-    phantom_e: PhantomData<E>,
 }
-impl<G: Getter<bool, E>, E: Clone + Debug> NotStream<G, E> {
+impl<G> NotStream<G> {
     ///Constructor for [`NotStream`].
     pub const fn new(input: G) -> Self {
         Self {
             input,
-            phantom_e: PhantomData,
         }
     }
 }
-impl<G: Getter<bool, E>, E: Clone + Debug> Getter<bool, E> for NotStream<G, E> {
+impl<G: Getter<bool, E>, E: Clone + Debug> Getter<bool, E> for NotStream<G> {
     fn get(&self) -> Output<bool, E> {
         Ok(self.input.get()?.map(|datum| !datum))
     }
 }
-impl<G: Getter<bool, E>, E: Clone + Debug> Updatable<E> for NotStream<G, E> {
+impl<G: Updatable<E>, E: Clone + Debug> Updatable<E> for NotStream<G> {
     fn update(&mut self) -> NothingOrError<E> {
         self.input.update()?;
         Ok(())
