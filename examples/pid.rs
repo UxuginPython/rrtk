@@ -25,7 +25,7 @@ struct StreamPID {
     //performance boost.
     //Also note that you should almost always use a more specific error type than (). This example
     //is not focused on error handling.
-    output: SumStream<f32, 3, Box<dyn Getter<f32, ()>>, ()>,
+    output: SumStream<3, Box<dyn Getter<f32, ()>>>,
 }
 #[cfg(feature = "alloc")]
 impl StreamPID {

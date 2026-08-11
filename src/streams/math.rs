@@ -13,38 +13,19 @@ use core::mem::MaybeUninit;
 ///
 ///If you are only adding the outputs of two getters or if your input getters are of different
 ///types, consider using [`Sum2`] instead.
-pub struct SumStream<T, const N: usize, G, E>
-where
-    T: AddAssign + Copy,
-    G: Getter<T, E>,
-    E: Clone + Debug,
-{
+pub struct SumStream<const N: usize, G> {
     addends: [G; N],
-    //TODO: If you do decide to remove a bunch of bounds, including G: Getter<T, E>, the T and E
-    //parameters may be able to be removed from the struct itself. Do note that there may be others
-    //for which this is the case that may not have a note like this.
-    phantom_t: PhantomData<T>,
-    phantom_e: PhantomData<E>,
 }
-impl<T, const N: usize, G, E> SumStream<T, N, G, E>
-where
-    T: AddAssign + Copy,
-    G: Getter<T, E>,
-    E: Clone + Debug,
-{
+impl<const N: usize, G> SumStream<N, G> {
     ///Constructor for [`SumStream`].
     pub const fn new(addends: [G; N]) -> Self {
         if N < 1 {
             panic!("rrtk::streams::SumStream must have at least one input stream");
         }
-        Self {
-            addends,
-            phantom_t: PhantomData,
-            phantom_e: PhantomData,
-        }
+        Self { addends }
     }
 }
-impl<T, const N: usize, G, E> Getter<T, E> for SumStream<T, N, G, E>
+impl<T, const N: usize, G, E> Getter<T, E> for SumStream<N, G>
 where
     T: AddAssign + Copy,
     G: Getter<T, E>,
@@ -69,10 +50,9 @@ where
         }
     }
 }
-impl<T, const N: usize, G, E> Updatable<E> for SumStream<T, N, G, E>
+impl<const N: usize, G, E> Updatable<E> for SumStream<N, G>
 where
-    T: AddAssign + Copy,
-    G: Getter<T, E>,
+    G: Updatable<E>,
     E: Clone + Debug,
 {
     fn update(&mut self) -> NothingOrError<E> {
