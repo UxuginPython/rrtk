@@ -461,35 +461,27 @@ where
     }
 }
 ///Gets the inner number from the output of a getter returning a [`Quantity`].
-pub struct DimensionRemover<
-    T,
-    MM: Integer,
-    S: Integer,
-    G: Getter<Quantity<T, MM, S>, E>,
-    E: Clone + Debug,
-> {
+pub struct DimensionRemover<MM, S, G> {
     input: G,
-    phantom_t: PhantomData<T>,
     phantom_mm: PhantomData<MM>,
     phantom_s: PhantomData<S>,
-    phantom_e: PhantomData<E>,
 }
-impl<T, MM: Integer, S: Integer, G: Getter<Quantity<T, MM, S>, E>, E: Clone + Debug>
-    DimensionRemover<T, MM, S, G, E>
-{
+impl<MM: Integer, S: Integer, G> DimensionRemover<MM, S, G> {
     ///Constructor for `DimensionRemover`.
     pub const fn new(input: G) -> Self {
         Self {
             input,
-            phantom_t: PhantomData,
             phantom_mm: PhantomData,
             phantom_s: PhantomData,
-            phantom_e: PhantomData,
         }
     }
 }
-impl<T, MM: Integer, S: Integer, G: Getter<Quantity<T, MM, S>, E>, E: Clone + Debug> Getter<T, E>
-    for DimensionRemover<T, MM, S, G, E>
+impl<T, MM, S, G, E> Getter<T, E> for DimensionRemover<MM, S, G>
+where
+    MM: Integer,
+    S: Integer,
+    G: Getter<Quantity<T, MM, S>, E>,
+    E: Clone + Debug,
 {
     fn get(&self) -> Output<T, E> {
         match self.input.get()? {
@@ -498,9 +490,7 @@ impl<T, MM: Integer, S: Integer, G: Getter<Quantity<T, MM, S>, E>, E: Clone + De
         }
     }
 }
-impl<T, MM: Integer, S: Integer, G: Getter<Quantity<T, MM, S>, E>, E: Clone + Debug> Updatable<E>
-    for DimensionRemover<T, MM, S, G, E>
-{
+impl<MM, S, G: Updatable<E>, E: Clone + Debug> Updatable<E> for DimensionRemover<MM, S, G> {
     fn update(&mut self) -> NothingOrError<E> {
         self.input.update()?;
         Ok(())
