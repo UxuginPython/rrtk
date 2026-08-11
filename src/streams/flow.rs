@@ -4,34 +4,17 @@
 use crate::streams::*;
 ///Propagates its input if a `Getter<bool, _>` returns `Ok(Some(true))`, otherwise returns
 ///`Ok(None)`.
-pub struct IfStream<T, GC, GI, E>
-where
-    GC: Getter<bool, E>,
-    GI: Getter<T, E>,
-    E: Clone + Debug,
-{
+pub struct IfStream<GC, GI> {
     condition: GC,
     input: GI,
-    phantom_t: PhantomData<T>,
-    phantom_e: PhantomData<E>,
 }
-impl<T, GC, GI, E> IfStream<T, GC, GI, E>
-where
-    GC: Getter<bool, E>,
-    GI: Getter<T, E>,
-    E: Clone + Debug,
-{
+impl<GC, GI> IfStream<GC, GI> {
     ///Constructor for [`IfStream`].
     pub const fn new(condition: GC, input: GI) -> Self {
-        Self {
-            condition,
-            input,
-            phantom_t: PhantomData,
-            phantom_e: PhantomData,
-        }
+        Self { condition, input }
     }
 }
-impl<T, GC, GI, E> Getter<T, E> for IfStream<T, GC, GI, E>
+impl<T, GC, GI, E> Getter<T, E> for IfStream<GC, GI>
 where
     GC: Getter<bool, E>,
     GI: Getter<T, E>,
@@ -49,10 +32,10 @@ where
         }
     }
 }
-impl<T, GC, GI, E> Updatable<E> for IfStream<T, GC, GI, E>
+impl<GC, GI, E> Updatable<E> for IfStream<GC, GI>
 where
-    GC: Getter<bool, E>,
-    GI: Getter<T, E>,
+    GC: Updatable<E>,
+    GI: Updatable<E>,
     E: Clone + Debug,
 {
     fn update(&mut self) -> NothingOrError<E> {
