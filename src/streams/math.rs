@@ -365,34 +365,19 @@ where
 ///A stream that exponentiates one of its inputs to the other. If the exponent input returns
 ///`Ok(None)`, the base's value is returned directly. Only available with `std`.
 #[cfg(feature = "internal_enhanced_float")]
-pub struct ExponentStream<GB, GE, E>
-where
-    GB: Getter<f32, E>,
-    GE: Getter<f32, E>,
-    E: Clone + Debug,
-{
+pub struct ExponentStream<GB, GE> {
     base: GB,
     exponent: GE,
-    phantom_e: PhantomData<E>,
 }
 #[cfg(feature = "internal_enhanced_float")]
-impl<GB, GE, E> ExponentStream<GB, GE, E>
-where
-    GB: Getter<f32, E>,
-    GE: Getter<f32, E>,
-    E: Clone + Debug,
-{
+impl<GB, GE> ExponentStream<GB, GE> {
     ///Constructor for [`ExponentStream`].
     pub const fn new(base: GB, exponent: GE) -> Self {
-        Self {
-            base,
-            exponent,
-            phantom_e: PhantomData,
-        }
+        Self { base, exponent }
     }
 }
 #[cfg(feature = "internal_enhanced_float")]
-impl<GB, GE, E> Getter<f32, E> for ExponentStream<GB, GE, E>
+impl<GB, GE, E> Getter<f32, E> for ExponentStream<GB, GE>
 where
     GB: Getter<f32, E>,
     GE: Getter<f32, E>,
@@ -425,10 +410,10 @@ where
     }
 }
 #[cfg(feature = "internal_enhanced_float")]
-impl<GB, GE, E> Updatable<E> for ExponentStream<GB, GE, E>
+impl<GB, GE, E> Updatable<E> for ExponentStream<GB, GE>
 where
-    GB: Getter<f32, E>,
-    GE: Getter<f32, E>,
+    GB: Updatable<E>,
+    GE: Updatable<E>,
     E: Clone + Debug,
 {
     fn update(&mut self) -> NothingOrError<E> {
