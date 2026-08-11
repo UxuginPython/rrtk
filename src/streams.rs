@@ -49,36 +49,22 @@ impl<const C: usize, G: Updatable<E>, E: Clone + Debug> Updatable<E> for Latest<
     }
 }
 ///Expires data that are too old to be useful.
-pub struct Expirer<T, G, TG, E>
-where
-    G: Getter<T, E>,
-    TG: TimeGetter<E>,
-    E: Clone + Debug,
-{
+pub struct Expirer<G, TG> {
     input: G,
     time_getter: TG,
     max_time_delta: Time,
-    phantom_t: PhantomData<T>,
-    phantom_e: PhantomData<E>,
 }
-impl<T, G, TG, E> Expirer<T, G, TG, E>
-where
-    G: Getter<T, E>,
-    TG: TimeGetter<E>,
-    E: Clone + Debug,
-{
+impl<G, TG> Expirer<G, TG> {
     ///Constructor for [`Expirer`].
     pub const fn new(input: G, time_getter: TG, max_time_delta: Time) -> Self {
         Self {
             input,
             time_getter,
             max_time_delta,
-            phantom_t: PhantomData,
-            phantom_e: PhantomData,
         }
     }
 }
-impl<T, G, TG, E> Getter<T, E> for Expirer<T, G, TG, E>
+impl<T, G, TG, E> Getter<T, E> for Expirer<G, TG>
 where
     G: Getter<T, E>,
     TG: TimeGetter<E>,
@@ -96,10 +82,10 @@ where
         Ok(Some(output))
     }
 }
-impl<T, G, TG, E> Updatable<E> for Expirer<T, G, TG, E>
+impl<G, TG, E> Updatable<E> for Expirer<G, TG>
 where
-    G: Getter<T, E>,
-    TG: TimeGetter<E>,
+    G: Updatable<E>,
+    TG: Updatable<E>,
     E: Clone + Debug,
 {
     fn update(&mut self) -> NothingOrError<E> {
