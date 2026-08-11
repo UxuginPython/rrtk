@@ -6,22 +6,12 @@
 use crate::compile_time_integer::Integer;
 use crate::streams::*;
 ///A stream converting all `Ok(None)` values from its input to `Err(_)` variants.
-pub struct NoneToError<T, G, E>
-where
-    T: Clone,
-    G: Getter<T, E>,
-    E: Clone + Debug,
-{
+pub struct NoneToError<T, G, E> {
     input: G,
     from_none: E,
     phantom_t: PhantomData<T>,
 }
-impl<T, G, E> NoneToError<T, G, E>
-where
-    T: Clone,
-    G: Getter<T, E>,
-    E: Clone + Debug,
-{
+impl<T, G, E> NoneToError<T, G, E> {
     ///Constructor for [`NoneToError`].
     pub const fn new(input: G, from_none: E) -> Self {
         Self {
@@ -33,7 +23,7 @@ where
 }
 impl<T, G, E> Getter<T, E> for NoneToError<T, G, E>
 where
-    T: Clone,
+    //These imply Self: Updatable<E> per the impl after.
     G: Getter<T, E>,
     E: Clone + Debug,
 {
@@ -47,8 +37,7 @@ where
 }
 impl<T, G, E> Updatable<E> for NoneToError<T, G, E>
 where
-    T: Clone,
-    G: Getter<T, E>,
+    G: Updatable<E>,
     E: Clone + Debug,
 {
     fn update(&mut self) -> NothingOrError<E> {
