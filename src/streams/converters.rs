@@ -498,22 +498,20 @@ impl<MM, S, G: Updatable<E>, E: Clone + Debug> Updatable<E> for DimensionRemover
 }
 ///Converts the output of a getter to another type through [`Into`]. Leaves the timestamp the same
 ///and passes through `Err(_)` and `Ok(None)` identically.
-pub struct IntoConverter<TI, G: Getter<TI, E>, E: Clone + Debug> {
+pub struct IntoConverter<TI, G> {
     input: G,
     phantom_ti: PhantomData<TI>,
-    phantom_e: PhantomData<E>,
 }
-impl<TI, G: Getter<TI, E>, E: Clone + Debug> IntoConverter<TI, G, E> {
+impl<TI, G> IntoConverter<TI, G> {
     ///Constructor for `IntoConverter`.
     pub const fn new(input: G) -> Self {
         Self {
             input,
             phantom_ti: PhantomData,
-            phantom_e: PhantomData,
         }
     }
 }
-impl<TI, TO, G, E> Getter<TO, E> for IntoConverter<TI, G, E>
+impl<TI, TO, G, E> Getter<TO, E> for IntoConverter<TI, G>
 where
     TI: Into<TO>,
     G: Getter<TI, E>,
@@ -526,7 +524,7 @@ where
             .map(|datum| /*Datum<T>*/ Datum::new(datum.time, datum.value.into())))
     }
 }
-impl<TI, G: Getter<TI, E>, E: Clone + Debug> Updatable<E> for IntoConverter<TI, G, E> {
+impl<TI, G: Updatable<E>, E: Clone + Debug> Updatable<E> for IntoConverter<TI, G> {
     fn update(&mut self) -> NothingOrError<E> {
         self.input.update()?;
         Ok(())
