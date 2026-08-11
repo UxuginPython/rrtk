@@ -120,9 +120,7 @@ pub struct OrStream<const N: usize, G> {
 impl<const N: usize, G> OrStream<N, G> {
     ///Constructor for `OrStream`.
     pub const fn new(inputs: [G; N]) -> Self {
-        Self {
-            inputs,
-        }
+        Self { inputs }
     }
 }
 impl<const N: usize, G: Updatable<E>, E: Clone + Debug> Updatable<E> for OrStream<N, G> {
@@ -253,23 +251,30 @@ If you need more than two inputs, you may consider using [`AndStream`] instead o
     "Constructor for `And2`. Unlike [`AndStream`], its inputs can be of different types."
 );
 ///Performs a not operation on a boolean getter.
-pub struct NotStream<G> {
+pub struct NotStream<TI, G> {
     input: G,
+    phantom_ti: PhantomData<TI>,
 }
-impl<G> NotStream<G> {
+impl<TI, G> NotStream<TI, G> {
     ///Constructor for [`NotStream`].
     pub const fn new(input: G) -> Self {
         Self {
             input,
+            phantom_ti: PhantomData,
         }
     }
 }
-impl<G: Getter<bool, E>, E: Clone + Debug> Getter<bool, E> for NotStream<G> {
-    fn get(&self) -> Output<bool, E> {
+impl<TI, TO, G, E> Getter<TO, E> for NotStream<TI, G>
+where
+    TI: Not<Output = TO>,
+    G: Getter<TI, E>,
+    E: Clone + Debug,
+{
+    fn get(&self) -> Output<TO, E> {
         Ok(self.input.get()?.map(|datum| !datum))
     }
 }
-impl<G: Updatable<E>, E: Clone + Debug> Updatable<E> for NotStream<G> {
+impl<TI, G: Updatable<E>, E: Clone + Debug> Updatable<E> for NotStream<TI, G> {
     fn update(&mut self) -> NothingOrError<E> {
         self.input.update()?;
         Ok(())
