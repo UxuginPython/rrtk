@@ -57,20 +57,16 @@ impl LogicState {
 ///
 ///If you only need two inputs, you should probably use [`And2`] instead, which may be slightly
 ///faster and allows its inputs to have different types.
-pub struct AndStream<const N: usize, G: Getter<bool, E>, E: Clone + Debug> {
+pub struct AndStream<const N: usize, G> {
     inputs: [G; N],
-    phantom_e: PhantomData<E>,
 }
-impl<const N: usize, G: Getter<bool, E>, E: Clone + Debug> AndStream<N, G, E> {
+impl<const N: usize, G> AndStream<N, G> {
     ///Constructor for `AndStream`.
     pub const fn new(inputs: [G; N]) -> Self {
-        Self {
-            inputs,
-            phantom_e: PhantomData,
-        }
+        Self { inputs }
     }
 }
-impl<const N: usize, G: Getter<bool, E>, E: Clone + Debug> Updatable<E> for AndStream<N, G, E> {
+impl<const N: usize, G: Updatable<E>, E: Clone + Debug> Updatable<E> for AndStream<N, G> {
     fn update(&mut self) -> NothingOrError<E> {
         for getter in &mut self.inputs {
             getter.update()?;
@@ -78,7 +74,7 @@ impl<const N: usize, G: Getter<bool, E>, E: Clone + Debug> Updatable<E> for AndS
         Ok(())
     }
 }
-impl<const N: usize, G: Getter<bool, E>, E: Clone + Debug> Getter<bool, E> for AndStream<N, G, E> {
+impl<const N: usize, G: Getter<bool, E>, E: Clone + Debug> Getter<bool, E> for AndStream<N, G> {
     fn get(&self) -> Output<bool, E> {
         if N == 0 {
             return Ok(None);
