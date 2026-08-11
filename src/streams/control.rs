@@ -103,13 +103,13 @@ mod command_pid {
     ///Automatically integrates the command variable of a PID controller based on the position
     ///derivative of a [`LinearCommand`] or [`AngularCommand`]. Designed to make it easier to use a
     ///standard DC motor and an encoder as a de facto servo.
-    pub struct CommandPID<G: Getter<C::CorrespondingState, E>, C: GenericCommand, E: Clone + Debug> {
+    pub struct CommandPID<G, C, E> {
         input: G,
         command: C,
         kvals: PositionDerivativeDependentPIDKValues,
         update_state: Result<Option<Update0>, E>,
     }
-    impl<G: Getter<C::CorrespondingState, E>, C: GenericCommand, E: Clone + Debug> CommandPID<G, C, E> {
+    impl<G, C, E> CommandPID<G, C, E> {
         ///Constructor for `CommandPID`.
         pub const fn new(
             input: G,
@@ -132,8 +132,9 @@ mod command_pid {
             self.update_state = Ok(None);
         }
     }
-    impl<G: Getter<C::CorrespondingState, E>, C: GenericCommand, E: Clone + Debug> Settable<C, E>
-        for CommandPID<G, C, E>
+    impl<G, C: PartialEq, E: Clone + Debug> Settable<C, E> for CommandPID<G, C, E>
+    where
+        Self: Updatable<E>,
     {
         fn set(&mut self, command: C) -> NothingOrError<E> {
             if command != self.command {
@@ -143,8 +144,11 @@ mod command_pid {
             Ok(())
         }
     }
-    impl<G: Getter<C::CorrespondingState, E>, C: GenericCommand, E: Clone + Debug> Getter<f32, E>
-        for CommandPID<G, C, E>
+    impl<G, C, E> Getter<f32, E> for CommandPID<G, C, E>
+    where
+        Self: Updatable<E>,
+        C: Copy + Into<PositionDerivative>, //Implied by GenericCommand
+        E: Clone + Debug,
     {
         fn get(&self) -> Output<f32, E> {
             match &self.update_state {
@@ -173,8 +177,11 @@ mod command_pid {
             }
         }
     }
-    impl<G: Getter<C::CorrespondingState, E>, C: GenericCommand, E: Clone + Debug> Updatable<E>
-        for CommandPID<G, C, E>
+    impl<G, C, E> Updatable<E> for CommandPID<G, C, E>
+    where
+        G: Getter<C::CorrespondingState, E>,
+        C: GenericCommand,
+        E: Clone + Debug,
     {
         fn update(&mut self) -> NothingOrError<E> {
             self.input.update()?;
