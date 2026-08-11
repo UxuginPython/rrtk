@@ -423,13 +423,13 @@ where
     }
 }
 ///A stream that computes the numerical derivative of its input.
-pub struct DerivativeStream<T, O, G: Getter<T, E>, E: Clone + Debug> {
+pub struct DerivativeStream<T, O, G, E> {
     input: G,
     value: Output<O, E>,
     //doesn't matter if this is an Err or Ok(None) - we can't use it either way if it's not Some
     prev_output: Option<Datum<T>>,
 }
-impl<T, O, G: Getter<T, E>, E: Clone + Debug> DerivativeStream<T, O, G, E> {
+impl<T, O, G, E> DerivativeStream<T, O, G, E> {
     ///Constructor for [`DerivativeStream`].
     pub const fn new(input: G) -> Self {
         Self {
@@ -441,9 +441,8 @@ impl<T, O, G: Getter<T, E>, E: Clone + Debug> DerivativeStream<T, O, G, E> {
 }
 impl<T, O, G, E> Getter<O, E> for DerivativeStream<T, O, G, E>
 where
-    DerivativeStream<T, O, G, E>: Updatable<E>,
-    O: Clone,
-    G: Getter<T, E>,
+    Self: Updatable<E>,
+    Output<O, E>: Clone,
     E: Clone + Debug,
 {
     fn get(&self) -> Output<O, E> {
