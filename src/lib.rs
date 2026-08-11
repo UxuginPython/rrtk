@@ -420,9 +420,10 @@ pub struct GetterFromChronology<C, TG, E> {
     time_delta: Time,
     phantom_e: PhantomData<E>,
 }
-impl<C, TG: TimeGetter<E>, E: Clone + Debug> GetterFromChronology<C, TG, E> {
+impl<C, TG, E> GetterFromChronology<C, TG, E> {
     ///Constructor such that the time in the request to the chronology will be directly that returned
     ///from the [`TimeGetter`] with no delta.
+    #[inline]
     pub const fn new_no_delta(chronology: C, time_getter: TG) -> Self {
         Self {
             chronology,
@@ -431,6 +432,22 @@ impl<C, TG: TimeGetter<E>, E: Clone + Debug> GetterFromChronology<C, TG, E> {
             phantom_e: PhantomData,
         }
     }
+    ///Constructor with a custom time delta.
+    #[inline]
+    pub const fn new_custom_delta(chronology: C, time_getter: TG, time_delta: Time) -> Self {
+        Self {
+            chronology,
+            time_getter,
+            time_delta,
+            phantom_e: PhantomData,
+        }
+    }
+    ///Set the time delta.
+    pub const fn set_delta(&mut self, time_delta: Time) {
+        self.time_delta = time_delta;
+    }
+}
+impl<C, TG: TimeGetter<E>, E: Clone + Debug> GetterFromChronology<C, TG, E> {
     ///Constructor such that the times requested from the [`Chronology`] will begin at zero where zero
     ///is the moment this constructor is called.
     pub fn new_start_at_zero(chronology: C, time_getter: TG) -> Result<Self, E> {
@@ -452,19 +469,6 @@ impl<C, TG: TimeGetter<E>, E: Clone + Debug> GetterFromChronology<C, TG, E> {
             time_delta,
             phantom_e: PhantomData,
         })
-    }
-    ///Constructor with a custom time delta.
-    pub const fn new_custom_delta(chronology: C, time_getter: TG, time_delta: Time) -> Self {
-        Self {
-            chronology,
-            time_getter,
-            time_delta,
-            phantom_e: PhantomData,
-        }
-    }
-    ///Set the time delta.
-    pub const fn set_delta(&mut self, time_delta: Time) {
-        self.time_delta = time_delta;
     }
     ///Define now as a given time in the chronology. Mostly used when construction and use are far
     ///apart in time.
