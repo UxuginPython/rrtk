@@ -406,7 +406,7 @@ impl<T, G: Getter<T, E>, E: Clone + Debug> TimeGetter<E> for TimeGetterFromGette
         }
     }
 }
-impl<T, G, E: Clone + Debug> Updatable<E> for TimeGetterFromGetter<T, G, E> {
+impl<T, G: Updatable<E>, E: Clone + Debug> Updatable<E> for TimeGetterFromGetter<T, G, E> {
     fn update(&mut self) -> NothingOrError<E> {
         self.getter.update()
     }
