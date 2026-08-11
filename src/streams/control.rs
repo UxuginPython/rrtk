@@ -364,14 +364,14 @@ where
 }
 ///A moving average stream for use with the stream system.
 #[cfg(feature = "alloc")]
-pub struct MovingAverageStream<T, G: Getter<T, E>, E: Clone + Debug> {
+pub struct MovingAverageStream<T, G, E> {
     input: G,
     window: Time,
     value: Output<T, E>,
     input_values: VecDeque<Datum<T>>,
 }
 #[cfg(feature = "alloc")]
-impl<T, G: Getter<T, E>, E: Clone + Debug> MovingAverageStream<T, G, E> {
+impl<T, G, E> MovingAverageStream<T, G, E> {
     ///Constructor for [`MovingAverageStream`].
     pub const fn new(input: G, window: Time) -> Self {
         Self {
@@ -383,9 +383,11 @@ impl<T, G: Getter<T, E>, E: Clone + Debug> MovingAverageStream<T, G, E> {
     }
 }
 #[cfg(feature = "alloc")]
-impl<T: Clone, G: Getter<T, E>, E: Clone + Debug> Getter<T, E> for MovingAverageStream<T, G, E>
+impl<T, G, E> Getter<T, E> for MovingAverageStream<T, G, E>
 where
-    MovingAverageStream<T, G, E>: Updatable<E>,
+    Self: Updatable<E>,
+    Output<T, E>: Clone,
+    E: Clone + Debug,
 {
     fn get(&self) -> Output<T, E> {
         self.value.clone()
