@@ -60,8 +60,8 @@ impl StreamPID {
         //were not included. However, this is not what we want with the coefficient. `NoneToValue`
         //is used to convert all `None` values to `Some(0.0)` to effectively exlude them from the
         //final sum.
-        let int_zeroer = NoneToValue::new(int.clone(), time_getter.clone(), 0.0);
-        let drv_zeroer = NoneToValue::new(drv.clone(), time_getter.clone(), 0.0);
+        let int_zeroer = NoneToValue::new(int.clone(), time_getter.clone(), 0.0_f32);
+        let drv_zeroer = NoneToValue::new(drv.clone(), time_getter.clone(), 0.0_f32);
         let kp_mul = Product2::new(kp, error.clone());
         let ki_mul = Product2::new(ki, int_zeroer);
         let kd_mul = Product2::new(kd, drv_zeroer);

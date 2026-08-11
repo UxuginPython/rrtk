@@ -246,26 +246,13 @@ where
 ///A stream that multiplies two inputs. It should be a bit faster than [`ProductStream`], which
 ///adds any number of inputs. Returns `Ok(None)` if either of its inputs does. If this is not the
 ///desired behavior, [`NoneToValue`](converters::NoneToValue) may be of interest.
-pub struct Product2<T1, T2, G1, G2, E>
-where
-    T1: Mul<T2>,
-    G1: Getter<T1, E>,
-    G2: Getter<T2, E>,
-    E: Clone + Debug,
-{
+pub struct Product2<T1, T2, G1, G2> {
     factor1: G1,
     factor2: G2,
     phantom_t1: PhantomData<T1>,
     phantom_t2: PhantomData<T2>,
-    phantom_e: PhantomData<E>,
 }
-impl<T1, T2, G1, G2, E> Product2<T1, T2, G1, G2, E>
-where
-    T1: Mul<T2>,
-    G1: Getter<T1, E>,
-    G2: Getter<T2, E>,
-    E: Clone + Debug,
-{
+impl<T1, T2, G1, G2> Product2<T1, T2, G1, G2> {
     ///Constructor for [`Product2`].
     pub const fn new(factor1: G1, factor2: G2) -> Self {
         Self {
@@ -273,11 +260,10 @@ where
             factor2,
             phantom_t1: PhantomData,
             phantom_t2: PhantomData,
-            phantom_e: PhantomData,
         }
     }
 }
-impl<T1, T2, TO, G1, G2, E> Getter<TO, E> for Product2<T1, T2, G1, G2, E>
+impl<T1, T2, TO, G1, G2, E> Getter<TO, E> for Product2<T1, T2, G1, G2>
 where
     T1: Mul<T2, Output = TO>,
     G1: Getter<T1, E>,
@@ -301,11 +287,10 @@ where
         )))
     }
 }
-impl<T1, T2, G1, G2, E> Updatable<E> for Product2<T1, T2, G1, G2, E>
+impl<T1, T2, G1, G2, E> Updatable<E> for Product2<T1, T2, G1, G2>
 where
-    T1: Mul<T2>,
-    G1: Getter<T1, E>,
-    G2: Getter<T2, E>,
+    G1: Updatable<E>,
+    G2: Updatable<E>,
     E: Clone + Debug,
 {
     fn update(&mut self) -> NothingOrError<E> {
