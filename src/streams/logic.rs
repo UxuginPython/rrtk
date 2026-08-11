@@ -114,20 +114,18 @@ impl<const N: usize, G: Getter<bool, E>, E: Clone + Debug> Getter<bool, E> for A
 ///
 ///If you only need two inputs, you should probably use [`Or2`] instead, which may be slightly
 ///faster and allows its inputs to have different types.
-pub struct OrStream<const N: usize, G: Getter<bool, E>, E: Clone + Debug> {
+pub struct OrStream<const N: usize, G> {
     inputs: [G; N],
-    phantom_e: PhantomData<E>,
 }
-impl<const N: usize, G: Getter<bool, E>, E: Clone + Debug> OrStream<N, G, E> {
+impl<const N: usize, G> OrStream<N, G> {
     ///Constructor for `OrStream`.
     pub const fn new(inputs: [G; N]) -> Self {
         Self {
             inputs,
-            phantom_e: PhantomData,
         }
     }
 }
-impl<const N: usize, G: Getter<bool, E>, E: Clone + Debug> Updatable<E> for OrStream<N, G, E> {
+impl<const N: usize, G: Updatable<E>, E: Clone + Debug> Updatable<E> for OrStream<N, G> {
     fn update(&mut self) -> NothingOrError<E> {
         for getter in &mut self.inputs {
             getter.update()?;
@@ -135,7 +133,7 @@ impl<const N: usize, G: Getter<bool, E>, E: Clone + Debug> Updatable<E> for OrSt
         Ok(())
     }
 }
-impl<const N: usize, G: Getter<bool, E>, E: Clone + Debug> Getter<bool, E> for OrStream<N, G, E> {
+impl<const N: usize, G: Getter<bool, E>, E: Clone + Debug> Getter<bool, E> for OrStream<N, G> {
     fn get(&self) -> Output<bool, E> {
         if N == 0 {
             return Ok(None);
