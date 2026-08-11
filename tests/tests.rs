@@ -901,10 +901,11 @@ fn time_getter_from_getter() {
     impl Getter<(), Error> for Stream {
         fn get(&self) -> Output<(), Error> {
             match self.time.as_nanoseconds() {
-                0 => Ok(Some(Datum::new(self.time, ()))),
-                1 => Ok(None),
-                2 => Err(Error::GetterError),
-                _ => panic!("should always be 0, 1, or 2"),
+                0 => panic!("update was not called when it should have been"),
+                1 => Ok(Some(Datum::new(self.time, ()))),
+                2 => Ok(None),
+                3 => Err(Error::GetterError),
+                _ => panic!("should always be in 0..=3"),
             }
         }
     }
@@ -917,8 +918,8 @@ fn time_getter_from_getter() {
     static mut STREAM: Stream = Stream::new();
     let mut stream = unsafe { PointerDereferencer::new(core::ptr::addr_of_mut!(STREAM)) };
     let mut time_getter = TimeGetterFromGetter::new(stream, Error::GetterNone);
-    time_getter.update().unwrap(); //This should do nothing.
-    assert_eq!(time_getter.get(), Ok(Time::ZERO));
+    time_getter.update().unwrap();
+    assert_eq!(time_getter.get(), Ok(Time::from_nanoseconds(1)));
     stream.update().unwrap();
     assert_eq!(time_getter.get(), Err(Error::GetterNone));
     stream.update().unwrap();

@@ -408,7 +408,7 @@ impl<T, G: Getter<T, E>, E: Clone + Debug> TimeGetter<E> for TimeGetterFromGette
 }
 impl<T, G, E: Clone + Debug> Updatable<E> for TimeGetterFromGetter<T, G, E> {
     fn update(&mut self) -> NothingOrError<E> {
-        Ok(())
+        self.getter.update()
     }
 }
 ///As histories return values at times, we can ask them to return values at the time of now or now
