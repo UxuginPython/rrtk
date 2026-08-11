@@ -8,7 +8,7 @@ use alloc::collections::vec_deque::VecDeque;
 //and readability would suggest doing it this way, but 8 bytes could technically be saved here if
 //needed in the future. The difference is extremely minimal.
 ///A PID controller for use with the stream system.
-pub struct PIDControllerStream<G: Getter<f32, E>, E: Clone + Debug> {
+pub struct PIDControllerStream<G, E> {
     input: G,
     setpoint: f32,
     kvals: PIDKValues,
@@ -16,7 +16,7 @@ pub struct PIDControllerStream<G: Getter<f32, E>, E: Clone + Debug> {
     int_error: f32,
     output: Output<f32, E>,
 }
-impl<G: Getter<f32, E>, E: Clone + Debug> PIDControllerStream<G, E> {
+impl<G, E> PIDControllerStream<G, E> {
     ///Constructor for `PIDControllerStream`.
     pub const fn new(input: G, setpoint: f32, kvals: PIDKValues) -> Self {
         Self {
@@ -35,7 +35,10 @@ impl<G: Getter<f32, E>, E: Clone + Debug> PIDControllerStream<G, E> {
         self.output = Ok(None);
     }
 }
-impl<G: Getter<f32, E>, E: Clone + Debug> Getter<f32, E> for PIDControllerStream<G, E> {
+impl<G, E: Clone + Debug> Getter<f32, E> for PIDControllerStream<G, E>
+where
+    Self: Updatable<E>,
+{
     fn get(&self) -> Output<f32, E> {
         self.output.clone()
     }
