@@ -65,26 +65,13 @@ where
 ///A stream that adds two inputs. This should be a bit faster than [`SumStream`], which adds any
 ///number of inputs. Returns `Ok(None)` if either input does. If this is not the desired behavior,
 ///[`NoneToValue`](converters::NoneToValue) may be of interest.
-pub struct Sum2<T1, T2, G1, G2, E>
-where
-    T1: Add<T2>,
-    G1: Getter<T1, E>,
-    G2: Getter<T2, E>,
-    E: Clone + Debug,
-{
+pub struct Sum2<T1, T2, G1, G2> {
     addend1: G1,
     addend2: G2,
     phantom_t1: PhantomData<T1>,
     phantom_t2: PhantomData<T2>,
-    phantom_e: PhantomData<E>,
 }
-impl<T1, T2, G1, G2, E> Sum2<T1, T2, G1, G2, E>
-where
-    T1: Add<T2>,
-    G1: Getter<T1, E>,
-    G2: Getter<T2, E>,
-    E: Clone + Debug,
-{
+impl<T1, T2, G1, G2> Sum2<T1, T2, G1, G2> {
     ///Constructor for [`Sum2`].
     pub const fn new(addend1: G1, addend2: G2) -> Self {
         Self {
@@ -92,11 +79,10 @@ where
             addend2,
             phantom_t1: PhantomData,
             phantom_t2: PhantomData,
-            phantom_e: PhantomData,
         }
     }
 }
-impl<T1, T2, TO, G1, G2, E> Getter<TO, E> for Sum2<T1, T2, G1, G2, E>
+impl<T1, T2, TO, G1, G2, E> Getter<TO, E> for Sum2<T1, T2, G1, G2>
 where
     T1: Add<T2, Output = TO>,
     G1: Getter<T1, E>,
@@ -122,11 +108,10 @@ where
         )))
     }
 }
-impl<T1, T2, G1, G2, E> Updatable<E> for Sum2<T1, T2, G1, G2, E>
+impl<T1, T2, G1, G2, E> Updatable<E> for Sum2<T1, T2, G1, G2>
 where
-    T1: Add<T2>,
-    G1: Getter<T1, E>,
-    G2: Getter<T2, E>,
+    G1: Updatable<E>,
+    G2: Updatable<E>,
     E: Clone + Debug,
 {
     fn update(&mut self) -> NothingOrError<E> {
