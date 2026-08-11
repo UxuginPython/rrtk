@@ -97,24 +97,12 @@ where
 ///Returns the last value that a getter returned while another getter, a boolean, returned false.
 ///Passes the getter's value through if the boolean getter is false. Still updates its input
 ///regardless if it's frozen.
-pub struct FreezeStream<T, GC, GI, E>
-where
-    T: Clone,
-    GC: Getter<bool, E>,
-    GI: Getter<T, E>,
-    E: Clone + Debug,
-{
+pub struct FreezeStream<T, GC, GI, E> {
     condition: GC,
     input: GI,
     freeze_value: Output<T, E>,
 }
-impl<T, GC, GI, E> FreezeStream<T, GC, GI, E>
-where
-    T: Clone,
-    GC: Getter<bool, E>,
-    GI: Getter<T, E>,
-    E: Clone + Debug,
-{
+impl<T, GC, GI, E> FreezeStream<T, GC, GI, E> {
     ///Constructor for [`FreezeStream`].
     pub const fn new(condition: GC, input: GI) -> Self {
         Self {
@@ -126,9 +114,8 @@ where
 }
 impl<T, GC, GI, E> Getter<T, E> for FreezeStream<T, GC, GI, E>
 where
-    T: Clone,
-    GC: Getter<bool, E>,
-    GI: Getter<T, E>,
+    Self: Updatable<E>,
+    Output<T, E>: Clone,
     E: Clone + Debug,
 {
     fn get(&self) -> Output<T, E> {
@@ -137,7 +124,7 @@ where
 }
 impl<T, GC, GI, E> Updatable<E> for FreezeStream<T, GC, GI, E>
 where
-    T: Clone,
+    Output<T, E>: Clone,
     GC: Getter<bool, E>,
     GI: Getter<T, E>,
     E: Clone + Debug,
