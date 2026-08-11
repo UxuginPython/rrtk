@@ -421,26 +421,22 @@ mod position_to_state {
     }
 }
 ///Adds a [`Quantity`] wrapper with a specific unit around a number.
-pub struct DimensionAdder<T, MM, S, G, E> {
+pub struct DimensionAdder<MM, S, G> {
     input: G,
-    phantom_t: PhantomData<T>,
     phantom_mm: PhantomData<MM>,
     phantom_s: PhantomData<S>,
-    phantom_e: PhantomData<E>,
 }
-impl<T, MM, S, G, E> DimensionAdder<T, MM, S, G, E> {
+impl<MM, S, G> DimensionAdder<MM, S, G> {
     ///Constructor for `DimensionAdder`.
     pub const fn new(input: G) -> Self {
         Self {
             input,
-            phantom_t: PhantomData,
             phantom_mm: PhantomData,
             phantom_s: PhantomData,
-            phantom_e: PhantomData,
         }
     }
 }
-impl<T, MM, S, G, E> Getter<Quantity<T, MM, S>, E> for DimensionAdder<T, MM, S, G, E>
+impl<T, MM, S, G, E> Getter<Quantity<T, MM, S>, E> for DimensionAdder<MM, S, G>
 where
     MM: Integer,
     S: Integer,
@@ -454,10 +450,8 @@ where
         }
     }
 }
-impl<T, MM, S, G, E> Updatable<E> for DimensionAdder<T, MM, S, G, E>
+impl<MM, S, G, E> Updatable<E> for DimensionAdder<MM, S, G>
 where
-    MM: Integer,
-    S: Integer,
     G: Updatable<E>,
     E: Clone + Debug,
 {
