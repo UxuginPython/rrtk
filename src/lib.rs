@@ -382,12 +382,12 @@ where
 }
 ///Because [`Getter`]s always return a timestamp (as long as they don't return `Err(_)` or
 ///`Ok(None)`), we can use this to treat them like [`TimeGetter`]s.
-pub struct TimeGetterFromGetter<T, G: Getter<T, E>, E: Clone + Debug> {
+pub struct TimeGetterFromGetter<T, G, E> {
     getter: G,
     none_error: E,
     phantom_t: PhantomData<T>,
 }
-impl<T, G: Getter<T, E>, E: Clone + Debug> TimeGetterFromGetter<T, G, E> {
+impl<T, G, E> TimeGetterFromGetter<T, G, E> {
     ///Constructor for [`TimeGetterFromGetter`].
     pub const fn new(getter: G, none_error: E) -> Self {
         Self {
@@ -406,7 +406,7 @@ impl<T, G: Getter<T, E>, E: Clone + Debug> TimeGetter<E> for TimeGetterFromGette
         }
     }
 }
-impl<T, G: Getter<T, E>, E: Clone + Debug> Updatable<E> for TimeGetterFromGetter<T, G, E> {
+impl<T, G, E: Clone + Debug> Updatable<E> for TimeGetterFromGetter<T, G, E> {
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
     }
