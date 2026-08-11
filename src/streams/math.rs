@@ -491,12 +491,12 @@ where
     }
 }
 ///A stream that computes the trapezoidal numerical integral of its input.
-pub struct IntegralStream<T, O, G: Getter<T, E>, E: Clone + Debug> {
+pub struct IntegralStream<T, O, G, E> {
     input: G,
     value: Output<O, E>,
     prev_output: Option<Datum<T>>,
 }
-impl<T, O, G: Getter<T, E>, E: Clone + Debug> IntegralStream<T, O, G, E> {
+impl<T, O, G, E> IntegralStream<T, O, G, E> {
     ///Constructor for [`IntegralStream`].
     pub const fn new(input: G) -> Self {
         Self {
@@ -508,9 +508,8 @@ impl<T, O, G: Getter<T, E>, E: Clone + Debug> IntegralStream<T, O, G, E> {
 }
 impl<T, O, G, E> Getter<O, E> for IntegralStream<T, O, G, E>
 where
-    IntegralStream<T, O, G, E>: Updatable<E>,
-    O: Clone,
-    G: Getter<T, E>,
+    Self: Updatable<E>,
+    Output<O, E>: Clone,
     E: Clone + Debug,
 {
     fn get(&self) -> Output<O, E> {
