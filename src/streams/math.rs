@@ -300,26 +300,13 @@ where
     }
 }
 ///A stream that divides one if its inputs by the other. Returns `Ok(None)` if either input does.
-pub struct QuotientStream<TD, TS, GD, GS, E>
-where
-    TD: Div<TS>,
-    GD: Getter<TD, E>,
-    GS: Getter<TS, E>,
-    E: Clone + Debug,
-{
+pub struct QuotientStream<TD, TS, GD, GS> {
     dividend: GD,
     divisor: GS,
     phantom_td: PhantomData<TD>,
     phantom_ts: PhantomData<TS>,
-    phantom_e: PhantomData<E>,
 }
-impl<TD, TS, GD, GS, E> QuotientStream<TD, TS, GD, GS, E>
-where
-    TD: Div<TS>,
-    GD: Getter<TD, E>,
-    GS: Getter<TS, E>,
-    E: Clone + Debug,
-{
+impl<TD, TS, GD, GS> QuotientStream<TD, TS, GD, GS> {
     ///Constructor for [`QuotientStream`].
     pub const fn new(dividend: GD, divisor: GS) -> Self {
         Self {
@@ -327,11 +314,10 @@ where
             divisor,
             phantom_td: PhantomData,
             phantom_ts: PhantomData,
-            phantom_e: PhantomData,
         }
     }
 }
-impl<TD, TS, TO, GD, GS, E> Getter<TO, E> for QuotientStream<TD, TS, GD, GS, E>
+impl<TD, TS, TO, GD, GS, E> Getter<TO, E> for QuotientStream<TD, TS, GD, GS>
 where
     TD: Div<TS, Output = TO>,
     GD: Getter<TD, E>,
@@ -364,11 +350,10 @@ where
         Ok(Some(Datum::new(time, value)))
     }
 }
-impl<TD, TS, GD, GS, E> Updatable<E> for QuotientStream<TD, TS, GD, GS, E>
+impl<TD, TS, GD, GS, E> Updatable<E> for QuotientStream<TD, TS, GD, GS>
 where
-    TD: Div<TS>,
-    GD: Getter<TD, E>,
-    GS: Getter<TS, E>,
+    GD: Updatable<E>,
+    GS: Updatable<E>,
     E: Clone + Debug,
 {
     fn update(&mut self) -> NothingOrError<E> {
