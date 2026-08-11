@@ -308,8 +308,8 @@ impl<T, G, E> EWMAStream<T, G, E> {
 #[cfg(feature = "internal_enhanced_float")]
 impl<T, G, E> Getter<T, E> for EWMAStream<T, G, E>
 where
-    EWMAStream<T, G, E>: Updatable<E>, //<- This implies both of | these, but you still need to write them explicitly apparently.
-    T: Clone,                          //<-----------------------/
+    Self: Updatable<E>,
+    T: Clone,
     E: Clone + Debug,
 {
     fn get(&self) -> Output<T, E> {
