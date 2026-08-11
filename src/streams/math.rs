@@ -123,26 +123,13 @@ where
 ///A stream that subtracts one of its inputs from the other. Returns `Ok(None)` if either input
 ///does. [`NoneToValue`](converters::NoneToValue) may be of interest if this is not the desired
 ///behavior.
-pub struct DifferenceStream<TM, TS, GM, GS, E>
-where
-    TM: Sub<TS>,
-    GM: Getter<TM, E>,
-    GS: Getter<TS, E>,
-    E: Clone + Debug,
-{
+pub struct DifferenceStream<TM, TS, GM, GS> {
     minuend: GM,
     subtrahend: GS,
     phantom_tm: PhantomData<TM>,
     phantom_ts: PhantomData<TS>,
-    phantom_e: PhantomData<E>,
 }
-impl<TM, TS, GM, GS, E> DifferenceStream<TM, TS, GM, GS, E>
-where
-    TM: Sub<TS>,
-    GM: Getter<TM, E>,
-    GS: Getter<TS, E>,
-    E: Clone + Debug,
-{
+impl<TM, TS, GM, GS> DifferenceStream<TM, TS, GM, GS> {
     ///Constructor for [`DifferenceStream`].
     pub const fn new(minuend: GM, subtrahend: GS) -> Self {
         Self {
@@ -150,11 +137,10 @@ where
             subtrahend,
             phantom_tm: PhantomData,
             phantom_ts: PhantomData,
-            phantom_e: PhantomData,
         }
     }
 }
-impl<TM, TS, TO, GM, GS, E> Getter<TO, E> for DifferenceStream<TM, TS, GM, GS, E>
+impl<TM, TS, TO, GM, GS, E> Getter<TO, E> for DifferenceStream<TM, TS, GM, GS>
 where
     TM: Sub<TS, Output = TO>,
     GM: Getter<TM, E>,
@@ -187,11 +173,10 @@ where
         Ok(Some(Datum::new(time, value)))
     }
 }
-impl<TM, TS, GM, GS, E> Updatable<E> for DifferenceStream<TM, TS, GM, GS, E>
+impl<TM, TS, GM, GS, E> Updatable<E> for DifferenceStream<TM, TS, GM, GS>
 where
-    TM: Sub<TS>,
-    GM: Getter<TM, E>,
-    GS: Getter<TS, E>,
+    GM: Updatable<E>,
+    GS: Updatable<E>,
     E: Clone + Debug,
 {
     fn update(&mut self) -> NothingOrError<E> {
