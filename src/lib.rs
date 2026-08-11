@@ -504,32 +504,17 @@ impl<T, C: Chronology<T>, TG: TimeGetter<E>, E: Clone + Debug> Getter<T, E>
     }
 }
 ///Getter for returning a constant value.
-pub struct ConstantGetter<T, TG, E>
-where
-    T: Clone,
-    TG: TimeGetter<E>,
-    E: Clone + Debug,
-{
+pub struct ConstantGetter<T, TG> {
     time_getter: TG,
     value: T,
-    phantom_e: PhantomData<E>,
 }
-impl<T, TG, E> ConstantGetter<T, TG, E>
-where
-    T: Clone,
-    TG: TimeGetter<E>,
-    E: Clone + Debug,
-{
+impl<T, TG> ConstantGetter<T, TG> {
     ///Constructor for [`ConstantGetter`].
     pub const fn new(time_getter: TG, value: T) -> Self {
-        Self {
-            time_getter,
-            value,
-            phantom_e: PhantomData,
-        }
+        Self { time_getter, value }
     }
 }
-impl<T, TG, E> Getter<T, E> for ConstantGetter<T, TG, E>
+impl<T, TG, E> Getter<T, E> for ConstantGetter<T, TG>
 where
     T: Clone,
     TG: TimeGetter<E>,
@@ -540,10 +525,9 @@ where
         Ok(Some(Datum::new(time, self.value.clone())))
     }
 }
-impl<T, TG, E> Settable<T, E> for ConstantGetter<T, TG, E>
+impl<T, TG, E> Settable<T, E> for ConstantGetter<T, TG>
 where
-    T: Clone,
-    TG: TimeGetter<E>,
+    Self: Updatable<E>,
     E: Clone + Debug,
 {
     fn set(&mut self, value: T) -> NothingOrError<E> {
@@ -551,10 +535,9 @@ where
         Ok(())
     }
 }
-impl<T, TG, E> Updatable<E> for ConstantGetter<T, TG, E>
+impl<T, TG, E> Updatable<E> for ConstantGetter<T, TG>
 where
-    T: Clone,
-    TG: TimeGetter<E>,
+    TG: Updatable<E>,
     E: Clone + Debug,
 {
     fn update(&mut self) -> NothingOrError<E> {
