@@ -532,22 +532,20 @@ impl<TI, G: Updatable<E>, E: Clone + Debug> Updatable<E> for IntoConverter<TI, G
 }
 ///Converts errors returned by a getter to another type through [`Into`]. Leaves `Ok` values
 ///unchanged.
-pub struct ErrorIntoConverter<T, G: Getter<T, EI>, EI: Clone + Debug> {
+pub struct ErrorIntoConverter<G, EI> {
     input: G,
-    phantom_t: PhantomData<T>,
     phantom_ei: PhantomData<EI>,
 }
-impl<T, G: Getter<T, EI>, EI: Clone + Debug> ErrorIntoConverter<T, G, EI> {
+impl<G, EI> ErrorIntoConverter<G, EI> {
     ///Constructor for `ErrorIntoConverter`.
     pub const fn new(input: G) -> Self {
         Self {
             input,
-            phantom_t: PhantomData,
             phantom_ei: PhantomData,
         }
     }
 }
-impl<T, G, EI, EO> Getter<T, EO> for ErrorIntoConverter<T, G, EI>
+impl<T, G, EI, EO> Getter<T, EO> for ErrorIntoConverter<G, EI>
 where
     G: Getter<T, EI>,
     EI: Clone + Debug + Into<EO>,
@@ -557,8 +555,11 @@ where
         self.input.get().map_err(|error| error.into())
     }
 }
-impl<T, G: Getter<T, EI>, EI: Clone + Debug + Into<EO>, EO: Clone + Debug> Updatable<EO>
-    for ErrorIntoConverter<T, G, EI>
+impl<G, EI, EO> Updatable<EO> for ErrorIntoConverter<G, EI>
+where
+    G: Updatable<EI>,
+    EI: Clone + Debug + Into<EO>,
+    EO: Clone + Debug,
 {
     fn update(&mut self) -> NothingOrError<EO> {
         self.input.update().map_err(|error| error.into())?;
