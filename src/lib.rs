@@ -411,17 +411,16 @@ impl<T, G: Updatable<E>, E: Clone + Debug> Updatable<E> for TimeGetterFromGetter
         self.getter.update()
     }
 }
-///As histories return values at times, we can ask them to return values at the time of now or now
+///As chronologies return values at times, we can ask them to return values at the time of now or now
 ///with a delta. This makes that much easier and is the recommended way of following
 ///[`MotionProfile`]s.
-pub struct GetterFromChronology<T, C: Chronology<T>, TG: TimeGetter<E>, E: Clone + Debug> {
+pub struct GetterFromChronology<C, TG, E> {
     chronology: C,
     time_getter: TG,
     time_delta: Time,
-    phantom_t: PhantomData<T>,
     phantom_e: PhantomData<E>,
 }
-impl<T, C: Chronology<T>, TG: TimeGetter<E>, E: Clone + Debug> GetterFromChronology<T, C, TG, E> {
+impl<C, TG: TimeGetter<E>, E: Clone + Debug> GetterFromChronology<C, TG, E> {
     ///Constructor such that the time in the request to the chronology will be directly that returned
     ///from the [`TimeGetter`] with no delta.
     pub const fn new_no_delta(chronology: C, time_getter: TG) -> Self {
@@ -429,7 +428,6 @@ impl<T, C: Chronology<T>, TG: TimeGetter<E>, E: Clone + Debug> GetterFromChronol
             chronology,
             time_getter,
             time_delta: Time::ZERO,
-            phantom_t: PhantomData,
             phantom_e: PhantomData,
         }
     }
@@ -441,7 +439,6 @@ impl<T, C: Chronology<T>, TG: TimeGetter<E>, E: Clone + Debug> GetterFromChronol
             chronology,
             time_getter,
             time_delta,
-            phantom_t: PhantomData,
             phantom_e: PhantomData,
         })
     }
@@ -453,7 +450,6 @@ impl<T, C: Chronology<T>, TG: TimeGetter<E>, E: Clone + Debug> GetterFromChronol
             chronology,
             time_getter,
             time_delta,
-            phantom_t: PhantomData,
             phantom_e: PhantomData,
         })
     }
@@ -463,7 +459,6 @@ impl<T, C: Chronology<T>, TG: TimeGetter<E>, E: Clone + Debug> GetterFromChronol
             chronology,
             time_getter,
             time_delta,
-            phantom_t: PhantomData,
             phantom_e: PhantomData,
         }
     }
@@ -484,16 +479,14 @@ impl<T, C: Chronology<T>, TG: TimeGetter<E>, E: Clone + Debug> GetterFromChronol
 //stayed around for so long: It's easier to force empty impls every once in a while than to figure
 //out a really wierd specialization thing. Overall, though, you almost never actually need an
 //Updatable Chronology anyway, so the bound really doesn't make that much sense in the first place.
-impl<T, C: Chronology<T>, TG: TimeGetter<E>, E: Clone + Debug> Updatable<E>
-    for GetterFromChronology<T, C, TG, E>
-{
+impl<C, TG: Updatable<E>, E: Clone + Debug> Updatable<E> for GetterFromChronology<C, TG, E> {
     fn update(&mut self) -> NothingOrError<E> {
         self.time_getter.update()?;
         Ok(())
     }
 }
 impl<T, C: Chronology<T>, TG: TimeGetter<E>, E: Clone + Debug> Getter<T, E>
-    for GetterFromChronology<T, C, TG, E>
+    for GetterFromChronology<C, TG, E>
 {
     fn get(&self) -> Output<T, E> {
         let time = self.time_getter.get()?;
