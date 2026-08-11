@@ -46,25 +46,13 @@ where
     }
 }
 ///A stream converting all `Ok(None)` values from its input to a default `Ok(Some(_))` value.
-pub struct NoneToValue<T, G, TG, E>
-where
-    T: Clone,
-    G: Getter<T, E>,
-    TG: TimeGetter<E>,
-    E: Clone + Debug,
-{
+pub struct NoneToValue<T, G, TG, E> {
     input: G,
     time_getter: TG,
     none_value: T,
     phantom_e: PhantomData<E>,
 }
-impl<T, G, TG, E> NoneToValue<T, G, TG, E>
-where
-    T: Clone,
-    G: Getter<T, E>,
-    TG: TimeGetter<E>,
-    E: Clone + Debug,
-{
+impl<T, G, TG, E> NoneToValue<T, G, TG, E> {
     ///Constructor for [`NoneToValue`].
     pub const fn new(input: G, time_getter: TG, none_value: T) -> Self {
         Self {
@@ -78,6 +66,7 @@ where
 impl<T, G, TG, E> Getter<T, E> for NoneToValue<T, G, TG, E>
 where
     T: Clone,
+    //These imply Self: Updatable<E>
     G: Getter<T, E>,
     TG: TimeGetter<E>,
     E: Clone + Debug,
@@ -95,9 +84,8 @@ where
 }
 impl<T, G, TG, E> Updatable<E> for NoneToValue<T, G, TG, E>
 where
-    T: Clone,
-    G: Getter<T, E>,
-    TG: TimeGetter<E>,
+    G: Updatable<E>,
+    TG: Updatable<E>,
     E: Clone + Debug,
 {
     fn update(&mut self) -> NothingOrError<E> {
