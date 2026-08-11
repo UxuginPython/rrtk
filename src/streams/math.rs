@@ -194,35 +194,19 @@ where
 ///
 ///If you are only multiplying the outputs of two getters or if your input getters are of different
 ///types, consider using [`Product2`] instead.
-pub struct ProductStream<T, const N: usize, G, E>
-where
-    T: MulAssign + Copy,
-    G: Getter<T, E>,
-    E: Clone + Debug,
-{
+pub struct ProductStream<const N: usize, G> {
     factors: [G; N],
-    phantom_t: PhantomData<T>,
-    phantom_e: PhantomData<E>,
 }
-impl<T, const N: usize, G, E> ProductStream<T, N, G, E>
-where
-    T: MulAssign + Copy,
-    G: Getter<T, E>,
-    E: Clone + Debug,
-{
+impl<const N: usize, G> ProductStream<N, G> {
     ///Constructor for [`ProductStream`].
     pub const fn new(factors: [G; N]) -> Self {
         if N < 1 {
             panic!("rrtk::streams::ProductStream must have at least one input stream");
         }
-        Self {
-            factors,
-            phantom_t: PhantomData,
-            phantom_e: PhantomData,
-        }
+        Self { factors }
     }
 }
-impl<T, const N: usize, G, E> Getter<T, E> for ProductStream<T, N, G, E>
+impl<T, const N: usize, G, E> Getter<T, E> for ProductStream<N, G>
 where
     T: MulAssign + Copy,
     G: Getter<T, E>,
@@ -247,10 +231,9 @@ where
         }
     }
 }
-impl<T, const N: usize, G, E> Updatable<E> for ProductStream<T, N, G, E>
+impl<const N: usize, G, E> Updatable<E> for ProductStream<N, G>
 where
-    T: MulAssign + Copy,
-    G: Getter<T, E>,
+    G: Updatable<E>,
     E: Clone + Debug,
 {
     fn update(&mut self) -> NothingOrError<E> {
