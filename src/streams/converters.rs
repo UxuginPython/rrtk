@@ -95,25 +95,13 @@ where
     }
 }
 ///Converts all `Ok(None)` values to `Ok(Some(T::default()))`.
-pub struct NoneToDefault<T, G, TG, E>
-where
-    T: Default,
-    G: Getter<T, E>,
-    TG: TimeGetter<E>,
-    E: Clone + Debug,
-{
+pub struct NoneToDefault<T, G, TG, E> {
     input: G,
     time_getter: TG,
     phantom_t: PhantomData<T>,
     phantom_e: PhantomData<E>,
 }
-impl<T, G, TG, E> NoneToDefault<T, G, TG, E>
-where
-    T: Default,
-    G: Getter<T, E>,
-    TG: TimeGetter<E>,
-    E: Clone + Debug,
-{
+impl<T, G, TG, E> NoneToDefault<T, G, TG, E> {
     ///Constructor for `NoneToDefault`.
     pub const fn new(input: G, time_getter: TG) -> Self {
         Self {
@@ -140,9 +128,8 @@ where
 }
 impl<T, G, TG, E> Updatable<E> for NoneToDefault<T, G, TG, E>
 where
-    T: Default,
-    G: Getter<T, E>,
-    TG: TimeGetter<E>,
+    G: Updatable<E>,
+    TG: Updatable<E>,
     E: Clone + Debug,
 {
     fn update(&mut self) -> NothingOrError<E> {
