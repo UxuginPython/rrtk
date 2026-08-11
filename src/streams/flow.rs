@@ -46,34 +46,22 @@ where
 }
 ///Returns the output of one input if a `Getter<bool, _>` returns `Ok(Some(true))` and another if
 ///it returns `Ok(Some(false))`. Returns `Ok(None)` if the `Getter<bool, _>` does.
-pub struct IfElseStream<T, GC, GT, GF, E>
-where
-    GC: Getter<bool, E>,
-    GT: Getter<T, E>,
-    GF: Getter<T, E>,
-    E: Clone + Debug,
-{
+pub struct IfElseStream<GC, GT, GF> {
     condition: GC,
     true_output: GT,
     false_output: GF,
-    phantom_t: PhantomData<T>,
-    phantom_e: PhantomData<E>,
 }
-impl<T, GC: Getter<bool, E>, GT: Getter<T, E>, GF: Getter<T, E>, E: Clone + Debug>
-    IfElseStream<T, GC, GT, GF, E>
-{
+impl<GC, GT, GF> IfElseStream<GC, GT, GF> {
     ///Constructor for [`IfElseStream`].
     pub const fn new(condition: GC, true_output: GT, false_output: GF) -> Self {
         Self {
             condition,
             true_output,
             false_output,
-            phantom_t: PhantomData,
-            phantom_e: PhantomData,
         }
     }
 }
-impl<T, GC, GT, GF, E> Getter<T, E> for IfElseStream<T, GC, GT, GF, E>
+impl<T, GC, GT, GF, E> Getter<T, E> for IfElseStream<GC, GT, GF>
 where
     GC: Getter<bool, E>,
     GT: Getter<T, E>,
@@ -92,11 +80,11 @@ where
         }
     }
 }
-impl<T, GC, GT, GF, E> Updatable<E> for IfElseStream<T, GC, GT, GF, E>
+impl<GC, GT, GF, E> Updatable<E> for IfElseStream<GC, GT, GF>
 where
-    GC: Getter<bool, E>,
-    GT: Getter<T, E>,
-    GF: Getter<T, E>,
+    GC: Updatable<E>,
+    GT: Updatable<E>,
+    GF: Updatable<E>,
     E: Clone + Debug,
 {
     fn update(&mut self) -> NothingOrError<E> {
