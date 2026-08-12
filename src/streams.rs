@@ -1,15 +1,28 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // Copyright 2024-2026 UxuginPython
-//!Getters that do data processing and have other getters as inputs are called *streams*. These are
-//!some helpful builtin streams for controlling your robot. See the `pid` example to learn more
-//!about how to use the stream system.
+//!There are some special [`Getter`]s that hold other `Getter`s that they use as input for some
+//!form of data processing. These are called *streams*.
+//!
+//!Streams are designed to be chained together for more complex operations. For example, to
+//!multiply 5 by 3 and add 1, one could do this (of course, normally not using all
+//!`ConstantGetter`s and dummy `TimeGetter`s):
+//!```
+//!use rrtk::*;
+//!let five = ConstantGetter::<u8, Time, ()>::new(Time::ZERO, 5);
+//!let three = ConstantGetter::<u8, Time, ()>::new(Time::ZERO, 3);
+//!let one = ConstantGetter::<u8, Time, ()>::new(Time::ZERO, 1);
+//!let mul_by_3 = streams::math::Product2::new(five, three);
+//!let add_1 = streams::math::Sum2::new(mul_by_3, one);
+//!assert_eq!(add_1.get().unwrap().unwrap().value, 16);
+//!```
+//!See the "pid" example for a more complex demonstration of the stream system.
 use crate::*;
 pub mod control;
 pub mod converters;
 pub mod flow;
 pub mod logic;
 pub mod math;
-///Returns the output of whichever input has the latest time.
+///Returns the output of whichever input has the latest timestamp.
 pub struct Latest<const C: usize, G> {
     inputs: [G; C],
 }
@@ -48,7 +61,9 @@ impl<const C: usize, G: Updatable<E>, E: Clone + Debug> Updatable<E> for Latest<
         Ok(())
     }
 }
-///Expires data that are too old to be useful.
+///Expires data that are too old to be useful. Timestamps of data from the input `Getter` are
+///compared to the current time sourced from the `TimeGetter`, and `Ok(None)` is returned instead
+///of the datum if the difference exceeds `max_time_delta`.
 pub struct Expirer<T, G, TG, E>
 where
     G: Getter<T, E>,

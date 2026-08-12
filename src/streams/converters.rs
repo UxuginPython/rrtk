@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // Copyright 2024-2026 UxuginPython
-//!Streams that convert from one type to another. Some of these also do keep the same type and are
-//!for convenience in certain situations, for example when you do not want to handle a [`None`]
-//!variant yourself.
+//!Streams for converting between types and handling `None` variants.
 use crate::compile_time_integer::Integer;
 use crate::streams::*;
 ///A stream converting all `Ok(None)` values from its input to `Err(_)` variants.
