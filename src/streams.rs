@@ -36,8 +36,8 @@ impl<T, const C: usize, G: Getter<T, E>, E: Clone + Debug> Getter<T, E> for Late
     fn get(&self) -> Output<T, E> {
         let mut output: Option<Datum<T>> = None;
         for getter in &self.inputs {
-            let gotten = getter.get();
-            if let Ok(Some(gotten)) = gotten {
+            let gotten = getter.get()?;
+            if let Some(gotten) = gotten {
                 match &output {
                     Some(thing) => {
                         if gotten.time > thing.time {

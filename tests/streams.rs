@@ -1205,7 +1205,7 @@ fn moving_average_stream() {
 #[test]
 fn latest() {
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-    struct Error;
+    struct Error(u8);
     struct Stream1 {
         time: Time,
     }
@@ -1223,7 +1223,7 @@ fn latest() {
                 3 => Ok(Some(Datum::new(Time::ZERO, 1))),                //Some, Err
                 4 => Ok(None),                                           //None, None
                 5 => Ok(None),                                           //None, Err
-                6 => Err(Error),                                         //Err,  Err
+                6 => Err(Error(1)),                                      //Err,  Err
                 _ => panic!("should be unreachable"),
             }
         }
@@ -1248,10 +1248,10 @@ fn latest() {
                 0 => Ok(Some(Datum::new(Time::ZERO, 0))), //Some, Some
                 1 => Ok(Some(Datum::new(Time::from_nanoseconds(1), 2))), //Some, Some
                 2 => Ok(None),                            //Some, None
-                3 => Err(Error),                          //Some, Err
+                3 => Err(Error(2)),                       //Some, Err
                 4 => Ok(None),                            //None, None
-                5 => Err(Error),                          //None, Err
-                6 => Err(Error),                          //Err,  Err
+                5 => Err(Error(3)),                       //None, Err
+                6 => Err(Error(4)),                       //Err,  Err
                 _ => panic!("should be unreachable"),
             }
         }
@@ -1285,13 +1285,13 @@ fn latest() {
         latest.update().unwrap();
         assert_eq!(latest.get(), Ok(Some(Datum::new(Time::ZERO, 1))));
         latest.update().unwrap();
-        assert_eq!(latest.get(), Ok(Some(Datum::new(Time::ZERO, 1))));
+        assert_eq!(latest.get(), Err(Error(2)));
         latest.update().unwrap();
         assert_eq!(latest.get(), Ok(None));
         latest.update().unwrap();
-        assert_eq!(latest.get(), Ok(None));
+        assert_eq!(latest.get(), Err(Error(3)));
         latest.update().unwrap();
-        assert_eq!(latest.get(), Ok(None));
+        assert_eq!(latest.get(), Err(Error(1)));
     }
 }
 #[test]
