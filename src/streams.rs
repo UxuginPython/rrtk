@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // Copyright 2024-2026 UxuginPython
-//!Getters that do data processing and have other getters as inputs are called streams. These are
+//!Getters that do data processing and have other getters as inputs are called *streams*. These are
 //!some helpful builtin streams for controlling your robot. See the `pid` example to learn more
 //!about how to use the stream system.
 use crate::*;

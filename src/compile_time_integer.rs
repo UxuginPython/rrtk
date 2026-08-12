@@ -2,6 +2,7 @@
 // Copyright 2024-2026 UxuginPython
 //!RRTK's compile-time integer system. This is basically a simpler version of
 //![Typenum](https://crates.io/crates/typenum/). It is used for compile-time dimensional analysis.
+//!
 //!0 is represented by the [`Zero`] struct. Positive integers are created by wrapping [`Zero`] with
 //!with [`OnePlus`] a given number of times, e.g., 2 is represented by `OnePlus<OnePlus<Zero>>`.
 //!Negative numbers are created similarly but with [`NegativeOnePlus`] instead of [`OnePlus`]: -2

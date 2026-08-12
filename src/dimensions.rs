@@ -2,18 +2,22 @@
 // Copyright 2024-2026 UxuginPython
 //!RRTK's compile-time dimensional analysis system. This system is simpler than ones like
 //![`uom`](https://crates.io/crates/uom), but it serves a similar purpose: to protect users from
-//!dimension mismatch errors at compile time without runtime overhead. This is done through a
+//!dimension mismatch errors at compile time without runtime overhead.
+//!
+//!This is done through a
 //![semi-hack](compile_time_integer) representing integers as types and adding type parameters to a
 //!special struct called [`Quantity`], which is a transparent struct holding only a value at
-//!runtime.
+//!runtime. There are also a few other specialized types for values that are better represented
+//!with integers than floating point numbers but still must interact with floating point values.
 use super::*;
 use compile_time_integer::*;
-//This attribute currently cannot be in the actual file with #![] for some reason.
+//This attribute currently cannot be in the actual file with #![].
 #[rustfmt::skip]
 pub mod dimension_aliases;
 pub use dimension_aliases::*;
-///A time stored internally in `i64` nanoseconds. Mostly interacts with other types through `f32`
-///seconds however.
+///A time stored internally in `i64` nanoseconds.
+///
+///`Time` is often converted to [`Second<f32>`] to interact with quantities of other dimensions.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(transparent)]
 pub struct Time(i64);
@@ -135,7 +139,7 @@ impl Div<Time> for f32 {
         self / rhs.as_seconds_f32()
     }
 }
-///A dimensionless quantity stored as an integer. Used almost exclusively for when a time, stored
+///A dimensionless value stored as an integer. Used almost exclusively for when a time, stored
 ///as an integer, must be multiplied by a constant factor as in numerical integrals and motion
 ///profiles.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord)]
@@ -220,8 +224,7 @@ impl Mul<Time> for DimensionlessInteger {
         Time(self.0 * rhs.0)
     }
 }
-///An exact rational number type for dimensionless quantities. Used almost exclusively when a
-///[`Time`] must be multiplied by a constant fractional factor.
+///An exact rational number type for dimensionless values.
 #[derive(Clone, Copy, Debug)]
 pub struct DimensionlessFraction(DimensionlessInteger, DimensionlessInteger);
 impl DimensionlessFraction {
@@ -523,10 +526,13 @@ impl From<DimensionlessFraction> for Dimensionless<f64> {
         was.as_quantity_f64()
     }
 }
-///Gets the resulting type from multiplying quantities of two types. Basically an alias for
-///`<$a as Mul<$b>>::Output`. This is an important thing to be able to do when writing code that is
-///generic over units as, since quantities of different units are technically different types, the
+///Gets the resulting type from multiplying values of two types. (Alias for
+///`<$a as Mul<$b>>::Output`.)
+///
+///This is an important thing to be able to do when writing code that is
+///generic over units as, since quantities of different units are different types, the
 ///fully qualified syntax gets unwieldy quickly when performing multiplication and division.
+///
 ///Rust's scoping rules for macros is a bit odd, but you should be able to use `rrtk::mul!` and
 ///`rrtk::compile_time_dimensions::mul!` interchangably.
 #[macro_export]
@@ -536,10 +542,13 @@ macro_rules! mul {
     };
 }
 pub use mul;
-///Gets the resulting type from dividing quantities of two types. Basically an alias for
-///`<$a as Div<$b>>::Output`. This is an important thing to be able to do when writing code that is
-///generic over units as, since quantities of different units are technically different types, the
+///Gets the resulting type from dividing values of two types. (Alias for
+///`<$a as Div<$b>>::Output`.)
+///
+///This is an important thing to be able to do when writing code that is
+///generic over units as, since quantities of different units are different types, the
 ///fully qualified syntax gets unwieldy quickly when performing multiplication and division.
+///
 ///Rust's scoping rules for macros is a bit odd, but you should be able to use `rrtk::div!` and
 ///`rrtk::compile_time_dimensions::div!` interchangably.
 #[macro_export]

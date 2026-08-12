@@ -3,7 +3,9 @@
 //!# Rust Robotics ToolKit
 //!**A data flow-based robotics framework designed for embedded systems.**
 //!
-//!RRTK works almost entirely without `std` and `alloc`. It is not specific to any device or API.
+//!RRTK works almost entirely without `std` and `alloc`. It is not specific to any device or API,
+//!but support is available though feature flags for [libm](https://crates.io/crates/libm) and
+//![micromath](https://crates.io/crates/micromath) for extended float math.
 //!## Feature Flags
 //!- `alloc` - Enable items requiring dynamic allocation through Rust's builtin `alloc` crate.
 //!- `std` - Enable items requiring the Rust standard library. Requires `alloc` feature. Enabled by default.
@@ -63,12 +65,12 @@ pub use state::*;
 ///Error types used for a few things in RRTK.
 pub mod error {
     use super::*;
-    ///The error type used when a `TryFrom` fails.
+    ///The error type used when a [`TryFrom`] fails.
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]
     pub struct CannotConvert;
     ///A type for when multiple things may error independently and both errors must be able to be
-    ///returned. This only keeps track of when at least one has errored; it should usually be used
-    ///in combination with [`Option`], [`Result`], or the [`NothingOrError`] type alias of `Result`.
+    ///returned. This only keeps track of when at least one has errored, i.e., it does not have an
+    ///`Ok` variant.
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]
     pub enum PossibleDoubleError<E> {
         ///The variant for when Side A errors and Side B does not.

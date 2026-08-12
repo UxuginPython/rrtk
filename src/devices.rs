@@ -2,6 +2,18 @@
 // Copyright 2024-2026 UxuginPython
 //!A graph-based system for tracking the rotational states of mechanical components throughout your
 //!robot.
+//!
+//!The system uses a set of *devices*, each of which is allowed to read and write to a specific set
+//!of *nodes*. Nodes, their states, and connections between them are managed by the [`System`];
+//!devices read and write to nodes using [`NodeID`]s provided by it. `NodeID`s issued by a `System`
+//!must only be used with that same `System`. Using `NodeID`s with other `System`s will often
+//!result in panics.
+//!
+//!Two devices should never read or write to the same node. Instead, each device should have its
+//!own node, and those nodes should be connected through the `System`. This avoids issues such as
+//!nodes oscillating between the states being written by different devices.
+//!
+//!For more information, see the "devices" example.
 use super::*;
 pub mod provided;
 pub mod wrappers;
@@ -39,6 +51,8 @@ impl Node {
 ///A struct that tracks the states of axles throughout your robot. It is based on a system of nodes
 ///that can be connected. `N` is the maximum number of nodes. The structure is implemented using a
 ///form of doubly linked list.
+///
+///See the [module documentation](self) for more information.
 pub struct System<const N: usize> {
     system_id: SystemID,
     nodes: [Option<Node>; N],
