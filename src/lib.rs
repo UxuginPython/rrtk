@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // Copyright 2024-2026 UxuginPython
 //!# Rust Robotics ToolKit
-//!**Systems and tools for robotics programming in Rust.**
+//!** A data flow-based robotics framework designed for embedded systems.**
 //!
 //!RRTK works almost entirely without `std` and `alloc`. It is not specific to any device or API.
 //!## Feature Flags

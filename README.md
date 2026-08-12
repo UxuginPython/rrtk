@@ -1,5 +1,5 @@
 # Rust Robotics ToolKit
-**Systems and tools for robotics programming in Rust.**
+**A data flow-based robotics framework designed for embedded systems.**
 
 RRTK works almost entirely without `std` and `alloc`. It is not specific to any device or API.
 
@@ -8,7 +8,7 @@ RRTK is free and open source software licensed under the permissive BSD 3-Clause
 
 ## Features
 - Architecture based on `Getter`, `Settable`, and `Updatable` traits
-- Node-like stream system for data processing
+- Stream system for data processing
     - Basic arithmetic, exponentiation, and integral and derivative
     - Logic and control flow management
     - PID control
