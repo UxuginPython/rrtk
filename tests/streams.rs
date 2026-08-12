@@ -1294,6 +1294,88 @@ fn latest() {
         assert_eq!(latest.get(), Err(Error(1)));
     }
 }
+//This test has been slightly modified from the latest() test to test Latest2 instead.
+#[test]
+fn latest2() {
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    struct Error(u8);
+    struct Stream1 {
+        time: Time,
+    }
+    impl Stream1 {
+        pub const fn new() -> Self {
+            Self { time: Time::ZERO }
+        }
+    }
+    impl Getter<u8, Error> for Stream1 {
+        fn get(&self) -> Output<u8, Error> {
+            match self.time.as_nanoseconds() {
+                0 => Ok(Some(Datum::new(Time::from_nanoseconds(1), 1))), //Some, Some
+                1 => Ok(Some(Datum::new(Time::ZERO, 0))),                //Some, Some
+                2 => Ok(Some(Datum::new(Time::ZERO, 1))),                //Some, None
+                3 => Ok(Some(Datum::new(Time::ZERO, 1))),                //Some, Err
+                4 => Ok(None),                                           //None, None
+                5 => Ok(None),                                           //None, Err
+                6 => Err(Error(1)),                                      //Err,  Err
+                _ => panic!("should be unreachable"),
+            }
+        }
+    }
+    impl Updatable<Error> for Stream1 {
+        fn update(&mut self) -> NothingOrError<Error> {
+            self.time += Time::from_nanoseconds(1);
+            Ok(())
+        }
+    }
+    struct Stream2 {
+        time: Time,
+    }
+    impl Stream2 {
+        pub const fn new() -> Self {
+            Self { time: Time::ZERO }
+        }
+    }
+    impl Getter<u8, Error> for Stream2 {
+        fn get(&self) -> Output<u8, Error> {
+            match self.time.as_nanoseconds() {
+                0 => Ok(Some(Datum::new(Time::ZERO, 0))), //Some, Some
+                1 => Ok(Some(Datum::new(Time::from_nanoseconds(1), 2))), //Some, Some
+                2 => Ok(None),                            //Some, None
+                3 => Err(Error(2)),                       //Some, Err
+                4 => Ok(None),                            //None, None
+                5 => Err(Error(3)),                       //None, Err
+                6 => Err(Error(4)),                       //Err,  Err
+                _ => panic!("should be unreachable"),
+            }
+        }
+    }
+    impl Updatable<Error> for Stream2 {
+        fn update(&mut self) -> NothingOrError<Error> {
+            self.time += Time::from_nanoseconds(1);
+            Ok(())
+        }
+    }
+    let mut latest = Latest2::new(Stream1::new(), Stream2::new());
+    assert_eq!(
+        latest.get(),
+        Ok(Some(Datum::new(Time::from_nanoseconds(1), 1)))
+    );
+    latest.update().unwrap();
+    assert_eq!(
+        latest.get(),
+        Ok(Some(Datum::new(Time::from_nanoseconds(1), 2)))
+    );
+    latest.update().unwrap();
+    assert_eq!(latest.get(), Ok(Some(Datum::new(Time::ZERO, 1))));
+    latest.update().unwrap();
+    assert_eq!(latest.get(), Err(Error(2)));
+    latest.update().unwrap();
+    assert_eq!(latest.get(), Ok(None));
+    latest.update().unwrap();
+    assert_eq!(latest.get(), Err(Error(3)));
+    latest.update().unwrap();
+    assert_eq!(latest.get(), Err(Error(1)));
+}
 #[test]
 fn inputless_gates() {
     struct GetBool;
