@@ -843,9 +843,8 @@ fn quotient_stream() {
     }
 }
 //micromath's implementations are not as precise as std's and libm's, making them cause this test
-//to fail even if the calculation is correct. Testing the accuracy of the other two and compiling
-//with micromath, although not testing its implementation, is considered sufficient. The same
-//applies to the ewma_stream and ewma_stream_quantity tests.
+//to fail even if the calculation is correct. Testing the accuracy of the other two is considered
+//sufficient. The same applies to the ewma_stream and ewma_stream_quantity tests.
 #[test]
 #[cfg(any(feature = "std", feature = "libm"))]
 fn exponent_stream() {
@@ -861,12 +860,11 @@ fn exponent_stream() {
     }
     impl Getter<f32, DummyError> for Stream1 {
         fn get(&self) -> Output<f32, DummyError> {
-            if self.index == 0 || self.index == 1 || self.index == 2 {
-                return Err(DummyError);
-            } else if self.index == 3 || self.index == 4 || self.index == 5 {
-                return Ok(None);
+            match self.index {
+                0..=2 => Err(DummyError),
+                3..=5 => Ok(None),
+                _ => Ok(Some(Datum::new(Time::from_nanoseconds(1), 5.0))),
             }
-            return Ok(Some(Datum::new(Time::from_nanoseconds(1), 5.0)));
         }
     }
     impl Updatable<DummyError> for Stream1 {
@@ -885,12 +883,11 @@ fn exponent_stream() {
     }
     impl Getter<f32, DummyError> for Stream2 {
         fn get(&self) -> Output<f32, DummyError> {
-            if self.index == 0 || self.index == 3 || self.index == 6 {
-                return Err(DummyError);
-            } else if self.index == 1 || self.index == 4 || self.index == 7 {
-                return Ok(None);
+            match self.index {
+                0 | 3 | 6 => Err(DummyError),
+                1 | 4 | 7 => Ok(None),
+                _ => Ok(Some(Datum::new(Time::from_nanoseconds(2), 3.0))),
             }
-            return Ok(Some(Datum::new(Time::from_nanoseconds(2), 3.0)));
         }
     }
     impl Updatable<DummyError> for Stream2 {
@@ -934,12 +931,7 @@ fn exponent_stream() {
         stream1.update().unwrap();
         stream2.update().unwrap();
         //Some, None
-        if let Ok(Some(x)) = stream.get() {
-            assert_eq!(x.time, Time::from_nanoseconds(1));
-            assert_eq!(x.value, 5.0);
-        } else {
-            panic!();
-        }
+        assert!(stream.get().unwrap().is_none());
         stream1.update().unwrap();
         stream2.update().unwrap();
         //Some, Some

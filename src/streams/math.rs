@@ -459,8 +459,11 @@ where
         Ok(())
     }
 }
-///A stream that exponentiates one of its inputs to the other. If the exponent input returns
-///`Ok(None)`, the base's value is returned directly. Only available with `std`.
+///A stream that exponentiates one of its inputs to the other. Available with any of `std`, `libm`,
+///or `micromath` features enabled.
+///
+///Returns `Ok(None)` if either input does. If that is not the desired behavior,
+///[`converters::NoneToValue`] may be of interest.
 #[cfg(feature = "internal_enhanced_float")]
 pub struct ExponentStream<GB, GE, E>
 where
@@ -498,20 +501,14 @@ where
     fn get(&self) -> Output<f32, E> {
         let base_output = self.base.get()?;
         let exponent_output = self.exponent.get()?;
-        match base_output {
-            Some(_) => {}
-            None => {
-                return Ok(None);
-            }
-        }
-        let base_output = base_output.unwrap();
-        match exponent_output {
-            Some(_) => {}
-            None => {
-                return Ok(Some(base_output));
-            }
-        }
-        let exponent_output = exponent_output.unwrap();
+        let base_output = match base_output {
+            Some(value) => value,
+            None => return Ok(None),
+        };
+        let exponent_output = match exponent_output {
+            Some(value) => value,
+            None => return Ok(None),
+        };
         let value = powf(base_output.value, exponent_output.value);
         let time = if base_output.time > exponent_output.time {
             base_output.time
