@@ -118,3 +118,20 @@ fn differential() {
     assert_eq!(system.get_state_connected(b_test), Some(C - A));
     assert_eq!(system.get_state_connected(c_test), Some(A + B));
 }
+#[test]
+fn same_system() {
+    let mut system_ab = System::<2>::new();
+    let node_a = system_ab.new_node().unwrap();
+    let node_b = system_ab.new_node().unwrap();
+    let mut system_c = System::<1>::new();
+    let node_c = system_c.new_node().unwrap();
+    assert!(node_a.same_system(node_a));
+    assert!(node_b.same_system(node_b));
+    assert!(node_c.same_system(node_c));
+    assert!(node_a.same_system(node_b));
+    assert!(node_b.same_system(node_a));
+    assert!(!node_a.same_system(node_c));
+    assert!(!node_b.same_system(node_c));
+    assert!(!node_c.same_system(node_a));
+    assert!(!node_c.same_system(node_b));
+}

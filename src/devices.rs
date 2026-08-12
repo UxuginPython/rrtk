@@ -33,6 +33,12 @@ impl NodeID {
     const fn new(system: SystemID, node: LocalNodeID) -> Self {
         Self { system, node }
     }
+    ///Checks whether two `NodeID`s were issued by the same [`System`]. This is different from the
+    ///`PartialEq` implementation, which also checks if the `NodeID`s refer to the same node.
+    #[inline]
+    pub const fn same_system(&self, other: Self) -> bool {
+        self.system == other.system
+    }
 }
 struct Node {
     prev: Option<LocalNodeID>,
