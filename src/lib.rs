@@ -684,9 +684,6 @@ macro_rules! as_dyn_time_getter {
         }
     };
 }
-//TODO: Chronology is different because it's not always Updatable and so probably isn't mutable.
-//Figure out what to do about that. (Currently, as_dyn_chronology only works for mutable references
-//and there are no impls for Rc<RefCell>, etc., either mutable or immutable.)
 macro_rules! as_dyn_chronology {
     ($return_type:ty) => {
         #[allow(missing_docs)]
