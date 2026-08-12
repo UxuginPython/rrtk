@@ -1077,7 +1077,6 @@ fn pid_controller_stream() {
 #[test]
 #[cfg(any(feature = "std", feature = "libm"))]
 fn ewma_stream() {
-    //TODO: Test EWMA with Quantity.
     #[derive(Clone, Copy, Debug)]
     struct DummyError;
     struct DummyStream {
@@ -1139,7 +1138,6 @@ fn ewma_stream() {
 #[test]
 #[cfg(feature = "alloc")]
 fn moving_average_stream() {
-    //TODO: Test moving average with Quantity
     #[derive(Clone, Copy, Debug)]
     struct DummyError;
     struct DummyStream {
@@ -1192,6 +1190,63 @@ fn moving_average_stream() {
         assert_eq!(stream.get().unwrap().unwrap().value, 109.2);
         stream.update().unwrap();
         assert_eq!(stream.get().unwrap().unwrap().value, 106.6);
+    }
+}
+#[test]
+#[cfg(feature = "alloc")]
+fn moving_average_stream_quantity() {
+    #[derive(Clone, Copy, Debug)]
+    struct DummyError;
+    struct DummyStream {
+        time: Time,
+    }
+    impl DummyStream {
+        pub const fn new() -> Self {
+            Self { time: Time::ZERO }
+        }
+    }
+    impl Getter<Millimeter<f32>, DummyError> for DummyStream {
+        fn get(&self) -> Output<Millimeter<f32>, DummyError> {
+            let value = Millimeter::new(match self.time.as_nanoseconds() {
+                2 => 110.0,
+                4 => 111.0,
+                6 => 116.0,
+                8 => 97.0,
+                10 => 102.0,
+                12 => 111.0,
+                14 => 111.0,
+                16 => 100.0,
+                _ => 0.0,
+            });
+            Ok(Some(Datum::new(self.time, value)))
+        }
+    }
+    impl Updatable<DummyError> for DummyStream {
+        fn update(&mut self) -> NothingOrError<DummyError> {
+            self.time += Time::from_nanoseconds(2);
+            Ok(())
+        }
+    }
+    unsafe {
+        static mut INPUT: DummyStream = DummyStream::new();
+        let input = PointerDereferencer::new(core::ptr::addr_of_mut!(INPUT));
+        let mut stream = MovingAverageStream::new(input.clone(), Time::from_nanoseconds(5));
+        stream.update().unwrap();
+        assert_eq!(stream.get().unwrap().unwrap().value.into_inner(), 110.0);
+        stream.update().unwrap();
+        assert_eq!(stream.get().unwrap().unwrap().value.into_inner(), 110.4);
+        stream.update().unwrap();
+        //assert_eq!(stream.get().unwrap().unwrap().value.into_inner(), 112.8);
+        stream.update().unwrap();
+        assert_eq!(stream.get().unwrap().unwrap().value.into_inner(), 107.4);
+        stream.update().unwrap();
+        //assert_eq!(stream.get().unwrap().unwrap().value.into_inner(), 102.8);
+        stream.update().unwrap();
+        assert_eq!(stream.get().unwrap().unwrap().value.into_inner(), 104.6);
+        stream.update().unwrap();
+        assert_eq!(stream.get().unwrap().unwrap().value.into_inner(), 109.2);
+        stream.update().unwrap();
+        assert_eq!(stream.get().unwrap().unwrap().value.into_inner(), 106.6);
     }
 }
 #[test]
