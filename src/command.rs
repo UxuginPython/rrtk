@@ -100,11 +100,11 @@ macro_rules! build_command_enum {
         ///A command for a motor to perform: go to a position, run at a velocity, or accelerate at a rate.
         #[derive(Clone, Copy, Debug, PartialEq)]
         pub enum $name {
-            ///Where you want to be. This should be in millimeters.
+            ///Where you want to be.
             Position($pos),
-            ///How fast you want to be going. This should be in millimeters per second.
+            ///How fast you want to be going.
             Velocity($vel),
-            ///How fast you want how fast you're going to change. This should be in millimeters per second squared.
+            ///How fast you want how fast you're going to change.
             Acceleration($acc),
         }
         impl $name {

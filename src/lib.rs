@@ -223,7 +223,8 @@ pub trait TimeGetter<E: Clone + Debug>: Updatable<E> {
     ///Get the time.
     fn get(&self) -> TimeOutput<E>;
 }
-///An object that can return a value, like a [`Getter`], for a given time.
+///An object that can return a value, like a [`Getter`], for a given time. Unlike `Getter`,
+///`Chronology` is infallible.
 pub trait Chronology<T> {
     ///Get a value at a time.
     fn get(&self, time: Time) -> Option<Datum<T>>;
@@ -412,9 +413,8 @@ impl<T, G: Getter<T, E>, E: Clone + Debug> Updatable<E> for TimeGetterFromGetter
         self.getter.update()
     }
 }
-///As histories return values at times, we can ask them to return values at the time of now or now
-///with a delta. This makes that much easier and is the recommended way of following
-///[`MotionProfile`]s.
+///As chronologies return values at times, we can ask them to return values at the current time or
+///at the current time with a delta. This is the recommended way of following [`MotionProfile`]s.
 pub struct GetterFromChronology<T, C: Chronology<T>, TG: TimeGetter<E>, E: Clone + Debug> {
     chronology: C,
     time_getter: TG,
@@ -447,7 +447,7 @@ impl<T, C: Chronology<T>, TG: TimeGetter<E>, E: Clone + Debug> GetterFromChronol
         })
     }
     ///Constructor such that the times requested from the [`Chronology`] will start at a given time with
-    ///that time defined as the moment of construction.
+    ///that time defined as the moment this constructor is called.
     pub fn new_custom_start(chronology: C, time_getter: TG, start: Time) -> Result<Self, E> {
         let time_delta = start - time_getter.get()?;
         Ok(Self {
