@@ -110,8 +110,8 @@ impl DivAssign<DimensionlessInteger> for Time {
         self.0 /= rhs.0;
     }
 }
-//XXX: wut
-///Converts the time to `f32` seconds before the operation.
+///Converts the time to `f32` seconds before the operation. This is to make `f32` compatible with
+///[`streams::math::IntegralStream`].
 impl Mul<f32> for Time {
     type Output = f32;
     fn mul(self, rhs: f32) -> f32 {
@@ -132,7 +132,8 @@ impl Div<f32> for Time {
         self.as_seconds_f32() / rhs
     }
 }
-///Converts the time to `f32` seconds before the operation.
+///Converts the time to `f32` seconds before the operation. This is to make `f32` compatible with
+///[`streams::math::DerivativeStream`].
 impl Div<Time> for f32 {
     type Output = Self;
     fn div(self, rhs: Time) -> Self {
