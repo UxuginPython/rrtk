@@ -20,8 +20,11 @@ pub mod wrappers;
 type SystemID = u16;
 type LocalNodeID = usize;
 static mut NEXT_SYSTEM_ID: SystemID = 0;
-///A unique identifier for a node of a [`System`]. The internal value is not accessible. `NodeID`
-///is used to interact with nodes through the `System`.
+///A unique identifier for a node of a [`System`]. `NodeID` is used to interact with nodes through
+///the `System`.
+///
+///The internal value is not accessible. `NodeID` can only be constructed by [`System::new_node`];
+///it cannot be constructed directly.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct NodeID {
     system: SystemID,

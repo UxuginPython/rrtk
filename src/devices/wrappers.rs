@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // Copyright 2024-2026 UxuginPython
-//!Wrappers that connect [`Getter`]s and [`Settable`]s to the device system. There are two functions
-//!and three wrappers that call the functions in their [`DeviceUpdatable`] implementations. The
-//!three wrappers cannot be unified into one because that would require specialization.
+//!Wrappers that connect [`Getter`]s and [`Settable`]s to the device system.
+//!
+//!There are two functions and three wrappers that call the function in their [`DeviceUpdatable`]
+//!implementations. The three wrappers cannot be unified into one because that would require
+//!specialization.
 use super::*;
 ///Call the getter's `get` method and, if it returns `Ok(Some(_))`, write the value to a node in the
 ///system.

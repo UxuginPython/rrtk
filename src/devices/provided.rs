@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // Copyright 2024-2026 UxuginPython
-//!A few common, simple mechanical devices that work with the device system. The source of this
-//!module is simple enough to be treated as an example of how to implement your own devices.
+//!A few common, simple mechanical devices that work with the device system.
 //!
-//!All implementations of [`DeviceUpdatable`] in this module are infallible.
+//!All implementations of [`DeviceUpdatable`] in this module are infallible. The source of this
+//!module is simple enough to be treated as an example of how to implement your own devices.
 use super::*;
 ///Device that either connects two axles or allows them to move independently depending on how it
 ///is set.
