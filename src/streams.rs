@@ -8,12 +8,13 @@
 //!`ConstantGetter`s and dummy `TimeGetter`s):
 //!```
 //!use rrtk::*;
-//!let five = ConstantGetter::<u8, Time, ()>::new(Time::ZERO, 5);
-//!let three = ConstantGetter::<u8, Time, ()>::new(Time::ZERO, 3);
-//!let one = ConstantGetter::<u8, Time, ()>::new(Time::ZERO, 1);
+//!let five = ConstantGetter::<u8, Time>::new(Time::ZERO, 5);
+//!let three = ConstantGetter::<u8, Time>::new(Time::ZERO, 3);
+//!let one = ConstantGetter::<u8, Time>::new(Time::ZERO, 1);
 //!let mul_by_3 = streams::math::Product2::new(five, three);
 //!let add_1 = streams::math::Sum2::new(mul_by_3, one);
-//!assert_eq!(add_1.get().unwrap().unwrap().value, 16);
+//!//Fully qualified syntax to avoid error handling
+//!assert_eq!(<_ as Getter<_, ()>>::get(&add_1).unwrap().unwrap().value, 16);
 //!```
 //!See the "pid" example for a more complex demonstration of the stream system.
 use crate::*;
