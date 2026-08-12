@@ -185,7 +185,7 @@ impl PositionDerivativeDependentPIDKValues {
     }
 }
 ///A generic output type when something may return an error, nothing, or something with a
-///timestamp.
+///timestamp. The most common use for this is as the output of [`Getter::get`].
 pub type Output<T, E> = Result<Option<Datum<T>>, E>;
 ///Returned from [`TimeGetter`] objects, which may return either a time or an error.
 pub type TimeOutput<E> = Result<Time, E>;
@@ -229,18 +229,23 @@ pub trait Chronology<T> {
     ///Get a value at a time.
     fn get(&self, time: Time) -> Option<Datum<T>>;
 }
-///Something with an [`update`](Updatable::update) method. Mostly for subtraiting.
+///An object that can be updated, potentially erroring when this is done.
+///This is one of the most fundamental traits to RRTK.
+///
+///The idea behind `Updatable`, [`Getter`], and [`Settable`] is to provide a very general-purpose
+///and easy-to-implement API that can be compatible with almost anything.
 pub trait Updatable<E: Clone + Debug> {
     ///As this trait is very generic, exactly what this does will be very dependent on the
     ///implementor.
     fn update(&mut self) -> NothingOrError<E>;
 }
-///An object that can be updated and can return timestamped values. This is one of the most
-///fundamental traits to RRTK.
+///An object that can be updated and can return timestamped values.
+///This is one of the most fundamental traits to RRTK.
 ///
-///The idea behind `Getter` is to provide a very general-purpose and easy-to-implement API that can
-///be compatible with almost anything. For things that need to implement `Getter` multiple times
-///for getting different things, the Newtype Pattern is recommended.
+///The idea behind `Getter`, [`Updatable`], and [`Settable`] is to provide a very general-purpose
+///and easy-to-implement API that can be compatible with almost anything.
+///For things that need to implement `Getter` multiple times for getting different things, the
+///Newtype Pattern is recommended.
 ///
 ///Many `Getter`s hold other `Getter`s as inputs for data processing. These are called *[streams]*.
 ///Streams are another very important use of the `Getter` trait.
@@ -253,8 +258,12 @@ pub trait Getter<G, E: Clone + Debug>: Updatable<E> {
         self.get()
     }
 }
-///Something with a [`set`](Settable::set) method. Usually used for motors and other mechanical components and
-///systems. This trait too is fairly broad.
+///An object that can be updated and can be set to or given values, potentially erroring when this
+///is done.
+///
+///The idea behind `Settable`, [`Updatable`], and [`Getter`] is to provide a very general-purpose
+///and easy-to-implement API that can be compatible with almost anything.
+///When `Settable` must be implemented multiple times, the Newtype Pattern is often helpful.
 pub trait Settable<S, E: Clone + Debug>: Updatable<E> {
     ///Set something to a value. For example, this could set a motor to a voltage.
     fn set(&mut self, value: S) -> NothingOrError<E>;
