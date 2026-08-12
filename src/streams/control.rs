@@ -362,6 +362,54 @@ where
         Ok(())
     }
 }
+#[cfg(feature = "internal_enhanced_float")]
+impl<MM, S, G, E> Updatable<E> for EWMAStream<Quantity<f32, MM, S>, G, E>
+where
+    MM: compile_time_integer::Integer,
+    S: compile_time_integer::Integer,
+    G: Getter<Quantity<f32, MM, S>, E>,
+    E: Clone + Debug,
+{
+    fn update(&mut self) -> NothingOrError<E> {
+        self.input.update()?;
+        let output = self.input.get();
+        let output = match output {
+            Err(error) => {
+                //XXX: This may change when you standardize when Updatable::update errors.
+                //Remove this clone if you don't return the error.
+                self.value = Err(error.clone());
+                self.update_time = None;
+                return Err(error);
+            }
+            Ok(None) => {
+                if self.value.is_err() {
+                    self.value = Ok(None);
+                    self.update_time = None;
+                }
+                return Ok(());
+            }
+            Ok(Some(some)) => some,
+        };
+        let prev_value = match &self.value {
+            Ok(Some(some)) => some.clone(),
+            _ => {
+                self.value = Ok(Some(output.clone()));
+                self.update_time = Some(output.time);
+                output.clone()
+            }
+        };
+        let prev_time = self
+            .update_time
+            .expect("update_time must be Some if value is");
+        let delta_time = (output.time - prev_time).as_seconds_f32();
+        let lambda = 1.0 - powf(1.0 - self.smoothing_constant, delta_time);
+        let value =
+            prev_value.value.into_inner() * (1.0 - lambda) + output.value.into_inner() * lambda;
+        self.value = Ok(Some(Datum::new(output.time, Quantity::new(value))));
+        self.update_time = Some(output.time);
+        Ok(())
+    }
+}
 ///A moving average stream for use with the stream system.
 #[cfg(feature = "alloc")]
 pub struct MovingAverageStream<T, G, E> {

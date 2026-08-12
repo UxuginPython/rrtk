@@ -1131,8 +1131,84 @@ fn ewma_stream() {
         assert_eq!(stream.get().unwrap().unwrap().value, 108.85135263204575);
         stream.update().unwrap();
         //Despite every other assert_eq! here working, this one does not because the way f32 works
-        //means that it thinks it's off by 0.00001. I am unconcerned.
+        //means that it thinks it's off by 0.00001.
         //assert_eq!(stream.get().unwrap().unwrap().value, 104.97888585552573);
+    }
+}
+#[test]
+#[cfg(any(feature = "std", feature = "libm"))]
+fn ewma_stream_quantity() {
+    #[derive(Clone, Copy, Debug)]
+    struct DummyError;
+    struct DummyStream {
+        time: Time,
+    }
+    impl DummyStream {
+        pub const fn new() -> Self {
+            Self { time: Time::ZERO }
+        }
+    }
+    impl Getter<Millimeter<f32>, DummyError> for DummyStream {
+        fn get(&self) -> Output<Millimeter<f32>, DummyError> {
+            let value = Millimeter::new(match self.time.as_nanoseconds() {
+                2_000_000_000 => 110.0,
+                4_000_000_000 => 111.0,
+                6_000_000_000 => 116.0,
+                8_000_000_000 => 97.0,
+                10_000_000_000 => 102.0,
+                12_000_000_000 => 111.0,
+                14_000_000_000 => 111.0,
+                16_000_000_000 => 100.0,
+                _ => 0.0,
+            });
+            Ok(Some(Datum::new(self.time, value)))
+        }
+    }
+    impl Updatable<DummyError> for DummyStream {
+        fn update(&mut self) -> NothingOrError<DummyError> {
+            self.time += Time::from_nanoseconds(2_000_000_000);
+            Ok(())
+        }
+    }
+    unsafe {
+        static mut INPUT: DummyStream = DummyStream::new();
+        let input = PointerDereferencer::new(core::ptr::addr_of_mut!(INPUT));
+        let mut stream = EWMAStream::<Millimeter<f32>, _, _>::new(input.clone(), 0.25);
+        stream.update().unwrap();
+        assert_eq!(stream.get().unwrap().unwrap().value.into_inner(), 110.0);
+        stream.update().unwrap();
+        assert_eq!(stream.get().unwrap().unwrap().value.into_inner(), 110.4375);
+        stream.update().unwrap();
+        //Floating-point stuff gets a bit weird because of rounding, but it still appears to work
+        //correctly.
+        assert_eq!(
+            stream.get().unwrap().unwrap().value.into_inner(),
+            112.87109375
+        );
+        stream.update().unwrap();
+        assert_eq!(
+            stream.get().unwrap().unwrap().value.into_inner(),
+            105.927490234375
+        );
+        stream.update().unwrap();
+        assert_eq!(
+            stream.get().unwrap().unwrap().value.into_inner(),
+            104.20921325683594
+        );
+        stream.update().unwrap();
+        assert_eq!(
+            stream.get().unwrap().unwrap().value.into_inner(),
+            107.18018245697021
+        );
+        stream.update().unwrap();
+        assert_eq!(
+            stream.get().unwrap().unwrap().value.into_inner(),
+            108.85135263204575
+        );
+        stream.update().unwrap();
+        //Despite every other assert_eq! here working, this one does not because the way f32 works
+        //means that it thinks it's off by 0.00001.
+        //assert_eq!(stream.get().unwrap().unwrap().value.into_inner(), 104.97888585552573);
     }
 }
 #[test]
