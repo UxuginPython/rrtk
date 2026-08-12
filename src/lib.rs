@@ -317,34 +317,22 @@ pub trait Settable<S, E: Clone + Debug>: Updatable<E> {
 ///
 ///As for `PossibleDoubleError`, Side A corresponds to the Getter Side and Side B corresponds to the
 ///Settable Side.
-pub struct Feeder<T, G, S, E>
-where
-    G: Getter<T, E>,
-    S: Settable<T, E>,
-    E: Clone + Debug,
-{
+pub struct Feeder<T, G, S> {
     getter: G,
     settable: S,
     phantom_t: PhantomData<T>,
-    phantom_e: PhantomData<E>,
 }
-impl<T, G, S, E> Feeder<T, G, S, E>
-where
-    G: Getter<T, E>,
-    S: Settable<T, E>,
-    E: Clone + Debug,
-{
+impl<T, G, S> Feeder<T, G, S> {
     ///Constructor for `Feeder`.
     pub const fn new(getter: G, settable: S) -> Self {
         Self {
             getter,
             settable,
             phantom_t: PhantomData,
-            phantom_e: PhantomData,
         }
     }
 }
-impl<T, G, S, E> Updatable<error::PossibleDoubleError<E>> for Feeder<T, G, S, E>
+impl<T, G, S, E> Updatable<error::PossibleDoubleError<E>> for Feeder<T, G, S>
 where
     G: Getter<T, E>,
     S: Settable<T, E>,
