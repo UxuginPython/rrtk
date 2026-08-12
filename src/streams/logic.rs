@@ -57,20 +57,16 @@ impl LogicState {
 ///
 ///If you only need two inputs, you should probably use [`And2`] instead, which may be slightly
 ///faster and allows its inputs to have different types.
-pub struct AndStream<const N: usize, G: Getter<bool, E>, E: Clone + Debug> {
+pub struct AndStream<const N: usize, G> {
     inputs: [G; N],
-    phantom_e: PhantomData<E>,
 }
-impl<const N: usize, G: Getter<bool, E>, E: Clone + Debug> AndStream<N, G, E> {
+impl<const N: usize, G> AndStream<N, G> {
     ///Constructor for `AndStream`.
     pub const fn new(inputs: [G; N]) -> Self {
-        Self {
-            inputs,
-            phantom_e: PhantomData,
-        }
+        Self { inputs }
     }
 }
-impl<const N: usize, G: Getter<bool, E>, E: Clone + Debug> Updatable<E> for AndStream<N, G, E> {
+impl<const N: usize, G: Updatable<E>, E: Clone + Debug> Updatable<E> for AndStream<N, G> {
     fn update(&mut self) -> NothingOrError<E> {
         for getter in &mut self.inputs {
             getter.update()?;
@@ -78,7 +74,7 @@ impl<const N: usize, G: Getter<bool, E>, E: Clone + Debug> Updatable<E> for AndS
         Ok(())
     }
 }
-impl<const N: usize, G: Getter<bool, E>, E: Clone + Debug> Getter<bool, E> for AndStream<N, G, E> {
+impl<const N: usize, G: Getter<bool, E>, E: Clone + Debug> Getter<bool, E> for AndStream<N, G> {
     fn get(&self) -> Output<bool, E> {
         if N == 0 {
             return Ok(None);
@@ -118,20 +114,16 @@ impl<const N: usize, G: Getter<bool, E>, E: Clone + Debug> Getter<bool, E> for A
 ///
 ///If you only need two inputs, you should probably use [`Or2`] instead, which may be slightly
 ///faster and allows its inputs to have different types.
-pub struct OrStream<const N: usize, G: Getter<bool, E>, E: Clone + Debug> {
+pub struct OrStream<const N: usize, G> {
     inputs: [G; N],
-    phantom_e: PhantomData<E>,
 }
-impl<const N: usize, G: Getter<bool, E>, E: Clone + Debug> OrStream<N, G, E> {
+impl<const N: usize, G> OrStream<N, G> {
     ///Constructor for `OrStream`.
     pub const fn new(inputs: [G; N]) -> Self {
-        Self {
-            inputs,
-            phantom_e: PhantomData,
-        }
+        Self { inputs }
     }
 }
-impl<const N: usize, G: Getter<bool, E>, E: Clone + Debug> Updatable<E> for OrStream<N, G, E> {
+impl<const N: usize, G: Updatable<E>, E: Clone + Debug> Updatable<E> for OrStream<N, G> {
     fn update(&mut self) -> NothingOrError<E> {
         for getter in &mut self.inputs {
             getter.update()?;
@@ -139,7 +131,7 @@ impl<const N: usize, G: Getter<bool, E>, E: Clone + Debug> Updatable<E> for OrSt
         Ok(())
     }
 }
-impl<const N: usize, G: Getter<bool, E>, E: Clone + Debug> Getter<bool, E> for OrStream<N, G, E> {
+impl<const N: usize, G: Getter<bool, E>, E: Clone + Debug> Getter<bool, E> for OrStream<N, G> {
     fn get(&self) -> Output<bool, E> {
         if N == 0 {
             return Ok(None);
@@ -259,25 +251,30 @@ If you need more than two inputs, you may consider using [`AndStream`] instead o
     "Constructor for `And2`. Unlike [`AndStream`], its inputs can be of different types."
 );
 ///Performs a not operation on a boolean getter.
-pub struct NotStream<G: Getter<bool, E>, E: Clone + Debug> {
+pub struct NotStream<TI, G> {
     input: G,
-    phantom_e: PhantomData<E>,
+    phantom_ti: PhantomData<TI>,
 }
-impl<G: Getter<bool, E>, E: Clone + Debug> NotStream<G, E> {
+impl<TI, G> NotStream<TI, G> {
     ///Constructor for [`NotStream`].
     pub const fn new(input: G) -> Self {
         Self {
             input,
-            phantom_e: PhantomData,
+            phantom_ti: PhantomData,
         }
     }
 }
-impl<G: Getter<bool, E>, E: Clone + Debug> Getter<bool, E> for NotStream<G, E> {
-    fn get(&self) -> Output<bool, E> {
+impl<TI, TO, G, E> Getter<TO, E> for NotStream<TI, G>
+where
+    TI: Not<Output = TO>,
+    G: Getter<TI, E>,
+    E: Clone + Debug,
+{
+    fn get(&self) -> Output<TO, E> {
         Ok(self.input.get()?.map(|datum| !datum))
     }
 }
-impl<G: Getter<bool, E>, E: Clone + Debug> Updatable<E> for NotStream<G, E> {
+impl<TI, G: Updatable<E>, E: Clone + Debug> Updatable<E> for NotStream<TI, G> {
     fn update(&mut self) -> NothingOrError<E> {
         self.input.update()?;
         Ok(())

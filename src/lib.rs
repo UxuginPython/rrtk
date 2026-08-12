@@ -331,34 +331,22 @@ pub trait Settable<S, E: Clone + Debug>: Updatable<E> {
 ///
 ///As for `PossibleDoubleError`, Side A corresponds to the Getter Side and Side B corresponds to the
 ///Settable Side.
-pub struct Feeder<T, G, S, E>
-where
-    G: Getter<T, E>,
-    S: Settable<T, E>,
-    E: Clone + Debug,
-{
+pub struct Feeder<T, G, S> {
     getter: G,
     settable: S,
     phantom_t: PhantomData<T>,
-    phantom_e: PhantomData<E>,
 }
-impl<T, G, S, E> Feeder<T, G, S, E>
-where
-    G: Getter<T, E>,
-    S: Settable<T, E>,
-    E: Clone + Debug,
-{
+impl<T, G, S> Feeder<T, G, S> {
     ///Constructor for `Feeder`.
     pub const fn new(getter: G, settable: S) -> Self {
         Self {
             getter,
             settable,
             phantom_t: PhantomData,
-            phantom_e: PhantomData,
         }
     }
 }
-impl<T, G, S, E> Updatable<error::PossibleDoubleError<E>> for Feeder<T, G, S, E>
+impl<T, G, S, E> Updatable<error::PossibleDoubleError<E>> for Feeder<T, G, S>
 where
     G: Getter<T, E>,
     S: Settable<T, E>,
@@ -396,12 +384,12 @@ where
 }
 ///Because [`Getter`]s always return a timestamp (as long as they don't return `Err(_)` or
 ///`Ok(None)`), we can use this to treat them like [`TimeGetter`]s.
-pub struct TimeGetterFromGetter<T, G: Getter<T, E>, E: Clone + Debug> {
+pub struct TimeGetterFromGetter<T, G, E> {
     getter: G,
     none_error: E,
     phantom_t: PhantomData<T>,
 }
-impl<T, G: Getter<T, E>, E: Clone + Debug> TimeGetterFromGetter<T, G, E> {
+impl<T, G, E> TimeGetterFromGetter<T, G, E> {
     ///Constructor for [`TimeGetterFromGetter`].
     pub const fn new(getter: G, none_error: E) -> Self {
         Self {
@@ -420,32 +408,47 @@ impl<T, G: Getter<T, E>, E: Clone + Debug> TimeGetter<E> for TimeGetterFromGette
         }
     }
 }
-impl<T, G: Getter<T, E>, E: Clone + Debug> Updatable<E> for TimeGetterFromGetter<T, G, E> {
+impl<T, G: Updatable<E>, E: Clone + Debug> Updatable<E> for TimeGetterFromGetter<T, G, E> {
     fn update(&mut self) -> NothingOrError<E> {
         self.getter.update()
     }
 }
 ///As chronologies return values at times, we can ask them to return values at the current time or
 ///at the current time with a delta. This is the recommended way of following [`MotionProfile`]s.
-pub struct GetterFromChronology<T, C: Chronology<T>, TG: TimeGetter<E>, E: Clone + Debug> {
+pub struct GetterFromChronology<C, TG, E> {
     chronology: C,
     time_getter: TG,
     time_delta: Time,
-    phantom_t: PhantomData<T>,
     phantom_e: PhantomData<E>,
 }
-impl<T, C: Chronology<T>, TG: TimeGetter<E>, E: Clone + Debug> GetterFromChronology<T, C, TG, E> {
+impl<C, TG, E> GetterFromChronology<C, TG, E> {
     ///Constructor such that the time in the request to the chronology will be directly that returned
     ///from the [`TimeGetter`] with no delta.
+    #[inline]
     pub const fn new_no_delta(chronology: C, time_getter: TG) -> Self {
         Self {
             chronology,
             time_getter,
             time_delta: Time::ZERO,
-            phantom_t: PhantomData,
             phantom_e: PhantomData,
         }
     }
+    ///Constructor with a custom time delta.
+    #[inline]
+    pub const fn new_custom_delta(chronology: C, time_getter: TG, time_delta: Time) -> Self {
+        Self {
+            chronology,
+            time_getter,
+            time_delta,
+            phantom_e: PhantomData,
+        }
+    }
+    ///Set the time delta.
+    pub const fn set_delta(&mut self, time_delta: Time) {
+        self.time_delta = time_delta;
+    }
+}
+impl<C, TG: TimeGetter<E>, E: Clone + Debug> GetterFromChronology<C, TG, E> {
     ///Constructor such that the times requested from the [`Chronology`] will begin at zero where zero
     ///is the moment this constructor is called.
     pub fn new_start_at_zero(chronology: C, time_getter: TG) -> Result<Self, E> {
@@ -454,7 +457,6 @@ impl<T, C: Chronology<T>, TG: TimeGetter<E>, E: Clone + Debug> GetterFromChronol
             chronology,
             time_getter,
             time_delta,
-            phantom_t: PhantomData,
             phantom_e: PhantomData,
         })
     }
@@ -466,23 +468,8 @@ impl<T, C: Chronology<T>, TG: TimeGetter<E>, E: Clone + Debug> GetterFromChronol
             chronology,
             time_getter,
             time_delta,
-            phantom_t: PhantomData,
             phantom_e: PhantomData,
         })
-    }
-    ///Constructor with a custom time delta.
-    pub const fn new_custom_delta(chronology: C, time_getter: TG, time_delta: Time) -> Self {
-        Self {
-            chronology,
-            time_getter,
-            time_delta,
-            phantom_t: PhantomData,
-            phantom_e: PhantomData,
-        }
-    }
-    ///Set the time delta.
-    pub const fn set_delta(&mut self, time_delta: Time) {
-        self.time_delta = time_delta;
     }
     ///Define now as a given time in the chronology. Mostly used when construction and use are far
     ///apart in time.
@@ -497,16 +484,14 @@ impl<T, C: Chronology<T>, TG: TimeGetter<E>, E: Clone + Debug> GetterFromChronol
 //stayed around for so long: It's easier to force empty impls every once in a while than to figure
 //out a really wierd specialization thing. Overall, though, you almost never actually need an
 //Updatable Chronology anyway, so the bound really doesn't make that much sense in the first place.
-impl<T, C: Chronology<T>, TG: TimeGetter<E>, E: Clone + Debug> Updatable<E>
-    for GetterFromChronology<T, C, TG, E>
-{
+impl<C, TG: Updatable<E>, E: Clone + Debug> Updatable<E> for GetterFromChronology<C, TG, E> {
     fn update(&mut self) -> NothingOrError<E> {
         self.time_getter.update()?;
         Ok(())
     }
 }
 impl<T, C: Chronology<T>, TG: TimeGetter<E>, E: Clone + Debug> Getter<T, E>
-    for GetterFromChronology<T, C, TG, E>
+    for GetterFromChronology<C, TG, E>
 {
     fn get(&self) -> Output<T, E> {
         let time = self.time_getter.get()?;
@@ -517,32 +502,17 @@ impl<T, C: Chronology<T>, TG: TimeGetter<E>, E: Clone + Debug> Getter<T, E>
     }
 }
 ///Getter for returning a constant value.
-pub struct ConstantGetter<T, TG, E>
-where
-    T: Clone,
-    TG: TimeGetter<E>,
-    E: Clone + Debug,
-{
+pub struct ConstantGetter<T, TG> {
     time_getter: TG,
     value: T,
-    phantom_e: PhantomData<E>,
 }
-impl<T, TG, E> ConstantGetter<T, TG, E>
-where
-    T: Clone,
-    TG: TimeGetter<E>,
-    E: Clone + Debug,
-{
+impl<T, TG> ConstantGetter<T, TG> {
     ///Constructor for [`ConstantGetter`].
     pub const fn new(time_getter: TG, value: T) -> Self {
-        Self {
-            time_getter,
-            value,
-            phantom_e: PhantomData,
-        }
+        Self { time_getter, value }
     }
 }
-impl<T, TG, E> Getter<T, E> for ConstantGetter<T, TG, E>
+impl<T, TG, E> Getter<T, E> for ConstantGetter<T, TG>
 where
     T: Clone,
     TG: TimeGetter<E>,
@@ -553,10 +523,9 @@ where
         Ok(Some(Datum::new(time, self.value.clone())))
     }
 }
-impl<T, TG, E> Settable<T, E> for ConstantGetter<T, TG, E>
+impl<T, TG, E> Settable<T, E> for ConstantGetter<T, TG>
 where
-    T: Clone,
-    TG: TimeGetter<E>,
+    Self: Updatable<E>,
     E: Clone + Debug,
 {
     fn set(&mut self, value: T) -> NothingOrError<E> {
@@ -564,10 +533,9 @@ where
         Ok(())
     }
 }
-impl<T, TG, E> Updatable<E> for ConstantGetter<T, TG, E>
+impl<T, TG, E> Updatable<E> for ConstantGetter<T, TG>
 where
-    T: Clone,
-    TG: TimeGetter<E>,
+    TG: Updatable<E>,
     E: Clone + Debug,
 {
     fn update(&mut self) -> NothingOrError<E> {

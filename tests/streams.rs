@@ -429,7 +429,7 @@ fn sum_stream_all_none() {
 #[test]
 #[should_panic]
 fn empty_sum_stream() {
-    let _: SumStream<f32, 0, NoneGetter, ()> = SumStream::new([]);
+    let _: SumStream<0, NoneGetter> = SumStream::new([]);
 }
 #[test]
 fn sum2() {
@@ -678,7 +678,7 @@ fn product_stream_all_none() {
 #[test]
 #[should_panic]
 fn empty_product_stream() {
-    let _: ProductStream<f32, 0, NoneGetter, ()> = ProductStream::new([]);
+    let _: ProductStream<0, NoneGetter> = ProductStream::new([]);
 }
 #[test]
 fn product2() {

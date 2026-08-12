@@ -25,7 +25,7 @@ struct StreamPID {
     //performance boost.
     //Also note that you should almost always use a more specific error type than (). This example
     //is not focused on error handling.
-    output: SumStream<f32, 3, Box<dyn Getter<f32, ()>>, ()>,
+    output: SumStream<3, Box<dyn Getter<f32, ()>>>,
 }
 #[cfg(feature = "alloc")]
 impl StreamPID {
@@ -60,8 +60,8 @@ impl StreamPID {
         //were not included. However, this is not what we want with the coefficient. `NoneToValue`
         //is used to convert all `None` values to `Some(0.0)` to effectively exlude them from the
         //final sum.
-        let int_zeroer = NoneToValue::new(int.clone(), time_getter.clone(), 0.0);
-        let drv_zeroer = NoneToValue::new(drv.clone(), time_getter.clone(), 0.0);
+        let int_zeroer = NoneToValue::new(int.clone(), time_getter.clone(), 0.0_f32);
+        let drv_zeroer = NoneToValue::new(drv.clone(), time_getter.clone(), 0.0_f32);
         let kp_mul = Product2::new(kp, error.clone());
         let ki_mul = Product2::new(ki, int_zeroer);
         let kd_mul = Product2::new(kd, drv_zeroer);

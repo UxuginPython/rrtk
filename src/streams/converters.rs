@@ -4,22 +4,12 @@
 use crate::compile_time_integer::Integer;
 use crate::streams::*;
 ///A stream converting all `Ok(None)` values from its input to `Err(_)` variants.
-pub struct NoneToError<T, G, E>
-where
-    T: Clone,
-    G: Getter<T, E>,
-    E: Clone + Debug,
-{
+pub struct NoneToError<T, G, E> {
     input: G,
     from_none: E,
     phantom_t: PhantomData<T>,
 }
-impl<T, G, E> NoneToError<T, G, E>
-where
-    T: Clone,
-    G: Getter<T, E>,
-    E: Clone + Debug,
-{
+impl<T, G, E> NoneToError<T, G, E> {
     ///Constructor for [`NoneToError`].
     pub const fn new(input: G, from_none: E) -> Self {
         Self {
@@ -31,7 +21,7 @@ where
 }
 impl<T, G, E> Getter<T, E> for NoneToError<T, G, E>
 where
-    T: Clone,
+    //These imply Self: Updatable<E> per the impl after.
     G: Getter<T, E>,
     E: Clone + Debug,
 {
@@ -45,8 +35,7 @@ where
 }
 impl<T, G, E> Updatable<E> for NoneToError<T, G, E>
 where
-    T: Clone,
-    G: Getter<T, E>,
+    G: Updatable<E>,
     E: Clone + Debug,
 {
     fn update(&mut self) -> NothingOrError<E> {
@@ -55,25 +44,13 @@ where
     }
 }
 ///A stream converting all `Ok(None)` values from its input to a default `Ok(Some(_))` value.
-pub struct NoneToValue<T, G, TG, E>
-where
-    T: Clone,
-    G: Getter<T, E>,
-    TG: TimeGetter<E>,
-    E: Clone + Debug,
-{
+pub struct NoneToValue<T, G, TG, E> {
     input: G,
     time_getter: TG,
     none_value: T,
     phantom_e: PhantomData<E>,
 }
-impl<T, G, TG, E> NoneToValue<T, G, TG, E>
-where
-    T: Clone,
-    G: Getter<T, E>,
-    TG: TimeGetter<E>,
-    E: Clone + Debug,
-{
+impl<T, G, TG, E> NoneToValue<T, G, TG, E> {
     ///Constructor for [`NoneToValue`].
     pub const fn new(input: G, time_getter: TG, none_value: T) -> Self {
         Self {
@@ -87,6 +64,7 @@ where
 impl<T, G, TG, E> Getter<T, E> for NoneToValue<T, G, TG, E>
 where
     T: Clone,
+    //These imply Self: Updatable<E>
     G: Getter<T, E>,
     TG: TimeGetter<E>,
     E: Clone + Debug,
@@ -104,9 +82,8 @@ where
 }
 impl<T, G, TG, E> Updatable<E> for NoneToValue<T, G, TG, E>
 where
-    T: Clone,
-    G: Getter<T, E>,
-    TG: TimeGetter<E>,
+    G: Updatable<E>,
+    TG: Updatable<E>,
     E: Clone + Debug,
 {
     fn update(&mut self) -> NothingOrError<E> {
@@ -116,25 +93,13 @@ where
     }
 }
 ///Converts all `Ok(None)` values to `Ok(Some(T::default()))`.
-pub struct NoneToDefault<T, G, TG, E>
-where
-    T: Default,
-    G: Getter<T, E>,
-    TG: TimeGetter<E>,
-    E: Clone + Debug,
-{
+pub struct NoneToDefault<T, G, TG, E> {
     input: G,
     time_getter: TG,
     phantom_t: PhantomData<T>,
     phantom_e: PhantomData<E>,
 }
-impl<T, G, TG, E> NoneToDefault<T, G, TG, E>
-where
-    T: Default,
-    G: Getter<T, E>,
-    TG: TimeGetter<E>,
-    E: Clone + Debug,
-{
+impl<T, G, TG, E> NoneToDefault<T, G, TG, E> {
     ///Constructor for `NoneToDefault`.
     pub const fn new(input: G, time_getter: TG) -> Self {
         Self {
@@ -161,9 +126,8 @@ where
 }
 impl<T, G, TG, E> Updatable<E> for NoneToDefault<T, G, TG, E>
 where
-    T: Default,
-    G: Getter<T, E>,
-    TG: TimeGetter<E>,
+    G: Updatable<E>,
+    TG: Updatable<E>,
     E: Clone + Debug,
 {
     fn update(&mut self) -> NothingOrError<E> {
@@ -455,26 +419,22 @@ mod position_to_state {
     }
 }
 ///Adds a [`Quantity`] wrapper with a specific unit around a number.
-pub struct DimensionAdder<T, MM, S, G, E> {
+pub struct DimensionAdder<MM, S, G> {
     input: G,
-    phantom_t: PhantomData<T>,
     phantom_mm: PhantomData<MM>,
     phantom_s: PhantomData<S>,
-    phantom_e: PhantomData<E>,
 }
-impl<T, MM, S, G, E> DimensionAdder<T, MM, S, G, E> {
+impl<MM, S, G> DimensionAdder<MM, S, G> {
     ///Constructor for `DimensionAdder`.
     pub const fn new(input: G) -> Self {
         Self {
             input,
-            phantom_t: PhantomData,
             phantom_mm: PhantomData,
             phantom_s: PhantomData,
-            phantom_e: PhantomData,
         }
     }
 }
-impl<T, MM, S, G, E> Getter<Quantity<T, MM, S>, E> for DimensionAdder<T, MM, S, G, E>
+impl<T, MM, S, G, E> Getter<Quantity<T, MM, S>, E> for DimensionAdder<MM, S, G>
 where
     MM: Integer,
     S: Integer,
@@ -488,10 +448,8 @@ where
         }
     }
 }
-impl<T, MM, S, G, E> Updatable<E> for DimensionAdder<T, MM, S, G, E>
+impl<MM, S, G, E> Updatable<E> for DimensionAdder<MM, S, G>
 where
-    MM: Integer,
-    S: Integer,
     G: Updatable<E>,
     E: Clone + Debug,
 {
@@ -501,35 +459,27 @@ where
     }
 }
 ///Gets the inner number from the output of a getter returning a [`Quantity`].
-pub struct DimensionRemover<
-    T,
-    MM: Integer,
-    S: Integer,
-    G: Getter<Quantity<T, MM, S>, E>,
-    E: Clone + Debug,
-> {
+pub struct DimensionRemover<MM, S, G> {
     input: G,
-    phantom_t: PhantomData<T>,
     phantom_mm: PhantomData<MM>,
     phantom_s: PhantomData<S>,
-    phantom_e: PhantomData<E>,
 }
-impl<T, MM: Integer, S: Integer, G: Getter<Quantity<T, MM, S>, E>, E: Clone + Debug>
-    DimensionRemover<T, MM, S, G, E>
-{
+impl<MM: Integer, S: Integer, G> DimensionRemover<MM, S, G> {
     ///Constructor for `DimensionRemover`.
     pub const fn new(input: G) -> Self {
         Self {
             input,
-            phantom_t: PhantomData,
             phantom_mm: PhantomData,
             phantom_s: PhantomData,
-            phantom_e: PhantomData,
         }
     }
 }
-impl<T, MM: Integer, S: Integer, G: Getter<Quantity<T, MM, S>, E>, E: Clone + Debug> Getter<T, E>
-    for DimensionRemover<T, MM, S, G, E>
+impl<T, MM, S, G, E> Getter<T, E> for DimensionRemover<MM, S, G>
+where
+    MM: Integer,
+    S: Integer,
+    G: Getter<Quantity<T, MM, S>, E>,
+    E: Clone + Debug,
 {
     fn get(&self) -> Output<T, E> {
         match self.input.get()? {
@@ -538,9 +488,7 @@ impl<T, MM: Integer, S: Integer, G: Getter<Quantity<T, MM, S>, E>, E: Clone + De
         }
     }
 }
-impl<T, MM: Integer, S: Integer, G: Getter<Quantity<T, MM, S>, E>, E: Clone + Debug> Updatable<E>
-    for DimensionRemover<T, MM, S, G, E>
-{
+impl<MM, S, G: Updatable<E>, E: Clone + Debug> Updatable<E> for DimensionRemover<MM, S, G> {
     fn update(&mut self) -> NothingOrError<E> {
         self.input.update()?;
         Ok(())
@@ -548,22 +496,20 @@ impl<T, MM: Integer, S: Integer, G: Getter<Quantity<T, MM, S>, E>, E: Clone + De
 }
 ///Converts the output of a getter to another type through [`Into`]. Leaves the timestamp the same
 ///and passes through `Err(_)` and `Ok(None)` identically.
-pub struct IntoConverter<TI, G: Getter<TI, E>, E: Clone + Debug> {
+pub struct IntoConverter<TI, G> {
     input: G,
     phantom_ti: PhantomData<TI>,
-    phantom_e: PhantomData<E>,
 }
-impl<TI, G: Getter<TI, E>, E: Clone + Debug> IntoConverter<TI, G, E> {
+impl<TI, G> IntoConverter<TI, G> {
     ///Constructor for `IntoConverter`.
     pub const fn new(input: G) -> Self {
         Self {
             input,
             phantom_ti: PhantomData,
-            phantom_e: PhantomData,
         }
     }
 }
-impl<TI, TO, G, E> Getter<TO, E> for IntoConverter<TI, G, E>
+impl<TI, TO, G, E> Getter<TO, E> for IntoConverter<TI, G>
 where
     TI: Into<TO>,
     G: Getter<TI, E>,
@@ -576,7 +522,7 @@ where
             .map(|datum| /*Datum<T>*/ Datum::new(datum.time, datum.value.into())))
     }
 }
-impl<TI, G: Getter<TI, E>, E: Clone + Debug> Updatable<E> for IntoConverter<TI, G, E> {
+impl<TI, G: Updatable<E>, E: Clone + Debug> Updatable<E> for IntoConverter<TI, G> {
     fn update(&mut self) -> NothingOrError<E> {
         self.input.update()?;
         Ok(())
@@ -584,22 +530,20 @@ impl<TI, G: Getter<TI, E>, E: Clone + Debug> Updatable<E> for IntoConverter<TI, 
 }
 ///Converts errors returned by a getter to another type through [`Into`]. Leaves `Ok` values
 ///unchanged.
-pub struct ErrorIntoConverter<T, G: Getter<T, EI>, EI: Clone + Debug> {
+pub struct ErrorIntoConverter<G, EI> {
     input: G,
-    phantom_t: PhantomData<T>,
     phantom_ei: PhantomData<EI>,
 }
-impl<T, G: Getter<T, EI>, EI: Clone + Debug> ErrorIntoConverter<T, G, EI> {
+impl<G, EI> ErrorIntoConverter<G, EI> {
     ///Constructor for `ErrorIntoConverter`.
     pub const fn new(input: G) -> Self {
         Self {
             input,
-            phantom_t: PhantomData,
             phantom_ei: PhantomData,
         }
     }
 }
-impl<T, G, EI, EO> Getter<T, EO> for ErrorIntoConverter<T, G, EI>
+impl<T, G, EI, EO> Getter<T, EO> for ErrorIntoConverter<G, EI>
 where
     G: Getter<T, EI>,
     EI: Clone + Debug + Into<EO>,
@@ -609,8 +553,11 @@ where
         self.input.get().map_err(|error| error.into())
     }
 }
-impl<T, G: Getter<T, EI>, EI: Clone + Debug + Into<EO>, EO: Clone + Debug> Updatable<EO>
-    for ErrorIntoConverter<T, G, EI>
+impl<G, EI, EO> Updatable<EO> for ErrorIntoConverter<G, EI>
+where
+    G: Updatable<EI>,
+    EI: Clone + Debug + Into<EO>,
+    EO: Clone + Debug,
 {
     fn update(&mut self) -> NothingOrError<EO> {
         self.input.update().map_err(|error| error.into())?;

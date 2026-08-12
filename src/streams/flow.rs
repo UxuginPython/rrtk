@@ -4,34 +4,17 @@
 use crate::streams::*;
 ///Propagates its input if a `Getter<bool, _>` returns `Ok(Some(true))`, otherwise returns
 ///`Ok(None)`.
-pub struct IfStream<T, GC, GI, E>
-where
-    GC: Getter<bool, E>,
-    GI: Getter<T, E>,
-    E: Clone + Debug,
-{
+pub struct IfStream<GC, GI> {
     condition: GC,
     input: GI,
-    phantom_t: PhantomData<T>,
-    phantom_e: PhantomData<E>,
 }
-impl<T, GC, GI, E> IfStream<T, GC, GI, E>
-where
-    GC: Getter<bool, E>,
-    GI: Getter<T, E>,
-    E: Clone + Debug,
-{
+impl<GC, GI> IfStream<GC, GI> {
     ///Constructor for [`IfStream`].
     pub const fn new(condition: GC, input: GI) -> Self {
-        Self {
-            condition,
-            input,
-            phantom_t: PhantomData,
-            phantom_e: PhantomData,
-        }
+        Self { condition, input }
     }
 }
-impl<T, GC, GI, E> Getter<T, E> for IfStream<T, GC, GI, E>
+impl<T, GC, GI, E> Getter<T, E> for IfStream<GC, GI>
 where
     GC: Getter<bool, E>,
     GI: Getter<T, E>,
@@ -49,10 +32,10 @@ where
         }
     }
 }
-impl<T, GC, GI, E> Updatable<E> for IfStream<T, GC, GI, E>
+impl<GC, GI, E> Updatable<E> for IfStream<GC, GI>
 where
-    GC: Getter<bool, E>,
-    GI: Getter<T, E>,
+    GC: Updatable<E>,
+    GI: Updatable<E>,
     E: Clone + Debug,
 {
     fn update(&mut self) -> NothingOrError<E> {
@@ -63,34 +46,22 @@ where
 }
 ///Returns the output of one input if a `Getter<bool, _>` returns `Ok(Some(true))` and another if
 ///it returns `Ok(Some(false))`. Returns `Ok(None)` if the `Getter<bool, _>` does.
-pub struct IfElseStream<T, GC, GT, GF, E>
-where
-    GC: Getter<bool, E>,
-    GT: Getter<T, E>,
-    GF: Getter<T, E>,
-    E: Clone + Debug,
-{
+pub struct IfElseStream<GC, GT, GF> {
     condition: GC,
     true_output: GT,
     false_output: GF,
-    phantom_t: PhantomData<T>,
-    phantom_e: PhantomData<E>,
 }
-impl<T, GC: Getter<bool, E>, GT: Getter<T, E>, GF: Getter<T, E>, E: Clone + Debug>
-    IfElseStream<T, GC, GT, GF, E>
-{
+impl<GC, GT, GF> IfElseStream<GC, GT, GF> {
     ///Constructor for [`IfElseStream`].
     pub const fn new(condition: GC, true_output: GT, false_output: GF) -> Self {
         Self {
             condition,
             true_output,
             false_output,
-            phantom_t: PhantomData,
-            phantom_e: PhantomData,
         }
     }
 }
-impl<T, GC, GT, GF, E> Getter<T, E> for IfElseStream<T, GC, GT, GF, E>
+impl<T, GC, GT, GF, E> Getter<T, E> for IfElseStream<GC, GT, GF>
 where
     GC: Getter<bool, E>,
     GT: Getter<T, E>,
@@ -109,11 +80,11 @@ where
         }
     }
 }
-impl<T, GC, GT, GF, E> Updatable<E> for IfElseStream<T, GC, GT, GF, E>
+impl<GC, GT, GF, E> Updatable<E> for IfElseStream<GC, GT, GF>
 where
-    GC: Getter<bool, E>,
-    GT: Getter<T, E>,
-    GF: Getter<T, E>,
+    GC: Updatable<E>,
+    GT: Updatable<E>,
+    GF: Updatable<E>,
     E: Clone + Debug,
 {
     fn update(&mut self) -> NothingOrError<E> {
@@ -134,24 +105,12 @@ where
 ///getter was returning true is maintained. This is the frozen state.
 ///- If the boolean getter returns false, the value of the input getter is returned. This is the
 ///unfrozen state.
-pub struct FreezeStream<T, GC, GI, E>
-where
-    T: Clone,
-    GC: Getter<bool, E>,
-    GI: Getter<T, E>,
-    E: Clone + Debug,
-{
+pub struct FreezeStream<T, GC, GI, E> {
     condition: GC,
     input: GI,
     freeze_value: Output<T, E>,
 }
-impl<T, GC, GI, E> FreezeStream<T, GC, GI, E>
-where
-    T: Clone,
-    GC: Getter<bool, E>,
-    GI: Getter<T, E>,
-    E: Clone + Debug,
-{
+impl<T, GC, GI, E> FreezeStream<T, GC, GI, E> {
     ///Constructor for [`FreezeStream`].
     pub const fn new(condition: GC, input: GI) -> Self {
         Self {
@@ -163,9 +122,8 @@ where
 }
 impl<T, GC, GI, E> Getter<T, E> for FreezeStream<T, GC, GI, E>
 where
-    T: Clone,
-    GC: Getter<bool, E>,
-    GI: Getter<T, E>,
+    Self: Updatable<E>,
+    Output<T, E>: Clone,
     E: Clone + Debug,
 {
     fn get(&self) -> Output<T, E> {
@@ -174,7 +132,7 @@ where
 }
 impl<T, GC, GI, E> Updatable<E> for FreezeStream<T, GC, GI, E>
 where
-    T: Clone,
+    Output<T, E>: Clone,
     GC: Getter<bool, E>,
     GI: Getter<T, E>,
     E: Clone + Debug,

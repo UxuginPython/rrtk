@@ -8,7 +8,7 @@ use alloc::collections::vec_deque::VecDeque;
 //and readability would suggest doing it this way, but 8 bytes could technically be saved here if
 //needed in the future. The difference is extremely minimal.
 ///A PID controller for use with the stream system.
-pub struct PIDControllerStream<G: Getter<f32, E>, E: Clone + Debug> {
+pub struct PIDControllerStream<G, E> {
     input: G,
     setpoint: f32,
     kvals: PIDKValues,
@@ -16,7 +16,7 @@ pub struct PIDControllerStream<G: Getter<f32, E>, E: Clone + Debug> {
     int_error: f32,
     output: Output<f32, E>,
 }
-impl<G: Getter<f32, E>, E: Clone + Debug> PIDControllerStream<G, E> {
+impl<G, E> PIDControllerStream<G, E> {
     ///Constructor for `PIDControllerStream`.
     pub const fn new(input: G, setpoint: f32, kvals: PIDKValues) -> Self {
         Self {
@@ -35,7 +35,10 @@ impl<G: Getter<f32, E>, E: Clone + Debug> PIDControllerStream<G, E> {
         self.output = Ok(None);
     }
 }
-impl<G: Getter<f32, E>, E: Clone + Debug> Getter<f32, E> for PIDControllerStream<G, E> {
+impl<G, E: Clone + Debug> Getter<f32, E> for PIDControllerStream<G, E>
+where
+    Self: Updatable<E>,
+{
     fn get(&self) -> Output<f32, E> {
         self.output.clone()
     }
@@ -100,13 +103,13 @@ mod command_pid {
     ///Automatically integrates the command variable of a PID controller based on the position
     ///derivative of a [`LinearCommand`] or [`AngularCommand`]. Designed to make it easier to use a
     ///standard DC motor and an encoder as a de facto servo.
-    pub struct CommandPID<G: Getter<C::CorrespondingState, E>, C: GenericCommand, E: Clone + Debug> {
+    pub struct CommandPID<G, C, E> {
         input: G,
         command: C,
         kvals: PositionDerivativeDependentPIDKValues,
         update_state: Result<Option<Update0>, E>,
     }
-    impl<G: Getter<C::CorrespondingState, E>, C: GenericCommand, E: Clone + Debug> CommandPID<G, C, E> {
+    impl<G, C, E> CommandPID<G, C, E> {
         ///Constructor for `CommandPID`.
         pub const fn new(
             input: G,
@@ -129,8 +132,9 @@ mod command_pid {
             self.update_state = Ok(None);
         }
     }
-    impl<G: Getter<C::CorrespondingState, E>, C: GenericCommand, E: Clone + Debug> Settable<C, E>
-        for CommandPID<G, C, E>
+    impl<G, C: PartialEq, E: Clone + Debug> Settable<C, E> for CommandPID<G, C, E>
+    where
+        Self: Updatable<E>,
     {
         fn set(&mut self, command: C) -> NothingOrError<E> {
             if command != self.command {
@@ -140,8 +144,11 @@ mod command_pid {
             Ok(())
         }
     }
-    impl<G: Getter<C::CorrespondingState, E>, C: GenericCommand, E: Clone + Debug> Getter<f32, E>
-        for CommandPID<G, C, E>
+    impl<G, C, E> Getter<f32, E> for CommandPID<G, C, E>
+    where
+        Self: Updatable<E>,
+        C: Copy + Into<PositionDerivative>, //Implied by GenericCommand
+        E: Clone + Debug,
     {
         fn get(&self) -> Output<f32, E> {
             match &self.update_state {
@@ -170,8 +177,11 @@ mod command_pid {
             }
         }
     }
-    impl<G: Getter<C::CorrespondingState, E>, C: GenericCommand, E: Clone + Debug> Updatable<E>
-        for CommandPID<G, C, E>
+    impl<G, C, E> Updatable<E> for CommandPID<G, C, E>
+    where
+        G: Getter<C::CorrespondingState, E>,
+        C: GenericCommand,
+        E: Clone + Debug,
     {
         fn update(&mut self) -> NothingOrError<E> {
             self.input.update()?;
@@ -298,8 +308,8 @@ impl<T, G, E> EWMAStream<T, G, E> {
 #[cfg(feature = "internal_enhanced_float")]
 impl<T, G, E> Getter<T, E> for EWMAStream<T, G, E>
 where
-    EWMAStream<T, G, E>: Updatable<E>, //<- This implies both of | these, but you still need to write them explicitly apparently.
-    T: Clone,                          //<-----------------------/
+    Self: Updatable<E>,
+    T: Clone,
     E: Clone + Debug,
 {
     fn get(&self) -> Output<T, E> {
@@ -354,14 +364,14 @@ where
 }
 ///A moving average stream for use with the stream system.
 #[cfg(feature = "alloc")]
-pub struct MovingAverageStream<T, G: Getter<T, E>, E: Clone + Debug> {
+pub struct MovingAverageStream<T, G, E> {
     input: G,
     window: Time,
     value: Output<T, E>,
     input_values: VecDeque<Datum<T>>,
 }
 #[cfg(feature = "alloc")]
-impl<T, G: Getter<T, E>, E: Clone + Debug> MovingAverageStream<T, G, E> {
+impl<T, G, E> MovingAverageStream<T, G, E> {
     ///Constructor for [`MovingAverageStream`].
     pub const fn new(input: G, window: Time) -> Self {
         Self {
@@ -373,9 +383,11 @@ impl<T, G: Getter<T, E>, E: Clone + Debug> MovingAverageStream<T, G, E> {
     }
 }
 #[cfg(feature = "alloc")]
-impl<T: Clone, G: Getter<T, E>, E: Clone + Debug> Getter<T, E> for MovingAverageStream<T, G, E>
+impl<T, G, E> Getter<T, E> for MovingAverageStream<T, G, E>
 where
-    MovingAverageStream<T, G, E>: Updatable<E>,
+    Self: Updatable<E>,
+    Output<T, E>: Clone,
+    E: Clone + Debug,
 {
     fn get(&self) -> Output<T, E> {
         self.value.clone()
