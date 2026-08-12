@@ -533,8 +533,9 @@ impl From<DimensionlessFraction> for Dimensionless<f64> {
 ///generic over units as, since quantities of different units are different types, the
 ///fully qualified syntax gets unwieldy quickly when performing multiplication and division.
 ///
-///Rust's scoping rules for macros is a bit odd, but you should be able to use `rrtk::mul!` and
-///`rrtk::compile_time_dimensions::mul!` interchangably.
+///You should be able to use `rrtk::mul!` and `rrtk::dimensions::mul!` interchangably.
+///They are only listed separately due to Rust's special scoping rules for macros that are
+///different from those for other items.
 #[macro_export]
 macro_rules! mul {
     ($a: ty, $b: ty) => {
@@ -549,8 +550,9 @@ pub use mul;
 ///generic over units as, since quantities of different units are different types, the
 ///fully qualified syntax gets unwieldy quickly when performing multiplication and division.
 ///
-///Rust's scoping rules for macros is a bit odd, but you should be able to use `rrtk::div!` and
-///`rrtk::compile_time_dimensions::div!` interchangably.
+///You should be able to use `rrtk::div!` and `rrtk::dimensions::div!` interchangably.
+///They are only listed separately due to Rust's special scoping rules for macros that are
+///different from those for other items.
 #[macro_export]
 macro_rules! div {
     ($a: ty, $b: ty) => {
