@@ -2,7 +2,8 @@
 // Copyright 2024-2026 UxuginPython
 use crate::*;
 use stulta::NotDatum;
-///A container for a time and something else, usually an [`f32`] or one of the state types.
+///Holds a timestamp and something else, usually an `f32`, a [`Quantity`], or one of the state
+///types.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct Datum<T> {
     ///Timestamp for the datum. This should probably be absolute.
