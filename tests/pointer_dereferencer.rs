@@ -22,7 +22,6 @@ fn pointer_dereferencer() {
     let deref = unsafe { PointerDereferencer::new(ptr) };
     assert_eq!(deref.get(), RETURN_1);
 }
-//TODO: Make sure it's not the case that the only reason these work is that they're ZSTs.
 #[test]
 fn as_dyn_getter() {
     let mut original = TestGetter1;
