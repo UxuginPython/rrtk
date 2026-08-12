@@ -60,8 +60,7 @@ pub use datum::*;
 use enhanced_float::*;
 pub use motion_profile::*;
 pub use state::*;
-///Error types used for various things in RRTK. Currently they are only zero-sized types, but this
-///may change.
+///Error types used for a few things in RRTK.
 pub mod error {
     use super::*;
     ///The error type used when a `TryFrom` fails.
