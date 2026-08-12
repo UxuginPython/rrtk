@@ -235,14 +235,17 @@ pub trait Updatable<E: Clone + Debug> {
     ///implementor.
     fn update(&mut self) -> NothingOrError<E>;
 }
-///Something with a [`get`](Getter::get) method. Structs implementing this will often be chained for easier data
-///processing, with a struct having other implementors in fields which will have some operation
-///performed on their output before it being passed on. Data processing Getters with other Getters
-///as fields can be referred to as streams, though this is only in naming and trait-wise there is
-///no distinction. The other common use for this trait is encoders. These should not be called
-///streams.
+///An object that can be updated and can return timestamped values. This is one of the most
+///fundamental traits to RRTK.
+///
+///The idea behind `Getter` is to provide a very general-purpose and easy-to-implement API that can
+///be compatible with almost anything. For things that need to implement `Getter` multiple times
+///for getting different things, the Newtype Pattern is recommended.
+///
+///Many `Getter`s hold other `Getter`s as inputs for data processing. These are called *[streams]*.
+///Streams are another very important use of the `Getter` trait.
 pub trait Getter<G, E: Clone + Debug>: Updatable<E> {
-    ///Get something.
+    ///Get something, fallibly, with a timestamp.
     fn get(&self) -> Output<G, E>;
     ///Update with [`Updatable`] and then call [`get`](Getter::get).
     fn update_and_get(&mut self) -> Output<G, E> {
