@@ -218,7 +218,7 @@ impl<T, E> OutputExt<T, E> for Output<T, E> {
     where
         F: FnOnce(T) -> O,
     {
-        self.map(|option| option.map(|datum| datum.map(function)))
+        self.map(|option_datum| option_datum.map_value(function))
     }
 }
 ///Returned from [`TimeGetter`] objects, which may return either a time or an error.
