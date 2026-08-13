@@ -188,27 +188,36 @@ impl PositionDerivativeDependentPIDKValues {
 ///timestamp. The most common use for this is as the output of [`Getter::get`].
 pub type Output<T, E> = Result<Option<Datum<T>>, E>;
 pub trait OutputExt<T, E> {
-    fn map_ok<O, F: FnOnce(Option<Datum<T>>) -> Option<Datum<O>>>(
-        self,
-        function: F,
-    ) -> Output<O, E>;
-    fn map_ok_some<O, F: FnOnce(Datum<T>) -> Datum<O>>(self, function: F) -> Output<O, E>;
-    fn map_ok_some_value<O, F: FnOnce(T) -> O>(self, function: F) -> Output<O, E>;
+    fn map_ok<O, F>(self, function: F) -> Output<O, E>
+    where
+        F: FnOnce(Option<Datum<T>>) -> Option<Datum<O>>;
+    fn map_ok_some<O, F>(self, function: F) -> Output<O, E>
+    where
+        F: FnOnce(Datum<T>) -> Datum<O>;
+    fn map_ok_some_value<O, F>(self, function: F) -> Output<O, E>
+    where
+        F: FnOnce(T) -> O;
 }
 impl<T, E> OutputExt<T, E> for Output<T, E> {
     #[inline]
-    fn map_ok<O, F: FnOnce(Option<Datum<T>>) -> Option<Datum<O>>>(
-        self,
-        function: F,
-    ) -> Output<O, E> {
+    fn map_ok<O, F>(self, function: F) -> Output<O, E>
+    where
+        F: FnOnce(Option<Datum<T>>) -> Option<Datum<O>>,
+    {
         self.map(function)
     }
     #[inline]
-    fn map_ok_some<O, F: FnOnce(Datum<T>) -> Datum<O>>(self, function: F) -> Output<O, E> {
+    fn map_ok_some<O, F>(self, function: F) -> Output<O, E>
+    where
+        F: FnOnce(Datum<T>) -> Datum<O>,
+    {
         self.map(|option| option.map(function))
     }
     #[inline]
-    fn map_ok_some_value<O, F: FnOnce(T) -> O>(self, function: F) -> Output<O, E> {
+    fn map_ok_some_value<O, F>(self, function: F) -> Output<O, E>
+    where
+        F: FnOnce(T) -> O,
+    {
         self.map(|option| option.map(|datum| datum.map(function)))
     }
 }
