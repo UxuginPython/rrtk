@@ -565,7 +565,8 @@ where
     }
 }
 macro_rules! prioritize_stream {
-    ($name: ident, $operation: ident) => {
+    ($name: ident, $operation: ident, $doc: literal) => {
+        #[doc = $doc]
         pub struct $name<G> {
             input: G,
         }
@@ -596,7 +597,24 @@ macro_rules! prioritize_stream {
                     .map_err(|possible_double_error| possible_double_error.$operation())
             }
         }
+        impl<T, G: Settable<T, error::PossibleDoubleError<E>>, E: Clone + Debug> Settable<T, E>
+            for $name<G>
+        {
+            fn set(&mut self, value: T) -> NothingOrError<E> {
+                self.input
+                    .set(value)
+                    .map_err(|possible_double_error| possible_double_error.$operation())
+            }
+        }
     };
 }
-prioritize_stream!(PrioritizeA, prioritize_a);
-prioritize_stream!(PrioritizeB, prioritize_b);
+prioritize_stream!(
+    PrioritizeA,
+    prioritize_a,
+    "Collapses `Err` variants of [`error::PossibleDoubleError`] returned by its input's `Getter`, `Settable`, and `Updatable` implementations into a single error value, keeping the Side A error if both sides have errored.\n\nThis uses [`error::PossibleDoubleError::prioritize_a`] internally."
+);
+prioritize_stream!(
+    PrioritizeB,
+    prioritize_b,
+    "Collapses `Err` variants of [`error::PossibleDoubleError`] returned by its input's `Getter`, `Settable`, and `Updatable` implementations into a single error value, keeping the Side B error if both sides have errored.\n\nThis uses [`error::PossibleDoubleError::prioritize_b`] internally."
+);
