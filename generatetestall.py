@@ -44,6 +44,7 @@ for i in features:
         combinations = new_combinations
 test = '\n'.join(i.rstrip() for i in f'#!/bin/bash\n#Generated automatically by rrtk {version}\nset -e\n{'\n'.join(f'echo {' '.join(i)}\ncargo test --no-default-features{' --features' if len(i) > 0 else ''} {','.join(i)}' for i in combinations)}'.split('\n')).strip()+'\n'
 check = '\n'.join(i.rstrip() for i in f'#!/bin/bash\n#Generated automatically by rrtk {version}\nset -e\n{'\n'.join(f'echo {' '.join(i)}\ncargo check --no-default-features{' --features' if len(i) > 0 else ''} {','.join(i)}' for i in combinations)}'.split('\n')).strip()+'\n'
+miri_test = '\n'.join(i.rstrip() for i in f'#!/bin/bash\n#Generated automatically by rrtk {version}\nset -e\n{'\n'.join(f'echo {' '.join(i)}\ncargo miri test --no-default-features{' --features' if len(i) > 0 else ''} {','.join(i)}' for i in combinations)}'.split('\n')).strip()+'\n'
 file = open('testall.sh', 'w')
 file.write(test)
 file.close()
@@ -52,3 +53,7 @@ file = open('checkall.sh', 'w')
 file.write(check)
 file.close()
 system('chmod +x checkall.sh')
+file = open('testallmiri.sh', 'w')
+file.write(miri_test)
+file.close()
+system('chmod +x testallmiri.sh')
