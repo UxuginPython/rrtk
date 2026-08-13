@@ -564,29 +564,35 @@ where
         Ok(())
     }
 }
-pub struct PrioritizeA<G> {
-    input: G,
+macro_rules! prioritize_stream {
+    ($name: ident, $operation: ident) => {
+        pub struct $name<G> {
+            input: G,
+        }
+        impl<G> $name<G> {
+            pub const fn new(input: G) -> Self {
+                Self { input }
+            }
+        }
+        impl<G: Updatable<error::PossibleDoubleError<E>>, E: Clone + Debug> Updatable<E>
+            for $name<G>
+        {
+            fn update(&mut self) -> NothingOrError<E> {
+                self.input
+                    .update()
+                    .map_err(|possible_double_error| possible_double_error.$operation())
+            }
+        }
+        impl<T, G: Getter<T, error::PossibleDoubleError<E>>, E: Clone + Debug> Getter<T, E>
+            for $name<G>
+        {
+            fn get(&self) -> Output<T, E> {
+                self.input
+                    .get()
+                    .map_err(|possible_double_error| possible_double_error.$operation())
+            }
+        }
+    };
 }
-impl<G> PrioritizeA<G> {
-    pub const fn new(input: G) -> Self {
-        Self { input }
-    }
-}
-impl<G: Updatable<error::PossibleDoubleError<E>>, E: Clone + Debug> Updatable<E>
-    for PrioritizeA<G>
-{
-    fn update(&mut self) -> NothingOrError<E> {
-        self.input
-            .update()
-            .map_err(|possible_double_error| possible_double_error.prioritize_a())
-    }
-}
-impl<T, G: Getter<T, error::PossibleDoubleError<E>>, E: Clone + Debug> Getter<T, E>
-    for PrioritizeA<G>
-{
-    fn get(&self) -> Output<T, E> {
-        self.input
-            .get()
-            .map_err(|possible_double_error| possible_double_error.prioritize_a())
-    }
-}
+prioritize_stream!(PrioritizeA, prioritize_a);
+prioritize_stream!(PrioritizeB, prioritize_b);
