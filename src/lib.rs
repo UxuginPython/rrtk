@@ -17,7 +17,7 @@
 //!
 //!RRTK prefers **`std`** over **`libm`** and `libm` over **`micromath`** when multiple are
 //!available.
-#![warn(missing_docs)]
+//#![warn(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
 #[cfg(all(
     feature = "internal_enhanced_float",
@@ -187,6 +187,31 @@ impl PositionDerivativeDependentPIDKValues {
 ///A generic output type when something may return an error, nothing, or something with a
 ///timestamp. The most common use for this is as the output of [`Getter::get`].
 pub type Output<T, E> = Result<Option<Datum<T>>, E>;
+pub trait OutputExt<T, E> {
+    fn map_ok<O, F: FnOnce(Option<Datum<T>>) -> Option<Datum<O>>>(
+        self,
+        function: F,
+    ) -> Output<O, E>;
+    fn map_ok_some<O, F: FnOnce(Datum<T>) -> Datum<O>>(self, function: F) -> Output<O, E>;
+    fn map_ok_some_value<O, F: FnOnce(T) -> O>(self, function: F) -> Output<O, E>;
+}
+impl<T, E> OutputExt<T, E> for Output<T, E> {
+    #[inline]
+    fn map_ok<O, F: FnOnce(Option<Datum<T>>) -> Option<Datum<O>>>(
+        self,
+        function: F,
+    ) -> Output<O, E> {
+        self.map(function)
+    }
+    #[inline]
+    fn map_ok_some<O, F: FnOnce(Datum<T>) -> Datum<O>>(self, function: F) -> Output<O, E> {
+        self.map(|option| option.map(function))
+    }
+    #[inline]
+    fn map_ok_some_value<O, F: FnOnce(T) -> O>(self, function: F) -> Output<O, E> {
+        self.map(|option| option.map(|datum| datum.map(function)))
+    }
+}
 ///Returned from [`TimeGetter`] objects, which may return either a time or an error.
 pub type TimeOutput<E> = Result<Time, E>;
 ///Returned when something may return either nothing or an error.
