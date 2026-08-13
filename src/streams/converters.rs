@@ -618,3 +618,30 @@ prioritize_stream!(
     prioritize_b,
     "Collapses `Err` variants of [`error::PossibleDoubleError`] returned by its input's `Getter`, `Settable`, and `Updatable` implementations into a single error value, keeping the Side B error if both sides have errored.\n\nThis uses [`error::PossibleDoubleError::prioritize_b`] internally."
 );
+pub struct Map<TI, G, F> {
+    input: G,
+    func: F,
+    phantom_ti: PhantomData<TI>,
+}
+impl<TI, G, F> Map<TI, G, F> {
+    #[inline]
+    pub const fn new(func: F, input: G) -> Self {
+        Self {
+            input,
+            func,
+            phantom_ti: PhantomData,
+        }
+    }
+}
+impl<TI, G: Updatable<E>, F, E: Clone + Debug> Updatable<E> for Map<TI, G, F> {
+    fn update(&mut self) -> NothingOrError<E> {
+        self.input.update()
+    }
+}
+impl<TI, TO, G: Getter<TI, E>, F: Fn(TI) -> TO, E: Clone + Debug> Getter<TO, E> for Map<TI, G, F> {
+    fn get(&self) -> Output<TO, E> {
+        self.input
+            .get()
+            .map(|option| option.map(|datum| Datum::new(datum.time, (self.func)(datum.value))))
+    }
+}
