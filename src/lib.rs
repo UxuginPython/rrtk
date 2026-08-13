@@ -94,6 +94,22 @@ pub mod error {
                 (Some(a), Some(b)) => Some(Self::AB(a, b)),
             }
         }
+        #[inline]
+        pub fn prioritize_a(self) -> E {
+            match self {
+                Self::A(a_error) => a_error,
+                Self::B(b_error) => b_error,
+                Self::AB(a_error, _b_error) => a_error,
+            }
+        }
+        #[inline]
+        pub fn prioritize_b(self) -> E {
+            match self {
+                Self::A(a_error) => a_error,
+                Self::B(b_error) => b_error,
+                Self::AB(_a_error, b_error) => b_error,
+            }
+        }
     }
 }
 ///A derivative of position: position, velocity, or acceleration.
