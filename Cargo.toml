@@ -6,14 +6,15 @@ name = "rrtk"
 version = "0.7.0-beta.3"
 license = "BSD-3-Clause"
 edition = "2024"
-authors = ["UxuginPython <uxugin at uxugin dot com>"]
+rust-version = "1.95"
+authors = ["UxuginPython <blinker-hazy-ultra at duck dot com>"]
 homepage = "http://rrtk.org/crate/rrtk"
 repository = "https://github.com/UxuginPython/rrtk"
-description = "Rust Robotics ToolKit"
-keywords = ["robotics", "control"]
-categories = ["science::robotics", "no-std"]
+description = "Rust Robotics ToolKit: A data flow-based robotics framework designed for embedded systems."
+keywords = ["robotics", "control", "stream", "device", "dimensional-analysis"]
+categories = ["science::robotics", "embedded", "no-std::no-alloc"]
 # We can't exclude the SVGs because they're needed for building the docs.
-exclude = ["generatetestall.py", "testall.sh", "checkall.sh", "exclude"]
+exclude = ["/generatetestall.py", "/testall.sh", "/testallmiri.sh", "/checkall.sh", "/featurequickcheck.sh", "/exclude/"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
