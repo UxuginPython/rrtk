@@ -114,6 +114,24 @@ pub mod error {
                 Self::AB(_a_error, b_error) => b_error,
             }
         }
+        ///Discard the Side B error, if it exists, and return the Side A error, if it exists.
+        #[inline]
+        pub fn keep_only_a(self) -> Option<E> {
+            if let Self::A(a_error) | Self::AB(a_error, _) = self {
+                Some(a_error)
+            } else {
+                None
+            }
+        }
+        ///Discard the Side A error, if it exists, and return the Side B error, if it exists.
+        #[inline]
+        pub fn keep_only_b(self) -> Option<E> {
+            if let Self::B(b_error) | Self::AB(_, b_error) = self {
+                Some(b_error)
+            } else {
+                None
+            }
+        }
     }
 }
 ///A derivative of position: position, velocity, or acceleration.
