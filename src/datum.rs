@@ -13,6 +13,7 @@ pub struct Datum<T> {
 }
 impl<T> Datum<T> {
     ///Constructor for [`Datum`] type.
+    #[inline]
     pub const fn new(time: Time, value: T) -> Datum<T> {
         Datum { time, value }
     }
@@ -26,6 +27,11 @@ impl<T> Datum<T> {
             return true;
         }
         false
+    }
+    ///Maps the [`value`](Datum::value) field using a function and keeps the original timestamp.
+    #[inline]
+    pub fn map<O, F: FnOnce(T) -> O>(self, function: F) -> Datum<O> {
+        Datum::new(self.time, function(self.value))
     }
 }
 ///Extension trait for `Option<Datum<T>>`.
