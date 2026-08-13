@@ -570,6 +570,10 @@ macro_rules! prioritize_stream {
             input: G,
         }
         impl<G> $name<G> {
+            #[doc = "Constructor for `"]
+            #[doc = stringify!($name)]
+            #[doc = "`."]
+            #[inline]
             pub const fn new(input: G) -> Self {
                 Self { input }
             }

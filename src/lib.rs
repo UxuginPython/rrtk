@@ -94,6 +94,8 @@ pub mod error {
                 (Some(a), Some(b)) => Some(Self::AB(a, b)),
             }
         }
+        ///Collapse `PossibleDoubleError<E>` into a single `E`, keeping only the Side A error if
+        ///both sides have errored.
         #[inline]
         pub fn prioritize_a(self) -> E {
             match self {
@@ -102,6 +104,8 @@ pub mod error {
                 Self::AB(a_error, _b_error) => a_error,
             }
         }
+        ///Collapse `PossibleDoubleError<E>` into a single `E`, keeping only the Side B error if
+        ///both sides have errored.
         #[inline]
         pub fn prioritize_b(self) -> E {
             match self {
