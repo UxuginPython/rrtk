@@ -43,6 +43,8 @@ pub trait OptionDatumExt<T> {
     ///If `maybe_replace_with` is `Some`, calls `replace_if_none_or_older_than`. If it is `None`,
     ///returns false immediately.
     fn replace_if_none_or_older_than_option(&mut self, maybe_replace_with: Self) -> bool;
+    ///In the `Some` variant, maps the `Datum`'s timestamped value to another value. Returns `None`
+    ///in the `None` variant.
     fn map_value<O, F>(self, function: F) -> Option<Datum<O>>
     where
         F: FnOnce(T) -> O;
