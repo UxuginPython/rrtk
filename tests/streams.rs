@@ -2340,3 +2340,58 @@ fn error_into_converter() {
     #[rustfmt::skip]
     test_index!(3, 2, Err(100i64), 3, 3);
 }
+#[test]
+fn dimension_adder() {
+    #[derive(Clone, Debug, PartialEq, Eq)]
+    struct MyError(u8);
+    struct MyGetter;
+    static mut GETTER_UPDATE_CALLS: u8 = 0;
+    impl Updatable<MyError> for MyGetter {
+        fn update(&mut self) -> NothingOrError<MyError> {
+            unsafe {
+                GETTER_UPDATE_CALLS += 1;
+            }
+            Ok(())
+        }
+    }
+    static mut GETTER_GET_CALLS: u8 = 0;
+    impl Getter<f32, MyError> for MyGetter {
+        fn get(&self) -> Output<f32, MyError> {
+            unsafe {
+                GETTER_GET_CALLS += 1;
+            }
+            match unsafe { GETTER_UPDATE_CALLS } {
+                0 => panic!("missed update call"),
+                1 => Ok(Some(Datum::new(Time::from_seconds_f32(2.0), 1.0))),
+                2 => Ok(None),
+                3 => Err(MyError(1)),
+                _ => panic!("update called too many times"),
+            }
+        }
+    }
+    let mut test =
+        DimensionAdder::<compile_time_integer::Pos1, compile_time_integer::Neg1, _>::new(MyGetter);
+    macro_rules! test_index {
+        ($g_u_1: literal, $g_g_1: literal, $gotten_value: expr, $g_u_2: literal, $g_g_2: literal) => {
+            test.update().unwrap();
+            //This is not RRTK's fault: https://github.com/rust-lang/rust/issues/131443
+            #[allow(static_mut_refs)]
+            unsafe {
+                assert_eq!(GETTER_UPDATE_CALLS, $g_u_1);
+                assert_eq!(GETTER_GET_CALLS, $g_g_1);
+            }
+            assert_eq!(test.get(), $gotten_value);
+            #[allow(static_mut_refs)]
+            unsafe {
+                assert_eq!(GETTER_UPDATE_CALLS, $g_u_2);
+                assert_eq!(GETTER_GET_CALLS, $g_g_2);
+            }
+        };
+    }
+    #[rustfmt::skip]
+    test_index!(1, 0, Ok(Some(Datum::new(Time::from_seconds_f32(2.0), MillimeterPerSecond::new(1.0)))), 1, 1);
+    #[rustfmt::skip]
+    test_index!(2, 1, Ok(None), 2, 2);
+    #[rustfmt::skip]
+    test_index!(3, 2, Err(MyError(1)), 3, 3);
+}
