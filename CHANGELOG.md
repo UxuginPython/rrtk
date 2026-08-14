@@ -322,3 +322,26 @@ Start cleaning up a [really big mess](http://rrtk.org/notice/).
 ## 0.7.0-beta.3
 - Add constructors for the device wrappers. (These were forgotten in 0.7.0-beta.1.)
 - Add `from_raw` method for `AngularState` and `LinearState` allowing them to be constructed from raw `f32` values for position, velocity, and acceleration.
+## 0.7.0
+- Remove numerous unnecessary trait bounds and type parameters from various streams.
+- Add `Latest2`, which is to `Latest` as `Sum2` is to `SumStream`.
+- Make `EWMAStream` work with `Quantity`.
+- Make `NotStream` work with any type implementing `core::ops::Not` instead of only `bool`.
+- Add a few new methods to `PossibleDoubleError`: `prioritize_(a|b)` and `keep_only_(a|b)`, which allow one to more easily get a selected single error of the two possible.
+- Add some new mapping functions (see documentation for details):
+  - `Datum::map`
+  - `OptionDatumExt::map_value`
+  - Add new `OutputExt` extension trait:
+    - `map_ok` alias to `Result::map`
+    - `map_ok_some`
+    - `map_ok_some_value`
+- Make `Quantity::into_inner` and `LinearState` and `AngularState`'s `get_value` methods `const fn`.
+- Replace `dimensionless_fraction!` and `dimensionless_fraction_unchecked!` macros with `from_raw` and `from_raw_unchecked` functions.
+- Improve `ExponentStream`'s error handling to match the other math streams.
+- Expand the allowed range of versions for libm and micromath dependencies.
+- Add a small prelude.
+- Rewrite a significant amount of documentation for clarity.
+  - Write an example for the dimensional analysis system.
+  - Fix the rendering of the second SVG in `Feeder`'s documentation.
+- Significantly improve testing.
+  - Modify one test to allow it to pass with Miri's less precise floating point math.
