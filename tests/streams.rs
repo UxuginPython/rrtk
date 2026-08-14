@@ -2234,3 +2234,57 @@ fn none_to_default() {
     #[rustfmt::skip]
     test_index!(6, 6, 5, 3, Err(MyError(1)), 6, 6, 6, 3);
 }
+#[test]
+fn into_converter() {
+    #[derive(Clone, Debug, PartialEq, Eq)]
+    struct MyError(u8);
+    struct MyGetter;
+    static mut GETTER_UPDATE_CALLS: u8 = 0;
+    impl Updatable<MyError> for MyGetter {
+        fn update(&mut self) -> NothingOrError<MyError> {
+            unsafe {
+                GETTER_UPDATE_CALLS += 1;
+            }
+            Ok(())
+        }
+    }
+    static mut GETTER_GET_CALLS: u8 = 0;
+    impl Getter<u8, MyError> for MyGetter {
+        fn get(&self) -> Output<u8, MyError> {
+            unsafe {
+                GETTER_GET_CALLS += 1;
+            }
+            match unsafe { GETTER_UPDATE_CALLS } {
+                0 => panic!("missed update call"),
+                1 => Ok(Some(Datum::new(Time::from_seconds_f32(2.0), 1))),
+                2 => Ok(None),
+                3 => Err(MyError(1)),
+                _ => panic!("update called too many times"),
+            }
+        }
+    }
+    let mut test = IntoConverter::new(MyGetter);
+    macro_rules! test_index {
+        ($g_u_1: literal, $g_g_1: literal, $gotten_value: expr, $g_u_2: literal, $g_g_2: literal) => {
+            test.update().unwrap();
+            //This is not RRTK's fault: https://github.com/rust-lang/rust/issues/131443
+            #[allow(static_mut_refs)]
+            unsafe {
+                assert_eq!(GETTER_UPDATE_CALLS, $g_u_1);
+                assert_eq!(GETTER_GET_CALLS, $g_g_1);
+            }
+            assert_eq!(test.get(), $gotten_value);
+            #[allow(static_mut_refs)]
+            unsafe {
+                assert_eq!(GETTER_UPDATE_CALLS, $g_u_2);
+                assert_eq!(GETTER_GET_CALLS, $g_g_2);
+            }
+        };
+    }
+    #[rustfmt::skip]
+    test_index!(1, 0, Ok(Some(Datum::new(Time::from_seconds_f32(2.0), 1i16))), 1, 1);
+    #[rustfmt::skip]
+    test_index!(2, 1, Ok(None::<Datum<i16>>), 2, 2);
+    #[rustfmt::skip]
+    test_index!(3, 2, Err::<Option<Datum<i16>>, _>(MyError(1)), 3, 3);
+}
