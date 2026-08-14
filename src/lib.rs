@@ -62,6 +62,18 @@ pub use datum::*;
 use enhanced_float::*;
 pub use motion_profile::*;
 pub use state::*;
+///Re-exports some of the most important RRTK items as well as all its extension traits.
+///
+///This allows one to write `use rrtk::prelude::*;` instead of either adding a lot of boilerplate
+///importing each needed item individually or unnecessarily importing everything with `use
+///rrtk::*;`.
+pub mod prelude {
+    #[cfg(feature = "devices")]
+    pub use super::devices::DeviceUpdatable;
+    pub use super::{
+        Datum, Getter, NothingOrErrorExt, OptionDatumExt, OutputExt, TimeGetter, Updatable,
+    };
+}
 ///Error types used for a few things in RRTK.
 pub mod error {
     use super::*;
@@ -225,6 +237,47 @@ impl PositionDerivativeDependentPIDKValues {
 ///A generic output type when something may return an error, nothing, or something with a
 ///timestamp. The most common use for this is as the output of [`Getter::get`].
 pub type Output<T, E> = Result<Option<Datum<T>>, E>;
+///Extension trait for [`Output<T, E>`], a type alias to `Result<Option<Datum<T>>, E>`.
+pub trait OutputExt<T, E> {
+    ///Maps the `Option<Datum<T>>` to another `Option` in the `Ok(_)` variant.
+    ///
+    ///This is nearly identical to [`Result::map`]. The only difference between this method and
+    ///`Result::map` is that this method only allows mapping to other `Output` types.
+    fn map_ok<O, F>(self, function: F) -> Output<O, E>
+    where
+        F: FnOnce(Option<Datum<T>>) -> Option<Datum<O>>;
+    ///Maps the `Datum` to another `Datum` in the `Ok(Some(_))` variant.
+    fn map_ok_some<O, F>(self, function: F) -> Output<O, E>
+    where
+        F: FnOnce(Datum<T>) -> Datum<O>;
+    ///Maps the `Datum`'s timestamped value to another value in the `Ok(Some(_))` variant.
+    fn map_ok_some_value<O, F>(self, function: F) -> Output<O, E>
+    where
+        F: FnOnce(T) -> O;
+}
+impl<T, E> OutputExt<T, E> for Output<T, E> {
+    #[inline]
+    fn map_ok<O, F>(self, function: F) -> Output<O, E>
+    where
+        F: FnOnce(Option<Datum<T>>) -> Option<Datum<O>>,
+    {
+        self.map(function)
+    }
+    #[inline]
+    fn map_ok_some<O, F>(self, function: F) -> Output<O, E>
+    where
+        F: FnOnce(Datum<T>) -> Datum<O>,
+    {
+        self.map(|option| option.map(function))
+    }
+    #[inline]
+    fn map_ok_some_value<O, F>(self, function: F) -> Output<O, E>
+    where
+        F: FnOnce(T) -> O,
+    {
+        self.map(|option_datum| option_datum.map_value(function))
+    }
+}
 ///Returned from [`TimeGetter`] objects, which may return either a time or an error.
 pub type TimeOutput<E> = Result<Time, E>;
 ///Returned when something may return either nothing or an error.

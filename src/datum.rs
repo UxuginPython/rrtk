@@ -13,6 +13,7 @@ pub struct Datum<T> {
 }
 impl<T> Datum<T> {
     ///Constructor for [`Datum`] type.
+    #[inline]
     pub const fn new(time: Time, value: T) -> Datum<T> {
         Datum { time, value }
     }
@@ -27,6 +28,11 @@ impl<T> Datum<T> {
         }
         false
     }
+    ///Maps the [`value`](Datum::value) field using a function and keeps the original timestamp.
+    #[inline]
+    pub fn map<O, F: FnOnce(T) -> O>(self, function: F) -> Datum<O> {
+        Datum::new(self.time, function(self.value))
+    }
 }
 ///Extension trait for `Option<Datum<T>>`.
 pub trait OptionDatumExt<T> {
@@ -37,6 +43,11 @@ pub trait OptionDatumExt<T> {
     ///If `maybe_replace_with` is `Some`, calls `replace_if_none_or_older_than`. If it is `None`,
     ///returns false immediately.
     fn replace_if_none_or_older_than_option(&mut self, maybe_replace_with: Self) -> bool;
+    ///In the `Some` variant, maps the `Datum`'s timestamped value to another value. Returns `None`
+    ///in the `None` variant.
+    fn map_value<O, F>(self, function: F) -> Option<Datum<O>>
+    where
+        F: FnOnce(T) -> O;
 }
 impl<T> OptionDatumExt<T> for Option<Datum<T>> {
     fn replace_if_none_or_older_than(&mut self, maybe_replace_with: Datum<T>) -> bool {
@@ -54,6 +65,13 @@ impl<T> OptionDatumExt<T> for Option<Datum<T>> {
             None => return false,
         };
         self.replace_if_none_or_older_than(maybe_replace_with)
+    }
+    #[inline]
+    fn map_value<O, F>(self, function: F) -> Option<Datum<O>>
+    where
+        F: FnOnce(T) -> O,
+    {
+        self.map(|datum| datum.map(function))
     }
 }
 impl<T: Not<Output = O>, O> Not for Datum<T> {
