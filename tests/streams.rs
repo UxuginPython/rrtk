@@ -2452,3 +2452,72 @@ fn dimension_remover() {
     #[rustfmt::skip]
     test_index!(3, 2, Err(MyError(1)), 3, 3);
 }
+macro_rules! test_prioritize {
+    ($test_name: ident, $stream_name: ident, $first_choice: expr, $second_choice: expr) => {
+        #[test]
+        fn $test_name() {
+            use error::PossibleDoubleError;
+            struct MyGetter;
+            static mut GETTER_UPDATE_CALLS: u8 = 0;
+            impl Updatable<PossibleDoubleError<u8>> for MyGetter {
+                fn update(&mut self) -> NothingOrError<PossibleDoubleError<u8>> {
+                    unsafe {
+                        GETTER_UPDATE_CALLS += 1;
+                    }
+                    match unsafe { GETTER_UPDATE_CALLS } {
+                        0 => unreachable!(),
+                        1 => Err(PossibleDoubleError::A(1)),
+                        2 => Err(PossibleDoubleError::B(2)),
+                        3 => Err(PossibleDoubleError::AB(3, 4)),
+                        4..=6 => Ok(()),
+                        _ => panic!("update called too many times"),
+                    }
+                }
+            }
+            static mut GETTER_GET_CALLS: u8 = 0;
+            impl Getter<u8, PossibleDoubleError<u8>> for MyGetter {
+                fn get(&self) -> Output<u8, PossibleDoubleError<u8>> {
+                    unsafe {
+                        GETTER_GET_CALLS += 1;
+                    }
+                    match unsafe { GETTER_UPDATE_CALLS } {
+                        0 => panic!("missed update call"),
+                        1 => Ok(Some(Datum::new(Time::from_seconds_f32(1.5), 20))),
+                        2 => Ok(None),
+                        3 => Ok(None),
+                        4 => Err(PossibleDoubleError::A(5)),
+                        5 => Err(PossibleDoubleError::B(6)),
+                        6 => Err(PossibleDoubleError::AB(7, 8)),
+                        _ => panic!("update called too many times"),
+                    }
+                }
+            }
+            let mut test = $stream_name::new(MyGetter);
+            macro_rules! test_index {
+                ($update_value: expr, $g_u_1: literal, $g_g_1: literal, $gotten_value: expr, $g_u_2: literal, $g_g_2: literal) => {
+                    assert_eq!(test.update(), $update_value);
+                    //This is not RRTK's fault: https://github.com/rust-lang/rust/issues/131443
+                    #[allow(static_mut_refs)]
+                    unsafe {
+                        assert_eq!(GETTER_UPDATE_CALLS, $g_u_1);
+                        assert_eq!(GETTER_GET_CALLS, $g_g_1);
+                    }
+                    assert_eq!(test.get(), $gotten_value);
+                    #[allow(static_mut_refs)]
+                    unsafe {
+                        assert_eq!(GETTER_UPDATE_CALLS, $g_u_2);
+                        assert_eq!(GETTER_GET_CALLS, $g_g_2);
+                    }
+                };
+            }
+            test_index!(Err(1), 1, 0, Ok(Some(Datum::new(Time::from_seconds_f32(1.5), 20))), 1, 1);
+            test_index!(Err(2), 2, 1, Ok(None), 2, 2);
+            test_index!(Err($first_choice), 3, 2, Ok(None), 3, 3);
+            test_index!(Ok(()), 4, 3, Err(5), 4, 4);
+            test_index!(Ok(()), 5, 4, Err(6), 5, 5);
+            test_index!(Ok(()), 6, 5, Err($second_choice), 6, 6);
+        }
+    }
+}
+test_prioritize!(prioritize_a, PrioritizeA, 3, 7);
+test_prioritize!(prioritize_b, PrioritizeB, 4, 8);
