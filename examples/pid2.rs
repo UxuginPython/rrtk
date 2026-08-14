@@ -13,9 +13,10 @@ impl Updatable<Infallible> for Input {
         Ok(())
     }
 }
+static mut CONTROLLED_VALUE: f32 = 0.0;
 impl Getter<f32, Infallible> for Input {
     fn get(&self) -> Output<f32, Infallible> {
-        Ok(Some(Datum::new(self.time, 4.0)))
+        Ok(Some(Datum::new(self.time, unsafe { CONTROLLED_VALUE })))
     }
 }
 fn main() {
@@ -47,13 +48,17 @@ fn main() {
     let derivative_term =
         Box::new(math::Product2::new(derivative, kd)) as Box<dyn Getter<f32, Infallible>>;
     let mut pid = math::SumStream::new([proportional_term, integral_term, derivative_term]);
-    for _ in 0..10 {
+    for _ in 0..30 {
         pid.update().unwrap();
         let gotten = pid.get().unwrap().unwrap();
         println!(
-            "time: {:?};\tcommand: {:?}",
+            "time: {:?};\tcontrolled value: {:?};\tcommand: {:?}",
             gotten.time.as_nanoseconds(),
+            unsafe { CONTROLLED_VALUE },
             gotten.value
         );
+        unsafe {
+            CONTROLLED_VALUE += 0.7 * gotten.value;
+        }
     }
 }
