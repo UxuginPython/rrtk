@@ -56,12 +56,14 @@ impl StreamPID {
         //differently.
         let int = Rc::new(RefCell::new(IntegralStream::new(Rc::clone(&error))));
         let drv = Rc::new(RefCell::new(DerivativeStream::new(Rc::clone(&error))));
-        //`ProductStream`'s behavior is to treat all `None` values as 1.0 so that it's as if they
-        //were not included. However, this is not what we want with the coefficient. `NoneToValue`
-        //is used to convert all `None` values to `Some(0.0)` to effectively exlude them from the
-        //final sum.
-        let int_zeroer = NoneToValue::new(int.clone(), time_getter.clone(), 0.0_f32);
-        let drv_zeroer = NoneToValue::new(drv.clone(), time_getter.clone(), 0.0_f32);
+        //ProductStream returns Ok(None) if any of its inputs returns Ok(None) (assuming none of
+        //them error). However, with the coefficient, what we want is to instead exclude them from
+        //the final sum. Therefore, we use NoneToValue to change Ok(None) values to Ok(Some(_))
+        //values of 0.0. NoneToDefault could also be used here; try replacing NoneToValue with
+        //NoneToDefault and removing the 0.0_f32 argument.
+        //We also use PrioritizeA to bypass some error handling we don't need here.
+        let int_zeroer = PrioritizeA::new(NoneToValue::new(int.clone(), time_getter.clone(), 0.0_f32));
+        let drv_zeroer = PrioritizeA::new(NoneToValue::new(drv.clone(), time_getter.clone(), 0.0_f32));
         let kp_mul = Product2::new(kp, error.clone());
         let ki_mul = Product2::new(ki, int_zeroer);
         let kd_mul = Product2::new(kd, drv_zeroer);
