@@ -442,10 +442,9 @@ where
     E: Clone + Debug,
 {
     fn get(&self) -> Output<Quantity<T, MM, S>, E> {
-        match self.input.get()? {
-            None => Ok(None),
-            Some(x) => Ok(Some(Datum::new(x.time, Quantity::new(x.value)))),
-        }
+        self.input
+            .get()
+            .map_ok_some_value(|value| Quantity::new(value))
     }
 }
 impl<MM, S, G, E> Updatable<E> for DimensionAdder<MM, S, G>
@@ -482,10 +481,9 @@ where
     E: Clone + Debug,
 {
     fn get(&self) -> Output<T, E> {
-        match self.input.get()? {
-            None => Ok(None),
-            Some(x) => Ok(Some(Datum::new(x.time, x.value.into_inner()))),
-        }
+        self.input
+            .get()
+            .map_ok_some_value(|quantity| quantity.into_inner())
     }
 }
 impl<MM, S, G: Updatable<E>, E: Clone + Debug> Updatable<E> for DimensionRemover<MM, S, G> {
@@ -516,10 +514,7 @@ where
     E: Clone + Debug,
 {
     fn get(&self) -> Output<TO, E> {
-        Ok(self
-            .input //Result<Option<Datum<T>>, E>
-            .get()? //Option<Datum<T>>
-            .map(|datum| /*Datum<T>*/ Datum::new(datum.time, datum.value.into())))
+        self.input.get().map_ok_some_value(|value| value.into())
     }
 }
 impl<TI, G: Updatable<E>, E: Clone + Debug> Updatable<E> for IntoConverter<TI, G> {
