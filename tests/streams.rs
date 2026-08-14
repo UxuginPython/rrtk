@@ -2137,3 +2137,172 @@ fn command_pid() {
         }
     }
 }
+//XXX: This does not currently test the error handling behavior of NoneToDefault::update().
+#[test]
+fn none_to_default() {
+    #[derive(Clone, Debug, PartialEq, Eq)]
+    struct MyError(u8);
+    struct MyGetter;
+    static mut GETTER_UPDATE_CALLS: u8 = 0;
+    impl Updatable<MyError> for MyGetter {
+        fn update(&mut self) -> NothingOrError<MyError> {
+            unsafe {
+                GETTER_UPDATE_CALLS += 1;
+            }
+            Ok(())
+        }
+    }
+    static mut GETTER_GET_CALLS: u8 = 0;
+    impl Getter<u8, MyError> for MyGetter {
+        fn get(&self) -> Output<u8, MyError> {
+            unsafe {
+                GETTER_GET_CALLS += 1;
+            }
+            match unsafe { GETTER_UPDATE_CALLS } {
+                0 => panic!("missed update call"),
+                1 => Ok(Some(Datum::new(Time::from_seconds_f32(2.0), 1))),
+                2 => Ok(Some(Datum::new(Time::from_seconds_f32(2.1), 2))),
+                3 => Ok(None),
+                4 => Ok(None),
+                5 => Ok(None),
+                6 => Err(MyError(1)),
+                _ => panic!("update called too many times"),
+            }
+        }
+    }
+    struct MyTimeGetter;
+    static mut TIME_GETTER_UPDATE_CALLS: u8 = 0;
+    impl Updatable<MyError> for MyTimeGetter {
+        fn update(&mut self) -> NothingOrError<MyError> {
+            unsafe {
+                TIME_GETTER_UPDATE_CALLS += 1;
+            }
+            Ok(())
+        }
+    }
+    static mut TIME_GETTER_GET_CALLS: u8 = 0;
+    impl TimeGetter<MyError> for MyTimeGetter {
+        fn get(&self) -> TimeOutput<MyError> {
+            unsafe {
+                TIME_GETTER_GET_CALLS += 1;
+            }
+            match unsafe { GETTER_UPDATE_CALLS } {
+                0 => panic!("missed update call"),
+                1 => panic!("TimeGetter is not needed here"),
+                2 => panic!("TimeGetter is not needed here"),
+                3 => Ok(Time::from_seconds_f32(2.2)),
+                4 => Ok(Time::from_seconds_f32(2.3)),
+                5 => Err(MyError(2)),
+                6 => panic!("TimeGetter is not needed here"),
+                _ => panic!("update called too many times"),
+            }
+        }
+    }
+    let mut test = NoneToDefault::new(MyGetter, MyTimeGetter);
+
+    //This is not RRTK's fault: https://github.com/rust-lang/rust/issues/131443
+    #[allow(static_mut_refs)]
+    {
+        test.update().unwrap(); //index 0 -> 1
+        unsafe {
+            assert_eq!(GETTER_UPDATE_CALLS, 1);
+            assert_eq!(TIME_GETTER_UPDATE_CALLS, 1);
+            assert_eq!(GETTER_GET_CALLS, 0);
+            assert_eq!(TIME_GETTER_GET_CALLS, 0);
+        }
+        assert_eq!(
+            test.get(),
+            Ok(Some(Datum::new(Time::from_seconds_f32(2.0), 1)))
+        );
+        unsafe {
+            assert_eq!(GETTER_UPDATE_CALLS, 1);
+            assert_eq!(TIME_GETTER_UPDATE_CALLS, 1);
+            assert_eq!(GETTER_GET_CALLS, 1);
+            assert_eq!(TIME_GETTER_GET_CALLS, 0);
+        }
+
+        test.update().unwrap(); //index 1 -> 2
+        unsafe {
+            assert_eq!(GETTER_UPDATE_CALLS, 2);
+            assert_eq!(TIME_GETTER_UPDATE_CALLS, 2);
+            assert_eq!(GETTER_GET_CALLS, 1);
+            assert_eq!(TIME_GETTER_GET_CALLS, 0);
+        }
+        assert_eq!(
+            test.get(),
+            Ok(Some(Datum::new(Time::from_seconds_f32(2.1), 2)))
+        );
+        unsafe {
+            assert_eq!(GETTER_UPDATE_CALLS, 2);
+            assert_eq!(TIME_GETTER_UPDATE_CALLS, 2);
+            assert_eq!(GETTER_GET_CALLS, 2);
+            assert_eq!(TIME_GETTER_GET_CALLS, 0);
+        }
+
+        test.update().unwrap(); //index 2 -> 3
+        unsafe {
+            assert_eq!(GETTER_UPDATE_CALLS, 3);
+            assert_eq!(TIME_GETTER_UPDATE_CALLS, 3);
+            assert_eq!(GETTER_GET_CALLS, 2);
+            assert_eq!(TIME_GETTER_GET_CALLS, 0);
+        }
+        assert_eq!(
+            test.get(),
+            Ok(Some(Datum::new(Time::from_seconds_f32(2.2), 0)))
+        );
+        unsafe {
+            assert_eq!(GETTER_UPDATE_CALLS, 3);
+            assert_eq!(TIME_GETTER_UPDATE_CALLS, 3);
+            assert_eq!(GETTER_GET_CALLS, 3);
+            assert_eq!(TIME_GETTER_GET_CALLS, 1);
+        }
+
+        test.update().unwrap(); //index 3 -> 4
+        unsafe {
+            assert_eq!(GETTER_UPDATE_CALLS, 4);
+            assert_eq!(TIME_GETTER_UPDATE_CALLS, 4);
+            assert_eq!(GETTER_GET_CALLS, 3);
+            assert_eq!(TIME_GETTER_GET_CALLS, 1);
+        }
+        assert_eq!(
+            test.get(),
+            Ok(Some(Datum::new(Time::from_seconds_f32(2.3), 0)))
+        );
+        unsafe {
+            assert_eq!(GETTER_UPDATE_CALLS, 4);
+            assert_eq!(TIME_GETTER_UPDATE_CALLS, 4);
+            assert_eq!(GETTER_GET_CALLS, 4);
+            assert_eq!(TIME_GETTER_GET_CALLS, 2);
+        }
+
+        test.update().unwrap(); //index 4 -> 5
+        unsafe {
+            assert_eq!(GETTER_UPDATE_CALLS, 5);
+            assert_eq!(TIME_GETTER_UPDATE_CALLS, 5);
+            assert_eq!(GETTER_GET_CALLS, 4);
+            assert_eq!(TIME_GETTER_GET_CALLS, 2);
+        }
+        assert_eq!(test.get(), Err(MyError(2)));
+        unsafe {
+            assert_eq!(GETTER_UPDATE_CALLS, 5);
+            assert_eq!(TIME_GETTER_UPDATE_CALLS, 5);
+            assert_eq!(GETTER_GET_CALLS, 5);
+            assert_eq!(TIME_GETTER_GET_CALLS, 3);
+        }
+
+        test.update().unwrap(); //index 5 -> 6
+        unsafe {
+            assert_eq!(GETTER_UPDATE_CALLS, 6);
+            assert_eq!(TIME_GETTER_UPDATE_CALLS, 6);
+            assert_eq!(GETTER_GET_CALLS, 5);
+            assert_eq!(TIME_GETTER_GET_CALLS, 3);
+        }
+        assert_eq!(test.get(), Err(MyError(1)));
+        unsafe {
+            assert_eq!(GETTER_UPDATE_CALLS, 6);
+            assert_eq!(TIME_GETTER_UPDATE_CALLS, 6);
+            assert_eq!(GETTER_GET_CALLS, 6);
+            assert_eq!(TIME_GETTER_GET_CALLS, 3);
+        }
+    }
+}
