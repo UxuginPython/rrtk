@@ -62,6 +62,18 @@ pub use datum::*;
 use enhanced_float::*;
 pub use motion_profile::*;
 pub use state::*;
+///Re-exports some of the most important RRTK items as well as all its extension traits.
+///
+///This allows one to write `use rrtk::prelude::*;` instead of either adding a lot of boilerplate
+///importing each needed item individually or unnecessarily importing everything with `use
+///rrtk::*;`.
+pub mod prelude {
+    #[cfg(feature = "devices")]
+    pub use super::devices::DeviceUpdatable;
+    pub use super::{
+        Datum, Getter, NothingOrErrorExt, OptionDatumExt, OutputExt, TimeGetter, Updatable,
+    };
+}
 ///Error types used for a few things in RRTK.
 pub mod error {
     use super::*;
