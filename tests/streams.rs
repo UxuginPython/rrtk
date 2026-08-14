@@ -2199,110 +2199,38 @@ fn none_to_default() {
         }
     }
     let mut test = NoneToDefault::new(MyGetter, MyTimeGetter);
-
-    //This is not RRTK's fault: https://github.com/rust-lang/rust/issues/131443
-    #[allow(static_mut_refs)]
-    {
-        test.update().unwrap(); //index 0 -> 1
-        unsafe {
-            assert_eq!(GETTER_UPDATE_CALLS, 1);
-            assert_eq!(TIME_GETTER_UPDATE_CALLS, 1);
-            assert_eq!(GETTER_GET_CALLS, 0);
-            assert_eq!(TIME_GETTER_GET_CALLS, 0);
-        }
-        assert_eq!(
-            test.get(),
-            Ok(Some(Datum::new(Time::from_seconds_f32(2.0), 1)))
-        );
-        unsafe {
-            assert_eq!(GETTER_UPDATE_CALLS, 1);
-            assert_eq!(TIME_GETTER_UPDATE_CALLS, 1);
-            assert_eq!(GETTER_GET_CALLS, 1);
-            assert_eq!(TIME_GETTER_GET_CALLS, 0);
-        }
-
-        test.update().unwrap(); //index 1 -> 2
-        unsafe {
-            assert_eq!(GETTER_UPDATE_CALLS, 2);
-            assert_eq!(TIME_GETTER_UPDATE_CALLS, 2);
-            assert_eq!(GETTER_GET_CALLS, 1);
-            assert_eq!(TIME_GETTER_GET_CALLS, 0);
-        }
-        assert_eq!(
-            test.get(),
-            Ok(Some(Datum::new(Time::from_seconds_f32(2.1), 2)))
-        );
-        unsafe {
-            assert_eq!(GETTER_UPDATE_CALLS, 2);
-            assert_eq!(TIME_GETTER_UPDATE_CALLS, 2);
-            assert_eq!(GETTER_GET_CALLS, 2);
-            assert_eq!(TIME_GETTER_GET_CALLS, 0);
-        }
-
-        test.update().unwrap(); //index 2 -> 3
-        unsafe {
-            assert_eq!(GETTER_UPDATE_CALLS, 3);
-            assert_eq!(TIME_GETTER_UPDATE_CALLS, 3);
-            assert_eq!(GETTER_GET_CALLS, 2);
-            assert_eq!(TIME_GETTER_GET_CALLS, 0);
-        }
-        assert_eq!(
-            test.get(),
-            Ok(Some(Datum::new(Time::from_seconds_f32(2.2), 0)))
-        );
-        unsafe {
-            assert_eq!(GETTER_UPDATE_CALLS, 3);
-            assert_eq!(TIME_GETTER_UPDATE_CALLS, 3);
-            assert_eq!(GETTER_GET_CALLS, 3);
-            assert_eq!(TIME_GETTER_GET_CALLS, 1);
-        }
-
-        test.update().unwrap(); //index 3 -> 4
-        unsafe {
-            assert_eq!(GETTER_UPDATE_CALLS, 4);
-            assert_eq!(TIME_GETTER_UPDATE_CALLS, 4);
-            assert_eq!(GETTER_GET_CALLS, 3);
-            assert_eq!(TIME_GETTER_GET_CALLS, 1);
-        }
-        assert_eq!(
-            test.get(),
-            Ok(Some(Datum::new(Time::from_seconds_f32(2.3), 0)))
-        );
-        unsafe {
-            assert_eq!(GETTER_UPDATE_CALLS, 4);
-            assert_eq!(TIME_GETTER_UPDATE_CALLS, 4);
-            assert_eq!(GETTER_GET_CALLS, 4);
-            assert_eq!(TIME_GETTER_GET_CALLS, 2);
-        }
-
-        test.update().unwrap(); //index 4 -> 5
-        unsafe {
-            assert_eq!(GETTER_UPDATE_CALLS, 5);
-            assert_eq!(TIME_GETTER_UPDATE_CALLS, 5);
-            assert_eq!(GETTER_GET_CALLS, 4);
-            assert_eq!(TIME_GETTER_GET_CALLS, 2);
-        }
-        assert_eq!(test.get(), Err(MyError(2)));
-        unsafe {
-            assert_eq!(GETTER_UPDATE_CALLS, 5);
-            assert_eq!(TIME_GETTER_UPDATE_CALLS, 5);
-            assert_eq!(GETTER_GET_CALLS, 5);
-            assert_eq!(TIME_GETTER_GET_CALLS, 3);
-        }
-
-        test.update().unwrap(); //index 5 -> 6
-        unsafe {
-            assert_eq!(GETTER_UPDATE_CALLS, 6);
-            assert_eq!(TIME_GETTER_UPDATE_CALLS, 6);
-            assert_eq!(GETTER_GET_CALLS, 5);
-            assert_eq!(TIME_GETTER_GET_CALLS, 3);
-        }
-        assert_eq!(test.get(), Err(MyError(1)));
-        unsafe {
-            assert_eq!(GETTER_UPDATE_CALLS, 6);
-            assert_eq!(TIME_GETTER_UPDATE_CALLS, 6);
-            assert_eq!(GETTER_GET_CALLS, 6);
-            assert_eq!(TIME_GETTER_GET_CALLS, 3);
-        }
+    macro_rules! test_index {
+        ($g_u_1: literal, $tg_u_1: literal, $g_g_1: literal, $tg_g_1: literal, $gotten_value: expr, $g_u_2: literal, $tg_u_2: literal, $g_g_2: literal, $tg_g_2: literal) => {
+            test.update().unwrap();
+            //This is not RRTK's fault: https://github.com/rust-lang/rust/issues/131443
+            #[allow(static_mut_refs)]
+            unsafe {
+                assert_eq!(GETTER_UPDATE_CALLS, $g_u_1);
+                assert_eq!(TIME_GETTER_UPDATE_CALLS, $tg_u_1);
+                assert_eq!(GETTER_GET_CALLS, $g_g_1);
+                assert_eq!(TIME_GETTER_GET_CALLS, $tg_g_1);
+            }
+            assert_eq!(test.get(), $gotten_value);
+            #[allow(static_mut_refs)]
+            unsafe {
+                assert_eq!(GETTER_UPDATE_CALLS, $g_u_2);
+                assert_eq!(TIME_GETTER_UPDATE_CALLS, $tg_u_2);
+                assert_eq!(GETTER_GET_CALLS, $g_g_2);
+                assert_eq!(TIME_GETTER_GET_CALLS, $tg_g_2);
+            }
+        };
     }
+
+    #[rustfmt::skip]
+    test_index!(1, 1, 0, 0, Ok(Some(Datum::new(Time::from_seconds_f32(2.0), 1))), 1, 1, 1, 0);
+    #[rustfmt::skip]
+    test_index!(2, 2, 1, 0, Ok(Some(Datum::new(Time::from_seconds_f32(2.1), 2))), 2, 2, 2, 0);
+    #[rustfmt::skip]
+    test_index!(3, 3, 2, 0, Ok(Some(Datum::new(Time::from_seconds_f32(2.2), 0))), 3, 3, 3, 1);
+    #[rustfmt::skip]
+    test_index!(4, 4, 3, 1, Ok(Some(Datum::new(Time::from_seconds_f32(2.3), 0))), 4, 4, 4, 2);
+    #[rustfmt::skip]
+    test_index!(5, 5, 4, 2, Err(MyError(2)), 5, 5, 5, 3);
+    #[rustfmt::skip]
+    test_index!(6, 6, 5, 3, Err(MyError(1)), 6, 6, 6, 3);
 }
