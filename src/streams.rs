@@ -148,3 +148,64 @@ where
         Ok(())
     }
 }
+///A stream for printing debug information upon `get`, `set`, and `update` calls. Except for that,
+///it is transparent, passing all calls to those methods directly to its input.
+pub struct DebugStream<G> {
+    input: G,
+    silent: bool,
+}
+impl<G> DebugStream<G> {
+    ///Constructor for `DebugStream`.
+    #[inline]
+    pub const fn new(input: G) -> Self {
+        Self {
+            input,
+            silent: false,
+        }
+    }
+    ///Enable or disable the debug printing done by `DebugStream`.
+    ///
+    ///Set `true` to disable debug printing and `false` to reenable it. Debug printing is **on** by
+    ///default.
+    #[inline]
+    pub const fn set_silent(&mut self, silent: bool) {
+        self.silent = silent;
+    }
+}
+impl<G: Updatable<E>, E: Clone + Debug> Updatable<E> for DebugStream<G> {
+    fn update(&mut self) -> NothingOrError<E> {
+        if self.silent {
+            self.input.update()
+        } else {
+            let update = self.input.update();
+            eprintln!("rrtk::Updatable::update: {:?}", update);
+            update
+        }
+    }
+}
+impl<T: Debug, G: Getter<T, E>, E: Clone + Debug> Getter<T, E> for DebugStream<G> {
+    fn get(&self) -> Output<T, E> {
+        if self.silent {
+            self.input.get()
+        } else {
+            let get = self.input.get();
+            eprintln!("rrtk::Getter::get: {:?}", get);
+            get
+        }
+    }
+}
+impl<T: Debug, G: Settable<T, E>, E: Clone + Debug> Settable<T, E> for DebugStream<G> {
+    fn set(&mut self, value: T) -> NothingOrError<E> {
+        if self.silent {
+            self.input.set(value)
+        } else {
+            let value_string = format!("{:?}", value);
+            let set = self.input.set(value);
+            eprintln!(
+                r#"rrtk::Settable::set: setting to "{}" returned "{:?}""#,
+                value_string, set
+            );
+            set
+        }
+    }
+}
