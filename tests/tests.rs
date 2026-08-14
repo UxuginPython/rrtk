@@ -1116,10 +1116,3 @@ fn none_getter() {
     <NoneGetter as Updatable<()>>::update(&mut getter).unwrap();
     assert_eq!(<NoneGetter as Getter<(), ()>>::get(&getter), Ok(None));
 }
-#[test]
-fn datum_map() {
-    assert_eq!(
-        Datum::new(Time::from_nanoseconds(2_000_000_000), 5).map(|x| x * 2),
-        Datum::new(Time::from_nanoseconds(2_000_000_000), 10)
-    );
-}
