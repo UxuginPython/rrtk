@@ -209,3 +209,25 @@ impl<T: Debug, G: Settable<T, E>, E: Clone + Debug> Settable<T, E> for DebugStre
         }
     }
 }
+impl<G: TimeGetter<E>, E: Clone + Debug> TimeGetter<E> for DebugStream<G> {
+    fn get(&self) -> TimeOutput<E> {
+        if self.silent {
+            self.input.get()
+        } else {
+            let get = self.input.get();
+            eprintln!("rrtk::TimeGetter::get: {:?}", get);
+            get
+        }
+    }
+}
+impl<T: Debug, G: Chronology<T>> Chronology<T> for DebugStream<G> {
+    fn get(&self, time: Time) -> Option<Datum<T>> {
+        if self.silent {
+            self.input.get(time)
+        } else {
+            let get = self.input.get(time);
+            eprintln!("rrtk::Chronology::get: {:?}", get);
+            get
+        }
+    }
+}
