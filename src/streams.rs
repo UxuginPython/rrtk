@@ -150,10 +150,12 @@ where
 }
 ///A stream for printing debug information upon `get`, `set`, and `update` calls. Except for that,
 ///it is transparent, passing all calls to those methods directly to its input.
+#[cfg(feature = "std")]
 pub struct DebugStream<G> {
     input: G,
     silent: bool,
 }
+#[cfg(feature = "std")]
 impl<G> DebugStream<G> {
     ///Constructor for `DebugStream`.
     #[inline]
@@ -172,6 +174,7 @@ impl<G> DebugStream<G> {
         self.silent = silent;
     }
 }
+#[cfg(feature = "std")]
 impl<G: Updatable<E>, E: Clone + Debug> Updatable<E> for DebugStream<G> {
     fn update(&mut self) -> NothingOrError<E> {
         if self.silent {
@@ -183,6 +186,7 @@ impl<G: Updatable<E>, E: Clone + Debug> Updatable<E> for DebugStream<G> {
         }
     }
 }
+#[cfg(feature = "std")]
 impl<T: Debug, G: Getter<T, E>, E: Clone + Debug> Getter<T, E> for DebugStream<G> {
     fn get(&self) -> Output<T, E> {
         if self.silent {
@@ -194,6 +198,7 @@ impl<T: Debug, G: Getter<T, E>, E: Clone + Debug> Getter<T, E> for DebugStream<G
         }
     }
 }
+#[cfg(feature = "std")]
 impl<T: Debug, G: Settable<T, E>, E: Clone + Debug> Settable<T, E> for DebugStream<G> {
     fn set(&mut self, value: T) -> NothingOrError<E> {
         if self.silent {
@@ -209,6 +214,7 @@ impl<T: Debug, G: Settable<T, E>, E: Clone + Debug> Settable<T, E> for DebugStre
         }
     }
 }
+#[cfg(feature = "std")]
 impl<G: TimeGetter<E>, E: Clone + Debug> TimeGetter<E> for DebugStream<G> {
     fn get(&self) -> TimeOutput<E> {
         if self.silent {
@@ -220,6 +226,7 @@ impl<G: TimeGetter<E>, E: Clone + Debug> TimeGetter<E> for DebugStream<G> {
         }
     }
 }
+#[cfg(feature = "std")]
 impl<T: Debug, G: Chronology<T>> Chronology<T> for DebugStream<G> {
     fn get(&self, time: Time) -> Option<Datum<T>> {
         if self.silent {
