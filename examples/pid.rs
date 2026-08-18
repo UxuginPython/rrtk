@@ -62,8 +62,10 @@ impl StreamPID {
         //values of 0.0. NoneToDefault could also be used here; try replacing NoneToValue with
         //NoneToDefault and removing the 0.0_f32 argument.
         //We also use PrioritizeA to bypass some error handling we don't need here.
-        let int_zeroer = PrioritizeA::new(NoneToValue::new(int.clone(), time_getter.clone(), 0.0_f32));
-        let drv_zeroer = PrioritizeA::new(NoneToValue::new(drv.clone(), time_getter.clone(), 0.0_f32));
+        let int_zeroer =
+            PrioritizeA::new(NoneToValue::new(int.clone(), time_getter.clone(), 0.0_f32));
+        let drv_zeroer =
+            PrioritizeA::new(NoneToValue::new(drv.clone(), time_getter.clone(), 0.0_f32));
         let kp_mul = Product2::new(kp, error.clone());
         let ki_mul = Product2::new(ki, int_zeroer);
         let kd_mul = Product2::new(kd, drv_zeroer);

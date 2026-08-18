@@ -110,6 +110,12 @@ where
     }
 }
 ///Converts all `Ok(None)` values to `Ok(Some(T::default()))`.
+///
+///As for `PossibleDoubleError` values returned by this stream, Side A is the input `Getter`, and
+///Side B is the `TimeGetter`. Note that the `Getter::get` implementation for this type will never
+///return the `PossibleDoubleError::AB` variant; it is only necessary to use `PossibleDoubleError`
+///for it because `Getter<T, E>: Updatable<E>` and `Updatable::update` *can* return
+///`PossibleDoubleError::AB`.
 pub struct NoneToDefault<T, G, TG, E> {
     input: G,
     time_getter: TG,
@@ -127,30 +133,43 @@ impl<T, G, TG, E> NoneToDefault<T, G, TG, E> {
         }
     }
 }
-impl<T, G, TG, E> Getter<T, E> for NoneToDefault<T, G, TG, E>
+impl<T, G, TG, E> Getter<T, error::PossibleDoubleError<E>> for NoneToDefault<T, G, TG, E>
 where
     T: Default,
     G: Getter<T, E>,
     TG: TimeGetter<E>,
     E: Clone + Debug,
 {
-    fn get(&self) -> Output<T, E> {
-        Ok(Some(match self.input.get()? {
-            Some(value) => value,
-            None => Datum::new(self.time_getter.get()?, T::default()),
-        }))
+    fn get(&self) -> Output<T, error::PossibleDoubleError<E>> {
+        let input = match self.input.get() {
+            Ok(option) => option,
+            Err(error) => return Err(error::PossibleDoubleError::A(error)),
+        };
+        if let Some(datum) = input {
+            return Ok(Some(datum));
+        }
+        let time = match self.time_getter.get() {
+            Ok(time) => time,
+            Err(error) => return Err(error::PossibleDoubleError::B(error)),
+        };
+        Ok(Some(Datum::new(time, T::default())))
     }
 }
-impl<T, G, TG, E> Updatable<E> for NoneToDefault<T, G, TG, E>
+impl<T, G, TG, E> Updatable<error::PossibleDoubleError<E>> for NoneToDefault<T, G, TG, E>
 where
     G: Updatable<E>,
     TG: Updatable<E>,
     E: Clone + Debug,
 {
-    fn update(&mut self) -> NothingOrError<E> {
-        self.time_getter.update()?;
-        self.input.update()?;
-        Ok(())
+    fn update(&mut self) -> NothingOrError<error::PossibleDoubleError<E>> {
+        let side_b = self.time_getter.update();
+        let side_a = self.input.update();
+        match (side_a, side_b) {
+            (Ok(()), Ok(())) => Ok(()),
+            (Err(a), Ok(())) => Err(error::PossibleDoubleError::A(a)),
+            (Ok(()), Err(b)) => Err(error::PossibleDoubleError::B(b)),
+            (Err(a), Err(b)) => Err(error::PossibleDoubleError::AB(a, b)),
+        }
     }
 }
 pub use acceleration_to_state::*;
