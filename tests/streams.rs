@@ -2230,9 +2230,9 @@ fn none_to_default() {
     #[rustfmt::skip]
     test_index!(4, 4, 3, 1, Ok(Some(Datum::new(Time::from_seconds_f32(2.3), 0))), 4, 4, 4, 2);
     #[rustfmt::skip]
-    test_index!(5, 5, 4, 2, Err(MyError(2)), 5, 5, 5, 3);
+    test_index!(5, 5, 4, 2, Err(error::PossibleDoubleError::B(MyError(2))), 5, 5, 5, 3);
     #[rustfmt::skip]
-    test_index!(6, 6, 5, 3, Err(MyError(1)), 6, 6, 6, 3);
+    test_index!(6, 6, 5, 3, Err(error::PossibleDoubleError::A(MyError(1))), 6, 6, 6, 3);
 }
 #[test]
 fn into_converter() {

@@ -33,17 +33,17 @@ fn main() {
     let kp = ConstantGetter::new(FAKE_TIME_GETTER, KP);
     let proportional_term =
         Box::new(math::Product2::new(Rc::clone(&error), kp)) as Box<dyn Getter<f32, Infallible>>;
-    let integral = converters::NoneToDefault::new(
+    let integral = converters::PrioritizeA::new(converters::NoneToDefault::new(
         math::IntegralStream::new(Rc::clone(&error)),
         FAKE_TIME_GETTER,
-    );
+    ));
     let ki = ConstantGetter::new(FAKE_TIME_GETTER, KI);
     let integral_term =
         Box::new(math::Product2::new(integral, ki)) as Box<dyn Getter<f32, Infallible>>;
-    let derivative = converters::NoneToDefault::new(
+    let derivative = converters::PrioritizeA::new(converters::NoneToDefault::new(
         math::DerivativeStream::new(Rc::clone(&error)),
         FAKE_TIME_GETTER,
-    );
+    ));
     let kd = ConstantGetter::new(FAKE_TIME_GETTER, KD);
     let derivative_term =
         Box::new(math::Product2::new(derivative, kd)) as Box<dyn Getter<f32, Infallible>>;
