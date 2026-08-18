@@ -263,3 +263,22 @@ impl<T: Debug, G: Chronology<T>> Chronology<T> for DebugStream<G> {
         }
     }
 }
+#[cfg(all(feature = "std", feature = "devices"))]
+impl<G: devices::DeviceUpdatable<E>, E: Debug> devices::DeviceUpdatable<E> for DebugStream<G> {
+    fn device_update<const N: usize>(
+        &mut self,
+        system: &mut devices::System<N>,
+    ) -> NothingOrError<E> {
+        if self.silent {
+            self.input.device_update(system)
+        } else {
+            let device_update = self.input.device_update(system);
+            eprintln!(
+                "{}rrtk::devices::DeviceUpdatable::device_update: {:?}",
+                self.to_prepend(),
+                device_update
+            );
+            device_update
+        }
+    }
+}
