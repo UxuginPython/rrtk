@@ -33,11 +33,7 @@ use std::sync::{Mutex, RwLock};
 #[cfg(feature = "alloc")]
 extern crate alloc;
 #[cfg(feature = "alloc")]
-use alloc::boxed::Box;
-#[cfg(feature = "alloc")]
-use alloc::rc::Rc;
-#[cfg(feature = "alloc")]
-use alloc::vec::Vec;
+use alloc::{boxed::Box, rc::Rc, vec::Vec};
 use core::cell::RefCell;
 use core::fmt;
 use core::marker::PhantomData;
