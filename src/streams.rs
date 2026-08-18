@@ -154,6 +154,7 @@ where
 pub struct DebugStream<G> {
     input: G,
     silent: bool,
+    name: Option<String>,
 }
 #[cfg(feature = "std")]
 impl<G> DebugStream<G> {
@@ -163,6 +164,16 @@ impl<G> DebugStream<G> {
         Self {
             input,
             silent: false,
+            name: None,
+        }
+    }
+    ///Construct `DebugStream` with a name that will be prepended to all debug messages.
+    #[inline]
+    pub const fn with_name(input: G, name: String) -> Self {
+        Self {
+            input,
+            silent: false,
+            name: Some(name),
         }
     }
     ///Enable or disable the debug printing done by `DebugStream`.
@@ -173,6 +184,18 @@ impl<G> DebugStream<G> {
     pub const fn set_silent(&mut self, silent: bool) {
         self.silent = silent;
     }
+    ///Change, add, or remove the name that is prepended to all debug messages.
+    #[inline]
+    pub fn change_name(&mut self, name: Option<String>) {
+        self.name = name;
+    }
+    fn to_prepend(&self) -> String {
+        if let Some(name) = &self.name {
+            format!("{}: ", name)
+        } else {
+            String::new()
+        }
+    }
 }
 #[cfg(feature = "std")]
 impl<G: Updatable<E>, E: Clone + Debug> Updatable<E> for DebugStream<G> {
@@ -181,7 +204,7 @@ impl<G: Updatable<E>, E: Clone + Debug> Updatable<E> for DebugStream<G> {
             self.input.update()
         } else {
             let update = self.input.update();
-            eprintln!("rrtk::Updatable::update: {:?}", update);
+            eprintln!("{}rrtk::Updatable::update: {:?}", self.to_prepend(), update);
             update
         }
     }
@@ -193,7 +216,7 @@ impl<T: Debug, G: Getter<T, E>, E: Clone + Debug> Getter<T, E> for DebugStream<G
             self.input.get()
         } else {
             let get = self.input.get();
-            eprintln!("rrtk::Getter::get: {:?}", get);
+            eprintln!("{}rrtk::Getter::get: {:?}", self.to_prepend(), get);
             get
         }
     }
@@ -207,8 +230,10 @@ impl<T: Debug, G: Settable<T, E>, E: Clone + Debug> Settable<T, E> for DebugStre
             let value_string = format!("{:?}", value);
             let set = self.input.set(value);
             eprintln!(
-                r#"rrtk::Settable::set: setting to "{}" returned "{:?}""#,
-                value_string, set
+                r#"{}rrtk::Settable::set: setting to "{}" returned "{:?}""#,
+                self.to_prepend(),
+                value_string,
+                set
             );
             set
         }
@@ -221,7 +246,7 @@ impl<G: TimeGetter<E>, E: Clone + Debug> TimeGetter<E> for DebugStream<G> {
             self.input.get()
         } else {
             let get = self.input.get();
-            eprintln!("rrtk::TimeGetter::get: {:?}", get);
+            eprintln!("{}rrtk::TimeGetter::get: {:?}", self.to_prepend(), get);
             get
         }
     }
@@ -233,7 +258,7 @@ impl<T: Debug, G: Chronology<T>> Chronology<T> for DebugStream<G> {
             self.input.get(time)
         } else {
             let get = self.input.get(time);
-            eprintln!("rrtk::Chronology::get: {:?}", get);
+            eprintln!("{}rrtk::Chronology::get: {:?}", self.to_prepend(), get);
             get
         }
     }
