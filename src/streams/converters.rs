@@ -99,8 +99,8 @@ where
     E: Clone + Debug,
 {
     fn update(&mut self) -> NothingOrError<error::PossibleDoubleError<E>> {
-        let side_a = self.input.update();
         let side_b = self.time_getter.update();
+        let side_a = self.input.update();
         match (side_a, side_b) {
             (Ok(()), Ok(())) => Ok(()),
             (Err(a), Ok(())) => Err(error::PossibleDoubleError::A(a)),
