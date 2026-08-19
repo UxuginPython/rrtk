@@ -51,10 +51,10 @@ pub trait OptionDatumExt<T> {
 }
 impl<T> OptionDatumExt<T> for Option<Datum<T>> {
     fn replace_if_none_or_older_than(&mut self, maybe_replace_with: Datum<T>) -> bool {
-        if let Some(self_datum) = self {
-            if self_datum.time >= maybe_replace_with.time {
-                return false;
-            }
+        if let Some(self_datum) = self
+            && self_datum.time >= maybe_replace_with.time
+        {
+            return false;
         }
         *self = Some(maybe_replace_with);
         true

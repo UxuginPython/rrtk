@@ -89,15 +89,9 @@ impl<C: GenericCommand> MotionProfile<C> {
         Self {
             start_pos: start_state.generic_position(),
             start_vel: start_state.generic_velocity(),
-            t1: Time::try_from(t1).expect(
-                "t1 must always be in seconds in max_vel and max_acc have correct dimensions",
-            ),
-            t2: Time::try_from(t2).expect(
-                "t2 must always be in seconds in max_vel and max_acc have correct dimensions",
-            ),
-            t3: Time::try_from(t3).expect(
-                "t3 must always be in seconds in max_vel and max_acc have correct dimensions",
-            ),
+            t1: Time::from(t1),
+            t2: Time::from(t2),
+            t3: Time::from(t3),
             max_acc,
             end_command,
         }
@@ -107,13 +101,13 @@ impl<C: GenericCommand> MotionProfile<C> {
         if t < Time::default() {
             None
         } else if t < self.t1 {
-            return Some(PositionDerivative::Acceleration);
+            Some(PositionDerivative::Acceleration)
         } else if t < self.t2 {
-            return Some(PositionDerivative::Velocity);
+            Some(PositionDerivative::Velocity)
         } else if t < self.t3 {
-            return Some(PositionDerivative::Acceleration);
+            Some(PositionDerivative::Acceleration)
         } else {
-            return Some(self.end_command.into());
+            Some(self.end_command.into())
         }
     }
     ///Get the [`MotionProfilePiece`] at a given time.
@@ -121,13 +115,13 @@ impl<C: GenericCommand> MotionProfile<C> {
         if t < Time::default() {
             MotionProfilePiece::BeforeStart
         } else if t < self.t1 {
-            return MotionProfilePiece::InitialAcceleration;
+            MotionProfilePiece::InitialAcceleration
         } else if t < self.t2 {
-            return MotionProfilePiece::ConstantVelocity;
+            MotionProfilePiece::ConstantVelocity
         } else if t < self.t3 {
-            return MotionProfilePiece::EndAcceleration;
+            MotionProfilePiece::EndAcceleration
         } else {
-            return MotionProfilePiece::Complete;
+            MotionProfilePiece::Complete
         }
     }
     ///Get the intended acceleration at a given time.
@@ -135,13 +129,13 @@ impl<C: GenericCommand> MotionProfile<C> {
         if t < Time::default() {
             None
         } else if t < self.t1 {
-            return Some(self.max_acc);
+            Some(self.max_acc)
         } else if t < self.t2 {
-            return Some(C::Acceleration::default());
+            Some(C::Acceleration::default())
         } else if t < self.t3 {
-            return Some(-self.max_acc);
+            Some(-self.max_acc)
         } else {
-            return Some(self.end_command.generic_get_acceleration());
+            Some(self.end_command.generic_get_acceleration())
         }
     }
     ///Get the intended velocity at a given time.
@@ -149,13 +143,13 @@ impl<C: GenericCommand> MotionProfile<C> {
         if t < Time::default() {
             None
         } else if t < self.t1 {
-            return Some(self.max_acc * t + self.start_vel);
+            Some(self.max_acc * t + self.start_vel)
         } else if t < self.t2 {
-            return Some(self.max_acc * self.t1 + self.start_vel);
+            Some(self.max_acc * self.t1 + self.start_vel)
         } else if t < self.t3 {
-            return Some(self.max_acc * (self.t1 + self.t2 - t) + self.start_vel);
+            Some(self.max_acc * (self.t1 + self.t2 - t) + self.start_vel)
         } else {
-            return self.end_command.generic_get_velocity();
+            self.end_command.generic_get_velocity()
         }
     }
     ///Get the intended position at a given time.
@@ -163,19 +157,19 @@ impl<C: GenericCommand> MotionProfile<C> {
         if t < Time::default() {
             None
         } else if t < self.t1 {
-            return Some(
+            Some(
                 self.max_acc * t * t * Dimensionless::new(0.5)
                     + self.start_vel * t
                     + self.start_pos,
-            );
+            )
         } else if t < self.t2 {
-            return Some(
+            Some(
                 self.max_acc * (self.t1.as_seconds() * (-self.t1 / DimensionlessInteger(2) + t))
                     + self.start_vel * t
                     + self.start_pos,
-            );
+            )
         } else if t < self.t3 {
-            return Some(
+            Some(
                 self.max_acc
                     * (self.t1.as_seconds() * (-self.t1 / DimensionlessInteger(2) + self.t2))
                     - self.max_acc
@@ -184,9 +178,9 @@ impl<C: GenericCommand> MotionProfile<C> {
                             * (t - DimensionlessInteger(2) * self.t1 - self.t2))
                     + self.start_vel * t
                     + self.start_pos,
-            );
+            )
         } else {
-            return self.end_command.generic_get_position();
+            self.end_command.generic_get_position()
         }
     }
 }

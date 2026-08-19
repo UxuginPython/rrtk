@@ -204,19 +204,14 @@ mod acceleration_to_state {
         Self: Updatable<E>,
     {
         fn get(&self) -> Output<S, E> {
-            if let Some(update_0) = &self.update_0 {
-                if let Some(update_1) = &update_0.update_1 {
-                    if let Some(update_2_position) = update_1.update_2_position {
-                        return Ok(Some(Datum::new(
-                            update_0.last_update_time,
-                            S::generic_new(
-                                update_2_position,
-                                update_1.velocity,
-                                update_0.acceleration,
-                            ),
-                        )));
-                    }
-                }
+            if let Some(update_0) = &self.update_0
+                && let Some(update_1) = &update_0.update_1
+                && let Some(update_2_position) = update_1.update_2_position
+            {
+                return Ok(Some(Datum::new(
+                    update_0.last_update_time,
+                    S::generic_new(update_2_position, update_1.velocity, update_0.acceleration),
+                )));
             }
             Ok(None)
         }
@@ -309,13 +304,13 @@ mod velocity_to_state {
         Self: Updatable<E>,
     {
         fn get(&self) -> Output<S, E> {
-            if let Some(update_0) = &self.update_0 {
-                if let Some(update_1) = &update_0.update_1 {
-                    return Ok(Some(Datum::new(
-                        update_0.last_update_time,
-                        S::generic_new(update_1.position, update_0.velocity, update_1.acceleration),
-                    )));
-                }
+            if let Some(update_0) = &self.update_0
+                && let Some(update_1) = &update_0.update_1
+            {
+                return Ok(Some(Datum::new(
+                    update_0.last_update_time,
+                    S::generic_new(update_1.position, update_0.velocity, update_1.acceleration),
+                )));
             }
             Ok(None)
         }
@@ -394,19 +389,14 @@ mod position_to_state {
         Self: Updatable<E>,
     {
         fn get(&self) -> Output<S, E> {
-            if let Some(update_0) = &self.update_0 {
-                if let Some(update_1) = &update_0.update_1 {
-                    if let Some(update_2_acceleration) = update_1.update_2_acceleration {
-                        return Ok(Some(Datum::new(
-                            update_0.last_update_time,
-                            S::generic_new(
-                                update_0.position,
-                                update_1.velocity,
-                                update_2_acceleration,
-                            ),
-                        )));
-                    }
-                }
+            if let Some(update_0) = &self.update_0
+                && let Some(update_1) = &update_0.update_1
+                && let Some(update_2_acceleration) = update_1.update_2_acceleration
+            {
+                return Ok(Some(Datum::new(
+                    update_0.last_update_time,
+                    S::generic_new(update_0.position, update_1.velocity, update_2_acceleration),
+                )));
             }
             Ok(None)
         }

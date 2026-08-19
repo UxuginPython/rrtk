@@ -200,7 +200,7 @@ mod command_pid {
                 }
             };
             let error = <C as Into<f32>>::into(self.command)
-                - f32::from(datum_state.value.generic_get_value(self.command.into()));
+                - datum_state.value.generic_get_value(self.command.into());
             match &self.update_state {
                 Ok(None) | Err(_) => {
                     let output = self.kvals.evaluate(self.command.into(), error, 0.0, 0.0);
@@ -391,11 +391,11 @@ where
             Ok(Some(some)) => some,
         };
         let prev_value = match &self.value {
-            Ok(Some(some)) => some.clone(),
+            Ok(Some(some)) => *some,
             _ => {
-                self.value = Ok(Some(output.clone()));
+                self.value = Ok(Some(output));
                 self.update_time = Some(output.time);
-                output.clone()
+                output
             }
         };
         let prev_time = self
