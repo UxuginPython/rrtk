@@ -33,5 +33,6 @@ default = ["std"]
 alloc_instead_of_core = "deny"
 std_instead_of_core = "deny"
 std_instead_of_alloc = "deny"
+excessive_precision = "allow"
 [package.metadata.docs.rs]
 all-features = true
