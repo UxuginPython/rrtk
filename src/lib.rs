@@ -336,6 +336,9 @@ pub trait Updatable<E: Clone + Debug> {
 ///
 ///Many `Getter`s hold other `Getter`s as inputs for data processing. These are called *[streams]*.
 ///Streams are another very important use of the `Getter` trait.
+#[diagnostic::on_unimplemented(
+    note = "Often, RRTK streams can be constructed with inputs that do not implement Getter, even if these inputs are not usable. Check the arguments to your constructors."
+)]
 pub trait Getter<G, E: Clone + Debug>: Updatable<E> {
     ///Get something, fallibly, with a timestamp.
     fn get(&self) -> Output<G, E>;
