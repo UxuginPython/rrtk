@@ -17,7 +17,6 @@
 //!
 //!RRTK prefers **`std`** over **`libm`** and `libm` over **`micromath`** when multiple are
 //!available.
-#![warn(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
 #[cfg(all(
     feature = "internal_enhanced_float",
