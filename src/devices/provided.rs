@@ -131,7 +131,7 @@ impl GearTrain {
             panic!("At least 2 gears are required to construct an RRTK GearTrain.");
         }
         let ratio = teeth[0] / teeth[N - 1];
-        let direction = if N % 2 == 0 { -1.0 } else { 1.0 };
+        let direction = if N.is_multiple_of(2) { -1.0 } else { 1.0 };
         Self::new(node_a, node_b, Dimensionless::new(ratio * direction))
     }
 }

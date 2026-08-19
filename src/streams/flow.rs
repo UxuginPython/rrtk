@@ -100,11 +100,11 @@ where
 ///Both `Getter`s are updated regardless of whether or not the stream is frozen.
 ///
 ///- If the boolean getter returns `Err(_)` or `Ok(None)`, that value is returned instead of that
-///of the input getter.
+///  of the input getter.
 ///- If the boolean getter returns true, the last value that was being returned before the boolean
-///getter was returning true is maintained. This is the frozen state.
+///  getter was returning true is maintained. This is the frozen state.
 ///- If the boolean getter returns false, the value of the input getter is returned. This is the
-///unfrozen state.
+///  unfrozen state.
 pub struct FreezeStream<T, GC, GI, E> {
     condition: GC,
     input: GI,

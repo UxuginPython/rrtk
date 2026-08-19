@@ -376,6 +376,7 @@ impl MulAssign for DimensionlessFraction {
 }
 impl Div for DimensionlessFraction {
     type Output = Self;
+    #[expect(clippy::suspicious_arithmetic_impl)]
     fn div(self, rhs: Self) -> Self {
         self * rhs.reciprocal()
     }
@@ -420,6 +421,7 @@ impl MulAssign<DimensionlessInteger> for DimensionlessFraction {
 }
 impl Div<DimensionlessInteger> for DimensionlessFraction {
     type Output = Self;
+    #[expect(clippy::suspicious_arithmetic_impl)]
     fn div(self, rhs: DimensionlessInteger) -> Self {
         Self(self.0, self.1 * rhs)
     }
@@ -465,6 +467,7 @@ impl Mul<DimensionlessFraction> for DimensionlessInteger {
 }
 impl Div<DimensionlessFraction> for DimensionlessInteger {
     type Output = DimensionlessFraction;
+    #[allow(clippy::suspicious_arithmetic_impl)]
     fn div(self, rhs: DimensionlessFraction) -> DimensionlessFraction {
         self * rhs.reciprocal()
     }
@@ -482,6 +485,7 @@ impl MulAssign<DimensionlessFraction> for Time {
 }
 impl Div<DimensionlessFraction> for Time {
     type Output = Self;
+    #[allow(clippy::suspicious_arithmetic_impl)]
     fn div(self, rhs: DimensionlessFraction) -> Self {
         self * rhs.reciprocal()
     }
