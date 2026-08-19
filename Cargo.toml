@@ -29,8 +29,6 @@ libm = ["dep:libm", "internal_enhanced_float"]
 micromath = ["dep:micromath", "internal_enhanced_float"]
 internal_enhanced_float = []
 default = ["std"]
-[lints.rust]
-missing_docs = "warn"
 [lints.clippy]
 alloc_instead_of_core = "deny"
 std_instead_of_core = "deny"
