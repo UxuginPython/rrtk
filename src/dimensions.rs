@@ -226,28 +226,50 @@ impl Mul<Time> for DimensionlessInteger {
     }
 }
 ///An exact rational number type for dimensionless values.
+///
+///There is a memory safety guarantee that the denominator is nonzero. RRTK does not currently
+///exhibit any undefined behavior if this precondition is violated, but this may change in the
+///future **without** being considered a breaking change.
 #[derive(Clone, Copy, Debug)]
 pub struct DimensionlessFraction(DimensionlessInteger, DimensionlessInteger);
 impl DimensionlessFraction {
-    ///Ensures that the denominator is not zero.
+    ///Checks whether the denominator is zero and panics if it is.
     #[inline]
-    pub const fn is_valid(&self) -> bool {
-        !self.1.is_zero()
+    pub const fn check_valid(&self) {
+        assert!(
+            !self.1.is_zero(),
+            "DimensionlessFraction with zero denominator detected - this indicates undefined behavior"
+        );
+    }
+    ///With debug assertions enabled, identical to [`check_valid`](Self::check_valid). With debug
+    ///assertions disabled (typically in release mode), NOP.
+    #[inline]
+    pub const fn debug_check_valid(&self) {
+        debug_assert!(
+            !self.1.is_zero(),
+            "DimensionlessFraction with zero denominator detected - this indicates undefined behavior"
+        );
     }
     ///Constructor that verifies that the denominator is not zero and panics if it is.
     #[inline]
     pub const fn new(num: DimensionlessInteger, denom: DimensionlessInteger) -> Self {
         let new = Self(num, denom);
-        if new.is_valid() {
-            new
-        } else {
-            panic!("attempted to construct a DimensionlessFraction with a zero denominator");
-        }
+        new.check_valid();
+        new
     }
     ///Constructor that does not check if the denominator is zero.
-    #[inline]
-    pub const fn new_unchecked(num: DimensionlessInteger, denom: DimensionlessInteger) -> Self {
-        Self(num, denom)
+    ///
+    ///With debug assertions enabled, this will still perform the zero denominator check.
+    #[inline(always)]
+    pub const unsafe fn new_unchecked(
+        num: DimensionlessInteger,
+        denom: DimensionlessInteger,
+    ) -> Self {
+        if cfg!(debug_assertions) {
+            Self::new(num, denom)
+        } else {
+            Self(num, denom)
+        }
     }
     ///Constructor from raw `i64` values for numerator and denominator. They are immediately
     ///converted to [`DimensionlessInteger`]. This constructor verifies that the denominator is
@@ -263,11 +285,13 @@ impl DimensionlessFraction {
     ///converted to [`DimensionlessInteger`]. This constructor does **not** verify that the
     ///denominator is nonzero.
     #[inline]
-    pub const fn from_raw_unchecked(num: i64, denom: i64) -> Self {
-        Self::new_unchecked(
-            DimensionlessInteger::new(num),
-            DimensionlessInteger::new(denom),
-        )
+    pub const unsafe fn from_raw_unchecked(num: i64, denom: i64) -> Self {
+        unsafe {
+            Self::new_unchecked(
+                DimensionlessInteger::new(num),
+                DimensionlessInteger::new(denom),
+            )
+        }
     }
     ///Reciprocal function (1/x) that panics if the new denominator is zero.
     #[inline]
@@ -275,19 +299,25 @@ impl DimensionlessFraction {
         Self::new(self.1, self.0)
     }
     ///Reciprocal function (1/x) that does not check if the new denominator is zero.
-    #[inline]
-    pub const fn reciprocal_unchecked(&self) -> Self {
-        Self(self.1, self.0)
+    ///
+    ///With debug assertions enabled, this will still perform the zero denominator check.
+    #[inline(always)]
+    pub const unsafe fn reciprocal_unchecked(&self) -> Self {
+        if cfg!(debug_assertions) {
+            self.reciprocal()
+        } else {
+            Self(self.1, self.0)
+        }
     }
     ///Converts the fraction into a tuple `(numerator, denominator)`.
     ///
     ///The following code is guaranteed to leave mutable `DimensionlessInteger` variables `x` and
-    ///`y` with the same values that they had before the code was run.
+    ///`y` with the same values that they had before the code was run as long as `y` is nonzero.
     ///```
     ///# use rrtk::{DimensionlessFraction, DimensionlessInteger};
     ///# let mut x = DimensionlessInteger(2);
     ///# let mut y = DimensionlessInteger(3);
-    ///let frac = DimensionlessFraction::new_unchecked(x, y);
+    ///let frac = DimensionlessFraction::new(x, y);
     ///(x, y) = frac.into_components();
     ///# assert_eq!(x.0, 2);
     ///# assert_eq!(y.0, 3);
