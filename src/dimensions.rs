@@ -235,26 +235,26 @@ pub struct DimensionlessFraction(DimensionlessInteger, DimensionlessInteger);
 impl DimensionlessFraction {
     ///Checks whether the denominator is zero and panics if it is.
     #[inline]
-    pub const fn check_valid(&self) {
+    pub const fn assert_valid(&self) {
         assert!(
             !self.1.is_zero(),
-            "DimensionlessFraction with zero denominator detected - this indicates undefined behavior"
+            "DimensionlessFraction with zero denominator detected"
         );
     }
     ///With debug assertions enabled, identical to [`check_valid`](Self::check_valid). With debug
     ///assertions disabled (typically in release mode), NOP.
     #[inline]
-    pub const fn debug_check_valid(&self) {
+    pub const fn debug_assert_valid(&self) {
         debug_assert!(
             !self.1.is_zero(),
-            "DimensionlessFraction with zero denominator detected - this indicates undefined behavior"
+            "DimensionlessFraction with zero denominator detected"
         );
     }
     ///Constructor that verifies that the denominator is not zero and panics if it is.
     #[inline]
     pub const fn new(num: DimensionlessInteger, denom: DimensionlessInteger) -> Self {
         let new = Self(num, denom);
-        new.check_valid();
+        new.assert_valid();
         new
     }
     ///Constructor that does not check if the denominator is zero.
