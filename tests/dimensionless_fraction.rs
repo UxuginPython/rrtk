@@ -4,9 +4,10 @@ use rrtk::*;
 #[test]
 fn new_new_unchecked_eq() {
     let x = DimensionlessFraction::new(DimensionlessInteger(2), DimensionlessInteger(3));
-    let y = DimensionlessFraction::new_unchecked(DimensionlessInteger(2), DimensionlessInteger(3));
+    let y = unsafe {
+        DimensionlessFraction::new_unchecked(DimensionlessInteger(2), DimensionlessInteger(3))
+    };
     assert_eq!(x, y);
-    let _ = DimensionlessFraction::new_unchecked(DimensionlessInteger(1), DimensionlessInteger(0));
 }
 #[test]
 fn from_raw() {
@@ -16,9 +17,9 @@ fn from_raw() {
 }
 #[test]
 fn from_raw_unchecked() {
-    let x = DimensionlessFraction::new_unchecked(DimensionlessInteger(1), DimensionlessInteger(0));
-    let y = DimensionlessFraction::from_raw_unchecked(1, 0);
-    assert!(x.raw_eq(&y));
+    let x = DimensionlessFraction::new(DimensionlessInteger(1), DimensionlessInteger(5));
+    let y = unsafe { DimensionlessFraction::from_raw_unchecked(1, 5) };
+    assert_eq!(x, y);
 }
 #[test]
 fn raw_eq() {
@@ -31,14 +32,6 @@ fn raw_eq() {
     assert!(
         !DimensionlessFraction::from_raw(1, 2).raw_eq(&DimensionlessFraction::from_raw(-1, -2))
     );
-    assert!(
-        !DimensionlessFraction::from_raw_unchecked(1, 0)
-            .raw_eq(&DimensionlessFraction::from_raw_unchecked(2, 0))
-    );
-    assert!(
-        DimensionlessFraction::from_raw_unchecked(2, 0)
-            .raw_eq(&DimensionlessFraction::from_raw_unchecked(2, 0))
-    );
 }
 #[test]
 #[should_panic]
@@ -47,15 +40,14 @@ fn div_by_zero_constructor_validation() {
 }
 #[test]
 #[should_panic]
-fn div_by_zero_constructor_validation_macro() {
+fn div_by_zero_constructor_validation_from_raw() {
     let _ = DimensionlessFraction::from_raw(1, 0);
 }
+//The failure case is tested in the invalid_dimensionless_fraction test in src/dimensions.rs.
 #[test]
-fn is_valid() {
+fn assert_valid() {
     let x = DimensionlessFraction::from_raw(-1, 2);
-    assert!(x.is_valid());
-    let y = DimensionlessFraction::from_raw_unchecked(-1, 0);
-    assert!(!y.is_valid());
+    x.assert_valid();
 }
 #[test]
 fn reciprocal() {
@@ -72,13 +64,8 @@ fn reciprocal_div_by_zero() {
 fn reciprocal_unchecked() {
     let x = DimensionlessFraction::from_raw(2, -3);
     assert_eq!(
-        x.reciprocal_unchecked(),
+        unsafe { x.reciprocal_unchecked() },
         DimensionlessFraction::from_raw(-3, 2),
-    );
-    let y = DimensionlessFraction::from_raw(0, -3);
-    assert!(
-        y.reciprocal_unchecked()
-            .raw_eq(&DimensionlessFraction::from_raw_unchecked(-3, 0))
     );
 }
 #[test]

@@ -815,3 +815,13 @@ impl Div<Time> for DimensionlessFraction {
         self.as_quantity_f32() / rhs
     }
 }
+//RRTK intentionally does not provide a way to construct DimensionlessFraction with zero denominator
+//in debug mode at all--*_unchecked still does the checks with debug assertions on. We therefore
+//need to use the tuple struct raw construction syntax in the same module as DimensionlessFraction
+//is defined.
+#[test]
+#[should_panic]
+fn invalid_dimensionless_fraction() {
+    let x = DimensionlessFraction(DimensionlessInteger(-3), DimensionlessInteger(0));
+    x.assert_valid();
+}
