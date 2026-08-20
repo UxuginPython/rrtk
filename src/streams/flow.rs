@@ -94,16 +94,16 @@ where
         Ok(())
     }
 }
-///"Freezes" the output of a `Getter` (the "input getter") based on whether a second, boolean
-///`Getter` (the "condition getter") is returning true.
+///"Freezes" the output of a `Getter` (the "Input Getter") based on whether a second, boolean
+///`Getter` (the "Condition Getter") is returning true.
 ///
 ///Both `Getter`s are updated regardless of whether or not the stream is frozen.
 ///
-///- If the boolean getter returns `Err(_)` or `Ok(None)`, that value is returned instead of that
-///  of the input getter.
-///- If the boolean getter returns true, the last value that was being returned before the boolean
-///  getter was returning true is maintained. This is the frozen state.
-///- If the boolean getter returns false, the value of the input getter is returned. This is the
+///- If the Condition Getter returns `Err(_)` or `Ok(None)`, that value is returned instead of that
+///  of the Input Getter.
+///- If the Condition Getter returns true, the last value that was being returned before the
+///  Condition Getter was returning true is maintained. This is the frozen state.
+///- If the Condition Getter returns false, the value of the Input Getter is returned. This is the
 ///  unfrozen state.
 pub struct FreezeStream<T, GC, GI, E> {
     condition: GC,

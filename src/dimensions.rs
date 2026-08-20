@@ -241,7 +241,7 @@ impl DimensionlessFraction {
             "DimensionlessFraction with zero denominator detected"
         );
     }
-    ///With debug assertions enabled, identical to [`check_valid`](Self::check_valid). With debug
+    ///With debug assertions enabled, identical to [`assert_valid`](Self::assert_valid). With debug
     ///assertions disabled (typically in release mode), NOP.
     #[inline]
     pub const fn debug_assert_valid(&self) {

@@ -483,7 +483,7 @@ where
         Ok(())
     }
 }
-///Gets the inner number from the output of a getter returning a [`Quantity`].
+///Gets the inner number from the output of a Getter returning a [`Quantity`].
 pub struct DimensionRemover<MM, S, G> {
     input: G,
     phantom_mm: PhantomData<MM>,
@@ -518,7 +518,7 @@ impl<MM, S, G: Updatable<E>, E: Clone + Debug> Updatable<E> for DimensionRemover
         Ok(())
     }
 }
-///Converts the output of a getter to another type through [`Into`]. Leaves the timestamp the same
+///Converts the output of a Getter to another type through [`Into`]. Leaves the timestamp the same
 ///and passes through `Err(_)` and `Ok(None)` identically.
 pub struct IntoConverter<TI, G> {
     input: G,
@@ -549,7 +549,7 @@ impl<TI, G: Updatable<E>, E: Clone + Debug> Updatable<E> for IntoConverter<TI, G
         Ok(())
     }
 }
-///Converts errors returned by a getter to another type through [`Into`]. Leaves `Ok` values
+///Converts errors returned by a Getter to another type through [`Into`]. Leaves `Ok` values
 ///unchanged.
 pub struct ErrorIntoConverter<G, EI> {
     input: G,

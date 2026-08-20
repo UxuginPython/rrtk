@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // Copyright 2024-2026 UxuginPython
-//!Logic operations for boolean getters.
+//!Logic operations for boolean Getters.
 use crate::streams::*;
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum LogicState {
@@ -221,7 +221,7 @@ macro_rules! make_gate {
 make_gate!(
     Or2,
     false,
-    r#"Performs a logical "or" operation on two input getters which can be of different types. More
+    r#"Performs a logical "or" operation on two input Getters which can be of different types. More
 specifically, follows these rules, starting at the top and proceeding as needed:
 1. If an input returns an error, return the error.
 2. If neither input returns an error, if an input returns true, return true.
@@ -237,7 +237,7 @@ If you need more than two inputs, you may consider using [`OrStream`] instead of
 make_gate!(
     And2,
     true,
-    r#"Performs a logical "and" operation on two input getters which can be of different types. More
+    r#"Performs a logical "and" operation on two input Getters which can be of different types. More
 specifically, follows these rules, starting at the top and proceeding as needed:
 1. If an input returns an error, return the error.
 2. If neither input returns an error, if an input returns false, return false.
@@ -250,7 +250,7 @@ If you need more than two inputs, you may consider using [`AndStream`] instead o
 `And2`, especially if the inputs are of the same type."#,
     "Constructor for `And2`. Unlike [`AndStream`], its inputs can be of different types."
 );
-///Performs a not operation on a boolean getter.
+///Performs a not operation on a boolean Getter.
 pub struct NotStream<TI, G> {
     input: G,
     phantom_ti: PhantomData<TI>,

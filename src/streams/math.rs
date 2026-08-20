@@ -11,7 +11,7 @@ use core::mem::MaybeUninit;
 ///consider wrapping inputs in [`converters::NoneToDefault`] or [`converters::NoneToValue`] with a
 ///value of 0 for the `None` variant.
 ///
-///If you are only adding the outputs of two getters or if your input getters are of different
+///If you are only adding the outputs of two Getters or if your input Getters are of different
 ///types, consider using [`Sum2`] instead.
 pub struct SumStream<const N: usize, G> {
     addends: [G; N],
@@ -192,7 +192,7 @@ where
 ///If your usecase requires excluding `None` values from the product as opposed to this behavior,
 ///consider wrapping inputs in [`converters::NoneToValue`] with a value of 1 for the `None` variant.
 ///
-///If you are only multiplying the outputs of two getters or if your input getters are of different
+///If you are only multiplying the outputs of two Getters or if your input Getters are of different
 ///types, consider using [`Product2`] instead.
 pub struct ProductStream<const N: usize, G> {
     factors: [G; N],

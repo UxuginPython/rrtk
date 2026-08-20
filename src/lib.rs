@@ -385,12 +385,12 @@ pub trait Settable<S, E: Clone + Debug>: Updatable<E> {
 ///The second way to think about this error handling is closer to how the code is actually written.
 ///Here it is:
 ///
-///There is a Getter Side and a Settable Side. The Getter Side calls `update` on the getter and, if
+///There is a Getter Side and a Settable Side. The Getter Side calls `update` on the Getter and, if
 ///that didn't fail, calls `get`. The Getter Side is literally just [`Getter::update_and_get`] and a
 ///little logic for feeding into the Settable Side.
 ///
-///The Settable Side calls `set` on the settable if `get` ran and got
-///`Ok(Some(_))` and then calls `update` on the settable as long as `set` either didn't run or
+///The Settable Side calls `set` on the Settable if `get` ran and got
+///`Ok(Some(_))` and then calls `update` on the Settable as long as `set` either didn't run or
 ///succeeded. There's then some more magic to collect the possible errors into
 ///[`PossibleDoubleError`](error::PossibleDoubleError).
 ///
@@ -503,8 +503,9 @@ impl<T, G: Updatable<E>, E: Clone + Debug> Updatable<E> for TimeGetterFromGetter
         self.getter.update()
     }
 }
-///As chronologies return values at times, we can ask them to return values at the current time or
-///at the current time with a delta. This is the recommended way of following [`MotionProfile`]s.
+///As [`Chronology`] types return values at times, we can ask them to return values at the current
+///time or at the current time with a delta. This is the recommended way of following
+///[`MotionProfile`]s.
 pub struct GetterFromChronology<C, TG, E> {
     chronology: C,
     time_getter: TG,
@@ -512,7 +513,7 @@ pub struct GetterFromChronology<C, TG, E> {
     phantom_e: PhantomData<E>,
 }
 impl<C, TG, E> GetterFromChronology<C, TG, E> {
-    ///Constructor such that the time in the request to the chronology will be directly that returned
+    ///Constructor such that the time in the request to the Chronology will be directly that returned
     ///from the [`TimeGetter`] with no delta.
     #[inline]
     pub const fn new_no_delta(chronology: C, time_getter: TG) -> Self {
@@ -539,8 +540,8 @@ impl<C, TG, E> GetterFromChronology<C, TG, E> {
     }
 }
 impl<C, TG: TimeGetter<E>, E: Clone + Debug> GetterFromChronology<C, TG, E> {
-    ///Constructor such that the times requested from the [`Chronology`] will begin at zero where zero
-    ///is the moment this constructor is called.
+    ///Constructor such that the times requested from the [`Chronology`] will begin at zero where
+    ///zero is the moment this constructor is called.
     pub fn new_start_at_zero(chronology: C, time_getter: TG) -> Result<Self, E> {
         let time_delta = -time_getter.get()?;
         Ok(Self {
@@ -550,8 +551,8 @@ impl<C, TG: TimeGetter<E>, E: Clone + Debug> GetterFromChronology<C, TG, E> {
             phantom_e: PhantomData,
         })
     }
-    ///Constructor such that the times requested from the [`Chronology`] will start at a given time with
-    ///that time defined as the moment this constructor is called.
+    ///Constructor such that the times requested from the [`Chronology`] will start at a given time
+    ///with that time defined as the moment this constructor is called.
     pub fn new_custom_start(chronology: C, time_getter: TG, start: Time) -> Result<Self, E> {
         let time_delta = start - time_getter.get()?;
         Ok(Self {
@@ -561,8 +562,8 @@ impl<C, TG: TimeGetter<E>, E: Clone + Debug> GetterFromChronology<C, TG, E> {
             phantom_e: PhantomData,
         })
     }
-    ///Define now as a given time in the chronology. Mostly used when construction and use are far
-    ///apart in time.
+    ///Define the current time as a given time in the Chronology. Mostly used when construction and
+    ///use are far apart in time.
     pub fn set_time(&mut self, time: Time) -> NothingOrError<E> {
         let time_delta = time - self.time_getter.get()?;
         self.time_delta = time_delta;
@@ -570,10 +571,7 @@ impl<C, TG: TimeGetter<E>, E: Clone + Debug> GetterFromChronology<C, TG, E> {
     }
 }
 //TODO: Maybe one day with specialization, it will be possible to update self.chronology only if it
-//implements it. I think that's really the only reason that Chronology: Updatable (then History: Updatable)
-//stayed around for so long: It's easier to force empty impls every once in a while than to figure
-//out a really wierd specialization thing. Overall, though, you almost never actually need an
-//Updatable Chronology anyway, so the bound really doesn't make that much sense in the first place.
+//implements it.
 impl<C, TG: Updatable<E>, E: Clone + Debug> Updatable<E> for GetterFromChronology<C, TG, E> {
     fn update(&mut self) -> NothingOrError<E> {
         self.time_getter.update()?;
