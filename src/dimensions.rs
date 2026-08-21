@@ -1,155 +1,63 @@
 // SPDX-License-Identifier: BSD-3-Clause
-// Copyright 2024-2025 UxuginPython
-//!This module contains types related to RRTK's dimensional analysis system. RRTK uses nanoseconds
-//!for time because they typically work nicely with computer clocks and are still precise when
-//!stored in an integer, which is important because exponentially losing precision for time is bad,
-//!and float time does that. However, floats are used for other quantities, including quantities
-//!derived from time. These use seconds instead because numbers of the magnitude of nanoseconds
-//!cause floats to lose precision. RRTK should handle the conversion mostly seamlessly for you, but
-//!keep it in mind when thinking about how time-related types should work. The reasoning behind
-//!this unorthodox system using both nanoseconds and seconds becomes more apparent when you know
-//!how floating point numbers work. Everything in this module is reexported at the crate level.
+// Copyright 2024-2026 UxuginPython
+//!RRTK's compile-time dimensional analysis system. This system is simpler than ones like
+//![`uom`](https://crates.io/crates/uom), but it serves a similar purpose: to protect users from
+//!dimension mismatch errors at compile time without runtime overhead.
 //!
-//!### Multiplication and Division Implementation Table
-//!| A right; B down              | [`Quantity`]      | [`DimensionlessInteger`] | [`Time`]          |
-//!|------------------------------|-------------------|--------------------------|-------------------|
-//!| **[`Quantity`]**             | `*` `/` `*=` `/=` | `*` `/`                  | `*` `/`           |
-//!| **[`DimensionlessInteger`]** | `*` `/` `*=` `/=` | `*` `/` `*=` `/=`        | `*` `/` `*=` `/=` |
-//!| **[`Time`]**                 | `*` `/` `*=` `/=` | `*` `/`                  | `*` `/`           |
-//!
-//!`A <operation> B` compiles for any operation in the square of A and B. E.g., `*` is in the
-//!square in the [`Quantity`] column and the [`DimensionlessInteger`] row, so the following works:
-//!```
-//!# use rrtk::*;
-//!let x = Quantity::new(3.0, MILLIMETER);
-//!let y = DimensionlessInteger(2);
-//!let z = x * y;
-//!```
-//!A similar example for `*=`:
-//!```
-//!# use rrtk::*;
-//!let mut x = Quantity::new(3.0, MILLIMETER);
-//!let y = DimensionlessInteger(2);
-//!x *= y;
-//!```
-//!Whenever `*` and `/` are in a square but `*=` and `/=` are not, `A * B` and `A / B`
-//!return a type other than A. Since [`MulAssign`] and `DivAssign` require that A not change type in
-//!`A *= B` and `A /= B`, it is not possible to implement them.
-//!```
-//!# use rrtk::*;
-//!let x = Time(2_000_000_000);
-//!let y = Quantity::new(3.0, MILLIMETER_PER_SECOND);
-//!let z = x * y;
-//!assert_eq!(z, Quantity::new(6.0, MILLIMETER));
-//!```
-//!```compile_fail
-//!# use rrtk::*;
-//!let mut x = Time(2_000_000_000);
-//!let y = Quantity::new(3.0, MILLIMETER_PER_SECOND);
-//!x *= y;
-//!```
-//!Note that this disparity is not necessarily symmetrical between types:
-//!```
-//!# use rrtk::*;
-//!let mut x = Quantity::new(3.0, MILLIMETER_PER_SECOND);
-//!let y = Time(2_000_000_000);
-//!x *= y;
-//!assert_eq!(x, Quantity::new(6.0, MILLIMETER));
-//!```
-//!### Addition and Subtraction Implementation Table
-//!| A right; B down              | [`Quantity`]             | [`DimensionlessInteger`] | [`Time`]                 |
-//!|------------------------------|--------------------------|--------------------------|--------------------------|
-//!| **[`Quantity`]**             | **P:** `+` `-` `+=` `-=` | **P:** `+` `-`           | **P:** `+` `-`           |
-//!| **[`DimensionlessInteger`]** | **P:** `+` `-` `+=` `-=` | **G:** `+` `-` `+=` `-=` |                          |
-//!| **[`Time`]**                 | **P:** `+` `-` `+=` `-=` |                          | **G:** `+` `-` `+=` `-=` |
-//!
-//!Addition and subtraction are a bit different because they can sometimes panic on a unit
-//!mismatch. This table works the same way as the one above it except for the following:
-//!- **P(anicking):** This operation may panic on a unit mismatch.
-//The panic!() at the end of this example is so that it panics even when dimension checking is off.
-//Cargo runs this with the other tests and, since it it marked should_panic, fails if it does not
-//panic. This is a problem because it cannot panic with dimension checking off. A panic!() call at
-//the end is the simplest way to ensure that this is not an issue, although it does eliminate the
-//usefulness of this as a test. It is tested elsewhere, however; use quantity_add_failure in
-//tests/dimensions.rs to test the panicking functionality.
-//!```should_panic
-//!# use rrtk::*;
-//!let x = Quantity::new(2.0, MILLIMETER);
-//!let y = Quantity::new(3.0, SECOND);
-//!let z = x + y;
-//!# panic!();
-//!```
-//!- **G(uaranteed):** Correct units are guaranteed by the types involved. This operation cannot panic.
-//!
-//!All operations in the multiplication and division table can be considered "Guaranteed."
-//!### Conversion Implementation Table
-//!| A right; B down              | [`Quantity`] | [`DimensionlessInteger`] | [`Time`]  | [`i64`] | [`f32`] |
-//!|------------------------------|--------------|--------------------------|-----------|---------|---------|
-//!| **[`Quantity`]**             | *is*         | `TryFrom`                | `TryFrom` |         | `From`  |
-//!| **[`DimensionlessInteger`]** | `From`       | *is*                     |           | `From`  |         |
-//!| **[`Time`]**                 | `From`       |                          | *is*      | `From`  |         |
-//!| **[`i64`]**                  |              | `From`                   | `From`    | *is*    | [^lang] |
-//!| **[`f32`]**                  | [^new]       |                          |           | [^lang] | *is*    |
-//!
-//![^lang]: See Rust language documentation.
-//!
-//![^new]: [`Quantity`] can be constructed from [`f32`] through [`Quantity::new`] by supplying a [`Unit`].
-//!However, [`f32`] cannot be directly converted to [`Quantity`].
-//!
-//!This table is very similar: `A::<from/try_from>(B)` compiles for either `from`
-//!or `try_from` depending on which is in the square of A and B, and you cannot convert between
-//!types with nothing in their square. A [`From`] B implies B [`Into`] A and similarly for
-//![`TryFrom`]/[`TryInto`] as is the case for all [`From`] implementations.
-//!
-//![`From`] is in the [`Quantity`] column and the [`DimensionlessInteger`] row, so the following works:
-//!```
-//!# use rrtk::*;
-//!let x = DimensionlessInteger(3);
-//!let y = Quantity::from(x);
-//!```
-//!And with [`Into`]:
-//!```
-//!# use rrtk::*;
-//!let x = DimensionlessInteger(3);
-//!let y: Quantity = x.into();
-//!```
+//!This is done through a
+//![semi-hack](compile_time_integer) representing integers as types and adding type parameters to a
+//!special struct called [`Quantity`], which is a transparent struct holding only a value at
+//!runtime. There are also a few other specialized types for values that are better represented
+//!with integers than floating point numbers but still must interact with floating point values.
 use super::*;
-pub mod constants;
-pub use constants::*;
-///A time in nanoseconds.
+use compile_time_integer::*;
+//This attribute currently cannot be in the actual file with #![].
+#[rustfmt::skip]
+pub mod dimension_aliases;
+pub use dimension_aliases::*;
+///A time stored internally in `i64` nanoseconds.
+///
+///`Time` is often converted to [`Second<f32>`] to interact with quantities of other dimensions.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(transparent)]
-pub struct Time(pub i64);
+pub struct Time(i64);
 impl Time {
-    ///The constructor for [`Time`].
-    pub const fn new(value: i64) -> Self {
+    ///Zero time. You would get this from `Time::from_nanoseconds(0)`.
+    pub const ZERO: Self = Time(0);
+    ///Construct a `Time` from `i64` nanoseconds, which is how the time is stored internally.
+    pub const fn from_nanoseconds(value: i64) -> Self {
         Self(value)
     }
-}
-impl From<i64> for Time {
-    fn from(was: i64) -> Self {
-        Self(was)
+    ///Construct a `Time` from `f32` seconds.
+    pub const fn from_seconds_f32(value: f32) -> Self {
+        Self((value * 1_000_000_000.0) as i64)
+    }
+    ///Construct a `Time` from [`Quantity`] seconds stored using `f32`.
+    pub fn from_seconds(value: Second<f32>) -> Self {
+        Self::from_seconds_f32(value.into_inner())
+    }
+    ///Get the internal `i64` nanoseconds from the `Time`.
+    pub const fn as_nanoseconds(self) -> i64 {
+        self.0
+    }
+    ///Get the value of the `Time` as `f32` seconds.
+    pub const fn as_seconds_f32(self) -> f32 {
+        (self.0 as f32) / 1_000_000_000.0
+    }
+    ///Get the value of the `Time` as [`Quantity`] seconds stored using `f32`.
+    ///Effectively a wrapper for [`as_seconds`](Self::as_seconds).
+    pub const fn as_seconds(self) -> Second<f32> {
+        Second::new(self.as_seconds_f32())
     }
 }
-impl From<Time> for i64 {
-    fn from(was: Time) -> i64 {
-        was.0
+impl From<Second<f32>> for Time {
+    fn from(was: Second<f32>) -> Self {
+        Self::from_seconds(was)
     }
 }
-//TODO: figure out for to use the Error enum with this
-impl TryFrom<Quantity> for Time {
-    type Error = ();
-    fn try_from(was: Quantity) -> Result<Self, ()> {
-        if was.unit.eq_assume_true(&SECOND) {
-            Ok(Self((was.value * 1_000_000_000.0) as i64))
-        } else {
-            Err(())
-        }
-    }
-}
-impl From<Time> for Quantity {
-    fn from(was: Time) -> Quantity {
-        Quantity::new(was.0 as f32 / 1_000_000_000.0, SECOND)
+impl From<Time> for Second<f32> {
+    fn from(was: Time) -> Self {
+        was.as_seconds()
     }
 }
 impl Add for Time {
@@ -172,18 +80,6 @@ impl Sub for Time {
 impl SubAssign for Time {
     fn sub_assign(&mut self, rhs: Self) {
         self.0 -= rhs.0;
-    }
-}
-impl Mul for Time {
-    type Output = Quantity;
-    fn mul(self, rhs: Self) -> Quantity {
-        Quantity::from(self) * Quantity::from(rhs)
-    }
-}
-impl Div for Time {
-    type Output = Quantity;
-    fn div(self, rhs: Self) -> Quantity {
-        Quantity::from(self) / Quantity::from(rhs)
     }
 }
 impl Neg for Time {
@@ -214,31 +110,37 @@ impl DivAssign<DimensionlessInteger> for Time {
         self.0 /= rhs.0;
     }
 }
-impl Add<Quantity> for Time {
-    type Output = Quantity;
-    fn add(self, rhs: Quantity) -> Quantity {
-        Quantity::from(self) + rhs
+///Converts the time to `f32` seconds before the operation. This is to make `f32` compatible with
+///[`streams::math::IntegralStream`].
+impl Mul<f32> for Time {
+    type Output = f32;
+    fn mul(self, rhs: f32) -> f32 {
+        self.as_seconds_f32() * rhs
     }
 }
-impl Sub<Quantity> for Time {
-    type Output = Quantity;
-    fn sub(self, rhs: Quantity) -> Quantity {
-        Quantity::from(self) - rhs
+///Converts the time to `f32` seconds before the operation.
+impl Mul<Time> for f32 {
+    type Output = Self;
+    fn mul(self, rhs: Time) -> Self {
+        self * rhs.as_seconds_f32()
     }
 }
-impl Mul<Quantity> for Time {
-    type Output = Quantity;
-    fn mul(self, rhs: Quantity) -> Quantity {
-        rhs * self
+///Converts the time to `f32` seconds before the operation.
+impl Div<f32> for Time {
+    type Output = f32;
+    fn div(self, rhs: f32) -> f32 {
+        self.as_seconds_f32() / rhs
     }
 }
-impl Div<Quantity> for Time {
-    type Output = Quantity;
-    fn div(self, rhs: Quantity) -> Quantity {
-        Quantity::from(self) / rhs
+///Converts the time to `f32` seconds before the operation. This is to make `f32` compatible with
+///[`streams::math::DerivativeStream`].
+impl Div<Time> for f32 {
+    type Output = Self;
+    fn div(self, rhs: Time) -> Self {
+        self / rhs.as_seconds_f32()
     }
 }
-///A dimensionless quantity stored as an integer. Used almost exclusively for when a time, stored
+///A dimensionless value stored as an integer. Used almost exclusively for when a time, stored
 ///as an integer, must be multiplied by a constant factor as in numerical integrals and motion
 ///profiles.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord)]
@@ -246,8 +148,19 @@ impl Div<Quantity> for Time {
 pub struct DimensionlessInteger(pub i64);
 impl DimensionlessInteger {
     ///Constructor for [`DimensionlessInteger`].
+    #[inline]
     pub const fn new(value: i64) -> Self {
         Self(value)
+    }
+    ///`x.const_eq(y)` is exactly equivalent to `x == y` except that it works in const contexts.
+    #[inline]
+    pub const fn const_eq(&self, rhs: &Self) -> bool {
+        self.0 == rhs.0
+    }
+    ///Checks if the integer is zero.
+    #[inline]
+    pub const fn is_zero(&self) -> bool {
+        self.0 == 0
     }
 }
 impl From<i64> for DimensionlessInteger {
@@ -258,21 +171,6 @@ impl From<i64> for DimensionlessInteger {
 impl From<DimensionlessInteger> for i64 {
     fn from(was: DimensionlessInteger) -> Self {
         was.0
-    }
-}
-impl TryFrom<Quantity> for DimensionlessInteger {
-    type Error = ();
-    fn try_from(was: Quantity) -> Result<Self, ()> {
-        if was.unit.eq_assume_true(&DIMENSIONLESS) {
-            Ok(Self(was.value as i64))
-        } else {
-            Err(())
-        }
-    }
-}
-impl From<DimensionlessInteger> for Quantity {
-    fn from(was: DimensionlessInteger) -> Self {
-        Quantity::new(was.0 as f32, DIMENSIONLESS)
     }
 }
 impl Add for DimensionlessInteger {
@@ -309,14 +207,10 @@ impl MulAssign for DimensionlessInteger {
     }
 }
 impl Div for DimensionlessInteger {
-    type Output = Self;
-    fn div(self, rhs: Self) -> Self {
-        Self(self.0 / rhs.0)
-    }
-}
-impl DivAssign for DimensionlessInteger {
-    fn div_assign(&mut self, rhs: Self) {
-        self.0 /= rhs.0;
+    type Output = DimensionlessFraction;
+    fn div(self, rhs: Self) -> DimensionlessFraction {
+        assert_ne!(rhs, Self::new(0));
+        DimensionlessFraction(self, rhs)
     }
 }
 impl Neg for DimensionlessInteger {
@@ -331,520 +225,603 @@ impl Mul<Time> for DimensionlessInteger {
         Time(self.0 * rhs.0)
     }
 }
-impl Div<Time> for DimensionlessInteger {
-    type Output = Quantity;
-    fn div(self, rhs: Time) -> Quantity {
-        Quantity::from(self) / Quantity::from(rhs)
-    }
-}
-impl Add<Quantity> for DimensionlessInteger {
-    type Output = Quantity;
-    fn add(self, rhs: Quantity) -> Quantity {
-        Quantity::from(self) + rhs
-    }
-}
-impl Sub<Quantity> for DimensionlessInteger {
-    type Output = Quantity;
-    fn sub(self, rhs: Quantity) -> Quantity {
-        Quantity::from(self) - rhs
-    }
-}
-impl Mul<Quantity> for DimensionlessInteger {
-    type Output = Quantity;
-    fn mul(self, rhs: Quantity) -> Quantity {
-        rhs * self
-    }
-}
-impl Div<Quantity> for DimensionlessInteger {
-    type Output = Quantity;
-    fn div(self, rhs: Quantity) -> Quantity {
-        Quantity::from(self) / Quantity::from(rhs)
-    }
-}
-///A unit of a quantity, like meters per second. Units can be represented as multiplied powers of
-///the units that they're derived from, so meters per second squared, or m/s^2, can be m^1*s^-2.
-///This struct stores the exponents of each base unit.
+///An exact rational number type for dimensionless values.
+///
+///There is a memory safety guarantee that the denominator is nonzero. RRTK does not currently
+///exhibit any undefined behavior if this precondition is violated, but this may change in the
+///future **without** being considered a breaking change.
 #[derive(Clone, Copy, Debug)]
-#[cfg_attr(
-    any(
-        feature = "dim_check_release",
-        all(debug_assertions, feature = "dim_check_debug")
-    ),
-    derive(PartialEq, Eq)
-)]
-pub struct Unit {
-    ///Unit exponent for millimeters.
-    #[cfg(any(
-        feature = "dim_check_release",
-        all(debug_assertions, feature = "dim_check_debug")
-    ))]
-    millimeter_exp: i8,
-    ///Unit exponent for seconds.
-    #[cfg(any(
-        feature = "dim_check_release",
-        all(debug_assertions, feature = "dim_check_debug")
-    ))]
-    second_exp: i8,
-}
-impl Unit {
-    ///Constructor for `Unit`.
-    #[allow(unused)]
-    pub const fn new(millimeter_exp: i8, second_exp: i8) -> Self {
-        Self {
-            #[cfg(any(
-                feature = "dim_check_release",
-                all(debug_assertions, feature = "dim_check_debug")
-            ))]
-            millimeter_exp: millimeter_exp,
-            #[cfg(any(
-                feature = "dim_check_release",
-                all(debug_assertions, feature = "dim_check_debug")
-            ))]
-            second_exp: second_exp,
-        }
-    }
-    ///`foo.const_eq(&bar)` works exactly like `foo == bar` except that it works in a `const`
-    ///context. Requires dimension checking to be enabled. Use [`eq_assume_true`](Unit::eq_assume_true) or
-    ///[`eq_assume_false`](Unit::eq_assume_false) if you need similar functionality without dimension checking.
-    #[cfg(any(
-        feature = "dim_check_release",
-        all(debug_assertions, feature = "dim_check_debug")
-    ))]
-    #[allow(unused)]
-    pub const fn const_eq(&self, rhs: &Self) -> bool {
-        #[cfg(any(
-            feature = "dim_check_release",
-            all(debug_assertions, feature = "dim_check_debug")
-        ))]
-        return self.millimeter_exp == rhs.millimeter_exp && self.second_exp == rhs.second_exp;
-        #[cfg(not(any(
-            feature = "dim_check_release",
-            all(debug_assertions, feature = "dim_check_debug")
-        )))]
-        true
-    }
-    ///`foo.const_assert_eq(&bar)` works exactly like `assert_eq!(foo, bar)` except that it works
-    ///in a `const` context. Requires dimension checking to be enabled. Use
-    ///[`assert_eq_assume_ok`](Unit::assert_eq_assume_ok)
-    ///or [`assert_eq_assume_not_ok`](Unit::assert_eq_assume_not_ok) if you need similar functionality without
-    ///dimension checking.
-    #[cfg(any(
-        feature = "dim_check_release",
-        all(debug_assertions, feature = "dim_check_debug")
-    ))]
-    pub const fn const_assert_eq(&self, rhs: &Self) {
-        assert!(self.const_eq(rhs));
-    }
-    ///With dimension checking on, behaves exactly like [`const_eq`](Unit::const_eq).
-    ///With dimension checking off, always returns true.
-    #[allow(unused)]
-    pub const fn eq_assume_true(&self, rhs: &Self) -> bool {
-        #[cfg(any(
-            feature = "dim_check_release",
-            all(debug_assertions, feature = "dim_check_debug")
-        ))]
-        return self.const_eq(rhs);
-        #[cfg(not(any(
-            feature = "dim_check_release",
-            all(debug_assertions, feature = "dim_check_debug")
-        )))]
-        true
-    }
-    ///With dimension checking on, behaves exactly like [`const_eq`](Unit::const_eq).
-    ///With dimension checking off, always returns false.
-    #[allow(unused)]
-    pub const fn eq_assume_false(&self, rhs: &Self) -> bool {
-        #[cfg(any(
-            feature = "dim_check_release",
-            all(debug_assertions, feature = "dim_check_debug")
-        ))]
-        return self.const_eq(rhs);
-        #[cfg(not(any(
-            feature = "dim_check_release",
-            all(debug_assertions, feature = "dim_check_debug")
-        )))]
-        false
-    }
-    ///With dimension checking on, behaves exactly like [`const_assert_eq`](Unit::const_assert_eq).
-    ///With dimension checking off, never panics.
-    pub const fn assert_eq_assume_ok(&self, rhs: &Self) {
-        assert!(self.eq_assume_true(rhs))
-    }
-    ///With dimension checking on, behaves exactly like [`const_assert_eq`](Unit::const_assert_eq).
-    ///With dimension checking off, always panics.
-    pub const fn assert_eq_assume_not_ok(&self, rhs: &Self) {
-        assert!(self.eq_assume_false(rhs))
-    }
-}
-impl From<PositionDerivative> for Unit {
-    #[allow(unused)]
-    fn from(was: PositionDerivative) -> Self {
-        #[cfg(any(
-            feature = "dim_check_release",
-            all(debug_assertions, feature = "dim_check_debug")
-        ))]
-        return Self {
-            millimeter_exp: 1,
-            second_exp: match was {
-                PositionDerivative::Position => 0,
-                PositionDerivative::Velocity => -1,
-                PositionDerivative::Acceleration => -2,
-            },
-        };
-        #[cfg(not(any(
-            feature = "dim_check_release",
-            all(debug_assertions, feature = "dim_check_debug")
-        )))]
-        Self {}
-    }
-}
-impl TryFrom<MotionProfilePiece> for Unit {
-    type Error = ();
-    fn try_from(was: MotionProfilePiece) -> Result<Self, ()> {
-        let pos_der: PositionDerivative = was.try_into()?;
-        let unit: Self = pos_der.into();
-        Ok(unit)
-    }
-}
-///The [`Add`] implementation for [`Unit`] acts like you are trying to add quantities of the unit, not
-///like you are trying to actually add the exponents. This should be more useful most of the time,
-///but could be somewhat confusing. All this does is [`assert_eq!`] the [`Unit`] with the right-hand
-///side and then return it because units should not change when quantities of the same unit are
-///added.
-///Performing operations on [`Unit`]s should behave exactly the same as performing the same
-///operations on [`Quantity`] objects and taking the unit of the resulting [`Quantity`].
-impl Add for Unit {
-    type Output = Self;
-    fn add(self, rhs: Self) -> Self {
-        self.assert_eq_assume_ok(&rhs);
-        self
-    }
-}
-impl AddAssign for Unit {
-    fn add_assign(&mut self, rhs: Self) {
-        self.assert_eq_assume_ok(&rhs);
-    }
-}
-///The [`Sub`] implementation for [`Unit`] acts like you are trying to subtract quantities of the unit,
-///not like you are trying to actually subtract the exponents. This should be more useful most of
-///the time, but it could be somewhat confusing. All this does is [`assert_eq!`] the [`Unit`] with the
-///right-hand side and then return it because units should not change when quantities of the same
-///unit are subtracted.
-///Performing operations on [`Unit`]s should behave exactly the same as performing the same
-///operations on [`Quantity`] objects and taking the unit of the resulting [`Quantity`].
-impl Sub for Unit {
-    type Output = Self;
-    fn sub(self, rhs: Self) -> Self {
-        self.assert_eq_assume_ok(&rhs);
-        self
-    }
-}
-impl SubAssign for Unit {
-    fn sub_assign(&mut self, rhs: Self) {
-        self.assert_eq_assume_ok(&rhs);
-    }
-}
-///The [`Mul`] implementation for [`Unit`] acts like you are trying to multiply quantities of the unit,
-///not like you are trying to actually multiply the exponents. This should be more useful most of
-///the time, but it could be somewhat confusing. This adds the exponents of the left-hand and
-///right-hand sides, not multiplies them because that is what should happen when quantities are
-///multiplied, not a multiplication of their unit exponents.
-///Performing operations on [`Unit`]s should behave exactly the same as performing the same
-///operations on [`Quantity`] objects and taking the unit of the resulting [`Quantity`].
-impl Mul for Unit {
-    type Output = Self;
-    #[allow(unused)]
-    fn mul(self, rhs: Self) -> Self {
-        #[cfg(any(
-            feature = "dim_check_release",
-            all(debug_assertions, feature = "dim_check_debug")
-        ))]
-        return Self {
-            millimeter_exp: self.millimeter_exp + rhs.millimeter_exp,
-            second_exp: self.second_exp + rhs.second_exp,
-        };
-        #[cfg(not(any(
-            feature = "dim_check_release",
-            all(debug_assertions, feature = "dim_check_debug")
-        )))]
-        Self {}
-    }
-}
-impl MulAssign for Unit {
-    fn mul_assign(&mut self, rhs: Self) {
-        *self = *self * rhs;
-    }
-}
-///The [`Div`] implementation for [`Unit`] acts like you are trying to divide quantities of the unit,
-///not like you are trying to actually divide the exponents. This should be more useful most of the
-///time, but it could be somewhat confusing. This subtracts the exponents of the right-hand side
-///from the left-hand side's exponents rather than dividing the exponents because that is what
-///should happen when quantities are divided, not a division of their unit exponents.
-///Performing operations on [`Unit`]s should behave exactly the same as performing the same
-///operations on [`Quantity`] objects and taking the unit of the resulting [`Quantity`].
-impl Div for Unit {
-    type Output = Self;
-    #[allow(unused)]
-    fn div(self, rhs: Self) -> Self {
-        #[cfg(any(
-            feature = "dim_check_release",
-            all(debug_assertions, feature = "dim_check_debug")
-        ))]
-        return Self {
-            millimeter_exp: self.millimeter_exp - rhs.millimeter_exp,
-            second_exp: self.second_exp - rhs.second_exp,
-        };
-        #[cfg(not(any(
-            feature = "dim_check_release",
-            all(debug_assertions, feature = "dim_check_debug")
-        )))]
-        Self {}
-    }
-}
-impl DivAssign for Unit {
-    fn div_assign(&mut self, rhs: Self) {
-        *self = *self / rhs;
-    }
-}
-///The [`Neg`] implementation for [`Unit`] acts like you are trying to negate quantities of the unit,
-///not like you are trying to actually negate the exponents. This should be more useful most of the
-///time, but could be somewhat confusing. This just returns `self` unchanged because a quantity's
-///units don't change when it is negated.
-///Performing operations on [`Unit`]s should behave exactly the same as performing the same
-///operations on [`Quantity`] objects and taking the unit of the resulting [`Quantity`].
-impl Neg for Unit {
-    type Output = Self;
-    fn neg(self) -> Self {
-        self
-    }
-}
-///A quantity with a unit.
-#[derive(Clone, Copy, Debug)]
-#[cfg_attr(
-    any(
-        feature = "dim_check_release",
-        all(debug_assertions, feature = "dim_check_debug")
-    ),
-    derive(PartialEq)
-)]
-pub struct Quantity {
-    ///The value.
-    pub value: f32,
-    ///The unit.
-    pub unit: Unit,
-}
-impl Quantity {
-    ///Constructor for [`Quantity`].
-    pub const fn new(value: f32, unit: Unit) -> Self {
-        Self {
-            value: value,
-            unit: unit,
-        }
-    }
-    ///Constructor for dimensionless [`Quantity`] objects that does not require a dimension to be
-    ///provided.
-    pub const fn dimensionless(value: f32) -> Self {
-        Self::new(value, DIMENSIONLESS)
-    }
-    ///Take the absolute value of the quantity.
+pub struct DimensionlessFraction(DimensionlessInteger, DimensionlessInteger);
+impl DimensionlessFraction {
+    ///Checks whether the denominator is zero and panics if it is.
     #[inline]
-    pub fn abs(self) -> Self {
+    pub const fn assert_valid(&self) {
+        assert!(
+            !self.1.is_zero(),
+            "DimensionlessFraction with zero denominator detected"
+        );
+    }
+    ///With debug assertions enabled, identical to [`assert_valid`](Self::assert_valid). With debug
+    ///assertions disabled (typically in release mode), NOP.
+    #[inline]
+    pub const fn debug_assert_valid(&self) {
+        debug_assert!(
+            !self.1.is_zero(),
+            "DimensionlessFraction with zero denominator detected"
+        );
+    }
+    ///Constructor that verifies that the denominator is not zero and panics if it is.
+    #[inline]
+    pub const fn new(num: DimensionlessInteger, denom: DimensionlessInteger) -> Self {
+        let new = Self(num, denom);
+        new.assert_valid();
+        new
+    }
+    ///Constructor that does not check if the denominator is zero.
+    ///
+    ///With debug assertions enabled, this will still perform the zero denominator check.
+    #[inline(always)]
+    pub const unsafe fn new_unchecked(
+        num: DimensionlessInteger,
+        denom: DimensionlessInteger,
+    ) -> Self {
+        if cfg!(debug_assertions) {
+            Self::new(num, denom)
+        } else {
+            Self(num, denom)
+        }
+    }
+    ///Constructor from raw `i64` values for numerator and denominator. They are immediately
+    ///converted to [`DimensionlessInteger`]. This constructor verifies that the denominator is
+    ///nonzero and panics otherwise.
+    #[inline]
+    pub const fn from_raw(num: i64, denom: i64) -> Self {
         Self::new(
-            #[cfg(feature = "std")]
-            self.value.abs(),
-            #[cfg(not(feature = "std"))]
-            if self.value >= 0.0 {
-                self.value
-            } else {
-                -self.value
-            },
-            self.unit,
+            DimensionlessInteger::new(num),
+            DimensionlessInteger::new(denom),
         )
     }
+    ///Constructor from raw `i64` values for numerator and denominator. They are immediately
+    ///converted to [`DimensionlessInteger`]. This constructor does **not** verify that the
+    ///denominator is nonzero.
+    #[inline]
+    pub const unsafe fn from_raw_unchecked(num: i64, denom: i64) -> Self {
+        unsafe {
+            Self::new_unchecked(
+                DimensionlessInteger::new(num),
+                DimensionlessInteger::new(denom),
+            )
+        }
+    }
+    ///Reciprocal function (1/x) that panics if the new denominator is zero.
+    #[inline]
+    pub const fn reciprocal(&self) -> Self {
+        Self::new(self.1, self.0)
+    }
+    ///Reciprocal function (1/x) that does not check if the new denominator is zero.
+    ///
+    ///With debug assertions enabled, this will still perform the zero denominator check.
+    #[inline(always)]
+    pub const unsafe fn reciprocal_unchecked(&self) -> Self {
+        if cfg!(debug_assertions) {
+            self.reciprocal()
+        } else {
+            Self(self.1, self.0)
+        }
+    }
+    ///Converts the fraction into a tuple `(numerator, denominator)`.
+    ///
+    ///The following code is guaranteed to leave mutable `DimensionlessInteger` variables `x` and
+    ///`y` with the same values that they had before the code was run as long as `y` is nonzero.
+    ///```
+    ///# use rrtk::{DimensionlessFraction, DimensionlessInteger};
+    ///# let mut x = DimensionlessInteger(2);
+    ///# let mut y = DimensionlessInteger(3);
+    ///let frac = DimensionlessFraction::new(x, y);
+    ///(x, y) = frac.into_components();
+    ///# assert_eq!(x.0, 2);
+    ///# assert_eq!(y.0, 3);
+    ///```
+    #[inline]
+    pub const fn into_components(self) -> (DimensionlessInteger, DimensionlessInteger) {
+        (self.0, self.1)
+    }
+    ///Converts the fraction to its closest `f32` approximation.
+    ///There is also a [`From`] implementation that does this.
+    #[inline]
+    pub const fn as_f32(&self) -> f32 {
+        self.0.0 as f32 / self.1.0 as f32
+    }
+    ///Converts the fraction to its closest `f64` approximation.
+    ///There is also a [`From`] implementation that does this.
+    #[inline]
+    pub const fn as_f64(&self) -> f64 {
+        self.0.0 as f64 / self.1.0 as f64
+    }
+    ///Wraps the output of [`as_f32`](Self::as_f32) in a `Dimensionless` wrapper.
+    ///There is also a [`From`] implementation that does this.
+    #[inline]
+    pub const fn as_quantity_f32(&self) -> Dimensionless<f32> {
+        Dimensionless::new(self.as_f32())
+    }
+    ///Wraps the output of [`as_f64`](Self::as_f64) in a `Dimensionless` wrapper.
+    ///There is also a [`From`] implementation that does this.
+    #[inline]
+    pub const fn as_quantity_f64(&self) -> Dimensionless<f64> {
+        Dimensionless::new(self.as_f64())
+    }
+    ///Returns true if the numerators and denominators are directly equal. For example, for
+    ///fractions a/b and c/d, the `PartialEq` implementation tests for whether a/b=c/d, but this
+    ///method tests whether a=c and b=d.
+    #[inline]
+    pub const fn raw_eq(&self, rhs: &Self) -> bool {
+        self.0.const_eq(&rhs.0) && self.1.const_eq(&rhs.1)
+    }
 }
-impl From<Command> for Quantity {
-    fn from(was: Command) -> Self {
-        match was {
-            Command::Position(pos) => Self::new(pos, MILLIMETER),
-            Command::Velocity(vel) => Self::new(vel, MILLIMETER_PER_SECOND),
-            Command::Acceleration(acc) => Self::new(acc, MILLIMETER_PER_SECOND_SQUARED),
+impl From<DimensionlessInteger> for DimensionlessFraction {
+    fn from(was: DimensionlessInteger) -> Self {
+        Self(was, DimensionlessInteger::new(1))
+    }
+}
+impl Ord for DimensionlessFraction {
+    fn cmp(&self, rhs: &Self) -> core::cmp::Ordering {
+        let a = self.0 * rhs.1;
+        let b = self.1 * rhs.0;
+        let cmp = a.cmp(&b);
+        //This is true if the signs of the denominators match.
+        if (self.1 < DimensionlessInteger(0)) == (rhs.1 < DimensionlessInteger(0)) {
+            cmp
+        } else {
+            cmp.reverse()
         }
     }
 }
-impl From<Quantity> for f32 {
-    fn from(was: Quantity) -> f32 {
-        was.value
+impl PartialEq for DimensionlessFraction {
+    fn eq(&self, rhs: &Self) -> bool {
+        self.cmp(rhs) == core::cmp::Ordering::Equal
     }
 }
-impl Add for Quantity {
+impl Eq for DimensionlessFraction {}
+impl PartialOrd for DimensionlessFraction {
+    fn partial_cmp(&self, rhs: &Self) -> Option<core::cmp::Ordering> {
+        Some(self.cmp(rhs))
+    }
+}
+impl Neg for DimensionlessFraction {
     type Output = Self;
-    fn add(self, rhs: Self) -> Self {
-        Self {
-            value: self.value + rhs.value,
-            unit: self.unit + rhs.unit,
-        }
+    fn neg(self) -> Self {
+        Self(-self.0, self.1)
     }
 }
-impl AddAssign for Quantity {
-    fn add_assign(&mut self, rhs: Self) {
-        *self = *self + rhs;
-    }
-}
-impl Sub for Quantity {
-    type Output = Self;
-    fn sub(self, rhs: Self) -> Self {
-        Self {
-            value: self.value - rhs.value,
-            unit: self.unit - rhs.unit,
-        }
-    }
-}
-impl SubAssign for Quantity {
-    fn sub_assign(&mut self, rhs: Self) {
-        *self = *self - rhs;
-    }
-}
-impl Mul for Quantity {
+impl Mul for DimensionlessFraction {
     type Output = Self;
     fn mul(self, rhs: Self) -> Self {
-        Self {
-            value: self.value * rhs.value,
-            unit: self.unit * rhs.unit,
-        }
+        Self(self.0 * rhs.0, self.1 * rhs.1)
     }
 }
-impl MulAssign for Quantity {
+impl MulAssign for DimensionlessFraction {
     fn mul_assign(&mut self, rhs: Self) {
         *self = *self * rhs;
     }
 }
-impl Div for Quantity {
+impl Div for DimensionlessFraction {
     type Output = Self;
+    #[expect(clippy::suspicious_arithmetic_impl)]
     fn div(self, rhs: Self) -> Self {
-        Self {
-            value: self.value / rhs.value,
-            unit: self.unit / rhs.unit,
-        }
+        self * rhs.reciprocal()
     }
 }
-impl DivAssign for Quantity {
+impl DivAssign for DimensionlessFraction {
     fn div_assign(&mut self, rhs: Self) {
         *self = *self / rhs;
     }
 }
-impl Neg for Quantity {
+impl Add for DimensionlessFraction {
     type Output = Self;
-    fn neg(self) -> Self {
-        Self {
-            value: -self.value,
-            unit: self.unit,
-        }
+    fn add(self, rhs: Self) -> Self {
+        Self(self.0 * rhs.1 + rhs.0 * self.1, self.1 * rhs.1)
     }
 }
-impl Add<Time> for Quantity {
-    type Output = Self;
-    fn add(self, rhs: Time) -> Self {
-        self + Self::from(rhs)
-    }
-}
-impl AddAssign<Time> for Quantity {
-    fn add_assign(&mut self, rhs: Time) {
+impl AddAssign for DimensionlessFraction {
+    fn add_assign(&mut self, rhs: Self) {
         *self = *self + rhs;
     }
 }
-impl Sub<Time> for Quantity {
+impl Sub for DimensionlessFraction {
     type Output = Self;
-    fn sub(self, rhs: Time) -> Self {
-        self - Self::from(rhs)
+    fn sub(self, rhs: Self) -> Self {
+        self + -rhs
     }
 }
-impl SubAssign<Time> for Quantity {
-    fn sub_assign(&mut self, rhs: Time) {
+impl SubAssign for DimensionlessFraction {
+    fn sub_assign(&mut self, rhs: Self) {
         *self = *self - rhs;
     }
 }
-impl Add<DimensionlessInteger> for Quantity {
+impl Mul<DimensionlessInteger> for DimensionlessFraction {
+    type Output = Self;
+    fn mul(self, rhs: DimensionlessInteger) -> Self {
+        Self(self.0 * rhs, self.1)
+    }
+}
+impl MulAssign<DimensionlessInteger> for DimensionlessFraction {
+    fn mul_assign(&mut self, rhs: DimensionlessInteger) {
+        *self = *self * rhs;
+    }
+}
+impl Div<DimensionlessInteger> for DimensionlessFraction {
+    type Output = Self;
+    #[expect(clippy::suspicious_arithmetic_impl)]
+    fn div(self, rhs: DimensionlessInteger) -> Self {
+        Self(self.0, self.1 * rhs)
+    }
+}
+impl DivAssign<DimensionlessInteger> for DimensionlessFraction {
+    fn div_assign(&mut self, rhs: DimensionlessInteger) {
+        *self = *self / rhs;
+    }
+}
+impl Add<DimensionlessInteger> for DimensionlessFraction {
     type Output = Self;
     fn add(self, rhs: DimensionlessInteger) -> Self {
         self + Self::from(rhs)
     }
 }
-impl AddAssign<DimensionlessInteger> for Quantity {
+impl AddAssign<DimensionlessInteger> for DimensionlessFraction {
     fn add_assign(&mut self, rhs: DimensionlessInteger) {
         *self = *self + rhs;
     }
 }
-impl Sub<DimensionlessInteger> for Quantity {
+impl Sub<DimensionlessInteger> for DimensionlessFraction {
     type Output = Self;
     fn sub(self, rhs: DimensionlessInteger) -> Self {
-        self - Self::from(rhs)
+        self + Self::from(-rhs)
     }
 }
-impl SubAssign<DimensionlessInteger> for Quantity {
+impl SubAssign<DimensionlessInteger> for DimensionlessFraction {
     fn sub_assign(&mut self, rhs: DimensionlessInteger) {
         *self = *self - rhs;
     }
 }
-impl Mul<Time> for Quantity {
-    type Output = Self;
-    fn mul(self, rhs: Time) -> Self {
-        self * Quantity::from(rhs)
+impl Mul<Time> for DimensionlessFraction {
+    type Output = Time;
+    fn mul(self, rhs: Time) -> Time {
+        rhs * self.0 / self.1
     }
 }
-impl MulAssign<Time> for Quantity {
-    fn mul_assign(&mut self, rhs: Time) {
+impl Mul<DimensionlessFraction> for DimensionlessInteger {
+    type Output = DimensionlessFraction;
+    fn mul(self, rhs: DimensionlessFraction) -> DimensionlessFraction {
+        rhs * self
+    }
+}
+impl Div<DimensionlessFraction> for DimensionlessInteger {
+    type Output = DimensionlessFraction;
+    #[allow(clippy::suspicious_arithmetic_impl)]
+    fn div(self, rhs: DimensionlessFraction) -> DimensionlessFraction {
+        self * rhs.reciprocal()
+    }
+}
+impl Mul<DimensionlessFraction> for Time {
+    type Output = Self;
+    fn mul(self, rhs: DimensionlessFraction) -> Self {
+        rhs * self
+    }
+}
+impl MulAssign<DimensionlessFraction> for Time {
+    fn mul_assign(&mut self, rhs: DimensionlessFraction) {
         *self = *self * rhs;
     }
 }
-impl Div<Time> for Quantity {
+impl Div<DimensionlessFraction> for Time {
     type Output = Self;
-    fn div(self, rhs: Time) -> Self {
-        self / Quantity::from(rhs)
+    #[allow(clippy::suspicious_arithmetic_impl)]
+    fn div(self, rhs: DimensionlessFraction) -> Self {
+        self * rhs.reciprocal()
     }
 }
-impl DivAssign<Time> for Quantity {
-    fn div_assign(&mut self, rhs: Time) {
+impl DivAssign<DimensionlessFraction> for Time {
+    fn div_assign(&mut self, rhs: DimensionlessFraction) {
         *self = *self / rhs;
     }
 }
-impl Mul<DimensionlessInteger> for Quantity {
-    type Output = Self;
-    fn mul(self, rhs: DimensionlessInteger) -> Self {
-        self * Quantity::from(rhs)
+impl Add<DimensionlessFraction> for DimensionlessInteger {
+    type Output = DimensionlessFraction;
+    fn add(self, rhs: DimensionlessFraction) -> DimensionlessFraction {
+        rhs + self
     }
 }
-impl MulAssign<DimensionlessInteger> for Quantity {
-    fn mul_assign(&mut self, rhs: DimensionlessInteger) {
-        *self = *self * rhs
+impl Sub<DimensionlessFraction> for DimensionlessInteger {
+    type Output = DimensionlessFraction;
+    fn sub(self, rhs: DimensionlessFraction) -> DimensionlessFraction {
+        DimensionlessFraction::from(self) - rhs
     }
 }
-impl Div<DimensionlessInteger> for Quantity {
-    type Output = Self;
-    fn div(self, rhs: DimensionlessInteger) -> Self {
-        self / Quantity::from(rhs)
+///This conversion is not lossless.
+impl From<DimensionlessFraction> for f32 {
+    fn from(was: DimensionlessFraction) -> Self {
+        was.as_f32()
     }
 }
-impl DivAssign<DimensionlessInteger> for Quantity {
-    fn div_assign(&mut self, rhs: DimensionlessInteger) {
-        *self = *self / rhs
+///This conversion is not lossless.
+impl From<DimensionlessFraction> for f64 {
+    fn from(was: DimensionlessFraction) -> Self {
+        was.as_f64()
     }
 }
-#[cfg(not(any(
-    feature = "dim_check_release",
-    all(debug_assertions, feature = "dim_check_debug")
-)))]
-impl PartialEq for Quantity {
-    fn eq(&self, rhs: &Self) -> bool {
-        if self.unit.eq_assume_true(&rhs.unit) {
-            self.value == rhs.value
-        } else {
-            false
+///This conversion is not lossless.
+impl From<DimensionlessFraction> for Dimensionless<f32> {
+    fn from(was: DimensionlessFraction) -> Self {
+        was.as_quantity_f32()
+    }
+}
+///This conversion is not lossless.
+impl From<DimensionlessFraction> for Dimensionless<f64> {
+    fn from(was: DimensionlessFraction) -> Self {
+        was.as_quantity_f64()
+    }
+}
+///Gets the resulting type from multiplying values of two types. (Alias for
+///`<$a as Mul<$b>>::Output`.)
+///
+///This is an important thing to be able to do when writing code that is
+///generic over units as, since quantities of different units are different types, the
+///fully qualified syntax gets unwieldy quickly when performing multiplication and division.
+///
+///You should be able to use `rrtk::mul!` and `rrtk::dimensions::mul!` interchangably.
+///They are only listed separately due to Rust's special scoping rules for macros that are
+///different from those for other items.
+#[macro_export]
+macro_rules! mul {
+    ($a: ty, $b: ty) => {
+        <$a as Mul<$b>>::Output
+    };
+}
+pub use mul;
+///Gets the resulting type from dividing values of two types. (Alias for
+///`<$a as Div<$b>>::Output`.)
+///
+///This is an important thing to be able to do when writing code that is
+///generic over units as, since quantities of different units are different types, the
+///fully qualified syntax gets unwieldy quickly when performing multiplication and division.
+///
+///You should be able to use `rrtk::div!` and `rrtk::dimensions::div!` interchangably.
+///They are only listed separately due to Rust's special scoping rules for macros that are
+///different from those for other items.
+#[macro_export]
+macro_rules! div {
+    ($a: ty, $b: ty) => {
+        <$a as Div<$b>>::Output
+    };
+}
+pub use div;
+///A quantity with a unit. Dimensional analysis is performed at compile time through the type
+///parameters' representations of unit exponents.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord)]
+#[repr(transparent)]
+pub struct Quantity<T, MM: Integer, S: Integer>(PhantomData<MM>, PhantomData<S>, pub(crate) T);
+impl<T, MM: Integer, S: Integer> Quantity<T, MM, S> {
+    ///Constructor for `Quantity`.
+    #[inline]
+    pub const fn new(inner: T) -> Self {
+        Self(PhantomData, PhantomData, inner)
+    }
+    //This is not as simple as returning self.2 because of E0493 saying that Quantity's destructor
+    //cannot be evaluated at compile-time. Quantity, however, has no Drop impl and is
+    //#[repr(transparent)], so "drop glue" is unnecessary. This is the way of telling the compiler
+    //that. Also, core::mem::transmute doesn't work because of the generic type.
+    ///Converts the `Quantity` into its inner contained object, consuming it.
+    #[inline]
+    pub const fn into_inner(self) -> T {
+        //XXX: This explicitly skips any Drop code for Quantity. It will probably have to stop
+        //being const fn if Drop is ever implemented.
+        use core::mem::ManuallyDrop;
+        let x: ManuallyDrop<Self> = ManuallyDrop::new(self);
+        let x_ptr: *const ManuallyDrop<Self> = &raw const x;
+        let y_ptr: *const T = x_ptr.cast();
+        unsafe { core::ptr::read(y_ptr) }
+    }
+}
+macro_rules! impl_quantity_abs {
+    ($t: ty) => {
+        impl<MM: Integer, S: Integer> Quantity<$t, MM, S> {
+            ///Evaluate the absolute value of the quantity.
+            pub const fn abs(self) -> Self {
+                Self(PhantomData, PhantomData, self.2.abs())
+            }
         }
+    };
+}
+impl_quantity_abs!(f32);
+impl_quantity_abs!(f64);
+impl_quantity_abs!(i8);
+impl_quantity_abs!(i16);
+impl_quantity_abs!(i32);
+impl_quantity_abs!(i64);
+impl_quantity_abs!(i128);
+impl_quantity_abs!(isize);
+impl<T, MM: Integer, S: Integer> From<T> for Quantity<T, MM, S> {
+    fn from(was: T) -> Self {
+        Self(PhantomData, PhantomData, was)
     }
 }
-impl PartialOrd for Quantity {
-    fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
-        self.unit.assert_eq_assume_ok(&other.unit);
-        self.value.partial_cmp(&other.value)
+macro_rules! impl_const_ops {
+    ($t: ty) => {
+        impl<MM: Integer, S: Integer> Quantity<$t, MM, S> {
+            ///Exactly like `+` except that it works in a const context.
+            #[inline]
+            pub const fn add_const(self, rhs: Self) -> Self {
+                Quantity::new(self.2 + rhs.2)
+            }
+            ///Exactly like `+` except that it works in a const context.
+            #[inline]
+            pub const fn sub_const(self, rhs: Self) -> Self {
+                Quantity::new(self.2 - rhs.2)
+            }
+        }
+    };
+}
+impl_const_ops!(f32);
+impl_const_ops!(f64);
+impl_const_ops!(u8);
+impl_const_ops!(u16);
+impl_const_ops!(u32);
+impl_const_ops!(u64);
+impl_const_ops!(u128);
+impl_const_ops!(usize);
+impl_const_ops!(i8);
+impl_const_ops!(i16);
+impl_const_ops!(i32);
+impl_const_ops!(i64);
+impl_const_ops!(i128);
+impl_const_ops!(isize);
+//FIXME: E0210
+//There's a very similar commented out impl in lib.rs.
+/*impl<T, MM: Integer, S: Integer> From<Quantity<T, MM, S>> for T {
+    fn from(was: Quantity<T, MM, S>) -> T {
+        was.2
     }
+}*/
+impl<T: Neg<Output = O>, O, MM: Integer, S: Integer> Neg for Quantity<T, MM, S> {
+    type Output = Quantity<O, MM, S>;
+    fn neg(self) -> Quantity<O, MM, S> {
+        Quantity::new(-self.2)
+    }
+}
+impl<T: Add<U, Output = O>, U, O, MM: Integer, S: Integer> Add<Quantity<U, MM, S>>
+    for Quantity<T, MM, S>
+{
+    type Output = Quantity<O, MM, S>;
+    fn add(self, rhs: Quantity<U, MM, S>) -> Quantity<O, MM, S> {
+        Quantity::from(self.2 + rhs.2)
+    }
+}
+impl<T: AddAssign<U>, U, MM: Integer, S: Integer> AddAssign<Quantity<U, MM, S>>
+    for Quantity<T, MM, S>
+{
+    fn add_assign(&mut self, rhs: Quantity<U, MM, S>) {
+        self.2 += rhs.2;
+    }
+}
+impl<T: Sub<U, Output = O>, U, O, MM: Integer, S: Integer> Sub<Quantity<U, MM, S>>
+    for Quantity<T, MM, S>
+{
+    type Output = Quantity<O, MM, S>;
+    fn sub(self, rhs: Quantity<U, MM, S>) -> Quantity<O, MM, S> {
+        Quantity::from(self.2 - rhs.2)
+    }
+}
+impl<T: SubAssign<U>, U, MM: Integer, S: Integer> SubAssign<Quantity<U, MM, S>>
+    for Quantity<T, MM, S>
+{
+    fn sub_assign(&mut self, rhs: Quantity<U, MM, S>) {
+        self.2 -= rhs.2;
+    }
+}
+impl<T: Mul<U, Output = O>, U, O, MM1: Integer, S1: Integer, MM2: Integer, S2: Integer>
+    Mul<Quantity<U, MM2, S2>> for Quantity<T, MM1, S1>
+{
+    type Output = Quantity<O, MM1::Plus<MM2>, S1::Plus<S2>>;
+    fn mul(self, rhs: Quantity<U, MM2, S2>) -> Quantity<O, MM1::Plus<MM2>, S1::Plus<S2>> {
+        Quantity::from(self.2 * rhs.2)
+    }
+}
+impl<T: MulAssign<U>, U, MM: Integer, S: Integer> MulAssign<Dimensionless<U>>
+    for Quantity<T, MM, S>
+{
+    fn mul_assign(&mut self, rhs: Dimensionless<U>) {
+        self.2 *= rhs.2;
+    }
+}
+impl<T: Div<U, Output = O>, U, O, MM1: Integer, S1: Integer, MM2: Integer, S2: Integer>
+    Div<Quantity<U, MM2, S2>> for Quantity<T, MM1, S1>
+{
+    type Output = Quantity<O, MM1::Minus<MM2>, S1::Minus<S2>>;
+    fn div(self, rhs: Quantity<U, MM2, S2>) -> Quantity<O, MM1::Minus<MM2>, S1::Minus<S2>> {
+        Quantity::from(self.2 / rhs.2)
+    }
+}
+impl<T: DivAssign<U>, U, MM: Integer, S: Integer> DivAssign<Dimensionless<U>>
+    for Quantity<T, MM, S>
+{
+    fn div_assign(&mut self, rhs: Dimensionless<U>) {
+        self.2 /= rhs.2;
+    }
+}
+impl<MM: Integer, S: Integer> Mul<Time> for Quantity<f32, MM, S>
+where
+    //MM + 0 = MM
+    MM: Integer<Plus<Zero> = MM>,
+{
+    type Output = Quantity<f32, MM, S::Plus<OnePlus<Zero>>>;
+    fn mul(self, rhs: Time) -> Quantity<f32, MM, S::Plus<OnePlus<Zero>>> {
+        self * rhs.as_seconds()
+    }
+}
+impl<MM: Integer, S: Integer> Mul<Quantity<f32, MM, S>> for Time {
+    type Output = Quantity<f32, MM, S::PlusOne>;
+    fn mul(self, rhs: Quantity<f32, MM, S>) -> Quantity<f32, MM, S::PlusOne> {
+        self.as_seconds() * rhs
+    }
+}
+impl<MM: Integer, S: Integer> Div<Time> for Quantity<f32, MM, S>
+where
+    //MM - 0 = MM
+    MM: Integer<Minus<Zero> = MM>,
+{
+    type Output = Quantity<f32, MM, S::Minus<OnePlus<Zero>>>;
+    fn div(self, rhs: Time) -> Quantity<f32, MM, S::Minus<OnePlus<Zero>>> {
+        self / rhs.as_seconds()
+    }
+}
+impl<MM: Integer, S: Integer> Div<Quantity<f32, MM, S>> for Time
+where
+    MM: Integer<Negative = MM>,
+{
+    //S - 1 = -S + 1
+    type Output = Quantity<f32, MM, <<S as Integer>::Negative as Integer>::PlusOne>;
+    fn div(
+        self,
+        rhs: Quantity<f32, MM, S>,
+    ) -> Quantity<f32, MM, <<S as Integer>::Negative as Integer>::PlusOne> {
+        self.as_seconds() / rhs
+    }
+}
+impl<T: fmt::Display, MM: Integer, S: Integer> fmt::Display for Quantity<T, MM, S> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{} mm^{}s^{}", self.2, MM::as_i8(), S::as_i8())
+    }
+}
+impl<T: stulta::Half, MM: Integer, S: Integer> stulta::Half for Quantity<T, MM, S> {
+    fn half(self) -> Self {
+        Self::new(self.2.half())
+    }
+}
+impl<T: stulta::AbsoluteValue, MM: Integer, S: Integer> stulta::AbsoluteValue
+    for Quantity<T, MM, S>
+{
+    fn rrtk_abs(self) -> Self {
+        Self::new(self.2.rrtk_abs())
+    }
+}
+//FIXME? It is a little weird that this just makes stuff a float when everything could in theory
+//stay integer. It's just a lot easier to do one-off types for dimensionless and time quantities
+//than it is to maintain a whole other side of the dimensional analysis system for exact values.
+//Also, most of this is going to change in 0.8 or 0.9 anyway. Probably it will be changed to a
+//system using optional external crates somehow and avoiding these kinds of special cases.
+impl Div<Time> for DimensionlessFraction {
+    type Output = InverseSecond<f32>;
+    fn div(self, rhs: Time) -> InverseSecond<f32> {
+        self.as_quantity_f32() / rhs
+    }
+}
+//RRTK intentionally does not provide a way to construct DimensionlessFraction with zero denominator
+//in debug mode at all--*_unchecked still does the checks with debug assertions on. We therefore
+//need to use the tuple struct raw construction syntax in the same module as DimensionlessFraction
+//is defined.
+#[test]
+#[should_panic]
+fn invalid_dimensionless_fraction() {
+    let x = DimensionlessFraction(DimensionlessInteger(-3), DimensionlessInteger(0));
+    x.assert_valid();
 }

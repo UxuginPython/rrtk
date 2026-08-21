@@ -1,179 +1,119 @@
 // SPDX-License-Identifier: BSD-3-Clause
-// Copyright 2024-2025 UxuginPython
+// Copyright 2024-2026 UxuginPython
 #[cfg(feature = "alloc")]
-use rrtk::streams::converters::*;
-#[cfg(feature = "alloc")]
-use rrtk::streams::math::*;
-#[cfg(feature = "alloc")]
-use rrtk::*;
-//Note that RRTK includes the rrtk::streams::control::PIDControllerStream type which should be a
-//bit faster than this. This example is to show how streams can be chained for more complex data
-//processing and control theory. Using the PID controller shown here in production is discouraged.
-#[cfg(feature = "alloc")]
-struct StreamPID {
-    //It is possible to avoid dynamic dispatch by using the actual stream types instead of
-    //`dyn Getter`, but doing that fully makes the types look like this:
-    //Reference<IntegralStream<DifferenceStream<Quantity, ConstantGetter<Quantity, TimeGetterFromGetter<Quantity, dyn Getter<Quantity, ()>, ()>, ()>, dyn Getter<Quantity, ()>, ()>, ()>>
-    //Here, to make this example legible, we don't do that. However, if you're actually making
-    //something for production, expanding the type fully to avoid dynamic dispatch may be a good
-    //idea. It really depends on how much readability you're willing to give up for a small
-    //performance boost.
-    int: Reference<dyn Getter<Quantity, ()>>,
-    drv: Reference<dyn Getter<Quantity, ()>>,
-    pro_float_maker: Reference<dyn Getter<f32, ()>>,
-    int_float_maker: Reference<dyn Getter<f32, ()>>,
-    drv_float_maker: Reference<dyn Getter<f32, ()>>,
-    output: SumStream<f32, 3, ()>,
-}
-#[cfg(feature = "alloc")]
-impl StreamPID {
-    pub fn new(
-        input: Reference<dyn Getter<Quantity, ()>>,
-        setpoint: Quantity,
-        kp: Quantity,
-        ki: Quantity,
-        kd: Quantity,
-    ) -> Self {
-        let time_getter = rc_ref_cell_reference(TimeGetterFromGetter::new(input.clone()));
-        let setpoint = rc_ref_cell_reference(ConstantGetter::new(time_getter.clone(), setpoint));
-        let kp = rc_ref_cell_reference(ConstantGetter::new(time_getter.clone(), kp));
-        let ki = rc_ref_cell_reference(ConstantGetter::new(time_getter.clone(), ki));
-        let kd = rc_ref_cell_reference(ConstantGetter::new(time_getter.clone(), kd));
-        let error = rc_ref_cell_reference(DifferenceStream::new(setpoint.clone(), input.clone()));
-        let int = rc_ref_cell_reference(IntegralStream::new(error.clone()));
-        let drv = rc_ref_cell_reference(DerivativeStream::new(error.clone()));
-        //`ProductStream`'s behavior is to treat all `None` values as 1.0 so that it's as if they
-        //were not included. However, this is not what we want with the coefficient. `NoneToValue`
-        //is used to convert all `None` values to `Some(0.0)` to effectively exlude them from the
-        //final sum.
-        let int_zeroer = rc_ref_cell_reference(NoneToValue::new(
-            int.clone(),
-            time_getter.clone(),
-            Quantity::new(0.0, MILLIMETER),
+mod example {
+    //Note that RRTK includes streams::control::PIDControllerStream, which should be faster than
+    //the PID controller demonstrated here.
+    extern crate alloc;
+    use alloc::rc::Rc;
+    use core::{cell::RefCell, convert::Infallible};
+    use rrtk::prelude::*;
+    use rrtk::streams::{converters, math};
+    use rrtk::{ConstantGetter, NothingOrError, Output, Time};
+    struct Input {
+        time: Time,
+    }
+    impl Updatable<Infallible> for Input {
+        fn update(&mut self) -> NothingOrError<Infallible> {
+            //In real code, you should never determine time like this. Instead, you should use a
+            //real system API for getting time, probably by creating a type implementing
+            //TimeGetter.
+            self.time += Time::from_nanoseconds(200_000_000);
+            Ok(())
+        }
+    }
+    //Of course, in a real system, you never have access to a perfect value like this; there is
+    //always some level of noise and some level of latency. For simplicity, this example does not
+    //account for those.
+    static mut CONTROLLED_VALUE: f32 = 0.0;
+    impl Getter<f32, Infallible> for Input {
+        fn get(&self) -> Output<f32, Infallible> {
+            Ok(Some(Datum::new(self.time, unsafe { CONTROLLED_VALUE })))
+        }
+    }
+    pub fn main() {
+        const SETPOINT: f32 = 5.0;
+        //This PID controller is intentionally not perfectly tuned. Try changing these values and
+        //seeing how the output changes. In fact, there's a way to tune the controller so that it
+        //reaches the setpoint in just one cycle! Hint: look at where CONTROLLED_VALUE is modified.
+        //(Of course, this is not true in a typical system. It's a consequence of how this example
+        //is written.)
+        const KP: f32 = 1.0;
+        const KI: f32 = 0.01;
+        const KD: f32 = 0.1;
+        let input = Input {
+            time: Time::from_nanoseconds(0),
+        };
+        //The Time type implements TimeGetter for a quick and dirty way of satisfying requirements.
+        //This implementation should be thought of in a similar way to unwrap(), as a nice shortcut
+        //for simple and quick testing that's generally not recommended for production use.
+        //
+        //The reason we use i64::MIN nanoseconds, the earliest possible timestamp, is because RRTK
+        //always prefers the newer of two timestamps. This value lets the code always use the
+        //timestamp originally from Input without needing to Rc<RefCell<_>> it everywhere.
+        const FAKE_TIME_GETTER: Time = Time::from_nanoseconds(i64::MIN);
+        let setpoint = ConstantGetter::new(FAKE_TIME_GETTER, SETPOINT);
+        //As you can see, several RRTK traits including Getter and Updatable are passed through
+        //Box, Rc<RefCell<_>>, and a few other smart pointers. This is often necessary either to
+        //use one Getter as input for multiple streams or to use dyn to make differently typed
+        //Getters behave as the same type. The unsafe-to-construct PointerDereferencer type
+        //provides similar functionality for raw pointers; see its documentation for more
+        //information.
+        let error = Rc::new(RefCell::new(math::DifferenceStream::new(setpoint, input)));
+        let kp = ConstantGetter::new(FAKE_TIME_GETTER, KP);
+        let proportional_term = Box::new(math::Product2::new(Rc::clone(&error), kp))
+            as Box<dyn Getter<f32, Infallible>>;
+        //The integral and derivative streams can't immediately return values because they require
+        //multiple readings of their inputs at different times. SumStream returns None if any of
+        //its inputs do (assuming none of them error). However, for out PID controller, it's better
+        //to let the proportional term start acting immediately, before the integral and derivative
+        //can be computed. Thus, we use NoneToDefault to replace Ok(None) values from the integral
+        //and derivative with values of 0.0, which do not affect the final sum. We then apply
+        //PrioritizeA to simplify some error handling.
+        //
+        //You can usually replace a NoneToDefault with a NoneToValue of the default value. Try it
+        //by changing NoneToDefault to NoneToValue and adding an argument of 0.0_f32 to the
+        //constructor.
+        let integral = converters::PrioritizeA::new(converters::NoneToDefault::new(
+            math::IntegralStream::new(Rc::clone(&error)),
+            FAKE_TIME_GETTER,
         ));
-        let drv_zeroer = rc_ref_cell_reference(NoneToValue::new(
-            drv.clone(),
-            time_getter.clone(),
-            Quantity::new(0.0, MILLIMETER),
+        let ki = ConstantGetter::new(FAKE_TIME_GETTER, KI);
+        let integral_term =
+            Box::new(math::Product2::new(integral, ki)) as Box<dyn Getter<f32, Infallible>>;
+        let derivative = converters::PrioritizeA::new(converters::NoneToDefault::new(
+            math::DerivativeStream::new(Rc::clone(&error)),
+            FAKE_TIME_GETTER,
         ));
-        let kp_mul = rc_ref_cell_reference(ProductStream::new([
-            to_dyn!(Getter<Quantity, ()>, kp.clone()),
-            to_dyn!(Getter<Quantity, ()>, error.clone()),
-        ]));
-        //The way a PID controller works necessitates that it adds quantities of different units.
-        //Thus, QuantityToFloat streams are required to keep the dimensional analysis system from
-        //stopping this.
-        let pro_float_maker = rc_ref_cell_reference(QuantityToFloat::new(kp_mul));
-        let ki_mul = rc_ref_cell_reference(ProductStream::new([
-            to_dyn!(Getter<Quantity, ()>, ki.clone()),
-            to_dyn!(Getter<Quantity, ()>, int_zeroer.clone()),
-        ]));
-        let int_float_maker = rc_ref_cell_reference(QuantityToFloat::new(ki_mul));
-        let kd_mul = rc_ref_cell_reference(ProductStream::new([
-            to_dyn!(Getter<Quantity, ()>, kd.clone()),
-            to_dyn!(Getter<Quantity, ()>, drv_zeroer.clone()),
-        ]));
-        let drv_float_maker = rc_ref_cell_reference(QuantityToFloat::new(kd_mul));
-        let output = SumStream::new([
-            to_dyn!(Getter<f32, ()>, pro_float_maker.clone()),
-            to_dyn!(Getter<f32, ()>, int_float_maker.clone()),
-            to_dyn!(Getter<f32, ()>, drv_float_maker.clone()),
-        ]);
-        Self {
-            int: to_dyn!(Getter<Quantity, ()>, int),
-            drv: to_dyn!(Getter<Quantity, ()>, drv),
-            pro_float_maker: to_dyn!(Getter<f32, ()>, pro_float_maker),
-            int_float_maker: to_dyn!(Getter<f32, ()>, int_float_maker),
-            drv_float_maker: to_dyn!(Getter<f32, ()>, drv_float_maker),
-            output: output,
+        let kd = ConstantGetter::new(FAKE_TIME_GETTER, KD);
+        let derivative_term =
+            Box::new(math::Product2::new(derivative, kd)) as Box<dyn Getter<f32, Infallible>>;
+        let mut pid = math::SumStream::new([proportional_term, integral_term, derivative_term]);
+        for _ in 0..30 {
+            pid.update().unwrap();
+            let gotten = pid.get().unwrap().unwrap();
+            println!(
+                "time: {:?};\tcontrolled value: {:?};\tcommand: {:?}",
+                gotten.time.as_nanoseconds(),
+                unsafe { CONTROLLED_VALUE },
+                gotten.value
+            );
+            unsafe {
+                //Try changing how CONTROLLED_VALUE is modified and seeing what happens to the
+                //output. You'll find that plants like this one where the controlled value is
+                //proportional to the integral of the command work best.
+                CONTROLLED_VALUE += 0.7 * gotten.value;
+            }
         }
     }
 }
 #[cfg(feature = "alloc")]
-impl Getter<f32, ()> for StreamPID {
-    fn get(&self) -> Output<f32, ()> {
-        self.output.get()
-    }
-}
-#[cfg(feature = "alloc")]
-impl Updatable<()> for StreamPID {
-    fn update(&mut self) -> NothingOrError<()> {
-        //The other streams used that are not updated here do not need to be updated. Streams like
-        //SumStream just calculate their output in the get method since they do not need to store
-        //any data beyond the `Reference`s to their inputs. The non-math streams used here work in
-        //a similar way.
-        self.int.borrow_mut().update()?;
-        self.drv.borrow_mut().update()?;
-        self.pro_float_maker.borrow_mut().update()?;
-        self.int_float_maker.borrow_mut().update()?;
-        self.drv_float_maker.borrow_mut().update()?;
-        Ok(())
-    }
-}
-#[cfg(feature = "alloc")]
-struct MyStream {
-    time: Time,
-}
-#[cfg(feature = "alloc")]
-impl MyStream {
-    pub fn new() -> Self {
-        Self { time: Time(0) }
-    }
-}
-//In a real system, obviously, the process variable must be dependent on the command. This is a
-//very rudimentary placeholder and a poor model of an actual system. All this example is
-//intended to do is to show the PID controller's command values and not model a real system by
-//assuming a constant velocity.
-#[cfg(feature = "alloc")]
-impl Getter<Quantity, ()> for MyStream {
-    fn get(&self) -> Output<Quantity, ()> {
-        Ok(Some(Datum::new(
-            self.time,
-            Quantity::from(self.time) * Quantity::new(0.5, MILLIMETER_PER_SECOND),
-        )))
-    }
-}
-#[cfg(feature = "alloc")]
-impl Updatable<()> for MyStream {
-    fn update(&mut self) -> NothingOrError<()> {
-        self.time += Time(2_000_000_000);
-        Ok(())
-    }
-}
-#[cfg(feature = "alloc")]
 fn main() {
-    const SETPOINT: Quantity = Quantity::new(5.0, MILLIMETER);
-    const KP: Quantity = Quantity::dimensionless(1.0);
-    const KI: Quantity = Quantity::dimensionless(0.01);
-    const KD: Quantity = Quantity::dimensionless(0.1);
-    println!("PID Controller using RRTK Streams");
-    println!(
-        "kp = {:?}; ki = {:?}; kd = {:?}",
-        KP.value, KI.value, KD.value
-    );
-    let input = to_dyn!(Getter<Quantity, ()>, rc_ref_cell_reference(MyStream::new()));
-    let mut stream = StreamPID::new(input.clone(), SETPOINT, KP, KI, KD);
-    stream.update().unwrap();
-    println!(
-        "time: {:?}; setpoint: {:?}; process: {:?}; command: {:?}",
-        stream.get().unwrap().unwrap().time.0,
-        SETPOINT.value,
-        input.borrow().get().unwrap().unwrap().value.value,
-        stream.get().unwrap().unwrap().value
-    );
-    for _ in 0..6 {
-        input.borrow_mut().update().unwrap();
-        stream.update().unwrap();
-        println!(
-            "time: {:?}; setpoint: {:?}; process: {:?}; command: {:?}",
-            stream.get().unwrap().unwrap().time,
-            SETPOINT,
-            input.borrow().get().unwrap().unwrap().value,
-            stream.get().unwrap().unwrap().value
-        );
-    }
+    example::main();
 }
 #[cfg(not(feature = "alloc"))]
 fn main() {
-    println!("Enable the `alloc` feature to run this example.\nAssuming you're using Cargo, add the `--features alloc` flag to your command.");
+    eprintln!(
+        "Enable the `alloc` feature to run this example.\nAssuming you're using Cargo, add `--features alloc` to your command."
+    );
 }

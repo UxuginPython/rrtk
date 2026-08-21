@@ -1,18 +1,18 @@
 // SPDX-License-Identifier: BSD-3-Clause
-// Copyright 2024-2025 UxuginPython
-//!# Rust Robotics ToolKit
-//!**A set of algorithms and other tools for robotics in Rust.**
+// Copyright 2024-2026 UxuginPython
+//!# RRTK: Rust Robotics ToolKit
+//!**A data flow-based robotics framework designed for embedded systems.**
 //!
-//!It is almost entirely `no_std` and most things work without `alloc`. It does not currently integrate with any API directly. This may be added in the future, probably through another crate.
+//!RRTK works almost entirely without `std` and `alloc`. It is not specific to any device or API,
+//!but support is available though feature flags for [libm](https://crates.io/crates/libm) and
+//![micromath](https://crates.io/crates/micromath) for extended float math.
 //!## Feature Flags
 //!- `alloc` - Enable items requiring dynamic allocation through Rust's builtin `alloc` crate.
 //!- `std` - Enable items requiring the Rust standard library. Requires `alloc` feature. Enabled by default.
 //!- `devices` - Enable RRTK's graph-based device system.
-//!- `dim_check_debug` - Enable dimension checking in debug mode. Enabled by default.
-//!- `dim_check_release` - Enable dimension checking in both debug mode and release mode. Requires `dim_check_debug` feature.
 //!- `libm` - Use [`libm`](https://crates.io/crates/libm) for float exponentiation when `std` is not available.
 //!- `micromath` - Use [`micromath`](https://crates.io/crates/micromath) for float exponentiation
-//!when `std` and `libm` are unavailable.
+//!  when `std` and `libm` are unavailable.
 //!- `internal_enhanced_float` - Do not enable this yourself.
 //!
 //!RRTK prefers **`std`** over **`libm`** and `libm` over **`micromath`** when multiple are
@@ -33,19 +33,14 @@ use std::sync::{Mutex, RwLock};
 #[cfg(feature = "alloc")]
 extern crate alloc;
 #[cfg(feature = "alloc")]
-use alloc::rc::Rc;
-#[cfg(feature = "alloc")]
-use alloc::vec::Vec;
-//There is nothing preventing this from being used without any features; we just don't currently,
-//and it makes Cargo show a warning since there's an unused use.
-#[cfg(any(feature = "alloc", feature = "devices"))]
+use alloc::{boxed::Box, rc::Rc, vec::Vec};
 use core::cell::RefCell;
-use core::fmt::Debug;
+use core::fmt;
 use core::marker::PhantomData;
-use core::ops::{
-    Add, AddAssign, Deref, DerefMut, Div, DivAssign, Mul, MulAssign, Neg, Not, Sub, SubAssign,
-};
+use core::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Not, Sub, SubAssign};
+use fmt::Debug;
 mod command;
+pub mod compile_time_integer;
 mod datum;
 #[cfg(feature = "devices")]
 pub mod devices;
@@ -54,32 +49,98 @@ pub mod dimensions;
 mod enhanced_float;
 pub use dimensions::*;
 mod motion_profile;
-pub mod reference;
 mod state;
 pub mod streams;
+pub mod stulta;
 pub use command::*;
 pub use datum::*;
 #[cfg(feature = "internal_enhanced_float")]
 use enhanced_float::*;
 pub use motion_profile::*;
-#[cfg(feature = "alloc")]
-pub use reference::rc_ref_cell_reference;
-pub use reference::Reference;
-#[cfg(feature = "std")]
-pub use reference::{arc_mutex_reference, arc_rw_lock_reference};
 pub use state::*;
-///RRTK follows the enum style of error handling. This is the error type returned from nearly all
-///RRTK types, but you can add your own custom error type using `Other(O)`. It is strongly
-///recommended that you use a single `O` type across your crate.
-#[derive(Clone, Copy, Debug, PartialEq)]
-#[non_exhaustive]
-pub enum Error<O: Copy + Debug> {
-    ///Returned when a `None` is elevated to an error by a
-    ///[`NoneToError`](streams::converters::NoneToError).
-    FromNone,
-    ///A custom error of a user-defined type. Not created by any RRTK type but can be propagated by
-    ///them.
-    Other(O),
+///Re-exports some of the most important RRTK items as well as all its extension traits.
+///
+///This allows one to write `use rrtk::prelude::*;` instead of either adding a lot of boilerplate
+///importing each needed item individually or unnecessarily importing everything with `use
+///rrtk::*;`.
+pub mod prelude {
+    #[cfg(feature = "devices")]
+    pub use super::devices::DeviceUpdatable;
+    pub use super::{
+        Datum, Getter, NothingOrErrorExt, OptionDatumExt, OutputExt, TimeGetter, Updatable,
+    };
+}
+///Error types used for a few things in RRTK.
+pub mod error {
+    use super::*;
+    ///The error type used when a [`TryFrom`] fails.
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    pub struct CannotConvert;
+    ///A type for when multiple things may error independently and both errors must be able to be
+    ///returned. This only keeps track of when at least one has errored, i.e., it does not have an
+    ///`Ok` variant.
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    pub enum PossibleDoubleError<E> {
+        ///The variant for when Side A errors and Side B does not.
+        A(E),
+        ///The variant for when Side B errors and Side A does not.
+        B(E),
+        ///The variant for when both Side A and Side B error.
+        AB(E, E),
+    }
+    impl<E> PossibleDoubleError<E> {
+        ///Constructs `PossibleDoubleError` from a possible Side A error and a possible Side B
+        ///error. Returns `None` if neither side has an error and `Some(PossibleDoubleError)` if at
+        ///least one side does. You may want to use this in conjunction with
+        ///[`NothingOrErrorExt::from_option`].
+        #[inline]
+        pub fn from_options(a: Option<E>, b: Option<E>) -> Option<Self> {
+            match (a, b) {
+                (None, None) => None,
+                (Some(a), None) => Some(Self::A(a)),
+                (None, Some(b)) => Some(Self::B(b)),
+                (Some(a), Some(b)) => Some(Self::AB(a, b)),
+            }
+        }
+        ///Collapse `PossibleDoubleError<E>` into a single `E`, keeping only the Side A error if
+        ///both sides have errored.
+        #[inline]
+        pub fn prioritize_a(self) -> E {
+            match self {
+                Self::A(a_error) => a_error,
+                Self::B(b_error) => b_error,
+                Self::AB(a_error, _b_error) => a_error,
+            }
+        }
+        ///Collapse `PossibleDoubleError<E>` into a single `E`, keeping only the Side B error if
+        ///both sides have errored.
+        #[inline]
+        pub fn prioritize_b(self) -> E {
+            match self {
+                Self::A(a_error) => a_error,
+                Self::B(b_error) => b_error,
+                Self::AB(_a_error, b_error) => b_error,
+            }
+        }
+        ///Discard the Side B error, if it exists, and return the Side A error, if it exists.
+        #[inline]
+        pub fn keep_only_a(self) -> Option<E> {
+            if let Self::A(a_error) | Self::AB(a_error, _) = self {
+                Some(a_error)
+            } else {
+                None
+            }
+        }
+        ///Discard the Side A error, if it exists, and return the Side B error, if it exists.
+        #[inline]
+        pub fn keep_only_b(self) -> Option<E> {
+            if let Self::B(b_error) | Self::AB(_, b_error) = self {
+                Some(b_error)
+            } else {
+                None
+            }
+        }
+    }
 }
 ///A derivative of position: position, velocity, or acceleration.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -91,36 +152,13 @@ pub enum PositionDerivative {
     ///How fast how fast you're going's changing.
     Acceleration,
 }
-//TODO: figure out for to use the Error enum with this
-#[cfg(any(
-    feature = "dim_check_release",
-    all(debug_assertions, feature = "dim_check_debug")
-))]
-impl TryFrom<Unit> for PositionDerivative {
-    type Error = ();
-    fn try_from(was: Unit) -> Result<Self, ()> {
-        Ok(match was {
-            MILLIMETER => PositionDerivative::Position,
-            MILLIMETER_PER_SECOND => PositionDerivative::Velocity,
-            MILLIMETER_PER_SECOND_SQUARED => PositionDerivative::Acceleration,
-            _ => return Err(()),
-        })
-    }
-}
-impl From<Command> for PositionDerivative {
-    fn from(was: Command) -> Self {
-        match was {
-            Command::Position(_) => Self::Position,
-            Command::Velocity(_) => Self::Velocity,
-            Command::Acceleration(_) => Self::Acceleration,
-        }
-    }
-}
 impl TryFrom<MotionProfilePiece> for PositionDerivative {
-    type Error = ();
-    fn try_from(was: MotionProfilePiece) -> Result<Self, ()> {
+    type Error = error::CannotConvert;
+    fn try_from(was: MotionProfilePiece) -> Result<Self, error::CannotConvert> {
         match was {
-            MotionProfilePiece::BeforeStart | MotionProfilePiece::Complete => Err(()),
+            MotionProfilePiece::BeforeStart | MotionProfilePiece::Complete => {
+                Err(error::CannotConvert)
+            }
             MotionProfilePiece::InitialAcceleration | MotionProfilePiece::EndAcceleration => {
                 Ok(PositionDerivative::Acceleration)
             }
@@ -141,16 +179,12 @@ pub struct PIDKValues {
 impl PIDKValues {
     ///Constructor for [`PIDKValues`].
     pub const fn new(kp: f32, ki: f32, kd: f32) -> Self {
-        Self {
-            kp: kp,
-            ki: ki,
-            kd: kd,
-        }
+        Self { kp, ki, kd }
     }
     ///Calculate the control variable using the coefficients given error, its integral, and its
     ///derivative.
     #[inline]
-    pub fn evaluate(&self, error: f32, error_integral: f32, error_derivative: f32) -> f32 {
+    pub const fn evaluate(&self, error: f32, error_integral: f32, error_derivative: f32) -> f32 {
         self.kp * error + self.ki * error_integral + self.kd * error_derivative
     }
 }
@@ -168,14 +202,14 @@ impl PositionDerivativeDependentPIDKValues {
     ///Constructor for [`PositionDerivativeDependentPIDKValues`].
     pub const fn new(position: PIDKValues, velocity: PIDKValues, acceleration: PIDKValues) -> Self {
         Self {
-            position: position,
-            velocity: velocity,
-            acceleration: acceleration,
+            position,
+            velocity,
+            acceleration,
         }
     }
     ///Get the k-values for a specific position derivative.
     #[inline]
-    pub fn get_k_values(&self, position_derivative: PositionDerivative) -> PIDKValues {
+    pub const fn get_k_values(&self, position_derivative: PositionDerivative) -> PIDKValues {
         match position_derivative {
             PositionDerivative::Position => self.position,
             PositionDerivative::Velocity => self.velocity,
@@ -185,7 +219,7 @@ impl PositionDerivativeDependentPIDKValues {
     ///Calculate the control variable using the coefficients for a given position derivative given
     ///error, its integral, and its derivative.
     #[inline]
-    pub fn evaluate(
+    pub const fn evaluate(
         &self,
         position_derivative: PositionDerivative,
         error: f32,
@@ -197,535 +231,865 @@ impl PositionDerivativeDependentPIDKValues {
     }
 }
 ///A generic output type when something may return an error, nothing, or something with a
-///timestamp.
-pub type Output<T, E> = Result<Option<Datum<T>>, Error<E>>;
+///timestamp. The most common use for this is as the output of [`Getter::get`].
+pub type Output<T, E> = Result<Option<Datum<T>>, E>;
+///Extension trait for [`Output<T, E>`], a type alias to `Result<Option<Datum<T>>, E>`.
+pub trait OutputExt<T, E> {
+    ///Maps the `Option<Datum<T>>` to another `Option` in the `Ok(_)` variant.
+    ///
+    ///This is nearly identical to [`Result::map`]. The only difference between this method and
+    ///`Result::map` is that this method only allows mapping to other `Output` types.
+    fn map_ok<O, F>(self, function: F) -> Output<O, E>
+    where
+        F: FnOnce(Option<Datum<T>>) -> Option<Datum<O>>;
+    ///Maps the `Datum` to another `Datum` in the `Ok(Some(_))` variant.
+    fn map_ok_some<O, F>(self, function: F) -> Output<O, E>
+    where
+        F: FnOnce(Datum<T>) -> Datum<O>;
+    ///Maps the `Datum`'s timestamped value to another value in the `Ok(Some(_))` variant.
+    fn map_ok_some_value<O, F>(self, function: F) -> Output<O, E>
+    where
+        F: FnOnce(T) -> O;
+}
+impl<T, E> OutputExt<T, E> for Output<T, E> {
+    #[inline]
+    fn map_ok<O, F>(self, function: F) -> Output<O, E>
+    where
+        F: FnOnce(Option<Datum<T>>) -> Option<Datum<O>>,
+    {
+        self.map(function)
+    }
+    #[inline]
+    fn map_ok_some<O, F>(self, function: F) -> Output<O, E>
+    where
+        F: FnOnce(Datum<T>) -> Datum<O>,
+    {
+        self.map(|option| option.map(function))
+    }
+    #[inline]
+    fn map_ok_some_value<O, F>(self, function: F) -> Output<O, E>
+    where
+        F: FnOnce(T) -> O,
+    {
+        self.map(|option_datum| option_datum.map_value(function))
+    }
+}
 ///Returned from [`TimeGetter`] objects, which may return either a time or an error.
-pub type TimeOutput<E> = Result<Time, Error<E>>;
+pub type TimeOutput<E> = Result<Time, E>;
 ///Returned when something may return either nothing or an error.
-pub type NothingOrError<E> = Result<(), Error<E>>;
+pub type NothingOrError<E> = Result<(), E>;
+///An extension trait for [`NothingOrError`].
+pub trait NothingOrErrorExt<E> {
+    ///Converts from `Option<E>` to `NothingOrError<E>`.
+    fn from_option(option: Option<E>) -> Self;
+    ///Converts from `NothingOrError<E>` to `Option<E>`.
+    fn into_option(self) -> Option<E>;
+}
+impl<E> NothingOrErrorExt<E> for NothingOrError<E> {
+    fn from_option(option: Option<E>) -> Self {
+        match option {
+            None => Ok(()),
+            Some(x) => {
+                core::hint::cold_path();
+                Err(x)
+            }
+        }
+    }
+    fn into_option(self) -> Option<E> {
+        match self {
+            Ok(()) => None,
+            Err(x) => {
+                core::hint::cold_path();
+                Some(x)
+            }
+        }
+    }
+}
 ///An object for getting the absolute time.
-pub trait TimeGetter<E: Copy + Debug>: Updatable<E> {
+pub trait TimeGetter<E: Clone + Debug>: Updatable<E> {
     ///Get the time.
     fn get(&self) -> TimeOutput<E>;
 }
-///An object that can return a value, like a [`Getter`], for a given time.
-pub trait History<T, E: Copy + Debug>: Updatable<E> {
+///An object that can return a value, like a [`Getter`], for a given time. Unlike `Getter`,
+///`Chronology` is infallible.
+pub trait Chronology<T> {
     ///Get a value at a time.
     fn get(&self, time: Time) -> Option<Datum<T>>;
 }
-///Something with an [`update`](Updatable::update) method. Mostly for subtraiting.
-pub trait Updatable<E: Copy + Debug> {
+///An object that can be updated, potentially erroring when this is done.
+///This is one of the most fundamental traits to RRTK.
+///
+///The idea behind `Updatable`, [`Getter`], and [`Settable`] is to provide a very general-purpose
+///and easy-to-implement API that can be compatible with almost anything.
+pub trait Updatable<E: Clone + Debug> {
     ///As this trait is very generic, exactly what this does will be very dependent on the
     ///implementor.
     fn update(&mut self) -> NothingOrError<E>;
 }
-///Something with a [`get`](Getter::get) method. Structs implementing this will often be chained for easier data
-///processing, with a struct having other implementors in fields which will have some operation
-///performed on their output before it being passed on. Data processing Getters with other Getters
-///as fields can be referred to as streams, though this is only in naming and trait-wise there is
-///no distinction. The other common use for this trait is encoders. These should not be called
-///streams.
-pub trait Getter<G, E: Copy + Debug>: Updatable<E> {
-    ///Get something.
+///An object that can be updated and can return timestamped values.
+///This is one of the most fundamental traits to RRTK.
+///
+///The idea behind `Getter`, [`Updatable`], and [`Settable`] is to provide a very general-purpose
+///and easy-to-implement API that can be compatible with almost anything.
+///For things that need to implement `Getter` multiple times for getting different things, the
+///Newtype Pattern is recommended.
+///
+///Many `Getter`s hold other `Getter`s as inputs for data processing. These are called *[streams]*.
+///Streams are another very important use of the `Getter` trait.
+#[diagnostic::on_unimplemented(
+    note = "Often, RRTK streams can be constructed with inputs that do not implement Getter, even if these inputs are not usable. Check the arguments to your constructors."
+)]
+pub trait Getter<G, E: Clone + Debug>: Updatable<E> {
+    ///Get something, fallibly, with a timestamp.
     fn get(&self) -> Output<G, E>;
+    ///Update with [`Updatable`] and then call [`get`](Getter::get).
+    fn update_and_get(&mut self) -> Output<G, E> {
+        self.update()?;
+        self.get()
+    }
 }
-///Internal data needed for following a [`Getter`] with a [`Settable`].
-pub struct SettableData<S, E: Copy + Debug> {
-    following: Option<Reference<dyn Getter<S, E>>>,
-    last_request: Option<S>,
+///An object that can be updated and can be set to or given values, potentially erroring when this
+///is done.
+///
+///The idea behind `Settable`, [`Updatable`], and [`Getter`] is to provide a very general-purpose
+///and easy-to-implement API that can be compatible with almost anything.
+///When `Settable` must be implemented multiple times, the Newtype Pattern is often helpful.
+pub trait Settable<S, E: Clone + Debug>: Updatable<E> {
+    ///Set something to a value. For example, this could set a motor to a voltage.
+    fn set(&mut self, value: S) -> NothingOrError<E>;
 }
-impl<S, E: Copy + Debug> SettableData<S, E> {
-    ///Constructor for [`SettableData`].
-    pub const fn new() -> Self {
+///Feeds the output of a [`Getter`] into a [`Settable`].
+///
+///There are two ways of thinking about how this does error handling. The first way is this
+///flowchart:
+#[doc = include_str!("../feeder-flowchart.svg")]
+///
+///Here is corresponding pseudocode. This is one of few cases that could probably be simplified if
+///Rust had goto.
+///```text
+///getter.update();
+///if (update errored) {
+///    goto X;
+///}
+///getter.get();
+///if (get returned Ok(Some(_)) ) {
+///    settable.set(value get returned);
+///    if (set errored) {
+///        goto Y;
+///    }
+///}
+///X: settable.update();
+///Y: error_collection_magic()
+///```
+///
+///The second way to think about this error handling is closer to how the code is actually written.
+///Here it is:
+///
+///There is a Getter Side and a Settable Side. The Getter Side calls `update` on the Getter and, if
+///that didn't fail, calls `get`. The Getter Side is literally just [`Getter::update_and_get`] and a
+///little logic for feeding into the Settable Side.
+///
+///The Settable Side calls `set` on the Settable if `get` ran and got
+///`Ok(Some(_))` and then calls `update` on the Settable as long as `set` either didn't run or
+///succeeded. There's then some more magic to collect the possible errors into
+///[`PossibleDoubleError`](error::PossibleDoubleError).
+///
+///That's pretty hard to parse in English, so here's some Rust-like pseudocode:
+///```text
+///fn getter_side {
+///    getter.update()?;
+///    getter.get()?;
+///}
+///fn settable_side {
+///    //true as long as both:
+///    //1. getter.get() ran, i.e., getter.update() didn't error
+///    //2. getter.get() returned Ok(Some(_))
+///    if have_something_from_getter {
+///        settable.set(something_from_getter)?;
+///    }
+///    //The only way for settable_side to return before here is if both:
+///    //1. settable.set() ran (see previous comment)
+///    //2. settable.set() errored directly
+///    settable.update()?;
+///}
+///getter_side();
+///settable_side();
+///error_collection_magic()
+///```
+///Also, here's a flowchart:
+#[doc = include_str!("../feeder-flowchart-2.svg")]
+///
+///As for `PossibleDoubleError`, Side A corresponds to the Getter Side and Side B corresponds to the
+///Settable Side.
+pub struct Feeder<T, G, S> {
+    getter: G,
+    settable: S,
+    phantom_t: PhantomData<T>,
+}
+impl<T, G, S> Feeder<T, G, S> {
+    ///Constructor for `Feeder`.
+    pub const fn new(getter: G, settable: S) -> Self {
         Self {
-            following: None,
-            last_request: None,
+            getter,
+            settable,
+            phantom_t: PhantomData,
         }
     }
 }
-///Something with a [`set`](Settable::set) method. Usually used for motors and other mechanical components and
-///systems. This trait too is fairly broad.
-pub trait Settable<S: Clone, E: Copy + Debug>: Updatable<E> {
-    ///Set something, not updating the internal [`SettableData`]. Due to current limitations of the
-    ///language, you must implement this but call [`set`](Settable::set). Do not call this directly as it will make
-    ///[`get_last_request`](Settable::get_last_request) work incorrectly.
-    fn impl_set(&mut self, value: S) -> NothingOrError<E>;
-    ///Set something to a value. For example, this could set a motor to a voltage. You should call
-    ///this and not [`impl_set`](Settable::impl_set).
-    fn set(&mut self, value: S) -> NothingOrError<E> {
-        self.impl_set(value.clone())?;
-        let data = self.get_settable_data_mut();
-        data.last_request = Some(value);
-        Ok(())
-    }
-    ///As traits cannot have fields, get functions and separate types are required. All you have to
-    ///do is make a field for a corresponding [`SettableData`], make this return an immutable
-    ///reference to it, and make [`get_settable_data_mut`](Settable::get_settable_data_mut)
-    ///return a mutable reference to it.
-    fn get_settable_data_ref(&self) -> &SettableData<S, E>;
-    ///As traits cannot have fields, get functions and separate types are required. All you have to
-    ///do is make a field for a corresponding [`SettableData`], make this return a mutable
-    ///reference to it, and make [`get_settable_data_ref`](Settable::get_settable_data_ref)
-    ///return an immutable reference to it.
-    fn get_settable_data_mut(&mut self) -> &mut SettableData<S, E>;
-    ///Begin following a [`Getter`] of the same type. For this to work, you must have
-    ///[`update_following_data`](Settable::update_following_data) in your [`Updatable`] implementation.
-    fn follow(&mut self, getter: Reference<dyn Getter<S, E>>) {
-        let data = self.get_settable_data_mut();
-        data.following = Some(getter);
-    }
-    ///Stop following the [`Getter`].
-    fn stop_following(&mut self) {
-        let data = self.get_settable_data_mut();
-        data.following = None;
-    }
-    ///Get a new value from the [`Getter`] we're following, if there is one, and call
-    ///[`set`](Settable::set)
-    ///accordingly. You must add this to your [`Updatable`] implementation if you are following
-    ///[`Getter`]s. This is a current limitation of the Rust language. If specialization is ever
-    ///stabilized, this will hopefully be done in a better way.
-    fn update_following_data(&mut self) -> NothingOrError<E> {
-        let data = self.get_settable_data_ref();
-        match &data.following {
-            None => {}
-            Some(getter) => {
-                let new_value = getter.borrow().get()?;
-                match new_value {
-                    None => {
-                        return Ok(());
-                    }
-                    Some(datum) => {
-                        self.set(datum.value)?;
-                    }
-                }
+impl<T, G, S, E> Updatable<error::PossibleDoubleError<E>> for Feeder<T, G, S>
+where
+    G: Getter<T, E>,
+    S: Settable<T, E>,
+    E: Clone + Debug,
+{
+    fn update(&mut self) -> NothingOrError<error::PossibleDoubleError<E>> {
+        //"Getter Side"
+        let gotten = self.getter.update_and_get();
+        let (gotten_ok, gotten_err) = match gotten {
+            Ok(Some(datum)) => (Some(datum.value), None),
+            Ok(None) => (None, None),
+            Err(err) => (None, Some(err)),
+        };
+        //"Settable Side"
+        //We can't use the parameters from the outer item, so we use these parameters, which are
+        //the same types respectively, to make the compiler happy.
+        fn settable_side<Si, Ti, Ei>(settable: &mut Si, set_value: Option<Ti>) -> NothingOrError<Ei>
+        where
+            Si: Settable<Ti, Ei>,
+            Ei: Clone + Debug,
+        {
+            if let Some(value) = set_value {
+                settable.set(value)?;
             }
+            settable.update()
         }
-        Ok(())
-    }
-    ///Get the argument from the last time [`set`](Settable::set) was called.
-    fn get_last_request(&self) -> Option<S> {
-        let data = self.get_settable_data_ref();
-        data.last_request.clone()
+        let settable_out = settable_side(&mut self.settable, gotten_ok);
+        let settable_err = settable_out.err();
+        //"error collection magic"
+        NothingOrError::from_option(error::PossibleDoubleError::from_options(
+            gotten_err,
+            settable_err,
+        ))
     }
 }
 ///Because [`Getter`]s always return a timestamp (as long as they don't return `Err(_)` or
 ///`Ok(None)`), we can use this to treat them like [`TimeGetter`]s.
-pub struct TimeGetterFromGetter<T: Clone, G: Getter<T, E> + ?Sized, E: Copy + Debug> {
-    elevator: streams::converters::NoneToError<T, G, E>,
+pub struct TimeGetterFromGetter<T, G, E> {
+    getter: G,
+    none_error: E,
+    phantom_t: PhantomData<T>,
 }
-impl<T: Clone, G: Getter<T, E> + ?Sized, E: Copy + Debug> TimeGetterFromGetter<T, G, E> {
+impl<T, G, E> TimeGetterFromGetter<T, G, E> {
     ///Constructor for [`TimeGetterFromGetter`].
-    pub const fn new(stream: Reference<G>) -> Self {
+    pub const fn new(getter: G, none_error: E) -> Self {
         Self {
-            elevator: streams::converters::NoneToError::new(stream),
+            getter,
+            none_error,
+            phantom_t: PhantomData,
         }
     }
 }
-impl<T: Clone, G: Getter<T, E> + ?Sized, E: Copy + Debug> TimeGetter<E>
-    for TimeGetterFromGetter<T, G, E>
-{
+impl<T, G: Getter<T, E>, E: Clone + Debug> TimeGetter<E> for TimeGetterFromGetter<T, G, E> {
     fn get(&self) -> TimeOutput<E> {
-        let output = self.elevator.get()?;
-        let output = output.expect("`NoneToError` made all `Ok(None)`s into `Err(_)`s, and `?` returned all `Err(_)`s, so we're sure this is now an `Ok(Some(_))`.");
-        return Ok(output.time);
-    }
-}
-impl<T: Clone, G: Getter<T, E> + ?Sized, E: Copy + Debug> Updatable<E>
-    for TimeGetterFromGetter<T, G, E>
-{
-    fn update(&mut self) -> NothingOrError<E> {
-        Ok(())
-    }
-}
-///As histories return values at times, we can ask them to return values at the time of now or now
-///with a delta. This makes that much easier and is the recommended way of following
-///[`MotionProfile`]s.
-pub struct GetterFromHistory<'a, G, TG: TimeGetter<E>, E: Copy + Debug> {
-    history: &'a mut dyn History<G, E>,
-    time_getter: Reference<TG>,
-    time_delta: Time,
-}
-impl<'a, G, TG: TimeGetter<E>, E: Copy + Debug> GetterFromHistory<'a, G, TG, E> {
-    ///Constructor such that the time in the request to the history will be directly that returned
-    ///from the [`TimeGetter`] with no delta.
-    pub fn new_no_delta(history: &'a mut impl History<G, E>, time_getter: Reference<TG>) -> Self {
-        Self {
-            history: history,
-            time_getter: time_getter,
-            time_delta: Time::default(),
+        match self.getter.get() {
+            Err(error) => Err(error),
+            Ok(None) => Err(self.none_error.clone()),
+            Ok(Some(datum)) => Ok(datum.time),
         }
     }
-    ///Constructor such that the times requested from the [`History`] will begin at zero where zero
-    ///is the moment this constructor is called.
-    pub fn new_start_at_zero(
-        history: &'a mut impl History<G, E>,
-        time_getter: Reference<TG>,
-    ) -> Result<Self, Error<E>> {
-        let time_delta = -time_getter.borrow().get()?;
-        Ok(Self {
-            history: history,
-            time_getter: time_getter,
-            time_delta: time_delta,
-        })
+}
+impl<T, G: Updatable<E>, E: Clone + Debug> Updatable<E> for TimeGetterFromGetter<T, G, E> {
+    fn update(&mut self) -> NothingOrError<E> {
+        self.getter.update()
     }
-    ///Constructor such that the times requested from the [`History`] will start at a given time with
-    ///that time defined as the moment of construction.
-    pub fn new_custom_start(
-        history: &'a mut impl History<G, E>,
-        time_getter: Reference<TG>,
-        start: Time,
-    ) -> Result<Self, Error<E>> {
-        let time_delta = start - time_getter.borrow().get()?;
-        Ok(Self {
-            history: history,
-            time_getter: time_getter,
-            time_delta: time_delta,
-        })
+}
+///As [`Chronology`] types return values at times, we can ask them to return values at the current
+///time or at the current time with a delta. This is the recommended way of following
+///[`MotionProfile`]s.
+pub struct GetterFromChronology<C, TG, E> {
+    chronology: C,
+    time_getter: TG,
+    time_delta: Time,
+    phantom_e: PhantomData<E>,
+}
+impl<C, TG, E> GetterFromChronology<C, TG, E> {
+    ///Constructor such that the time in the request to the Chronology will be directly that returned
+    ///from the [`TimeGetter`] with no delta.
+    #[inline]
+    pub const fn new_no_delta(chronology: C, time_getter: TG) -> Self {
+        Self {
+            chronology,
+            time_getter,
+            time_delta: Time::ZERO,
+            phantom_e: PhantomData,
+        }
     }
     ///Constructor with a custom time delta.
-    pub fn new_custom_delta(
-        history: &'a mut impl History<G, E>,
-        time_getter: Reference<TG>,
-        time_delta: Time,
-    ) -> Self {
+    #[inline]
+    pub const fn new_custom_delta(chronology: C, time_getter: TG, time_delta: Time) -> Self {
         Self {
-            history: history,
-            time_getter: time_getter,
-            time_delta: time_delta,
+            chronology,
+            time_getter,
+            time_delta,
+            phantom_e: PhantomData,
         }
     }
     ///Set the time delta.
-    pub fn set_delta(&mut self, time_delta: Time) {
+    pub const fn set_delta(&mut self, time_delta: Time) {
         self.time_delta = time_delta;
     }
-    ///Define now as a given time in the history. Mostly used when construction and use are far
-    ///apart in time.
+}
+impl<C, TG: TimeGetter<E>, E: Clone + Debug> GetterFromChronology<C, TG, E> {
+    ///Constructor such that the times requested from the [`Chronology`] will begin at zero where
+    ///zero is the moment this constructor is called.
+    pub fn new_start_at_zero(chronology: C, time_getter: TG) -> Result<Self, E> {
+        let time_delta = -time_getter.get()?;
+        Ok(Self {
+            chronology,
+            time_getter,
+            time_delta,
+            phantom_e: PhantomData,
+        })
+    }
+    ///Constructor such that the times requested from the [`Chronology`] will start at a given time
+    ///with that time defined as the moment this constructor is called.
+    pub fn new_custom_start(chronology: C, time_getter: TG, start: Time) -> Result<Self, E> {
+        let time_delta = start - time_getter.get()?;
+        Ok(Self {
+            chronology,
+            time_getter,
+            time_delta,
+            phantom_e: PhantomData,
+        })
+    }
+    ///Define the current time as a given time in the Chronology. Mostly used when construction and
+    ///use are far apart in time.
     pub fn set_time(&mut self, time: Time) -> NothingOrError<E> {
-        let time_delta = time - self.time_getter.borrow().get()?;
+        let time_delta = time - self.time_getter.get()?;
         self.time_delta = time_delta;
         Ok(())
     }
 }
-impl<G, TG: TimeGetter<E>, E: Copy + Debug> Updatable<E> for GetterFromHistory<'_, G, TG, E> {
+//TODO: Maybe one day with specialization, it will be possible to update self.chronology only if it
+//implements it.
+impl<C, TG: Updatable<E>, E: Clone + Debug> Updatable<E> for GetterFromChronology<C, TG, E> {
     fn update(&mut self) -> NothingOrError<E> {
-        self.history.update()?;
-        self.time_getter.borrow_mut().update()?;
+        self.time_getter.update()?;
         Ok(())
     }
 }
-impl<G, TG: TimeGetter<E>, E: Copy + Debug> Getter<G, E> for GetterFromHistory<'_, G, TG, E> {
-    fn get(&self) -> Output<G, E> {
-        let time = self.time_getter.borrow().get()?;
-        Ok(match self.history.get(time + self.time_delta) {
+impl<T, C: Chronology<T>, TG: TimeGetter<E>, E: Clone + Debug> Getter<T, E>
+    for GetterFromChronology<C, TG, E>
+{
+    fn get(&self) -> Output<T, E> {
+        let time = self.time_getter.get()?;
+        Ok(match self.chronology.get(time + self.time_delta) {
             Some(datum) => Some(Datum::new(time, datum.value)),
             None => None,
         })
     }
 }
 ///Getter for returning a constant value.
-pub struct ConstantGetter<T: Clone, TG: TimeGetter<E> + ?Sized, E: Copy + Debug> {
-    settable_data: SettableData<T, E>,
-    time_getter: Reference<TG>,
+pub struct ConstantGetter<T, TG> {
+    time_getter: TG,
     value: T,
 }
-impl<T: Clone, TG: TimeGetter<E> + ?Sized, E: Copy + Debug> ConstantGetter<T, TG, E> {
+impl<T, TG> ConstantGetter<T, TG> {
     ///Constructor for [`ConstantGetter`].
-    pub const fn new(time_getter: Reference<TG>, value: T) -> Self {
-        Self {
-            settable_data: SettableData::new(),
-            time_getter: time_getter,
-            value: value,
-        }
+    pub const fn new(time_getter: TG, value: T) -> Self {
+        Self { time_getter, value }
     }
 }
-impl<T: Clone, TG: TimeGetter<E> + ?Sized, E: Copy + Debug> Getter<T, E>
-    for ConstantGetter<T, TG, E>
+impl<T, TG, E> Getter<T, E> for ConstantGetter<T, TG>
+where
+    T: Clone,
+    TG: TimeGetter<E>,
+    E: Clone + Debug,
 {
     fn get(&self) -> Output<T, E> {
-        let time = self.time_getter.borrow().get()?;
+        let time = self.time_getter.get()?;
         Ok(Some(Datum::new(time, self.value.clone())))
     }
 }
-impl<T: Clone, TG: TimeGetter<E> + ?Sized, E: Copy + Debug> Settable<T, E>
-    for ConstantGetter<T, TG, E>
+impl<T, TG, E> Settable<T, E> for ConstantGetter<T, TG>
+where
+    Self: Updatable<E>,
+    E: Clone + Debug,
 {
-    fn get_settable_data_ref(&self) -> &SettableData<T, E> {
-        &self.settable_data
-    }
-    fn get_settable_data_mut(&mut self) -> &mut SettableData<T, E> {
-        &mut self.settable_data
-    }
-    fn impl_set(&mut self, value: T) -> NothingOrError<E> {
+    fn set(&mut self, value: T) -> NothingOrError<E> {
         self.value = value;
         Ok(())
     }
 }
-impl<T: Clone, TG: TimeGetter<E> + ?Sized, E: Copy + Debug> Updatable<E>
-    for ConstantGetter<T, TG, E>
+impl<T, TG, E> Updatable<E> for ConstantGetter<T, TG>
+where
+    TG: Updatable<E>,
+    E: Clone + Debug,
 {
-    ///This does not need to be called.
     fn update(&mut self) -> NothingOrError<E> {
-        self.update_following_data()?;
+        self.time_getter.update()?;
         Ok(())
     }
 }
 ///Getter always returning `Ok(None)`.
+#[derive(Default)]
 pub struct NoneGetter;
 impl NoneGetter {
-    ///Constructor for [`NoneGetter`]. Since [`NoneGetter`] is a unit struct, you can use this or just
-    ///the struct's name.
+    ///Constructor for [`NoneGetter`]. Since [`NoneGetter`] is a unit struct, you can use this, its
+    ///[`Default`] implementation, or just the struct's name.
     pub const fn new() -> Self {
         Self
     }
 }
-impl<T, E: Copy + Debug> Getter<T, E> for NoneGetter {
+impl<T, E: Clone + Debug> Getter<T, E> for NoneGetter {
     fn get(&self) -> Output<T, E> {
         Ok(None)
     }
 }
-impl<E: Copy + Debug> Updatable<E> for NoneGetter {
+impl<E: Clone + Debug> Updatable<E> for NoneGetter {
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
     }
 }
-impl<E: Copy + Debug> TimeGetter<E> for Time {
+impl<E: Clone + Debug> TimeGetter<E> for Time {
     fn get(&self) -> TimeOutput<E> {
         Ok(*self)
     }
 }
-impl<E: Copy + Debug> Updatable<E> for Time {
+impl<E: Clone + Debug> Updatable<E> for Time {
     fn update(&mut self) -> NothingOrError<E> {
         Ok(())
     }
-}
-///A place where a device can connect to another.
-#[cfg(feature = "devices")]
-pub struct Terminal<'a, E: Copy + Debug> {
-    settable_data_state: SettableData<Datum<State>, E>,
-    settable_data_command: SettableData<Datum<Command>, E>,
-    other: Option<&'a RefCell<Terminal<'a, E>>>,
-}
-#[cfg(feature = "devices")]
-impl<E: Copy + Debug> Terminal<'_, E> {
-    ///Direct constructor for a [`Terminal`]. You almost always actually want [`RefCell<Terminal>`]
-    ///however, in which case you should call [`new`](Terminal::new), which returns [`RefCell<Terminal>`].
-    pub const fn new_raw() -> Self {
-        Self {
-            settable_data_state: SettableData::new(),
-            settable_data_command: SettableData::new(),
-            other: None,
-        }
-    }
-    ///This constructs a [`RefCell<Terminal>`]. This is almost always what you want, and what is
-    ///needed for connecting terminals. If you do just want a [`Terminal`], use
-    ///[`new_raw`](Terminal::new_raw) instead.
-    pub const fn new() -> RefCell<Self> {
-        RefCell::new(Self::new_raw())
-    }
-    ///Disconnect this terminal and the one that it is connected to. You can connect terminals by
-    ///calling the [`rrtk::connect`](connect) function.
-    pub fn disconnect(&mut self) {
-        match self.other {
-            Some(other) => {
-                let mut other = other.borrow_mut();
-                other.other = None;
-                self.other = None;
-            }
-            None => (),
-        }
-    }
-}
-#[cfg(feature = "devices")]
-impl<E: Copy + Debug> Settable<Datum<State>, E> for Terminal<'_, E> {
-    fn get_settable_data_ref(&self) -> &SettableData<Datum<State>, E> {
-        &self.settable_data_state
-    }
-    fn get_settable_data_mut(&mut self) -> &mut SettableData<Datum<State>, E> {
-        &mut self.settable_data_state
-    }
-    //SettableData takes care of this for us.
-    fn impl_set(&mut self, _state: Datum<State>) -> NothingOrError<E> {
-        Ok(())
-    }
-}
-#[cfg(feature = "devices")]
-impl<E: Copy + Debug> Settable<Datum<Command>, E> for Terminal<'_, E> {
-    fn get_settable_data_ref(&self) -> &SettableData<Datum<Command>, E> {
-        &self.settable_data_command
-    }
-    fn get_settable_data_mut(&mut self) -> &mut SettableData<Datum<Command>, E> {
-        &mut self.settable_data_command
-    }
-    fn impl_set(&mut self, _command: Datum<Command>) -> NothingOrError<E> {
-        Ok(())
-    }
-}
-#[cfg(feature = "devices")]
-impl<E: Copy + Debug> Getter<State, E> for Terminal<'_, E> {
-    fn get(&self) -> Output<State, E> {
-        let mut addends: [core::mem::MaybeUninit<Datum<State>>; 2] =
-            [core::mem::MaybeUninit::uninit(); 2];
-        let mut addend_count = 0usize;
-        match self.get_last_request() {
-            Some(state) => {
-                addends[0].write(state);
-                addend_count += 1;
-            }
-            None => (),
-        }
-        match self.other {
-            Some(other) => match other.borrow().get_last_request() {
-                Some(state) => {
-                    addends[addend_count].write(state);
-                    addend_count += 1;
-                }
-                None => (),
-            },
-            None => (),
-        }
-        unsafe {
-            match addend_count {
-                0 => return Ok(None),
-                1 => return Ok(Some(addends[0].assume_init())),
-                2 => {
-                    return Ok(Some(
-                        (addends[0].assume_init() + addends[1].assume_init()) / 2.0,
-                    ))
-                }
-                _ => unimplemented!(),
-            }
-        }
-    }
-}
-#[cfg(feature = "devices")]
-impl<E: Copy + Debug> Getter<Command, E> for Terminal<'_, E> {
-    fn get(&self) -> Output<Command, E> {
-        let mut maybe_command: Option<Datum<Command>> = None;
-        match self.get_last_request() {
-            Some(command) => {
-                maybe_command = Some(command);
-            }
-            None => {}
-        }
-        match self.other {
-            Some(other) => {
-                match <Terminal<'_, E> as Settable<Datum<Command>, E>>::get_last_request(
-                    &other.borrow(),
-                ) {
-                    Some(gotten_command) => match maybe_command {
-                        Some(command_some) => {
-                            if gotten_command.time > command_some.time {
-                                maybe_command = Some(gotten_command);
-                            }
-                        }
-                        None => {
-                            maybe_command = Some(gotten_command);
-                        }
-                    },
-                    None => (),
-                }
-            }
-            None => (),
-        }
-        Ok(maybe_command)
-    }
-}
-#[cfg(feature = "devices")]
-impl<E: Copy + Debug> Getter<TerminalData, E> for Terminal<'_, E> {
-    fn get(&self) -> Output<TerminalData, E> {
-        let command = self.get().expect("Terminal get cannot return Err");
-        let state = self.get().expect("Terminal get cannot return Err");
-        let (mut time, command) = match command {
-            Some(datum_command) => (Some(datum_command.time), Some(datum_command.value)),
-            None => (None, None),
-        };
-        let state = match state {
-            Some(datum_state) => {
-                time = Some(datum_state.time);
-                Some(datum_state.value)
-            }
-            None => None,
-        };
-        Ok(match time {
-            Some(time) => Some(Datum::new(
-                time,
-                TerminalData {
-                    time: time,
-                    command: command,
-                    state: state,
-                },
-            )),
-            None => None,
-        })
-    }
-}
-#[cfg(feature = "devices")]
-impl<E: Copy + Debug> Updatable<E> for Terminal<'_, E> {
-    fn update(&mut self) -> NothingOrError<E> {
-        <Terminal<'_, E> as Settable<Datum<Command>, E>>::update_following_data(self)?;
-        <Terminal<'_, E> as Settable<Datum<State>, E>>::update_following_data(self)?;
-        Ok(())
-    }
-}
-///Connect two terminals. Connected terminals should represent a physical connection between
-///mechanical devices. This function will automatically disconnect the specified terminals if they
-///are connected. You can manually disconnect terminals by calling the
-///[`disconnect`](Terminal::disconnect) method on either of them.
-#[cfg(feature = "devices")]
-pub fn connect<'a, E: Copy + Debug>(
-    term1: &'a RefCell<Terminal<'a, E>>,
-    term2: &'a RefCell<Terminal<'a, E>>,
-) {
-    let mut term1_borrow = term1.borrow_mut();
-    let mut term2_borrow = term2.borrow_mut();
-    term1_borrow.disconnect();
-    term2_borrow.disconnect();
-    term1_borrow.other = Some(term2);
-    term2_borrow.other = Some(term1);
-}
-///Data that are sent between terminals: A timestamp, an optional command, and a state.
-#[cfg(feature = "devices")]
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub struct TerminalData {
-    ///Timestamp.
-    pub time: Time,
-    ///Optional command from the terminal.
-    pub command: Option<Command>,
-    ///Optional state from the terminal.
-    pub state: Option<State>,
-}
-#[cfg(feature = "devices")]
-impl TryFrom<TerminalData> for Datum<Command> {
-    type Error = ();
-    fn try_from(value: TerminalData) -> Result<Datum<Command>, ()> {
-        match value.command {
-            Some(command) => Ok(Datum::new(value.time, command)),
-            None => Err(()),
-        }
-    }
-}
-#[cfg(feature = "devices")]
-impl TryFrom<TerminalData> for Datum<State> {
-    type Error = ();
-    fn try_from(value: TerminalData) -> Result<Datum<State>, ()> {
-        match value.state {
-            Some(state) => Ok(Datum::new(value.time, state)),
-            None => Err(()),
-        }
-    }
-}
-///A mechanical device.
-#[cfg(feature = "devices")]
-pub trait Device<E: Copy + Debug>: Updatable<E> {
-    ///Call only the [`update`](Terminal::update) methods of owned terminals and do not update anything else with the
-    ///device.
-    fn update_terminals(&mut self) -> NothingOrError<E>;
 }
 ///Get the newer of two [`Datum`] objects.
 pub fn latest<T>(dat1: Datum<T>, dat2: Datum<T>) -> Datum<T> {
-    if dat1.time >= dat2.time {
-        dat1
-    } else {
-        dat2
+    if dat1.time >= dat2.time { dat1 } else { dat2 }
+}
+///[`Updatable`], [`Getter`], [`Settable`], and [`TimeGetter`] are passed through `Box`,
+///`Rc<RefCell<T>>`, `Arc<RwLock<T>>`, and `Arc<Mutex<T>>`, but this cannot be done safely for
+///references involving raw pointer dereferencing. This is a wrapper struct that provides this
+///functionality for `*mut T`, `*const RwLock<T>`, and `*const Mutex<T>`. It's constructor is
+///`unsafe fn`, so this is considered sound.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[repr(transparent)]
+pub struct PointerDereferencer<P> {
+    pointer: P,
+}
+impl<P> PointerDereferencer<P> {
+    ///The constructor for `PointerDereferencer`. Although this constructor itself does not run any
+    ///unsafe code, it is `unsafe fn` since this type inherently performs unsafe functions. See the
+    ///[type documentation](`PointerDereferencer`) for more information.
+    ///
+    ///Although it is technically possible to construct a `PointerDereferencer<P>` where `P` is not
+    ///a raw pointer, there is no valid reason to do so and the object would be entirely useless.
+    pub const unsafe fn new(pointer: P) -> Self {
+        Self { pointer }
+    }
+    //It would probably be possible to make this const fn in a similar way to Quantity::into_inner.
+    //Whether that makes sense to do given that copy_ptr exists and is almost always preferred is
+    //another question.
+    ///Returns the inner pointer that the wrapper contains by consuming it. Due to the fact that
+    ///pointers are `Copy`, [`copy_ptr`](Self::copy_ptr), which does not consume `self` and is
+    ///`const fn`, is preferred in almost all cases however.
+    #[inline]
+    pub fn into_ptr(self) -> P {
+        self.pointer
+    }
+}
+impl<P: Clone> PointerDereferencer<P> {
+    ///Clones and returns the inner pointer that the wrapper contains. Due to the fact that
+    ///pointers are `Copy`, [`copy_ptr`](Self::copy_ptr) is nearly always preferred both for
+    ///clarity and because it is `const fn` however.
+    #[inline]
+    pub fn clone_ptr(&self) -> P {
+        self.pointer.clone()
+    }
+}
+impl<P: Copy> PointerDereferencer<P> {
+    ///This function is be identical to [`clone_ptr`](Self::clone_ptr) when `P: Copy`. However,
+    ///`copy_ptr` should be preferred where possible because, unlike `clone_inner`, it is
+    ///`const fn`. It is also clearer that the clone is very light.
+    #[inline]
+    pub const fn copy_ptr(&self) -> P {
+        self.pointer
+    }
+}
+macro_rules! as_dyn_updatable {
+    ($return_type:ty) => {
+        //The way documentation for these function has to work is unfortunate, but there's not
+        //really a better way.
+        #[allow(missing_docs)]
+        #[inline]
+        pub const fn as_dyn_updatable<E: Clone + Debug>(&self) -> PointerDereferencer<$return_type>
+        where
+            T: Updatable<E>,
+        {
+            let ptr = self.copy_ptr() as $return_type;
+            unsafe { PointerDereferencer::new(ptr) }
+        }
+    };
+}
+macro_rules! as_dyn_getter {
+    ($return_type:ty) => {
+        #[allow(missing_docs)]
+        #[inline]
+        pub const fn as_dyn_getter<U, E: Clone + Debug>(&self) -> PointerDereferencer<$return_type>
+        where
+            T: Getter<U, E>,
+        {
+            let ptr = self.copy_ptr() as $return_type;
+            unsafe { PointerDereferencer::new(ptr) }
+        }
+    };
+}
+macro_rules! as_dyn_settable {
+    ($return_type:ty) => {
+        #[allow(missing_docs)]
+        #[inline]
+        pub const fn as_dyn_settable<U, E: Clone + Debug>(
+            &self,
+        ) -> PointerDereferencer<$return_type>
+        where
+            T: Settable<U, E>,
+        {
+            let ptr = self.copy_ptr() as $return_type;
+            unsafe { PointerDereferencer::new(ptr) }
+        }
+    };
+}
+macro_rules! as_dyn_time_getter {
+    ($return_type:ty) => {
+        #[allow(missing_docs)]
+        #[inline]
+        pub const fn as_dyn_time_getter<E: Clone + Debug>(
+            &self,
+        ) -> PointerDereferencer<$return_type>
+        where
+            T: TimeGetter<E>,
+        {
+            let ptr = self.copy_ptr() as $return_type;
+            unsafe { PointerDereferencer::new(ptr) }
+        }
+    };
+}
+macro_rules! as_dyn_chronology {
+    ($return_type:ty) => {
+        #[allow(missing_docs)]
+        #[inline]
+        pub const fn as_dyn_chronology<U>(&self) -> PointerDereferencer<$return_type>
+        where
+            T: Chronology<U>,
+        {
+            let ptr = self.copy_ptr() as $return_type;
+            unsafe { PointerDereferencer::new(ptr) }
+        }
+    };
+}
+///These functions get a `PointerDereferencer<*mut dyn Trait>` from a `PointerDereferencer<*mut T>`
+///where `T: Trait`. Because raw pointers are `Copy`, they only require `&self` and do not consume
+///the original `PointerDereferencer`. Unfortunately `T` currently must be `Sized` due to language
+///limitations.
+impl<T> PointerDereferencer<*mut T> {
+    as_dyn_updatable!(*mut (dyn Updatable<E> + '_));
+    as_dyn_getter!(*mut (dyn Getter<U, E> + '_));
+    as_dyn_settable!(*mut (dyn Settable<U, E> + '_));
+    as_dyn_time_getter!(*mut (dyn TimeGetter<E> + '_));
+    as_dyn_chronology!(*mut (dyn Chronology<U> + '_));
+}
+///These functions get a `PointerDereferencer<*const RwLock<dyn Trait>>` from a
+///`PointerDereferencer<*const RwLock<T>>` where `T: Trait`. Because raw pointers are `Copy`, they
+///only require `&self` and do not consume the original `PointerDereferencer`. Unfortunately `T`
+///currently must be `Sized` due to language limitations.
+#[cfg(feature = "std")]
+impl<T> PointerDereferencer<*const RwLock<T>> {
+    as_dyn_updatable!(*const RwLock<dyn Updatable<E> + '_>);
+    as_dyn_getter!(*const RwLock<dyn Getter<U, E> + '_>);
+    as_dyn_settable!(*const RwLock<dyn Settable<U, E> + '_>);
+    as_dyn_time_getter!(*const RwLock<dyn TimeGetter<E> + '_>);
+}
+///These functions get a `PointerDereferencer<*const Mutex<dyn Trait>>` from a
+///`PointerDereferencer<*const Mutex<T>>` where `T: Trait`. Because raw pointers are `Copy`, they
+///only require `&self` and do not consume the original `PointerDereferencer`. Unfortunately `T`
+///currently must be `Sized` due to language limitations.
+#[cfg(feature = "std")]
+impl<T> PointerDereferencer<*const Mutex<T>> {
+    as_dyn_updatable!(*const Mutex<dyn Updatable<E> + '_>);
+    as_dyn_getter!(*const Mutex<dyn Getter<U, E> + '_>);
+    as_dyn_settable!(*const Mutex<dyn Settable<U, E> + '_>);
+    as_dyn_time_getter!(*const Mutex<dyn TimeGetter<E> + '_>);
+}
+//There are Chronology impls for RwLock<C> and Mutex<C> where C: Chronology. It is necessary to
+//implement Updatable etc. for *const RwLock<T> and *const Mutex<T> directly rather than doing it
+//more generically like for Chronology because they require mutability.
+impl<T> PointerDereferencer<*const T> {
+    as_dyn_chronology!(*const (dyn Chronology<U> + '_));
+}
+//FIXME: Make this work if you can.
+/*impl<P> From<PointerDereferencer<P>> for P {
+    fn from(was: PointerDereferencer<P>) -> Self {
+        was.into_inner()
+    }
+}*/
+impl<U: ?Sized + Updatable<E>, E: Clone + Debug> Updatable<E> for PointerDereferencer<*mut U> {
+    fn update(&mut self) -> NothingOrError<E> {
+        unsafe { (*self.pointer).update() }
+    }
+}
+impl<T, G: ?Sized + Getter<T, E>, E: Clone + Debug> Getter<T, E> for PointerDereferencer<*mut G> {
+    fn get(&self) -> Output<T, E> {
+        unsafe { (*self.pointer).get() }
+    }
+}
+impl<T, S: ?Sized + Settable<T, E>, E: Clone + Debug> Settable<T, E>
+    for PointerDereferencer<*mut S>
+{
+    fn set(&mut self, value: T) -> NothingOrError<E> {
+        unsafe { (*self.pointer).set(value) }
+    }
+}
+impl<TG: ?Sized + TimeGetter<E>, E: Clone + Debug> TimeGetter<E> for PointerDereferencer<*mut TG> {
+    fn get(&self) -> TimeOutput<E> {
+        unsafe { (*self.pointer).get() }
+    }
+}
+impl<T, C: ?Sized + Chronology<T>> Chronology<T> for PointerDereferencer<*mut C> {
+    fn get(&self, time: Time) -> Option<Datum<T>> {
+        unsafe { (*self.pointer).get(time) }
+    }
+}
+impl<T, C: ?Sized + Chronology<T>> Chronology<T> for PointerDereferencer<*const C> {
+    fn get(&self, time: Time) -> Option<Datum<T>> {
+        unsafe { (*self.pointer).get(time) }
+    }
+}
+#[cfg(feature = "std")]
+impl<U: ?Sized + Updatable<E>, E: Clone + Debug> Updatable<E>
+    for PointerDereferencer<*const RwLock<U>>
+{
+    fn update(&mut self) -> NothingOrError<E> {
+        unsafe { (*self.pointer).write() }
+            .expect("RRTK failed to acquire RwLock write lock for Updatable")
+            .update()
+    }
+}
+#[cfg(feature = "std")]
+impl<G: ?Sized + Getter<T, E>, T, E: Clone + Debug> Getter<T, E>
+    for PointerDereferencer<*const RwLock<G>>
+{
+    fn get(&self) -> Output<T, E> {
+        unsafe { (*self.pointer).read() }
+            .expect("RRTK failed to acquire RwLock read lock for Getter")
+            .get()
+    }
+}
+#[cfg(feature = "std")]
+impl<S: ?Sized + Settable<T, E>, T, E: Clone + Debug> Settable<T, E>
+    for PointerDereferencer<*const RwLock<S>>
+{
+    fn set(&mut self, value: T) -> NothingOrError<E> {
+        unsafe { (*self.pointer).write() }
+            .expect("RRTK failed to acquire RwLock write lock for Settable")
+            .set(value)
+    }
+}
+#[cfg(feature = "std")]
+impl<TG: ?Sized + TimeGetter<E>, E: Clone + Debug> TimeGetter<E>
+    for PointerDereferencer<*const RwLock<TG>>
+{
+    fn get(&self) -> TimeOutput<E> {
+        unsafe { (*self.pointer).read() }
+            .expect("RRTK failed to acquire RwLock read lock for TimeGetter")
+            .get()
+    }
+}
+#[cfg(feature = "std")]
+impl<U: ?Sized + Updatable<E>, E: Clone + Debug> Updatable<E>
+    for PointerDereferencer<*const Mutex<U>>
+{
+    fn update(&mut self) -> NothingOrError<E> {
+        unsafe { (*self.pointer).lock() }
+            .expect("RRTK failed to acquire Mutex lock for Updatable")
+            .update()
+    }
+}
+#[cfg(feature = "std")]
+impl<G: ?Sized + Getter<T, E>, T, E: Clone + Debug> Getter<T, E>
+    for PointerDereferencer<*const Mutex<G>>
+{
+    fn get(&self) -> Output<T, E> {
+        unsafe { (*self.pointer).lock() }
+            .expect("RRTK failed to acquire Mutex lock for Getter")
+            .get()
+    }
+}
+#[cfg(feature = "std")]
+impl<S: ?Sized + Settable<T, E>, T, E: Clone + Debug> Settable<T, E>
+    for PointerDereferencer<*const Mutex<S>>
+{
+    fn set(&mut self, value: T) -> NothingOrError<E> {
+        unsafe { (*self.pointer).lock() }
+            .expect("RRTK failed to acquire Mutex lock for Settable")
+            .set(value)
+    }
+}
+#[cfg(feature = "std")]
+impl<TG: ?Sized + TimeGetter<E>, E: Clone + Debug> TimeGetter<E>
+    for PointerDereferencer<*const Mutex<TG>>
+{
+    fn get(&self) -> TimeOutput<E> {
+        unsafe { (*self.pointer).lock() }
+            .expect("RRTK failed to acquire Mutex lock for TimeGetter")
+            .get()
+    }
+}
+#[cfg(feature = "alloc")]
+impl<U: ?Sized + Updatable<E>, E: Clone + Debug> Updatable<E> for Box<U> {
+    fn update(&mut self) -> NothingOrError<E> {
+        (**self).update()
+    }
+}
+#[cfg(feature = "alloc")]
+impl<G: ?Sized + Getter<T, E>, T, E: Clone + Debug> Getter<T, E> for Box<G> {
+    fn get(&self) -> Output<T, E> {
+        (**self).get()
+    }
+}
+#[cfg(feature = "alloc")]
+impl<S: ?Sized + Settable<T, E>, T, E: Clone + Debug> Settable<T, E> for Box<S> {
+    fn set(&mut self, value: T) -> NothingOrError<E> {
+        (**self).set(value)
+    }
+}
+#[cfg(feature = "alloc")]
+impl<TG: ?Sized + TimeGetter<E>, E: Clone + Debug> TimeGetter<E> for Box<TG> {
+    fn get(&self) -> TimeOutput<E> {
+        (**self).get()
+    }
+}
+#[cfg(feature = "alloc")]
+impl<T, C: ?Sized + Chronology<T>> Chronology<T> for Box<C> {
+    fn get(&self, time: Time) -> Option<Datum<T>> {
+        (**self).get(time)
+    }
+}
+#[cfg(feature = "alloc")]
+impl<U: ?Sized + Updatable<E>, E: Clone + Debug> Updatable<E> for Rc<RefCell<U>> {
+    fn update(&mut self) -> NothingOrError<E> {
+        self.borrow_mut().update()
+    }
+}
+#[cfg(feature = "alloc")]
+impl<G: ?Sized + Getter<T, E>, T, E: Clone + Debug> Getter<T, E> for Rc<RefCell<G>> {
+    fn get(&self) -> Output<T, E> {
+        self.borrow().get()
+    }
+}
+#[cfg(feature = "alloc")]
+impl<S: ?Sized + Settable<T, E>, T, E: Clone + Debug> Settable<T, E> for Rc<RefCell<S>> {
+    fn set(&mut self, value: T) -> NothingOrError<E> {
+        self.borrow_mut().set(value)
+    }
+}
+#[cfg(feature = "alloc")]
+impl<TG: ?Sized + TimeGetter<E>, E: Clone + Debug> TimeGetter<E> for Rc<RefCell<TG>> {
+    fn get(&self) -> TimeOutput<E> {
+        self.borrow().get()
+    }
+}
+#[cfg(feature = "std")]
+impl<U: ?Sized + Updatable<E>, E: Clone + Debug> Updatable<E> for Arc<RwLock<U>> {
+    fn update(&mut self) -> NothingOrError<E> {
+        self.write()
+            .expect("RRTK failed to acquire RwLock write lock for Updatable")
+            .update()
+    }
+}
+#[cfg(feature = "std")]
+impl<G: ?Sized + Getter<T, E>, T, E: Clone + Debug> Getter<T, E> for Arc<RwLock<G>> {
+    fn get(&self) -> Output<T, E> {
+        self.read()
+            .expect("RRTK failed to acquire RwLock read lock for Getter")
+            .get()
+    }
+}
+#[cfg(feature = "std")]
+impl<S: ?Sized + Settable<T, E>, T, E: Clone + Debug> Settable<T, E> for Arc<RwLock<S>> {
+    fn set(&mut self, value: T) -> NothingOrError<E> {
+        self.write()
+            .expect("RRTK failed to acquire RwLock write lock for Settable")
+            .set(value)
+    }
+}
+#[cfg(feature = "std")]
+impl<TG: ?Sized + TimeGetter<E>, E: Clone + Debug> TimeGetter<E> for Arc<RwLock<TG>> {
+    fn get(&self) -> TimeOutput<E> {
+        self.read()
+            .expect("RRTK failed to acquire RwLock read lock for TimeGetter")
+            .get()
+    }
+}
+#[cfg(feature = "std")]
+impl<U: ?Sized + Updatable<E>, E: Clone + Debug> Updatable<E> for Arc<Mutex<U>> {
+    fn update(&mut self) -> NothingOrError<E> {
+        self.lock()
+            .expect("RRTK failed to acquire Mutex lock for Updatable")
+            .update()
+    }
+}
+#[cfg(feature = "std")]
+impl<G: ?Sized + Getter<T, E>, T, E: Clone + Debug> Getter<T, E> for Arc<Mutex<G>> {
+    fn get(&self) -> Output<T, E> {
+        self.lock()
+            .expect("RRTK failed to acquire Mutex lock for Getter")
+            .get()
+    }
+}
+#[cfg(feature = "std")]
+impl<S: ?Sized + Settable<T, E>, T, E: Clone + Debug> Settable<T, E> for Arc<Mutex<S>> {
+    fn set(&mut self, value: T) -> NothingOrError<E> {
+        self.lock()
+            .expect("RRTK failed to acquire Mutex lock for Settable")
+            .set(value)
+    }
+}
+#[cfg(feature = "std")]
+impl<TG: ?Sized + TimeGetter<E>, E: Clone + Debug> TimeGetter<E> for Arc<Mutex<TG>> {
+    fn get(&self) -> TimeOutput<E> {
+        self.lock()
+            .expect("RRTK failed to acquire Mutex lock for TimeGetter")
+            .get()
+    }
+}
+#[cfg(feature = "alloc")]
+impl<T, C: ?Sized + Chronology<T>> Chronology<T> for Rc<C> {
+    fn get(&self, time: Time) -> Option<Datum<T>> {
+        (**self).get(time)
+    }
+}
+#[cfg(feature = "std")]
+impl<T, C: ?Sized + Chronology<T>> Chronology<T> for Arc<C> {
+    fn get(&self, time: Time) -> Option<Datum<T>> {
+        (**self).get(time)
+    }
+}
+impl<T, C: ?Sized + Chronology<T>> Chronology<T> for RefCell<C> {
+    fn get(&self, time: Time) -> Option<Datum<T>> {
+        self.borrow().get(time)
+    }
+}
+#[cfg(feature = "std")]
+impl<T, C: ?Sized + Chronology<T>> Chronology<T> for RwLock<C> {
+    fn get(&self, time: Time) -> Option<Datum<T>> {
+        self.read()
+            .expect("RRTK failed to acquire RwLock read lock for Chronology")
+            .get(time)
+    }
+}
+#[cfg(feature = "std")]
+impl<T, C: ?Sized + Chronology<T>> Chronology<T> for Mutex<C> {
+    fn get(&self, time: Time) -> Option<Datum<T>> {
+        self.lock()
+            .expect("RRTK failed to acquire Mutex lock for Chronology")
+            .get(time)
     }
 }

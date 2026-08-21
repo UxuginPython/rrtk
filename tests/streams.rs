@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-// Copyright 2024-2025 UxuginPython
+// Copyright 2024-2026 UxuginPython
 use core::fmt::Debug;
 use rrtk::streams::control::*;
 use rrtk::streams::converters::*;
@@ -8,41 +8,14 @@ use rrtk::streams::logic::*;
 use rrtk::streams::math::*;
 use rrtk::streams::*;
 use rrtk::*;
-#[test]
-fn time_getter_from_stream() {
-    struct DummyStream {
-        time: Time,
-    }
-    impl DummyStream {
-        pub const fn new() -> Self {
-            Self { time: Time(0) }
-        }
-    }
-    impl Getter<f32, ()> for DummyStream {
-        fn get(&self) -> Output<f32, ()> {
-            Ok(Some(Datum::new(self.time, 0.0)))
-        }
-    }
-    impl Updatable<()> for DummyStream {
-        fn update(&mut self) -> NothingOrError<()> {
-            self.time += Time(1);
-            Ok(())
-        }
-    }
-    unsafe {
-        static mut STREAM: DummyStream = DummyStream::new();
-        let stream = Reference::from_ptr(core::ptr::addr_of_mut!(STREAM));
-        let time_getter = TimeGetterFromGetter::new(stream.clone());
-        stream.borrow_mut().update().unwrap();
-        assert_eq!(time_getter.get().unwrap(), Time(1));
-    }
-}
+//TODO: Some of these PointerDereferencers probably aren't needed, nearly all unsafe blocks can be
+//be shrunk, and some clone calls are unnecessary for Copy types.
 #[test]
 fn expirer() {
     struct DummyStream;
     impl Getter<f32, ()> for DummyStream {
         fn get(&self) -> Output<f32, ()> {
-            Ok(Some(Datum::new(Time(0), 0.0)))
+            Ok(Some(Datum::new(Time::ZERO, 0.0)))
         }
     }
     impl Updatable<()> for DummyStream {
@@ -60,21 +33,20 @@ fn expirer() {
     }
     impl Updatable<()> for DummyTimeGetter {
         fn update(&mut self) -> NothingOrError<()> {
-            self.time += Time(10);
+            self.time += Time::from_nanoseconds(10);
             Ok(())
         }
     }
     unsafe {
         static mut STREAM: DummyStream = DummyStream;
-        let stream = Reference::from_ptr(core::ptr::addr_of_mut!(STREAM));
-        static mut TIME_GETTER: DummyTimeGetter = DummyTimeGetter { time: Time(0) };
-        let time_getter = Reference::from_ptr(core::ptr::addr_of_mut!(TIME_GETTER));
-        let mut expirer = Expirer::new(stream, time_getter.clone(), Time(10));
-        expirer.update().unwrap(); //This should do nothing.
-        assert_eq!(expirer.get(), Ok(Some(Datum::new(Time(0), 0.0))));
-        time_getter.borrow_mut().update().unwrap();
-        assert_eq!(expirer.get(), Ok(Some(Datum::new(Time(0), 0.0))));
-        time_getter.borrow_mut().update().unwrap();
+        let stream = PointerDereferencer::new(core::ptr::addr_of_mut!(STREAM));
+        static mut TIME_GETTER: DummyTimeGetter = DummyTimeGetter { time: Time::ZERO };
+        let mut time_getter = PointerDereferencer::new(core::ptr::addr_of_mut!(TIME_GETTER));
+        let expirer = Expirer::new(stream, time_getter, Time::from_nanoseconds(10));
+        assert_eq!(expirer.get(), Ok(Some(Datum::new(Time::ZERO, 0.0))));
+        time_getter.update().unwrap();
+        assert_eq!(expirer.get(), Ok(Some(Datum::new(Time::ZERO, 0.0))));
+        time_getter.update().unwrap();
         assert_eq!(expirer.get(), Ok(None));
     }
 }
@@ -101,23 +73,26 @@ fn expirer_none() {
     }
     impl Updatable<()> for DummyTimeGetter {
         fn update(&mut self) -> NothingOrError<()> {
-            self.time += Time(10);
+            self.time += Time::from_nanoseconds(10);
             Ok(())
         }
     }
     unsafe {
         static mut STREAM: DummyStream = DummyStream;
-        let stream = Reference::from_ptr(core::ptr::addr_of_mut!(STREAM));
-        static mut TIME_GETTER: DummyTimeGetter = DummyTimeGetter { time: Time(0) };
-        let time_getter = Reference::from_ptr(core::ptr::addr_of_mut!(TIME_GETTER));
-        let expirer = Expirer::new(stream, time_getter, Time(10));
+        let stream = PointerDereferencer::new(core::ptr::addr_of_mut!(STREAM));
+        static mut TIME_GETTER: DummyTimeGetter = DummyTimeGetter { time: Time::ZERO };
+        let time_getter = PointerDereferencer::new(core::ptr::addr_of_mut!(TIME_GETTER));
+        let expirer = Expirer::new(stream, time_getter, Time::from_nanoseconds(10));
         assert_eq!(expirer.get(), Ok(None));
     }
 }
 #[test]
 fn none_to_error() {
     #[derive(Clone, Copy, Debug)]
-    struct Nothing;
+    enum Error {
+        RealError,
+        FromNone,
+    }
     struct DummyStream {
         index: u8,
     }
@@ -126,64 +101,43 @@ fn none_to_error() {
             Self { index: 0 }
         }
     }
-    impl Getter<f32, Nothing> for DummyStream {
-        fn get(&self) -> Output<f32, Nothing> {
+    impl Getter<f32, Error> for DummyStream {
+        fn get(&self) -> Output<f32, Error> {
             if self.index == 1 {
                 return Ok(None);
             } else if self.index == 2 {
-                return Err(Error::Other(Nothing));
+                return Err(Error::RealError);
             }
-            return Ok(Some(Datum::new(Time(0), 0.0)));
+            Ok(Some(Datum::new(Time::ZERO, 0.0)))
         }
     }
-    impl Updatable<Nothing> for DummyStream {
-        fn update(&mut self) -> NothingOrError<Nothing> {
+    impl Updatable<Error> for DummyStream {
+        fn update(&mut self) -> NothingOrError<Error> {
             self.index += 1;
             Ok(())
         }
     }
     unsafe {
         static mut INPUT: DummyStream = DummyStream::new();
-        let input = Reference::from_ptr(core::ptr::addr_of_mut!(INPUT));
-        let mut stream = NoneToError::new(input.clone());
-        stream.update().unwrap(); //This should do nothing.
-        match stream.get() {
-            Ok(option) => match option {
-                Some(_) => {}
-                None => {
-                    panic!("should not have None");
-                }
-            },
-            Err(_) => {
-                panic!("should not have Err now");
-            }
+        let mut input = PointerDereferencer::new(core::ptr::addr_of_mut!(INPUT));
+        let stream = NoneToError::new(input, Error::FromNone);
+        assert!(stream.get().unwrap().is_some());
+        input.update().unwrap();
+        if let Err(Error::FromNone) = stream.get() {
+        } else {
+            panic!();
         }
-        input.borrow_mut().update().unwrap();
-        match stream.get() {
-            Ok(_) => {
-                panic!("should return Err");
-            }
-            Err(Error::FromNone) => {}
-            Err(_) => {
-                panic!("should be FromNone");
-            }
-        }
-        input.borrow_mut().update().unwrap();
-        match stream.get() {
-            Ok(_) => {
-                panic!("should return Err");
-            }
-            Err(Error::FromNone) => {
-                panic!("should return Nothing error");
-            }
-            Err(_) => {}
+        input.update().unwrap();
+        if let Err(Error::RealError) = stream.get() {
+        } else {
+            panic!();
         }
     }
 }
 #[test]
 fn none_to_value() {
     #[derive(Clone, Copy, Debug)]
-    struct Nothing;
+    struct Error;
     struct DummyStream {
         index: u8,
     }
@@ -192,18 +146,18 @@ fn none_to_value() {
             Self { index: 0 }
         }
     }
-    impl Getter<f32, Nothing> for DummyStream {
-        fn get(&self) -> Output<f32, Nothing> {
+    impl Getter<f32, Error> for DummyStream {
+        fn get(&self) -> Output<f32, Error> {
             if self.index == 1 {
                 return Ok(None);
             } else if self.index == 2 {
-                return Err(Error::Other(Nothing));
+                return Err(Error);
             }
-            return Ok(Some(Datum::new(Time(0), 1.0)));
+            Ok(Some(Datum::new(Time::ZERO, 1.0)))
         }
     }
-    impl Updatable<Nothing> for DummyStream {
-        fn update(&mut self) -> NothingOrError<Nothing> {
+    impl Updatable<Error> for DummyStream {
+        fn update(&mut self) -> NothingOrError<Error> {
             self.index += 1;
             Ok(())
         }
@@ -213,7 +167,7 @@ fn none_to_value() {
     }
     impl DummyTimeGetter {
         pub const fn new() -> Self {
-            Self { time: Time(0) }
+            Self { time: Time::ZERO }
         }
     }
     impl<E: Copy + Debug> TimeGetter<E> for DummyTimeGetter {
@@ -223,49 +177,21 @@ fn none_to_value() {
     }
     impl<E: Copy + Debug> Updatable<E> for DummyTimeGetter {
         fn update(&mut self) -> NothingOrError<E> {
-            self.time += Time(1);
+            self.time += Time::from_nanoseconds(1);
             Ok(())
         }
     }
     unsafe {
         static mut INPUT: DummyStream = DummyStream::new();
-        let input = Reference::from_ptr(core::ptr::addr_of_mut!(INPUT));
+        let mut input = PointerDereferencer::new(core::ptr::addr_of_mut!(INPUT));
         static mut TIME_GETTER: DummyTimeGetter = DummyTimeGetter::new();
-        let time_getter = Reference::from_ptr(core::ptr::addr_of_mut!(TIME_GETTER));
-        let mut stream = NoneToValue::new(input.clone(), time_getter, 2.0);
-        stream.update().unwrap(); //This should do nothing.
-        match stream.get() {
-            Ok(option) => match option {
-                Some(datum) => {
-                    assert_eq!(datum.value, 1.0);
-                }
-                None => {
-                    panic!("should return Ok(Some(_)), returned Ok(None)");
-                }
-            },
-            Err(_) => {
-                panic!("should return Ok(Some(_)), returned Err(_)");
-            }
-        }
-        input.borrow_mut().update().unwrap();
-        match stream.get() {
-            Ok(Some(datum)) => {
-                assert_eq!(datum.value, 2.0);
-            }
-            Ok(None) => {
-                panic!("should return Ok(Some(_)), returned Ok(None)")
-            }
-            Err(_) => {
-                panic!("should return Ok(Some(_)), returned Err(_)");
-            }
-        }
-        input.borrow_mut().update().unwrap();
-        match stream.get() {
-            Ok(_) => {
-                panic!("should return Err(_), returned Ok(_)");
-            }
-            Err(_) => {}
-        }
+        let time_getter = PointerDereferencer::new(core::ptr::addr_of_mut!(TIME_GETTER));
+        let stream = NoneToValue::new(input, time_getter, 2.0);
+        assert_eq!(stream.get().unwrap().unwrap().value, 1.0);
+        input.update().unwrap();
+        assert_eq!(stream.get().unwrap().unwrap().value, 2.0);
+        input.update().unwrap();
+        assert!(stream.get().is_err());
     }
 }
 #[test]
@@ -275,43 +201,47 @@ fn acceleration_to_state() {
     }
     impl AccGetter {
         const fn new() -> Self {
-            Self { time: Time(0) }
+            Self { time: Time::ZERO }
         }
     }
-    impl Getter<Quantity, ()> for AccGetter {
-        fn get(&self) -> Output<Quantity, ()> {
+    impl Getter<MillimeterPerSecondSquared<f32>, ()> for AccGetter {
+        fn get(&self) -> Output<MillimeterPerSecondSquared<f32>, ()> {
             Ok(Some(Datum::new(
                 self.time,
-                Quantity::new(1.0, MILLIMETER_PER_SECOND_SQUARED),
+                MillimeterPerSecondSquared::new(1.0),
             )))
         }
     }
     impl Updatable<()> for AccGetter {
         fn update(&mut self) -> NothingOrError<()> {
-            self.time += Time(1_000_000_000);
+            self.time += Time::from_nanoseconds(1_000_000_000);
             Ok(())
         }
     }
     unsafe {
         static mut ACC_GETTER: AccGetter = AccGetter::new();
-        let acc_getter = Reference::from_ptr(core::ptr::addr_of_mut!(ACC_GETTER));
-        let mut state_getter = AccelerationToState::new(acc_getter.clone());
+        let acc_getter = PointerDereferencer::new(core::ptr::addr_of_mut!(ACC_GETTER));
+        let mut state_getter = AccelerationToState::new(acc_getter);
         let output = state_getter.get();
         assert!(output.unwrap().is_none());
-        acc_getter.borrow_mut().update().unwrap();
         state_getter.update().unwrap();
         let output = state_getter.get();
         assert!(output.unwrap().is_none());
-        acc_getter.borrow_mut().update().unwrap();
         state_getter.update().unwrap();
         let output = state_getter.get();
         assert!(output.unwrap().is_none());
-        acc_getter.borrow_mut().update().unwrap();
         state_getter.update().unwrap();
         let output = state_getter.get();
         assert_eq!(
             output.unwrap().unwrap(),
-            Datum::new(Time(3_000_000_000), State::new_raw(1.5, 2.0, 1.0))
+            Datum::new(
+                Time::from_nanoseconds(3_000_000_000),
+                LinearState::new(
+                    Millimeter::new(1.5),
+                    MillimeterPerSecond::new(2.0),
+                    MillimeterPerSecondSquared::new(1.0)
+                )
+            )
         );
     }
 }
@@ -322,41 +252,44 @@ fn velocity_to_state() {
     }
     impl VelGetter {
         const fn new() -> Self {
-            Self { time: Time(0) }
+            Self { time: Time::ZERO }
         }
     }
-    impl Getter<Quantity, ()> for VelGetter {
-        fn get(&self) -> Output<Quantity, ()> {
-            //                            | never do this
-            //                            V
+    impl Getter<MillimeterPerSecond<f32>, ()> for VelGetter {
+        fn get(&self) -> Output<MillimeterPerSecond<f32>, ()> {
             Ok(Some(Datum::new(
                 self.time,
-                Quantity::new(f32::from(Quantity::from(self.time)), MILLIMETER_PER_SECOND),
+                MillimeterPerSecond::new(self.time.as_seconds_f32()),
             )))
         }
     }
     impl Updatable<()> for VelGetter {
         fn update(&mut self) -> NothingOrError<()> {
-            self.time += Time(1_000_000_000);
+            self.time += Time::from_nanoseconds(1_000_000_000);
             Ok(())
         }
     }
     unsafe {
         static mut VEL_GETTER: VelGetter = VelGetter::new();
-        let vel_getter = Reference::from_ptr(core::ptr::addr_of_mut!(VEL_GETTER));
-        let mut state_getter = VelocityToState::new(vel_getter.clone());
+        let vel_getter = PointerDereferencer::new(core::ptr::addr_of_mut!(VEL_GETTER));
+        let mut state_getter = VelocityToState::new(vel_getter);
         let output = state_getter.get();
         assert!(output.unwrap().is_none());
-        vel_getter.borrow_mut().update().unwrap();
         state_getter.update().unwrap();
         let output = state_getter.get();
         assert!(output.unwrap().is_none());
-        vel_getter.borrow_mut().update().unwrap();
         state_getter.update().unwrap();
         let output = state_getter.get();
         assert_eq!(
             output.unwrap().unwrap(),
-            Datum::new(Time(2_000_000_000), State::new_raw(1.5, 2.0, 1.0))
+            Datum::new(
+                Time::from_nanoseconds(2_000_000_000),
+                LinearState::new(
+                    Millimeter::new(1.5),
+                    MillimeterPerSecond::new(2.0),
+                    MillimeterPerSecondSquared::new(1.0)
+                )
+            )
         );
     }
 }
@@ -367,52 +300,54 @@ fn position_to_state() {
     }
     impl PosGetter {
         const fn new() -> Self {
-            Self { time: Time(0) }
+            Self { time: Time::ZERO }
         }
     }
-    impl Getter<Quantity, ()> for PosGetter {
-        fn get(&self) -> Output<Quantity, ()> {
-            //                            | never do this
-            //                            V
+    impl Getter<Millimeter<f32>, ()> for PosGetter {
+        fn get(&self) -> Output<Millimeter<f32>, ()> {
             Ok(Some(Datum::new(
                 self.time,
-                Quantity::new(f32::from(Quantity::from(self.time)), MILLIMETER),
+                Millimeter::new(self.time.as_seconds_f32()),
             )))
         }
     }
     impl Updatable<()> for PosGetter {
         fn update(&mut self) -> NothingOrError<()> {
-            self.time += Time(1_000_000_000);
+            self.time += Time::from_nanoseconds(1_000_000_000);
             Ok(())
         }
     }
     unsafe {
         static mut POS_GETTER: PosGetter = PosGetter::new();
-        let pos_getter = Reference::from_ptr(core::ptr::addr_of_mut!(POS_GETTER));
-        let mut state_getter = PositionToState::new(pos_getter.clone());
+        let pos_getter = PointerDereferencer::new(core::ptr::addr_of_mut!(POS_GETTER));
+        let mut state_getter = PositionToState::new(pos_getter);
         let output = state_getter.get();
         assert!(output.unwrap().is_none());
-        pos_getter.borrow_mut().update().unwrap();
         state_getter.update().unwrap();
         let output = state_getter.get();
         assert!(output.unwrap().is_none());
-        pos_getter.borrow_mut().update().unwrap();
         state_getter.update().unwrap();
         let output = state_getter.get();
         assert!(output.unwrap().is_none());
-        pos_getter.borrow_mut().update().unwrap();
         state_getter.update().unwrap();
         let output = state_getter.get();
         assert_eq!(
             output.unwrap().unwrap(),
-            Datum::new(Time(3_000_000_000), State::new_raw(3.0, 1.0, 0.0))
+            Datum::new(
+                Time::from_nanoseconds(3_000_000_000),
+                LinearState::new(
+                    Millimeter::new(3.0),
+                    MillimeterPerSecond::new(1.0),
+                    MillimeterPerSecondSquared::new(0.0)
+                )
+            )
         );
     }
 }
 #[test]
 fn sum_stream() {
     #[derive(Clone, Copy, Debug)]
-    struct Nothing;
+    struct Error;
     struct ErroringStream {
         index: u8,
     }
@@ -421,19 +356,17 @@ fn sum_stream() {
             Self { index: 0 }
         }
     }
-    impl Getter<f32, Nothing> for ErroringStream {
-        fn get(&self) -> Output<f32, Nothing> {
-            if self.index == 0 {
-                return Err(Error::Other(Nothing));
-            } else if self.index == 1 {
-                return Ok(None);
-            } else {
-                return Ok(Some(Datum::new(Time(2), 1.0)));
+    impl Getter<f32, Error> for ErroringStream {
+        fn get(&self) -> Output<f32, Error> {
+            match self.index {
+                0 => Err(Error),
+                1 => Ok(None),
+                _ => Ok(Some(Datum::new(Time::from_nanoseconds(2), 1.0))),
             }
         }
     }
-    impl Updatable<Nothing> for ErroringStream {
-        fn update(&mut self) -> NothingOrError<Nothing> {
+    impl Updatable<Error> for ErroringStream {
+        fn update(&mut self) -> NothingOrError<Error> {
             self.index += 1;
             Ok(())
         }
@@ -444,37 +377,36 @@ fn sum_stream() {
             Self {}
         }
     }
-    impl Getter<f32, Nothing> for NormalStream {
-        fn get(&self) -> Output<f32, Nothing> {
-            Ok(Some(Datum::new(Time(1), 1.0)))
+    impl Getter<f32, Error> for NormalStream {
+        fn get(&self) -> Output<f32, Error> {
+            Ok(Some(Datum::new(Time::from_nanoseconds(1), 1.0)))
         }
     }
-    impl Updatable<Nothing> for NormalStream {
-        fn update(&mut self) -> NothingOrError<Nothing> {
+    impl Updatable<Error> for NormalStream {
+        fn update(&mut self) -> NothingOrError<Error> {
             Ok(())
         }
     }
     unsafe {
         static mut ERRORING: ErroringStream = ErroringStream::new();
-        let erroring = Reference::from_ptr(core::ptr::addr_of_mut!(ERRORING));
+        let mut erroring = PointerDereferencer::new(core::ptr::addr_of_mut!(ERRORING));
         static mut NORMAL: NormalStream = NormalStream::new();
-        let normal = Reference::from_ptr(core::ptr::addr_of_mut!(NORMAL));
+        let normal = PointerDereferencer::new(core::ptr::addr_of_mut!(NORMAL));
+        let erroring_binding = erroring;
+        let normal_binding = normal;
         let stream = SumStream::new([
-            to_dyn!(Getter<f32, _>, erroring.clone()),
-            to_dyn!(Getter<f32, _>, normal.clone()),
+            erroring_binding.as_dyn_getter(),
+            normal_binding.as_dyn_getter(),
         ]);
-        match stream.get() {
-            Ok(_) => {
-                panic!("error not propagated")
-            }
-            Err(_) => {}
-        }
+        assert!(stream.get().is_err());
         //normal does not need update
-        erroring.borrow_mut().update().unwrap();
-        assert_eq!(stream.get().unwrap().unwrap().time, Time(1));
-        assert_eq!(stream.get().unwrap().unwrap().value, 1.0);
-        erroring.borrow_mut().update().unwrap();
-        assert_eq!(stream.get().unwrap().unwrap().time, Time(2));
+        erroring.update().unwrap();
+        assert!(stream.get().unwrap().is_none());
+        erroring.update().unwrap();
+        assert_eq!(
+            stream.get().unwrap().unwrap().time,
+            Time::from_nanoseconds(2)
+        );
         assert_eq!(stream.get().unwrap().unwrap().value, 2.0);
     }
 }
@@ -491,19 +423,18 @@ fn sum_stream_all_none() {
             Ok(())
         }
     }
-    let input = static_reference!(Input, Input);
-    let sum_stream = SumStream::new([to_dyn!(Getter<f32, ()>, input)]);
+    let sum_stream = SumStream::new([Input]);
     assert_eq!(sum_stream.get(), Ok(None));
 }
 #[test]
 #[should_panic]
 fn empty_sum_stream() {
-    let _: SumStream<f32, 0, ()> = SumStream::new([]);
+    let _: SumStream<0, NoneGetter> = SumStream::new([]);
 }
 #[test]
 fn sum2() {
     #[derive(Clone, Copy, Debug)]
-    struct Nothing;
+    struct Error;
     struct ErroringStream {
         index: u8,
     }
@@ -512,19 +443,19 @@ fn sum2() {
             Self { index: 0 }
         }
     }
-    impl Getter<f32, Nothing> for ErroringStream {
-        fn get(&self) -> Output<f32, Nothing> {
+    impl Getter<f32, Error> for ErroringStream {
+        fn get(&self) -> Output<f32, Error> {
             if self.index == 0 {
-                return Err(Error::Other(Nothing));
+                Err(Error)
             } else if self.index == 1 {
-                return Ok(None);
+                Ok(None)
             } else {
-                return Ok(Some(Datum::new(Time(2), 1.0)));
+                Ok(Some(Datum::new(Time::from_nanoseconds(2), 1.0)))
             }
         }
     }
-    impl Updatable<Nothing> for ErroringStream {
-        fn update(&mut self) -> NothingOrError<Nothing> {
+    impl Updatable<Error> for ErroringStream {
+        fn update(&mut self) -> NothingOrError<Error> {
             self.index += 1;
             Ok(())
         }
@@ -535,34 +466,31 @@ fn sum2() {
             Self {}
         }
     }
-    impl Getter<f32, Nothing> for NormalStream {
-        fn get(&self) -> Output<f32, Nothing> {
-            Ok(Some(Datum::new(Time(1), 1.0)))
+    impl Getter<f32, Error> for NormalStream {
+        fn get(&self) -> Output<f32, Error> {
+            Ok(Some(Datum::new(Time::from_nanoseconds(1), 1.0)))
         }
     }
-    impl Updatable<Nothing> for NormalStream {
-        fn update(&mut self) -> NothingOrError<Nothing> {
+    impl Updatable<Error> for NormalStream {
+        fn update(&mut self) -> NothingOrError<Error> {
             Ok(())
         }
     }
     unsafe {
         static mut ERRORING: ErroringStream = ErroringStream::new();
-        let erroring = Reference::from_ptr(core::ptr::addr_of_mut!(ERRORING));
+        let mut erroring = PointerDereferencer::new(core::ptr::addr_of_mut!(ERRORING));
         static mut NORMAL: NormalStream = NormalStream::new();
-        let normal = Reference::from_ptr(core::ptr::addr_of_mut!(NORMAL));
-        let stream = Sum2::new(erroring.clone(), normal.clone());
-        match stream.get() {
-            Ok(_) => {
-                panic!("error not propagated")
-            }
-            Err(_) => {}
-        }
+        let normal = PointerDereferencer::new(core::ptr::addr_of_mut!(NORMAL));
+        let stream = Sum2::new(erroring, normal);
+        assert!(stream.get().is_err());
         //normal does not need update
-        erroring.borrow_mut().update().unwrap();
-        assert_eq!(stream.get().unwrap().unwrap().time, Time(1));
-        assert_eq!(stream.get().unwrap().unwrap().value, 1.0);
-        erroring.borrow_mut().update().unwrap();
-        assert_eq!(stream.get().unwrap().unwrap().time, Time(2));
+        erroring.update().unwrap();
+        assert!(stream.get().unwrap().is_none());
+        erroring.update().unwrap();
+        assert_eq!(
+            stream.get().unwrap().unwrap().time,
+            Time::from_nanoseconds(2)
+        );
         assert_eq!(stream.get().unwrap().unwrap().value, 2.0);
     }
 }
@@ -581,11 +509,11 @@ fn difference_stream() {
     impl Getter<f32, DummyError> for Stream1 {
         fn get(&self) -> Output<f32, DummyError> {
             if self.index == 0 || self.index == 1 || self.index == 2 {
-                return Err(Error::Other(DummyError));
+                return Err(DummyError);
             } else if self.index == 3 || self.index == 4 || self.index == 5 {
                 return Ok(None);
             }
-            return Ok(Some(Datum::new(Time(1), 10.0)));
+            Ok(Some(Datum::new(Time::from_nanoseconds(1), 10.0)))
         }
     }
     impl Updatable<DummyError> for Stream1 {
@@ -605,11 +533,11 @@ fn difference_stream() {
     impl Getter<f32, DummyError> for Stream2 {
         fn get(&self) -> Output<f32, DummyError> {
             if self.index == 0 || self.index == 3 || self.index == 6 {
-                return Err(Error::Other(DummyError));
+                return Err(DummyError);
             } else if self.index == 1 || self.index == 4 || self.index == 7 {
                 return Ok(None);
             }
-            return Ok(Some(Datum::new(Time(2), 3.0)));
+            Ok(Some(Datum::new(Time::from_nanoseconds(2), 3.0)))
         }
     }
     impl Updatable<DummyError> for Stream2 {
@@ -620,113 +548,55 @@ fn difference_stream() {
     }
     unsafe {
         static mut STREAM_1: Stream1 = Stream1::new();
-        let stream1 = Reference::from_ptr(core::ptr::addr_of_mut!(STREAM_1));
+        let mut stream1 = PointerDereferencer::new(core::ptr::addr_of_mut!(STREAM_1));
         static mut STREAM_2: Stream2 = Stream2::new();
-        let stream2 = Reference::from_ptr(core::ptr::addr_of_mut!(STREAM_2));
-        let stream = DifferenceStream::new(stream1.clone(), stream2.clone());
+        let mut stream2 = PointerDereferencer::new(core::ptr::addr_of_mut!(STREAM_2));
+        let stream = DifferenceStream::new(stream1, stream2);
         //Err, Err
-        match stream.get() {
-            Ok(_) => {
-                panic!();
-            }
-            Err(_) => {}
-        }
-        stream1.borrow_mut().update().unwrap();
-        stream2.borrow_mut().update().unwrap();
+        assert!(stream.get().is_err());
+        stream1.update().unwrap();
+        stream2.update().unwrap();
         //Err, None
-        match stream.get() {
-            Ok(_) => {
-                panic!();
-            }
-            Err(_) => {}
-        }
-        stream1.borrow_mut().update().unwrap();
-        stream2.borrow_mut().update().unwrap();
+        assert!(stream.get().is_err());
+        stream1.update().unwrap();
+        stream2.update().unwrap();
         //Err, Some
-        match stream.get() {
-            Ok(_) => {
-                panic!();
-            }
-            Err(_) => {}
-        }
-        stream1.borrow_mut().update().unwrap();
-        stream2.borrow_mut().update().unwrap();
+        assert!(stream.get().is_err());
+        stream1.update().unwrap();
+        stream2.update().unwrap();
         //None, Err
-        match stream.get() {
-            Ok(_) => {
-                panic!();
-            }
-            Err(_) => {}
-        }
-        stream1.borrow_mut().update().unwrap();
-        stream2.borrow_mut().update().unwrap();
+        assert!(stream.get().is_err());
+        stream1.update().unwrap();
+        stream2.update().unwrap();
         //None, None
-        match stream.get() {
-            Ok(Some(_)) => {
-                panic!();
-            }
-            Ok(None) => {}
-            Err(_) => {
-                panic!();
-            }
-        }
-        stream1.borrow_mut().update().unwrap();
-        stream2.borrow_mut().update().unwrap();
+        assert!(stream.get().unwrap().is_none());
+        stream1.update().unwrap();
+        stream2.update().unwrap();
         //None, Some
-        match stream.get() {
-            Ok(Some(_)) => {
-                panic!();
-            }
-            Ok(None) => {}
-            Err(_) => {
-                panic!();
-            }
-        }
-        stream1.borrow_mut().update().unwrap();
-        stream2.borrow_mut().update().unwrap();
+        assert!(stream.get().unwrap().is_none());
+        stream1.update().unwrap();
+        stream2.update().unwrap();
         //Some, Err
-        match stream.get() {
-            Ok(_) => {
-                panic!();
-            }
-            Err(_) => {}
-        }
-        stream1.borrow_mut().update().unwrap();
-        stream2.borrow_mut().update().unwrap();
+        assert!(stream.get().is_err());
+        stream1.update().unwrap();
+        stream2.update().unwrap();
         //Some, None
-        match stream.get() {
-            Ok(Some(x)) => {
-                assert_eq!(x.time, Time(1));
-                assert_eq!(x.value, 10.0);
-            }
-            Ok(None) => {
-                panic!();
-            }
-            Err(_) => {
-                panic!();
-            }
-        }
-        stream1.borrow_mut().update().unwrap();
-        stream2.borrow_mut().update().unwrap();
+        assert!(stream.get().unwrap().is_none());
+        stream1.update().unwrap();
+        stream2.update().unwrap();
         //Some, Some
-        match stream.get() {
-            Ok(Some(x)) => {
-                assert_eq!(x.time, Time(2));
-                assert_eq!(x.value, 7.0);
-            }
-            Ok(None) => {
-                panic!();
-            }
-            Err(_) => {
-                panic!();
-            }
+        if let Ok(Some(x)) = stream.get() {
+            assert_eq!(x.time, Time::from_nanoseconds(2));
+            assert_eq!(x.value, 7.0);
+        } else {
+            panic!();
         }
     }
 }
 #[test]
 fn product_stream() {
     #[derive(Clone, Copy, Debug)]
-    struct Nothing;
+    struct Error;
     struct ErroringStream {
         index: u8,
     }
@@ -735,19 +605,17 @@ fn product_stream() {
             Self { index: 0 }
         }
     }
-    impl Getter<f32, Nothing> for ErroringStream {
-        fn get(&self) -> Output<f32, Nothing> {
-            if self.index == 0 {
-                return Err(Error::Other(Nothing));
-            } else if self.index == 1 {
-                return Ok(None);
-            } else {
-                return Ok(Some(Datum::new(Time(2), 3.0)));
+    impl Getter<f32, Error> for ErroringStream {
+        fn get(&self) -> Output<f32, Error> {
+            match self.index {
+                0 => Err(Error),
+                1 => Ok(None),
+                _ => Ok(Some(Datum::new(Time::from_nanoseconds(2), 3.0))),
             }
         }
     }
-    impl Updatable<Nothing> for ErroringStream {
-        fn update(&mut self) -> NothingOrError<Nothing> {
+    impl Updatable<Error> for ErroringStream {
+        fn update(&mut self) -> NothingOrError<Error> {
             self.index += 1;
             Ok(())
         }
@@ -758,37 +626,36 @@ fn product_stream() {
             Self {}
         }
     }
-    impl Getter<f32, Nothing> for NormalStream {
-        fn get(&self) -> Output<f32, Nothing> {
-            Ok(Some(Datum::new(Time(1), 5.0)))
+    impl Getter<f32, Error> for NormalStream {
+        fn get(&self) -> Output<f32, Error> {
+            Ok(Some(Datum::new(Time::from_nanoseconds(1), 5.0)))
         }
     }
-    impl Updatable<Nothing> for NormalStream {
-        fn update(&mut self) -> NothingOrError<Nothing> {
+    impl Updatable<Error> for NormalStream {
+        fn update(&mut self) -> NothingOrError<Error> {
             Ok(())
         }
     }
     unsafe {
         static mut ERRORING: ErroringStream = ErroringStream::new();
-        let erroring = Reference::from_ptr(core::ptr::addr_of_mut!(ERRORING));
+        let mut erroring = PointerDereferencer::new(core::ptr::addr_of_mut!(ERRORING));
         static mut NORMAL: NormalStream = NormalStream::new();
-        let normal = Reference::from_ptr(core::ptr::addr_of_mut!(NORMAL));
+        let normal = PointerDereferencer::new(core::ptr::addr_of_mut!(NORMAL));
+        let erroring_binding = erroring;
+        let normal_binding = normal;
         let stream = ProductStream::new([
-            to_dyn!(Getter<f32, _>, erroring.clone()),
-            to_dyn!(Getter<f32, _>, normal.clone()),
+            erroring_binding.as_dyn_getter(),
+            normal_binding.as_dyn_getter(),
         ]);
-        match stream.get() {
-            Ok(_) => {
-                panic!("error not propagated")
-            }
-            Err(_) => {}
-        }
+        assert!(stream.get().is_err());
         //normal does not need update
-        erroring.borrow_mut().update().unwrap();
-        assert_eq!(stream.get().unwrap().unwrap().time, Time(1));
-        assert_eq!(stream.get().unwrap().unwrap().value, 5.0);
-        erroring.borrow_mut().update().unwrap();
-        assert_eq!(stream.get().unwrap().unwrap().time, Time(2));
+        erroring.update().unwrap();
+        assert!(stream.get().unwrap().is_none());
+        erroring.update().unwrap();
+        assert_eq!(
+            stream.get().unwrap().unwrap().time,
+            Time::from_nanoseconds(2)
+        );
         assert_eq!(stream.get().unwrap().unwrap().value, 15.0);
     }
 }
@@ -805,19 +672,18 @@ fn product_stream_all_none() {
             Ok(())
         }
     }
-    let input = static_reference!(Input, Input);
-    let product_stream = ProductStream::new([to_dyn!(Getter<f32, ()>, input)]);
+    let product_stream = ProductStream::new([Input]);
     assert_eq!(product_stream.get(), Ok(None));
 }
 #[test]
 #[should_panic]
 fn empty_product_stream() {
-    let _: ProductStream<f32, 0, ()> = ProductStream::new([]);
+    let _: ProductStream<0, NoneGetter> = ProductStream::new([]);
 }
 #[test]
 fn product2() {
     #[derive(Clone, Copy, Debug)]
-    struct Nothing;
+    struct Error;
     struct ErroringStream {
         index: u8,
     }
@@ -826,19 +692,19 @@ fn product2() {
             Self { index: 0 }
         }
     }
-    impl Getter<f32, Nothing> for ErroringStream {
-        fn get(&self) -> Output<f32, Nothing> {
+    impl Getter<f32, Error> for ErroringStream {
+        fn get(&self) -> Output<f32, Error> {
             if self.index == 0 {
-                return Err(Error::Other(Nothing));
+                Err(Error)
             } else if self.index == 1 {
-                return Ok(None);
+                Ok(None)
             } else {
-                return Ok(Some(Datum::new(Time(2), 3.0)));
+                Ok(Some(Datum::new(Time::from_nanoseconds(2), 3.0)))
             }
         }
     }
-    impl Updatable<Nothing> for ErroringStream {
-        fn update(&mut self) -> NothingOrError<Nothing> {
+    impl Updatable<Error> for ErroringStream {
+        fn update(&mut self) -> NothingOrError<Error> {
             self.index += 1;
             Ok(())
         }
@@ -849,34 +715,31 @@ fn product2() {
             Self {}
         }
     }
-    impl Getter<f32, Nothing> for NormalStream {
-        fn get(&self) -> Output<f32, Nothing> {
-            Ok(Some(Datum::new(Time(1), 5.0)))
+    impl Getter<f32, Error> for NormalStream {
+        fn get(&self) -> Output<f32, Error> {
+            Ok(Some(Datum::new(Time::from_nanoseconds(1), 5.0)))
         }
     }
-    impl Updatable<Nothing> for NormalStream {
-        fn update(&mut self) -> NothingOrError<Nothing> {
+    impl Updatable<Error> for NormalStream {
+        fn update(&mut self) -> NothingOrError<Error> {
             Ok(())
         }
     }
     unsafe {
         static mut ERRORING: ErroringStream = ErroringStream::new();
-        let erroring = Reference::from_ptr(core::ptr::addr_of_mut!(ERRORING));
+        let mut erroring = PointerDereferencer::new(core::ptr::addr_of_mut!(ERRORING));
         static mut NORMAL: NormalStream = NormalStream::new();
-        let normal = Reference::from_ptr(core::ptr::addr_of_mut!(NORMAL));
-        let stream = Product2::new(erroring.clone(), normal.clone());
-        match stream.get() {
-            Ok(_) => {
-                panic!("error not propagated")
-            }
-            Err(_) => {}
-        }
+        let normal = PointerDereferencer::new(core::ptr::addr_of_mut!(NORMAL));
+        let stream = Product2::new(erroring, normal);
+        assert!(stream.get().is_err());
         //normal does not need update
-        erroring.borrow_mut().update().unwrap();
-        assert_eq!(stream.get().unwrap().unwrap().time, Time(1));
-        assert_eq!(stream.get().unwrap().unwrap().value, 5.0);
-        erroring.borrow_mut().update().unwrap();
-        assert_eq!(stream.get().unwrap().unwrap().time, Time(2));
+        erroring.update().unwrap();
+        assert!(stream.get().unwrap().is_none());
+        erroring.update().unwrap();
+        assert_eq!(
+            stream.get().unwrap().unwrap().time,
+            Time::from_nanoseconds(2)
+        );
         assert_eq!(stream.get().unwrap().unwrap().value, 15.0);
     }
 }
@@ -895,11 +758,11 @@ fn quotient_stream() {
     impl Getter<f32, DummyError> for Stream1 {
         fn get(&self) -> Output<f32, DummyError> {
             if self.index == 0 || self.index == 1 || self.index == 2 {
-                return Err(Error::Other(DummyError));
+                return Err(DummyError);
             } else if self.index == 3 || self.index == 4 || self.index == 5 {
                 return Ok(None);
             }
-            return Ok(Some(Datum::new(Time(1), 12.0)));
+            Ok(Some(Datum::new(Time::from_nanoseconds(1), 12.0)))
         }
     }
     impl Updatable<DummyError> for Stream1 {
@@ -919,11 +782,11 @@ fn quotient_stream() {
     impl Getter<f32, DummyError> for Stream2 {
         fn get(&self) -> Output<f32, DummyError> {
             if self.index == 0 || self.index == 3 || self.index == 6 {
-                return Err(Error::Other(DummyError));
+                return Err(DummyError);
             } else if self.index == 1 || self.index == 4 || self.index == 7 {
                 return Ok(None);
             }
-            return Ok(Some(Datum::new(Time(2), 3.0)));
+            Ok(Some(Datum::new(Time::from_nanoseconds(2), 3.0)))
         }
     }
     impl Updatable<DummyError> for Stream2 {
@@ -934,113 +797,54 @@ fn quotient_stream() {
     }
     unsafe {
         static mut STREAM_1: Stream1 = Stream1::new();
-        let stream1 = Reference::from_ptr(core::ptr::addr_of_mut!(STREAM_1));
+        let mut stream1 = PointerDereferencer::new(core::ptr::addr_of_mut!(STREAM_1));
         static mut STREAM_2: Stream2 = Stream2::new();
-        let stream2 = Reference::from_ptr(core::ptr::addr_of_mut!(STREAM_2));
-        let stream = QuotientStream::new(stream1.clone(), stream2.clone());
+        let mut stream2 = PointerDereferencer::new(core::ptr::addr_of_mut!(STREAM_2));
+        let stream = QuotientStream::new(stream1, stream2);
         //Err, Err
-        match stream.get() {
-            Ok(_) => {
-                panic!();
-            }
-            Err(_) => {}
-        }
-        stream1.borrow_mut().update().unwrap();
-        stream2.borrow_mut().update().unwrap();
+        assert!(stream.get().is_err());
+        stream1.update().unwrap();
+        stream2.update().unwrap();
         //Err, None
-        match stream.get() {
-            Ok(_) => {
-                panic!();
-            }
-            Err(_) => {}
-        }
-        stream1.borrow_mut().update().unwrap();
-        stream2.borrow_mut().update().unwrap();
+        assert!(stream.get().is_err());
+        stream1.update().unwrap();
+        stream2.update().unwrap();
         //Err, Some
-        match stream.get() {
-            Ok(_) => {
-                panic!();
-            }
-            Err(_) => {}
-        }
-        stream1.borrow_mut().update().unwrap();
-        stream2.borrow_mut().update().unwrap();
+        assert!(stream.get().is_err());
+        stream1.update().unwrap();
+        stream2.update().unwrap();
         //None, Err
-        match stream.get() {
-            Ok(_) => {
-                panic!();
-            }
-            Err(_) => {}
-        }
-        stream1.borrow_mut().update().unwrap();
-        stream2.borrow_mut().update().unwrap();
+        assert!(stream.get().is_err());
+        stream1.update().unwrap();
+        stream2.update().unwrap();
         //None, None
-        match stream.get() {
-            Ok(Some(_)) => {
-                panic!();
-            }
-            Ok(None) => {}
-            Err(_) => {
-                panic!();
-            }
-        }
-        stream1.borrow_mut().update().unwrap();
-        stream2.borrow_mut().update().unwrap();
+        assert!(stream.get().unwrap().is_none());
+        stream1.update().unwrap();
+        stream2.update().unwrap();
         //None, Some
-        match stream.get() {
-            Ok(Some(_)) => {
-                panic!();
-            }
-            Ok(None) => {}
-            Err(_) => {
-                panic!();
-            }
-        }
-        stream1.borrow_mut().update().unwrap();
-        stream2.borrow_mut().update().unwrap();
+        assert!(stream.get().unwrap().is_none());
+        stream1.update().unwrap();
+        stream2.update().unwrap();
         //Some, Err
-        match stream.get() {
-            Ok(_) => {
-                panic!();
-            }
-            Err(_) => {}
-        }
-        stream1.borrow_mut().update().unwrap();
-        stream2.borrow_mut().update().unwrap();
+        assert!(stream.get().is_err());
+        stream1.update().unwrap();
+        stream2.update().unwrap();
         //Some, None
-        match stream.get() {
-            Ok(Some(x)) => {
-                assert_eq!(x.time, Time(1));
-                assert_eq!(x.value, 12.0);
-            }
-            Ok(None) => {
-                panic!();
-            }
-            Err(_) => {
-                panic!();
-            }
-        }
-        stream1.borrow_mut().update().unwrap();
-        stream2.borrow_mut().update().unwrap();
+        assert!(stream.get().unwrap().is_none());
+        stream1.update().unwrap();
+        stream2.update().unwrap();
         //Some, Some
-        match stream.get() {
-            Ok(Some(x)) => {
-                assert_eq!(x.time, Time(2));
-                assert_eq!(x.value, 4.0);
-            }
-            Ok(None) => {
-                panic!();
-            }
-            Err(_) => {
-                panic!();
-            }
+        if let Ok(Some(x)) = stream.get() {
+            assert_eq!(x.time, Time::from_nanoseconds(2));
+            assert_eq!(x.value, 4.0);
+        } else {
+            panic!();
         }
     }
 }
 //micromath's implementations are not as precise as std's and libm's, making them cause this test
-//to fail even if the calculation is correct. Testing the accuracy of the other two and compiling
-//with micromath, although not testing its implementation, is considered sufficient. The same
-//applies to the ewma_stream and ewma_stream_quantity tests.
+//to fail even if the calculation is correct. Testing the accuracy of the other two is considered
+//sufficient. The same applies to the ewma_stream and ewma_stream_quantity tests.
 #[test]
 #[cfg(any(feature = "std", feature = "libm"))]
 fn exponent_stream() {
@@ -1056,12 +860,11 @@ fn exponent_stream() {
     }
     impl Getter<f32, DummyError> for Stream1 {
         fn get(&self) -> Output<f32, DummyError> {
-            if self.index == 0 || self.index == 1 || self.index == 2 {
-                return Err(Error::Other(DummyError));
-            } else if self.index == 3 || self.index == 4 || self.index == 5 {
-                return Ok(None);
+            match self.index {
+                0..=2 => Err(DummyError),
+                3..=5 => Ok(None),
+                _ => Ok(Some(Datum::new(Time::from_nanoseconds(1), 5.0))),
             }
-            return Ok(Some(Datum::new(Time(1), 5.0)));
         }
     }
     impl Updatable<DummyError> for Stream1 {
@@ -1080,12 +883,11 @@ fn exponent_stream() {
     }
     impl Getter<f32, DummyError> for Stream2 {
         fn get(&self) -> Output<f32, DummyError> {
-            if self.index == 0 || self.index == 3 || self.index == 6 {
-                return Err(Error::Other(DummyError));
-            } else if self.index == 1 || self.index == 4 || self.index == 7 {
-                return Ok(None);
+            match self.index {
+                0 | 3 | 6 => Err(DummyError),
+                1 | 4 | 7 => Ok(None),
+                _ => Ok(Some(Datum::new(Time::from_nanoseconds(2), 3.0))),
             }
-            return Ok(Some(Datum::new(Time(2), 3.0)));
         }
     }
     impl Updatable<DummyError> for Stream2 {
@@ -1096,106 +898,52 @@ fn exponent_stream() {
     }
     unsafe {
         static mut STREAM_1: Stream1 = Stream1::new();
-        let stream1 = Reference::from_ptr(core::ptr::addr_of_mut!(STREAM_1));
+        let mut stream1 = PointerDereferencer::new(core::ptr::addr_of_mut!(STREAM_1));
         static mut STREAM_2: Stream2 = Stream2::new();
-        let stream2 = Reference::from_ptr(core::ptr::addr_of_mut!(STREAM_2));
-        let stream = ExponentStream::new(stream1.clone(), stream2.clone());
+        let mut stream2 = PointerDereferencer::new(core::ptr::addr_of_mut!(STREAM_2));
+        let stream = ExponentStream::new(stream1, stream2);
         //Err, Err
-        match stream.get() {
-            Ok(_) => {
-                panic!();
-            }
-            Err(_) => {}
-        }
-        stream1.borrow_mut().update().unwrap();
-        stream2.borrow_mut().update().unwrap();
+        assert!(stream.get().is_err());
+        stream1.update().unwrap();
+        stream2.update().unwrap();
         //Err, None
-        match stream.get() {
-            Ok(_) => {
-                panic!();
-            }
-            Err(_) => {}
-        }
-        stream1.borrow_mut().update().unwrap();
-        stream2.borrow_mut().update().unwrap();
+        assert!(stream.get().is_err());
+        stream1.update().unwrap();
+        stream2.update().unwrap();
         //Err, Some
-        match stream.get() {
-            Ok(_) => {
-                panic!();
-            }
-            Err(_) => {}
-        }
-        stream1.borrow_mut().update().unwrap();
-        stream2.borrow_mut().update().unwrap();
+        assert!(stream.get().is_err());
+        stream1.update().unwrap();
+        stream2.update().unwrap();
         //None, Err
-        match stream.get() {
-            Ok(_) => {
-                panic!();
-            }
-            Err(_) => {}
-        }
-        stream1.borrow_mut().update().unwrap();
-        stream2.borrow_mut().update().unwrap();
+        assert!(stream.get().is_err());
+        stream1.update().unwrap();
+        stream2.update().unwrap();
         //None, None
-        match stream.get() {
-            Ok(Some(_)) => {
-                panic!();
-            }
-            Ok(None) => {}
-            Err(_) => {
-                panic!();
-            }
-        }
-        stream1.borrow_mut().update().unwrap();
-        stream2.borrow_mut().update().unwrap();
+        assert!(stream.get().unwrap().is_none());
+        stream1.update().unwrap();
+        stream2.update().unwrap();
         //None, Some
-        match stream.get() {
-            Ok(Some(_)) => {
-                panic!();
-            }
-            Ok(None) => {}
-            Err(_) => {
-                panic!();
-            }
-        }
-        stream1.borrow_mut().update().unwrap();
-        stream2.borrow_mut().update().unwrap();
+        assert!(stream.get().unwrap().is_none());
+        stream1.update().unwrap();
+        stream2.update().unwrap();
         //Some, Err
-        match stream.get() {
-            Ok(_) => {
-                panic!();
-            }
-            Err(_) => {}
-        }
-        stream1.borrow_mut().update().unwrap();
-        stream2.borrow_mut().update().unwrap();
+        assert!(stream.get().is_err());
+        stream1.update().unwrap();
+        stream2.update().unwrap();
         //Some, None
-        match stream.get() {
-            Ok(Some(x)) => {
-                assert_eq!(x.time, Time(1));
-                assert_eq!(x.value, 5.0);
-            }
-            Ok(None) => {
-                panic!();
-            }
-            Err(_) => {
-                panic!();
-            }
-        }
-        stream1.borrow_mut().update().unwrap();
-        stream2.borrow_mut().update().unwrap();
+        assert!(stream.get().unwrap().is_none());
+        stream1.update().unwrap();
+        stream2.update().unwrap();
         //Some, Some
-        match stream.get() {
-            Ok(Some(x)) => {
-                assert_eq!(x.time, Time(2));
-                assert_eq!(x.value, 125.0);
-            }
-            Ok(None) => {
-                panic!();
-            }
-            Err(_) => {
-                panic!();
-            }
+        if let Ok(Some(x)) = stream.get() {
+            assert_eq!(x.time, Time::from_nanoseconds(2));
+            //This appears to be an instance of https://github.com/rust-lang/miri/issues/4208
+            #[cfg(not(miri))]
+            assert_eq!(x.value, 125.0);
+            #[cfg(miri)]
+            assert!(124.99995 < x.value && x.value < 125.00005);
+        } else {
+            panic!();
         }
     }
 }
@@ -1208,35 +956,36 @@ fn derivative_stream() {
     }
     impl DummyStream {
         pub const fn new() -> Self {
-            Self { time: Time(0) }
+            Self { time: Time::ZERO }
         }
     }
-    impl Getter<Quantity, DummyError> for DummyStream {
-        fn get(&self) -> Output<Quantity, DummyError> {
+    impl Getter<Second<f32>, DummyError> for DummyStream {
+        fn get(&self) -> Output<Second<f32>, DummyError> {
             Ok(Some(Datum::new(
                 self.time * DimensionlessInteger(2),
-                Quantity::from(self.time * DimensionlessInteger(3)),
+                (self.time * DimensionlessInteger(3)).as_seconds(),
             )))
         }
     }
     impl Updatable<DummyError> for DummyStream {
         fn update(&mut self) -> NothingOrError<DummyError> {
-            self.time += Time(2_000_000_000);
+            self.time += Time::from_nanoseconds(2_000_000_000);
             Ok(())
         }
     }
     unsafe {
         static mut INPUT: DummyStream = DummyStream::new();
-        let input = Reference::from_ptr(core::ptr::addr_of_mut!(INPUT));
-        let mut stream = DerivativeStream::new(input.clone());
-        input.borrow_mut().update().unwrap();
+        let input = PointerDereferencer::new(core::ptr::addr_of_mut!(INPUT));
+        let mut stream = DerivativeStream::new(input);
         stream.update().unwrap();
-        input.borrow_mut().update().unwrap();
         stream.update().unwrap();
-        assert_eq!(stream.get().unwrap().unwrap().time, Time(8_000_000_000));
+        assert_eq!(
+            stream.get().unwrap().unwrap().time,
+            Time::from_nanoseconds(8_000_000_000)
+        );
         assert_eq!(
             stream.get().unwrap().unwrap().value,
-            Quantity::new(1.5, DIMENSIONLESS) //Derivating time d time returns a dimensionless quantity.
+            Dimensionless::new(1.5) //Derivating time d time returns a dimensionless quantity.
         );
     }
 }
@@ -1249,36 +998,31 @@ fn integral_stream() {
     }
     impl DummyStream {
         pub const fn new() -> Self {
-            Self { time: Time(0) }
+            Self { time: Time::ZERO }
         }
     }
-    impl Getter<Quantity, DummyError> for DummyStream {
-        fn get(&self) -> Output<Quantity, DummyError> {
-            Ok(Some(Datum::new(
-                self.time,
-                Quantity::new(1.0, MILLIMETER_PER_SECOND),
-            )))
+    impl Getter<MillimeterPerSecond<f32>, DummyError> for DummyStream {
+        fn get(&self) -> Output<MillimeterPerSecond<f32>, DummyError> {
+            Ok(Some(Datum::new(self.time, MillimeterPerSecond::new(1.0))))
         }
     }
     impl Updatable<DummyError> for DummyStream {
         fn update(&mut self) -> NothingOrError<DummyError> {
-            self.time += Time(1_000_000_000);
+            self.time += Time::from_nanoseconds(1_000_000_000);
             Ok(())
         }
     }
     unsafe {
         static mut INPUT: DummyStream = DummyStream::new();
-        let input = Reference::from_ptr(core::ptr::addr_of_mut!(INPUT));
-        let mut stream = IntegralStream::new(input.clone());
-        input.borrow_mut().update().unwrap();
+        let input = PointerDereferencer::new(core::ptr::addr_of_mut!(INPUT));
+        let mut stream = IntegralStream::new(input);
         stream.update().unwrap();
-        input.borrow_mut().update().unwrap();
         stream.update().unwrap();
-        assert_eq!(stream.get().unwrap().unwrap().time, Time(2_000_000_000));
         assert_eq!(
-            stream.get().unwrap().unwrap().value,
-            Quantity::new(1.0, MILLIMETER)
+            stream.get().unwrap().unwrap().time,
+            Time::from_nanoseconds(2_000_000_000)
         );
+        assert_eq!(stream.get().unwrap().unwrap().value, Millimeter::new(1.0));
     }
 }
 #[test]
@@ -1290,40 +1034,50 @@ fn pid_controller_stream() {
     }
     impl DummyStream {
         pub const fn new() -> Self {
-            Self { time: Time(0) }
+            Self { time: Time::ZERO }
         }
     }
     impl Getter<f32, DummyError> for DummyStream {
         fn get(&self) -> Output<f32, DummyError> {
             Ok(Some(Datum::new(
                 self.time,
-                f32::from(Quantity::from(self.time / DimensionlessInteger(2))),
+                (self.time / DimensionlessInteger(2)).as_seconds_f32(),
             )))
         }
     }
     impl Updatable<DummyError> for DummyStream {
         fn update(&mut self) -> NothingOrError<DummyError> {
-            self.time += Time(2_000_000_000);
+            self.time += Time::from_nanoseconds(2_000_000_000);
             Ok(())
         }
     }
     unsafe {
         static mut INPUT: DummyStream = DummyStream::new();
-        let input = Reference::from_ptr(core::ptr::addr_of_mut!(INPUT));
-        let mut stream =
-            PIDControllerStream::new(input.clone(), 5.0, PIDKValues::new(1.0, 0.01, 0.1));
+        let input = PointerDereferencer::new(core::ptr::addr_of_mut!(INPUT));
+        let mut stream = PIDControllerStream::new(input, 5.0, PIDKValues::new(1.0, 0.01, 0.1));
         stream.update().unwrap();
-        assert_eq!(stream.get().unwrap().unwrap().time, Time(0));
-        assert_eq!(stream.get().unwrap().unwrap().value, 5.0);
-        input.borrow_mut().update().unwrap();
+        assert_eq!(
+            stream.get().unwrap().unwrap().time,
+            Time::from_nanoseconds(2_000_000_000)
+        );
+        assert_eq!(stream.get().unwrap().unwrap().value, 4.0);
         stream.update().unwrap();
-        assert_eq!(stream.get().unwrap().unwrap().time, Time(2_000_000_000));
-        assert_eq!(stream.get().unwrap().unwrap().value, 4.04);
+        assert_eq!(
+            stream.get().unwrap().unwrap().time,
+            Time::from_nanoseconds(4_000_000_000)
+        );
+        assert_eq!(
+            stream.get().unwrap().unwrap().value,
+            3.0 + 7.0 * 0.01 - 0.5 * 0.1
+        );
     }
 }
 //See note on exponent_stream test
+//TODO: Figure out exactly how to test EWMAStream on Miri. It has been found that these two tests
+//exhibit very strange behavior under Miri, for example, modifying one test and having both tests
+//then pass or #[cfg]ing out an assert_eq! that wasn't the problem and having that fix everything.
 #[test]
-#[cfg(any(feature = "std", feature = "libm"))]
+#[cfg(all(not(miri), any(feature = "std", feature = "libm")))]
 fn ewma_stream() {
     #[derive(Clone, Copy, Debug)]
     struct DummyError;
@@ -1332,20 +1086,20 @@ fn ewma_stream() {
     }
     impl DummyStream {
         pub const fn new() -> Self {
-            Self { time: Time(0) }
+            Self { time: Time::ZERO }
         }
     }
     impl Getter<f32, DummyError> for DummyStream {
         fn get(&self) -> Output<f32, DummyError> {
-            let value = match self.time {
-                Time(2_000_000_000) => 110.0,
-                Time(4_000_000_000) => 111.0,
-                Time(6_000_000_000) => 116.0,
-                Time(8_000_000_000) => 97.0,
-                Time(10_000_000_000) => 102.0,
-                Time(12_000_000_000) => 111.0,
-                Time(14_000_000_000) => 111.0,
-                Time(16_000_000_000) => 100.0,
+            let value = match self.time.as_nanoseconds() {
+                2_000_000_000 => 110.0,
+                4_000_000_000 => 111.0,
+                6_000_000_000 => 116.0,
+                8_000_000_000 => 97.0,
+                10_000_000_000 => 102.0,
+                12_000_000_000 => 111.0,
+                14_000_000_000 => 111.0,
+                16_000_000_000 => 100.0,
                 _ => 0.0,
             };
             Ok(Some(Datum::new(self.time, value)))
@@ -1353,47 +1107,38 @@ fn ewma_stream() {
     }
     impl Updatable<DummyError> for DummyStream {
         fn update(&mut self) -> NothingOrError<DummyError> {
-            self.time += Time(2_000_000_000);
+            self.time += Time::from_nanoseconds(2_000_000_000);
             Ok(())
         }
     }
     unsafe {
         static mut INPUT: DummyStream = DummyStream::new();
-        let input = Reference::from_ptr(core::ptr::addr_of_mut!(INPUT));
-        let mut stream = EWMAStream::new(input.clone(), 0.25);
-        input.borrow_mut().update().unwrap();
+        let input = PointerDereferencer::new(core::ptr::addr_of_mut!(INPUT));
+        let mut stream = EWMAStream::new(input, 0.25);
         stream.update().unwrap();
         assert_eq!(stream.get().unwrap().unwrap().value, 110.0);
-        input.borrow_mut().update().unwrap();
         stream.update().unwrap();
         assert_eq!(stream.get().unwrap().unwrap().value, 110.4375);
-        input.borrow_mut().update().unwrap();
         stream.update().unwrap();
         //Floating-point stuff gets a bit weird because of rounding, but it still appears to work
         //correctly.
         assert_eq!(stream.get().unwrap().unwrap().value, 112.87109375);
-        input.borrow_mut().update().unwrap();
         stream.update().unwrap();
         assert_eq!(stream.get().unwrap().unwrap().value, 105.927490234375);
-        input.borrow_mut().update().unwrap();
         stream.update().unwrap();
         assert_eq!(stream.get().unwrap().unwrap().value, 104.20921325683594);
-        input.borrow_mut().update().unwrap();
         stream.update().unwrap();
         assert_eq!(stream.get().unwrap().unwrap().value, 107.18018245697021);
-        input.borrow_mut().update().unwrap();
         stream.update().unwrap();
         assert_eq!(stream.get().unwrap().unwrap().value, 108.85135263204575);
-        input.borrow_mut().update().unwrap();
         stream.update().unwrap();
         //Despite every other assert_eq! here working, this one does not because the way f32 works
-        //means that it thinks it's off by 0.00001. I am unconcerned.
+        //means that it thinks it's off by 0.00001.
         //assert_eq!(stream.get().unwrap().unwrap().value, 104.97888585552573);
     }
 }
-//See note on exponent_stream test
 #[test]
-#[cfg(any(feature = "std", feature = "libm"))]
+#[cfg(all(not(miri), any(feature = "std", feature = "libm")))]
 fn ewma_stream_quantity() {
     #[derive(Clone, Copy, Debug)]
     struct DummyError;
@@ -1402,84 +1147,70 @@ fn ewma_stream_quantity() {
     }
     impl DummyStream {
         pub const fn new() -> Self {
-            Self { time: Time(0) }
+            Self { time: Time::ZERO }
         }
     }
-    impl Getter<Quantity, DummyError> for DummyStream {
-        fn get(&self) -> Output<Quantity, DummyError> {
-            let value = match self.time {
-                Time(2_000_000_000) => Quantity::dimensionless(110.0),
-                Time(4_000_000_000) => Quantity::dimensionless(111.0),
-                Time(6_000_000_000) => Quantity::dimensionless(116.0),
-                Time(8_000_000_000) => Quantity::dimensionless(97.0),
-                Time(10_000_000_000) => Quantity::dimensionless(102.0),
-                Time(12_000_000_000) => Quantity::dimensionless(111.0),
-                Time(14_000_000_000) => Quantity::dimensionless(111.0),
-                Time(16_000_000_000) => Quantity::dimensionless(100.0),
-                _ => Quantity::dimensionless(0.0),
-            };
+    impl Getter<Millimeter<f32>, DummyError> for DummyStream {
+        fn get(&self) -> Output<Millimeter<f32>, DummyError> {
+            let value = Millimeter::new(match self.time.as_nanoseconds() {
+                2_000_000_000 => 110.0,
+                4_000_000_000 => 111.0,
+                6_000_000_000 => 116.0,
+                8_000_000_000 => 97.0,
+                10_000_000_000 => 102.0,
+                12_000_000_000 => 111.0,
+                14_000_000_000 => 111.0,
+                16_000_000_000 => 100.0,
+                _ => 0.0,
+            });
             Ok(Some(Datum::new(self.time, value)))
         }
     }
     impl Updatable<DummyError> for DummyStream {
         fn update(&mut self) -> NothingOrError<DummyError> {
-            self.time += Time(2_000_000_000);
+            self.time += Time::from_nanoseconds(2_000_000_000);
             Ok(())
         }
     }
     unsafe {
         static mut INPUT: DummyStream = DummyStream::new();
-        let input = Reference::from_ptr(core::ptr::addr_of_mut!(INPUT));
-        let mut stream = EWMAStream::new(input.clone(), 0.25);
-        input.borrow_mut().update().unwrap();
+        let input = PointerDereferencer::new(core::ptr::addr_of_mut!(INPUT));
+        let mut stream = EWMAStream::<Millimeter<f32>, _, _>::new(input, 0.25);
         stream.update().unwrap();
-        assert_eq!(
-            stream.get().unwrap().unwrap().value,
-            Quantity::dimensionless(110.0)
-        );
-        input.borrow_mut().update().unwrap();
+        assert_eq!(stream.get().unwrap().unwrap().value.into_inner(), 110.0);
         stream.update().unwrap();
-        assert_eq!(
-            stream.get().unwrap().unwrap().value,
-            Quantity::dimensionless(110.4375)
-        );
-        input.borrow_mut().update().unwrap();
+        assert_eq!(stream.get().unwrap().unwrap().value.into_inner(), 110.4375);
         stream.update().unwrap();
         //Floating-point stuff gets a bit weird because of rounding, but it still appears to work
         //correctly.
         assert_eq!(
-            stream.get().unwrap().unwrap().value,
-            Quantity::dimensionless(112.87109375)
+            stream.get().unwrap().unwrap().value.into_inner(),
+            112.87109375
         );
-        input.borrow_mut().update().unwrap();
         stream.update().unwrap();
         assert_eq!(
-            stream.get().unwrap().unwrap().value,
-            Quantity::dimensionless(105.927490234375)
+            stream.get().unwrap().unwrap().value.into_inner(),
+            105.927490234375
         );
-        input.borrow_mut().update().unwrap();
         stream.update().unwrap();
         assert_eq!(
-            stream.get().unwrap().unwrap().value,
-            Quantity::dimensionless(104.20921325683594)
+            stream.get().unwrap().unwrap().value.into_inner(),
+            104.20921325683594
         );
-        input.borrow_mut().update().unwrap();
         stream.update().unwrap();
         assert_eq!(
-            stream.get().unwrap().unwrap().value,
-            Quantity::dimensionless(107.18018245697021)
+            stream.get().unwrap().unwrap().value.into_inner(),
+            107.18018245697021
         );
-        input.borrow_mut().update().unwrap();
         stream.update().unwrap();
         assert_eq!(
-            stream.get().unwrap().unwrap().value,
-            Quantity::dimensionless(108.85135263204575)
+            stream.get().unwrap().unwrap().value.into_inner(),
+            108.85135263204575
         );
-        input.borrow_mut().update().unwrap();
         stream.update().unwrap();
         //Despite every other assert_eq! here working, this one does not because the way f32 works
-        //means that it thinks it's off by 0.00001. I am unconcerned.
-        //assert_eq!(stream.get().unwrap().unwrap().value, 104.97888585552573);
+        //means that it thinks it's off by 0.00001.
+        //assert_eq!(stream.get().unwrap().unwrap().value.into_inner(), 104.97888585552573);
     }
 }
 #[test]
@@ -1492,20 +1223,20 @@ fn moving_average_stream() {
     }
     impl DummyStream {
         pub const fn new() -> Self {
-            Self { time: Time(0) }
+            Self { time: Time::ZERO }
         }
     }
     impl Getter<f32, DummyError> for DummyStream {
         fn get(&self) -> Output<f32, DummyError> {
-            let value = match self.time {
-                Time(2) => 110.0,
-                Time(4) => 111.0,
-                Time(6) => 116.0,
-                Time(8) => 97.0,
-                Time(10) => 102.0,
-                Time(12) => 111.0,
-                Time(14) => 111.0,
-                Time(16) => 100.0,
+            let value = match self.time.as_nanoseconds() {
+                2 => 110.0,
+                4 => 111.0,
+                6 => 116.0,
+                8 => 97.0,
+                10 => 102.0,
+                12 => 111.0,
+                14 => 111.0,
+                16 => 100.0,
                 _ => 0.0,
             };
             Ok(Some(Datum::new(self.time, value)))
@@ -1513,36 +1244,28 @@ fn moving_average_stream() {
     }
     impl Updatable<DummyError> for DummyStream {
         fn update(&mut self) -> NothingOrError<DummyError> {
-            self.time += Time(2);
+            self.time += Time::from_nanoseconds(2);
             Ok(())
         }
     }
     unsafe {
         static mut INPUT: DummyStream = DummyStream::new();
-        let input = Reference::from_ptr(core::ptr::addr_of_mut!(INPUT));
-        let mut stream = MovingAverageStream::new(input.clone(), Time(5));
-        input.borrow_mut().update().unwrap();
+        let input = PointerDereferencer::new(core::ptr::addr_of_mut!(INPUT));
+        let mut stream = MovingAverageStream::new(input, Time::from_nanoseconds(5));
         stream.update().unwrap();
         assert_eq!(stream.get().unwrap().unwrap().value, 110.0);
-        input.borrow_mut().update().unwrap();
         stream.update().unwrap();
         assert_eq!(stream.get().unwrap().unwrap().value, 110.4);
-        input.borrow_mut().update().unwrap();
         stream.update().unwrap();
         //assert_eq!(stream.get().unwrap().unwrap().value, 112.8);
-        input.borrow_mut().update().unwrap();
         stream.update().unwrap();
         assert_eq!(stream.get().unwrap().unwrap().value, 107.4);
-        input.borrow_mut().update().unwrap();
         stream.update().unwrap();
         //assert_eq!(stream.get().unwrap().unwrap().value, 102.8);
-        input.borrow_mut().update().unwrap();
         stream.update().unwrap();
         assert_eq!(stream.get().unwrap().unwrap().value, 104.6);
-        input.borrow_mut().update().unwrap();
         stream.update().unwrap();
         assert_eq!(stream.get().unwrap().unwrap().value, 109.2);
-        input.borrow_mut().update().unwrap();
         stream.update().unwrap();
         assert_eq!(stream.get().unwrap().unwrap().value, 106.6);
     }
@@ -1557,106 +1280,82 @@ fn moving_average_stream_quantity() {
     }
     impl DummyStream {
         pub const fn new() -> Self {
-            Self { time: Time(0) }
+            Self { time: Time::ZERO }
         }
     }
-    impl Getter<Quantity, DummyError> for DummyStream {
-        fn get(&self) -> Output<Quantity, DummyError> {
-            let value = match self.time {
-                Time(2) => Quantity::dimensionless(110.0),
-                Time(4) => Quantity::dimensionless(111.0),
-                Time(6) => Quantity::dimensionless(116.0),
-                Time(8) => Quantity::dimensionless(97.0),
-                Time(10) => Quantity::dimensionless(102.0),
-                Time(12) => Quantity::dimensionless(111.0),
-                Time(14) => Quantity::dimensionless(111.0),
-                Time(16) => Quantity::dimensionless(100.0),
-                _ => Quantity::dimensionless(0.0),
-            };
+    impl Getter<Millimeter<f32>, DummyError> for DummyStream {
+        fn get(&self) -> Output<Millimeter<f32>, DummyError> {
+            let value = Millimeter::new(match self.time.as_nanoseconds() {
+                2 => 110.0,
+                4 => 111.0,
+                6 => 116.0,
+                8 => 97.0,
+                10 => 102.0,
+                12 => 111.0,
+                14 => 111.0,
+                16 => 100.0,
+                _ => 0.0,
+            });
             Ok(Some(Datum::new(self.time, value)))
         }
     }
     impl Updatable<DummyError> for DummyStream {
         fn update(&mut self) -> NothingOrError<DummyError> {
-            self.time += Time(2);
+            self.time += Time::from_nanoseconds(2);
             Ok(())
         }
     }
     unsafe {
         static mut INPUT: DummyStream = DummyStream::new();
-        let input = Reference::from_ptr(core::ptr::addr_of_mut!(INPUT));
-        let mut stream = MovingAverageStream::new(input.clone(), Time(5));
-        input.borrow_mut().update().unwrap();
+        let input = PointerDereferencer::new(core::ptr::addr_of_mut!(INPUT));
+        let mut stream = MovingAverageStream::new(input, Time::from_nanoseconds(5));
         stream.update().unwrap();
-        assert_eq!(
-            stream.get().unwrap().unwrap().value,
-            Quantity::dimensionless(110.0)
-        );
-        input.borrow_mut().update().unwrap();
+        assert_eq!(stream.get().unwrap().unwrap().value.into_inner(), 110.0);
         stream.update().unwrap();
-        assert_eq!(
-            stream.get().unwrap().unwrap().value,
-            Quantity::dimensionless(110.4)
-        );
-        input.borrow_mut().update().unwrap();
+        assert_eq!(stream.get().unwrap().unwrap().value.into_inner(), 110.4);
         stream.update().unwrap();
-        //assert_eq!(stream.get().unwrap().unwrap().value, 112.8);
-        input.borrow_mut().update().unwrap();
+        //assert_eq!(stream.get().unwrap().unwrap().value.into_inner(), 112.8);
         stream.update().unwrap();
-        assert_eq!(
-            stream.get().unwrap().unwrap().value,
-            Quantity::dimensionless(107.4)
-        );
-        input.borrow_mut().update().unwrap();
+        assert_eq!(stream.get().unwrap().unwrap().value.into_inner(), 107.4);
         stream.update().unwrap();
-        //assert_eq!(stream.get().unwrap().unwrap().value, 102.8);
-        input.borrow_mut().update().unwrap();
+        //assert_eq!(stream.get().unwrap().unwrap().value.into_inner(), 102.8);
         stream.update().unwrap();
-        assert_eq!(
-            stream.get().unwrap().unwrap().value,
-            Quantity::dimensionless(104.6)
-        );
-        input.borrow_mut().update().unwrap();
+        assert_eq!(stream.get().unwrap().unwrap().value.into_inner(), 104.6);
         stream.update().unwrap();
-        assert_eq!(
-            stream.get().unwrap().unwrap().value,
-            Quantity::dimensionless(109.2)
-        );
-        input.borrow_mut().update().unwrap();
+        assert_eq!(stream.get().unwrap().unwrap().value.into_inner(), 109.2);
         stream.update().unwrap();
-        assert_eq!(
-            stream.get().unwrap().unwrap().value,
-            Quantity::dimensionless(106.6)
-        );
+        assert_eq!(stream.get().unwrap().unwrap().value.into_inner(), 106.6);
     }
 }
 #[test]
 fn latest() {
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    struct Error(u8);
     struct Stream1 {
         time: Time,
     }
     impl Stream1 {
         pub const fn new() -> Self {
-            Self { time: Time(0) }
+            Self { time: Time::ZERO }
         }
     }
-    impl Getter<u8, ()> for Stream1 {
-        fn get(&self) -> Output<u8, ()> {
-            match self.time {
-                Time(0) => Ok(Some(Datum::new(Time(1), 1))), //Some, Some
-                Time(1) => Ok(Some(Datum::new(Time(0), 0))), //Some, Some
-                Time(2) => Ok(Some(Datum::new(Time(0), 1))), //Some, None
-                Time(3) => Ok(Some(Datum::new(Time(0), 1))), //Some, Err
-                Time(4) => Ok(None),                         //None, None
-                Time(5) => Ok(None),                         //None, Err
-                Time(6) => Err(Error::Other(())),            //Err,  Err
+    impl Getter<u8, Error> for Stream1 {
+        fn get(&self) -> Output<u8, Error> {
+            match self.time.as_nanoseconds() {
+                0 => Ok(Some(Datum::new(Time::from_nanoseconds(1), 1))), //Some, Some
+                1 => Ok(Some(Datum::new(Time::ZERO, 0))),                //Some, Some
+                2 => Ok(Some(Datum::new(Time::ZERO, 1))),                //Some, None
+                3 => Ok(Some(Datum::new(Time::ZERO, 1))),                //Some, Err
+                4 => Ok(None),                                           //None, None
+                5 => Ok(None),                                           //None, Err
+                6 => Err(Error(1)),                                      //Err,  Err
                 _ => panic!("should be unreachable"),
             }
         }
     }
-    impl Updatable<()> for Stream1 {
-        fn update(&mut self) -> NothingOrError<()> {
-            self.time += Time(1);
+    impl Updatable<Error> for Stream1 {
+        fn update(&mut self) -> NothingOrError<Error> {
+            self.time += Time::from_nanoseconds(1);
             Ok(())
         }
     }
@@ -1665,64 +1364,161 @@ fn latest() {
     }
     impl Stream2 {
         pub const fn new() -> Self {
-            Self { time: Time(0) }
+            Self { time: Time::ZERO }
         }
     }
-    impl Getter<u8, ()> for Stream2 {
-        fn get(&self) -> Output<u8, ()> {
-            match self.time {
-                Time(0) => Ok(Some(Datum::new(Time(0), 0))), //Some, Some
-                Time(1) => Ok(Some(Datum::new(Time(1), 2))), //Some, Some
-                Time(2) => Ok(None),                         //Some, None
-                Time(3) => Err(Error::Other(())),            //Some, Err
-                Time(4) => Ok(None),                         //None, None
-                Time(5) => Err(Error::Other(())),            //None, Err
-                Time(6) => Err(Error::Other(())),            //Err,  Err
+    impl Getter<u8, Error> for Stream2 {
+        fn get(&self) -> Output<u8, Error> {
+            match self.time.as_nanoseconds() {
+                0 => Ok(Some(Datum::new(Time::ZERO, 0))), //Some, Some
+                1 => Ok(Some(Datum::new(Time::from_nanoseconds(1), 2))), //Some, Some
+                2 => Ok(None),                            //Some, None
+                3 => Err(Error(2)),                       //Some, Err
+                4 => Ok(None),                            //None, None
+                5 => Err(Error(3)),                       //None, Err
+                6 => Err(Error(4)),                       //Err,  Err
                 _ => panic!("should be unreachable"),
             }
         }
     }
-    impl Updatable<()> for Stream2 {
-        fn update(&mut self) -> NothingOrError<()> {
-            self.time += Time(1);
+    impl Updatable<Error> for Stream2 {
+        fn update(&mut self) -> NothingOrError<Error> {
+            self.time += Time::from_nanoseconds(1);
             Ok(())
         }
     }
     unsafe {
         static mut STREAM_1: Stream1 = Stream1::new();
-        let stream1 = Reference::from_ptr(core::ptr::addr_of_mut!(STREAM_1));
+        let stream1 = PointerDereferencer::new(core::ptr::addr_of_mut!(STREAM_1));
         static mut STREAM_2: Stream2 = Stream2::new();
-        let stream2 = Reference::from_ptr(core::ptr::addr_of_mut!(STREAM_2));
+        let stream2 = PointerDereferencer::new(core::ptr::addr_of_mut!(STREAM_2));
+        let stream1_binding = stream1;
+        let stream2_binding = stream2;
         let mut latest = Latest::new([
-            to_dyn!(Getter<u8, _>, stream1.clone()),
-            to_dyn!(Getter<u8, _>, stream2.clone()),
+            stream1_binding.as_dyn_getter(),
+            stream2_binding.as_dyn_getter(),
         ]);
-        latest.update().unwrap(); //This should do nothing.
-        assert_eq!(latest.get(), Ok(Some(Datum::new(Time(1), 1))));
-        stream1.borrow_mut().update().unwrap();
-        stream2.borrow_mut().update().unwrap();
-        assert_eq!(latest.get(), Ok(Some(Datum::new(Time(1), 2))));
-        stream1.borrow_mut().update().unwrap();
-        stream2.borrow_mut().update().unwrap();
-        assert_eq!(latest.get(), Ok(Some(Datum::new(Time(0), 1))));
-        stream1.borrow_mut().update().unwrap();
-        stream2.borrow_mut().update().unwrap();
-        assert_eq!(latest.get(), Ok(Some(Datum::new(Time(0), 1))));
-        stream1.borrow_mut().update().unwrap();
-        stream2.borrow_mut().update().unwrap();
+        assert_eq!(
+            latest.get(),
+            Ok(Some(Datum::new(Time::from_nanoseconds(1), 1)))
+        );
+        latest.update().unwrap();
+        assert_eq!(
+            latest.get(),
+            Ok(Some(Datum::new(Time::from_nanoseconds(1), 2)))
+        );
+        latest.update().unwrap();
+        assert_eq!(latest.get(), Ok(Some(Datum::new(Time::ZERO, 1))));
+        latest.update().unwrap();
+        assert_eq!(latest.get(), Err(Error(2)));
+        latest.update().unwrap();
         assert_eq!(latest.get(), Ok(None));
-        stream1.borrow_mut().update().unwrap();
-        stream2.borrow_mut().update().unwrap();
-        assert_eq!(latest.get(), Ok(None));
-        stream1.borrow_mut().update().unwrap();
-        stream2.borrow_mut().update().unwrap();
-        assert_eq!(latest.get(), Ok(None));
+        latest.update().unwrap();
+        assert_eq!(latest.get(), Err(Error(3)));
+        latest.update().unwrap();
+        assert_eq!(latest.get(), Err(Error(1)));
     }
 }
+//This test has been slightly modified from the latest() test to test Latest2 instead.
 #[test]
-#[should_panic]
-fn empty_latest() {
-    let _: Latest<(), 0, ()> = Latest::new([]);
+fn latest2() {
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    struct Error(u8);
+    struct Stream1 {
+        time: Time,
+    }
+    impl Stream1 {
+        pub const fn new() -> Self {
+            Self { time: Time::ZERO }
+        }
+    }
+    impl Getter<u8, Error> for Stream1 {
+        fn get(&self) -> Output<u8, Error> {
+            match self.time.as_nanoseconds() {
+                0 => Ok(Some(Datum::new(Time::from_nanoseconds(1), 1))), //Some, Some
+                1 => Ok(Some(Datum::new(Time::ZERO, 0))),                //Some, Some
+                2 => Ok(Some(Datum::new(Time::ZERO, 1))),                //Some, None
+                3 => Ok(Some(Datum::new(Time::ZERO, 1))),                //Some, Err
+                4 => Ok(None),                                           //None, None
+                5 => Ok(None),                                           //None, Err
+                6 => Err(Error(1)),                                      //Err,  Err
+                _ => panic!("should be unreachable"),
+            }
+        }
+    }
+    impl Updatable<Error> for Stream1 {
+        fn update(&mut self) -> NothingOrError<Error> {
+            self.time += Time::from_nanoseconds(1);
+            Ok(())
+        }
+    }
+    struct Stream2 {
+        time: Time,
+    }
+    impl Stream2 {
+        pub const fn new() -> Self {
+            Self { time: Time::ZERO }
+        }
+    }
+    impl Getter<u8, Error> for Stream2 {
+        fn get(&self) -> Output<u8, Error> {
+            match self.time.as_nanoseconds() {
+                0 => Ok(Some(Datum::new(Time::ZERO, 0))), //Some, Some
+                1 => Ok(Some(Datum::new(Time::from_nanoseconds(1), 2))), //Some, Some
+                2 => Ok(None),                            //Some, None
+                3 => Err(Error(2)),                       //Some, Err
+                4 => Ok(None),                            //None, None
+                5 => Err(Error(3)),                       //None, Err
+                6 => Err(Error(4)),                       //Err,  Err
+                _ => panic!("should be unreachable"),
+            }
+        }
+    }
+    impl Updatable<Error> for Stream2 {
+        fn update(&mut self) -> NothingOrError<Error> {
+            self.time += Time::from_nanoseconds(1);
+            Ok(())
+        }
+    }
+    let mut latest = Latest2::new(Stream1::new(), Stream2::new());
+    assert_eq!(
+        latest.get(),
+        Ok(Some(Datum::new(Time::from_nanoseconds(1), 1)))
+    );
+    latest.update().unwrap();
+    assert_eq!(
+        latest.get(),
+        Ok(Some(Datum::new(Time::from_nanoseconds(1), 2)))
+    );
+    latest.update().unwrap();
+    assert_eq!(latest.get(), Ok(Some(Datum::new(Time::ZERO, 1))));
+    latest.update().unwrap();
+    assert_eq!(latest.get(), Err(Error(2)));
+    latest.update().unwrap();
+    assert_eq!(latest.get(), Ok(None));
+    latest.update().unwrap();
+    assert_eq!(latest.get(), Err(Error(3)));
+    latest.update().unwrap();
+    assert_eq!(latest.get(), Err(Error(1)));
+}
+#[test]
+fn inputless_gates() {
+    struct GetBool;
+    impl Updatable<()> for GetBool {
+        fn update(&mut self) -> NothingOrError<()> {
+            panic!("There should be no instances of GetBool to update.");
+        }
+    }
+    impl Getter<bool, ()> for GetBool {
+        fn get(&self) -> Output<bool, ()> {
+            panic!("There should be no instances of GetBool to get from.");
+        }
+    }
+    const INPUTS: [GetBool; 0] = [];
+    let and = AndStream::new(INPUTS);
+    assert_eq!(and.get(), Ok(None));
+    let or = OrStream::new(INPUTS);
+    assert_eq!(or.get(), Ok(None));
 }
 #[test]
 fn and_stream() {
@@ -1737,15 +1533,15 @@ fn and_stream() {
     impl Getter<bool, ()> for In1 {
         fn get(&self) -> Output<bool, ()> {
             Ok(match self.index {
-                0 => Some(Datum::new(Time(0), false)),
+                0 => Some(Datum::new(Time::ZERO, false)),
                 1 => None,
-                2 => Some(Datum::new(Time(0), true)),
-                3 => Some(Datum::new(Time(0), false)),
+                2 => Some(Datum::new(Time::ZERO, true)),
+                3 => Some(Datum::new(Time::ZERO, false)),
                 4 => None,
-                5 => Some(Datum::new(Time(0), true)),
-                6 => Some(Datum::new(Time(0), false)),
+                5 => Some(Datum::new(Time::ZERO, true)),
+                6 => Some(Datum::new(Time::ZERO, false)),
                 7 => None,
-                8 => Some(Datum::new(Time(0), true)),
+                8 => Some(Datum::new(Time::ZERO, true)),
                 _ => unimplemented!(),
             })
         }
@@ -1767,9 +1563,9 @@ fn and_stream() {
     impl Getter<bool, ()> for In2 {
         fn get(&self) -> Output<bool, ()> {
             Ok(match self.index {
-                0..=2 => Some(Datum::new(Time(0), false)),
+                0..=2 => Some(Datum::new(Time::ZERO, false)),
                 3..=5 => None,
-                6..=8 => Some(Datum::new(Time(0), true)),
+                6..=8 => Some(Datum::new(Time::ZERO, true)),
                 _ => unimplemented!(),
             })
         }
@@ -1782,45 +1578,113 @@ fn and_stream() {
     }
     unsafe {
         static mut IN_1: In1 = In1::new();
-        let in1 = Reference::from_ptr(core::ptr::addr_of_mut!(IN_1));
+        let in1 = PointerDereferencer::new(core::ptr::addr_of_mut!(IN_1));
         static mut IN_2: In2 = In2::new();
-        let in2 = Reference::from_ptr(core::ptr::addr_of_mut!(IN_2));
-        let mut and = AndStream::new(in1.clone(), in2.clone());
-        assert_eq!(and.get().unwrap().unwrap().value, false);
-        in1.borrow_mut().update().unwrap();
-        in2.borrow_mut().update().unwrap();
+        let in2 = PointerDereferencer::new(core::ptr::addr_of_mut!(IN_2));
+        //TODO: Maybe revise this test to better suit the new AndStream. This is a pretty patchy
+        //fix.
+        let in1_binding = in1;
+        let in2_binding = in2;
+        let mut and = AndStream::new([in1_binding.as_dyn_getter(), in2_binding.as_dyn_getter()]);
+        assert!(!and.get().unwrap().unwrap().value);
         and.update().unwrap();
-        assert_eq!(and.get().unwrap().unwrap().value, false);
-        in1.borrow_mut().update().unwrap();
-        in2.borrow_mut().update().unwrap();
+        assert!(!and.get().unwrap().unwrap().value);
         and.update().unwrap();
-        assert_eq!(and.get().unwrap().unwrap().value, false);
-        in1.borrow_mut().update().unwrap();
-        in2.borrow_mut().update().unwrap();
+        assert!(!and.get().unwrap().unwrap().value);
         and.update().unwrap();
-        assert_eq!(and.get().unwrap().unwrap().value, false);
-        in1.borrow_mut().update().unwrap();
-        in2.borrow_mut().update().unwrap();
+        assert!(!and.get().unwrap().unwrap().value);
         and.update().unwrap();
         assert_eq!(and.get().unwrap(), None);
-        in1.borrow_mut().update().unwrap();
-        in2.borrow_mut().update().unwrap();
         and.update().unwrap();
         assert_eq!(and.get().unwrap(), None);
-        in1.borrow_mut().update().unwrap();
-        in2.borrow_mut().update().unwrap();
         and.update().unwrap();
-        assert_eq!(and.get().unwrap().unwrap().value, false);
-        in1.borrow_mut().update().unwrap();
-        in2.borrow_mut().update().unwrap();
+        assert!(!and.get().unwrap().unwrap().value);
         and.update().unwrap();
         assert_eq!(and.get().unwrap(), None);
-        in1.borrow_mut().update().unwrap();
-        in2.borrow_mut().update().unwrap();
         and.update().unwrap();
-        assert_eq!(and.get().unwrap().unwrap().value, true);
-        in1.borrow_mut().update().unwrap();
-        in2.borrow_mut().update().unwrap();
+        assert!(and.get().unwrap().unwrap().value);
+        and.update().unwrap();
+    }
+}
+#[test]
+fn and2() {
+    struct In1 {
+        index: u8,
+    }
+    impl In1 {
+        const fn new() -> Self {
+            Self { index: 0 }
+        }
+    }
+    impl Getter<bool, ()> for In1 {
+        fn get(&self) -> Output<bool, ()> {
+            Ok(match self.index {
+                0 => Some(Datum::new(Time::ZERO, false)),
+                1 => None,
+                2 => Some(Datum::new(Time::ZERO, true)),
+                3 => Some(Datum::new(Time::ZERO, false)),
+                4 => None,
+                5 => Some(Datum::new(Time::ZERO, true)),
+                6 => Some(Datum::new(Time::ZERO, false)),
+                7 => None,
+                8 => Some(Datum::new(Time::ZERO, true)),
+                _ => unimplemented!(),
+            })
+        }
+    }
+    impl Updatable<()> for In1 {
+        fn update(&mut self) -> NothingOrError<()> {
+            self.index += 1;
+            Ok(())
+        }
+    }
+    struct In2 {
+        index: u8,
+    }
+    impl In2 {
+        const fn new() -> Self {
+            Self { index: 0 }
+        }
+    }
+    impl Getter<bool, ()> for In2 {
+        fn get(&self) -> Output<bool, ()> {
+            Ok(match self.index {
+                0..=2 => Some(Datum::new(Time::ZERO, false)),
+                3..=5 => None,
+                6..=8 => Some(Datum::new(Time::ZERO, true)),
+                _ => unimplemented!(),
+            })
+        }
+    }
+    impl Updatable<()> for In2 {
+        fn update(&mut self) -> NothingOrError<()> {
+            self.index += 1;
+            Ok(())
+        }
+    }
+    unsafe {
+        static mut IN_1: In1 = In1::new();
+        let in1 = PointerDereferencer::new(core::ptr::addr_of_mut!(IN_1));
+        static mut IN_2: In2 = In2::new();
+        let in2 = PointerDereferencer::new(core::ptr::addr_of_mut!(IN_2));
+        let mut and = And2::new(in1, in2);
+        assert!(!and.get().unwrap().unwrap().value);
+        and.update().unwrap();
+        assert!(!and.get().unwrap().unwrap().value);
+        and.update().unwrap();
+        assert!(!and.get().unwrap().unwrap().value);
+        and.update().unwrap();
+        assert!(!and.get().unwrap().unwrap().value);
+        and.update().unwrap();
+        assert_eq!(and.get().unwrap(), None);
+        and.update().unwrap();
+        assert_eq!(and.get().unwrap(), None);
+        and.update().unwrap();
+        assert!(!and.get().unwrap().unwrap().value);
+        and.update().unwrap();
+        assert_eq!(and.get().unwrap(), None);
+        and.update().unwrap();
+        assert!(and.get().unwrap().unwrap().value);
         and.update().unwrap();
     }
 }
@@ -1837,15 +1701,15 @@ fn or_stream() {
     impl Getter<bool, ()> for In1 {
         fn get(&self) -> Output<bool, ()> {
             Ok(match self.index {
-                0 => Some(Datum::new(Time(0), false)),
+                0 => Some(Datum::new(Time::ZERO, false)),
                 1 => None,
-                2 => Some(Datum::new(Time(0), true)),
-                3 => Some(Datum::new(Time(0), false)),
+                2 => Some(Datum::new(Time::ZERO, true)),
+                3 => Some(Datum::new(Time::ZERO, false)),
                 4 => None,
-                5 => Some(Datum::new(Time(0), true)),
-                6 => Some(Datum::new(Time(0), false)),
+                5 => Some(Datum::new(Time::ZERO, true)),
+                6 => Some(Datum::new(Time::ZERO, false)),
                 7 => None,
-                8 => Some(Datum::new(Time(0), true)),
+                8 => Some(Datum::new(Time::ZERO, true)),
                 _ => unimplemented!(),
             })
         }
@@ -1867,9 +1731,9 @@ fn or_stream() {
     impl Getter<bool, ()> for In2 {
         fn get(&self) -> Output<bool, ()> {
             Ok(match self.index {
-                0..=2 => Some(Datum::new(Time(0), false)),
+                0..=2 => Some(Datum::new(Time::ZERO, false)),
                 3..=5 => None,
-                6..=8 => Some(Datum::new(Time(0), true)),
+                6..=8 => Some(Datum::new(Time::ZERO, true)),
                 _ => unimplemented!(),
             })
         }
@@ -1882,46 +1746,114 @@ fn or_stream() {
     }
     unsafe {
         static mut IN_1: In1 = In1::new();
-        let in1 = Reference::from_ptr(core::ptr::addr_of_mut!(IN_1));
+        let in1 = PointerDereferencer::new(core::ptr::addr_of_mut!(IN_1));
         static mut IN_2: In2 = In2::new();
-        let in2 = Reference::from_ptr(core::ptr::addr_of_mut!(IN_2));
-        let mut and = OrStream::new(in1.clone(), in2.clone());
-        assert_eq!(and.get().unwrap().unwrap().value, false);
-        in1.borrow_mut().update().unwrap();
-        in2.borrow_mut().update().unwrap();
-        and.update().unwrap();
-        assert_eq!(and.get().unwrap(), None);
-        in1.borrow_mut().update().unwrap();
-        in2.borrow_mut().update().unwrap();
-        and.update().unwrap();
-        assert_eq!(and.get().unwrap().unwrap().value, true);
-        in1.borrow_mut().update().unwrap();
-        in2.borrow_mut().update().unwrap();
-        and.update().unwrap();
-        assert_eq!(and.get().unwrap(), None);
-        in1.borrow_mut().update().unwrap();
-        in2.borrow_mut().update().unwrap();
-        and.update().unwrap();
-        assert_eq!(and.get().unwrap(), None);
-        in1.borrow_mut().update().unwrap();
-        in2.borrow_mut().update().unwrap();
-        and.update().unwrap();
-        assert_eq!(and.get().unwrap().unwrap().value, true);
-        in1.borrow_mut().update().unwrap();
-        in2.borrow_mut().update().unwrap();
-        and.update().unwrap();
-        assert_eq!(and.get().unwrap().unwrap().value, true);
-        in1.borrow_mut().update().unwrap();
-        in2.borrow_mut().update().unwrap();
-        and.update().unwrap();
-        assert_eq!(and.get().unwrap().unwrap().value, true);
-        in1.borrow_mut().update().unwrap();
-        in2.borrow_mut().update().unwrap();
-        and.update().unwrap();
-        assert_eq!(and.get().unwrap().unwrap().value, true);
-        in1.borrow_mut().update().unwrap();
-        in2.borrow_mut().update().unwrap();
-        and.update().unwrap();
+        let in2 = PointerDereferencer::new(core::ptr::addr_of_mut!(IN_2));
+        //TODO: Maybe revise this test to better suit the new OrStream. This is a pretty patchy
+        //fix.
+        let in1_binding = in1;
+        let in2_binding = in2;
+        let mut or = OrStream::new([in1_binding.as_dyn_getter(), in2_binding.as_dyn_getter()]);
+        assert!(!or.get().unwrap().unwrap().value);
+        or.update().unwrap();
+        assert_eq!(or.get().unwrap(), None);
+        or.update().unwrap();
+        assert!(or.get().unwrap().unwrap().value);
+        or.update().unwrap();
+        assert_eq!(or.get().unwrap(), None);
+        or.update().unwrap();
+        assert_eq!(or.get().unwrap(), None);
+        or.update().unwrap();
+        assert!(or.get().unwrap().unwrap().value);
+        or.update().unwrap();
+        assert!(or.get().unwrap().unwrap().value);
+        or.update().unwrap();
+        assert!(or.get().unwrap().unwrap().value);
+        or.update().unwrap();
+        assert!(or.get().unwrap().unwrap().value);
+        or.update().unwrap();
+    }
+}
+#[test]
+fn or2() {
+    struct In1 {
+        index: u8,
+    }
+    impl In1 {
+        const fn new() -> Self {
+            Self { index: 0 }
+        }
+    }
+    impl Getter<bool, ()> for In1 {
+        fn get(&self) -> Output<bool, ()> {
+            Ok(match self.index {
+                0 => Some(Datum::new(Time::ZERO, false)),
+                1 => None,
+                2 => Some(Datum::new(Time::ZERO, true)),
+                3 => Some(Datum::new(Time::ZERO, false)),
+                4 => None,
+                5 => Some(Datum::new(Time::ZERO, true)),
+                6 => Some(Datum::new(Time::ZERO, false)),
+                7 => None,
+                8 => Some(Datum::new(Time::ZERO, true)),
+                _ => unimplemented!(),
+            })
+        }
+    }
+    impl Updatable<()> for In1 {
+        fn update(&mut self) -> NothingOrError<()> {
+            self.index += 1;
+            Ok(())
+        }
+    }
+    struct In2 {
+        index: u8,
+    }
+    impl In2 {
+        const fn new() -> Self {
+            Self { index: 0 }
+        }
+    }
+    impl Getter<bool, ()> for In2 {
+        fn get(&self) -> Output<bool, ()> {
+            Ok(match self.index {
+                0..=2 => Some(Datum::new(Time::ZERO, false)),
+                3..=5 => None,
+                6..=8 => Some(Datum::new(Time::ZERO, true)),
+                _ => unimplemented!(),
+            })
+        }
+    }
+    impl Updatable<()> for In2 {
+        fn update(&mut self) -> NothingOrError<()> {
+            self.index += 1;
+            Ok(())
+        }
+    }
+    unsafe {
+        static mut IN_1: In1 = In1::new();
+        let in1 = PointerDereferencer::new(core::ptr::addr_of_mut!(IN_1));
+        static mut IN_2: In2 = In2::new();
+        let in2 = PointerDereferencer::new(core::ptr::addr_of_mut!(IN_2));
+        let mut or = Or2::new(in1, in2);
+        assert!(!or.get().unwrap().unwrap().value);
+        or.update().unwrap();
+        assert_eq!(or.get().unwrap(), None);
+        or.update().unwrap();
+        assert!(or.get().unwrap().unwrap().value);
+        or.update().unwrap();
+        assert_eq!(or.get().unwrap(), None);
+        or.update().unwrap();
+        assert_eq!(or.get().unwrap(), None);
+        or.update().unwrap();
+        assert!(or.get().unwrap().unwrap().value);
+        or.update().unwrap();
+        assert!(or.get().unwrap().unwrap().value);
+        or.update().unwrap();
+        assert!(or.get().unwrap().unwrap().value);
+        or.update().unwrap();
+        assert!(or.get().unwrap().unwrap().value);
+        or.update().unwrap();
     }
 }
 #[test]
@@ -1937,9 +1869,9 @@ fn not_stream() {
     impl Getter<bool, ()> for In {
         fn get(&self) -> Output<bool, ()> {
             Ok(match self.index {
-                0 => Some(Datum::new(Time(0), false)),
+                0 => Some(Datum::new(Time::ZERO, false)),
                 1 => None,
-                2 => Some(Datum::new(Time(0), true)),
+                2 => Some(Datum::new(Time::ZERO, true)),
                 _ => unimplemented!(),
             })
         }
@@ -1952,15 +1884,13 @@ fn not_stream() {
     }
     unsafe {
         static mut INPUT: In = In::new();
-        let input = Reference::from_ptr(core::ptr::addr_of_mut!(INPUT));
-        let mut not = NotStream::new(input.clone());
-        assert_eq!(not.get().unwrap().unwrap().value, true);
-        input.borrow_mut().update().unwrap();
+        let input = PointerDereferencer::new(core::ptr::addr_of_mut!(INPUT));
+        let mut not = NotStream::new(input);
+        assert!(not.get().unwrap().unwrap().value);
         not.update().unwrap();
         assert_eq!(not.get().unwrap(), None);
-        input.borrow_mut().update().unwrap();
         not.update().unwrap();
-        assert_eq!(not.get().unwrap().unwrap().value, false);
+        assert!(!not.get().unwrap().unwrap().value);
     }
 }
 #[test]
@@ -1971,9 +1901,9 @@ fn if_stream() {
     impl Getter<bool, ()> for Condition {
         fn get(&self) -> Output<bool, ()> {
             Ok(match self.index {
-                0 => Some(Datum::new(Time(0), false)),
+                0 => Some(Datum::new(Time::ZERO, false)),
                 1 => None,
-                2 => Some(Datum::new(Time(0), true)),
+                2 => Some(Datum::new(Time::ZERO, true)),
                 _ => unimplemented!(),
             })
         }
@@ -1987,7 +1917,7 @@ fn if_stream() {
     struct Input;
     impl Getter<u8, ()> for Input {
         fn get(&self) -> Output<u8, ()> {
-            Ok(Some(Datum::new(Time(0), 0)))
+            Ok(Some(Datum::new(Time::ZERO, 0)))
         }
     }
     impl Updatable<()> for Input {
@@ -1997,15 +1927,13 @@ fn if_stream() {
     }
     unsafe {
         static mut CONDITION: Condition = Condition { index: 0 };
-        let condition = Reference::from_ptr(core::ptr::addr_of_mut!(CONDITION));
+        let condition = PointerDereferencer::new(core::ptr::addr_of_mut!(CONDITION));
         static mut INPUT: Input = Input;
-        let input = Reference::from_ptr(core::ptr::addr_of_mut!(INPUT));
-        let mut if_stream = IfStream::new(condition.clone(), input.clone());
+        let input = PointerDereferencer::new(core::ptr::addr_of_mut!(INPUT));
+        let mut if_stream = IfStream::new(condition, input);
         assert_eq!(if_stream.get().unwrap(), None);
-        condition.borrow_mut().update().unwrap();
         if_stream.update().unwrap();
         assert_eq!(if_stream.get().unwrap(), None);
-        condition.borrow_mut().update().unwrap();
         if_stream.update().unwrap();
         assert_eq!(if_stream.get().unwrap().unwrap().value, 0);
     }
@@ -2018,9 +1946,9 @@ fn if_else_stream() {
     impl Getter<bool, ()> for Condition {
         fn get(&self) -> Output<bool, ()> {
             Ok(match self.index {
-                0 => Some(Datum::new(Time(0), false)),
+                0 => Some(Datum::new(Time::ZERO, false)),
                 1 => None,
-                2 => Some(Datum::new(Time(0), true)),
+                2 => Some(Datum::new(Time::ZERO, true)),
                 _ => unimplemented!(),
             })
         }
@@ -2034,7 +1962,7 @@ fn if_else_stream() {
     struct True;
     impl Getter<u8, ()> for True {
         fn get(&self) -> Output<u8, ()> {
-            Ok(Some(Datum::new(Time(0), 1)))
+            Ok(Some(Datum::new(Time::ZERO, 1)))
         }
     }
     impl Updatable<()> for True {
@@ -2045,7 +1973,7 @@ fn if_else_stream() {
     struct False;
     impl Getter<u8, ()> for False {
         fn get(&self) -> Output<u8, ()> {
-            Ok(Some(Datum::new(Time(0), 2)))
+            Ok(Some(Datum::new(Time::ZERO, 2)))
         }
     }
     impl Updatable<()> for False {
@@ -2055,17 +1983,15 @@ fn if_else_stream() {
     }
     unsafe {
         static mut CONDITION: Condition = Condition { index: 0 };
-        let condition = Reference::from_ptr(core::ptr::addr_of_mut!(CONDITION));
+        let condition = PointerDereferencer::new(core::ptr::addr_of_mut!(CONDITION));
         static mut TRUE_INPUT: True = True;
-        let true_input = Reference::from_ptr(core::ptr::addr_of_mut!(TRUE_INPUT));
+        let true_input = PointerDereferencer::new(core::ptr::addr_of_mut!(TRUE_INPUT));
         static mut FALSE_INPUT: False = False;
-        let false_input = Reference::from_ptr(core::ptr::addr_of_mut!(FALSE_INPUT));
-        let mut if_else_stream = IfElseStream::new(condition.clone(), true_input, false_input);
+        let false_input = PointerDereferencer::new(core::ptr::addr_of_mut!(FALSE_INPUT));
+        let mut if_else_stream = IfElseStream::new(condition, true_input, false_input);
         assert_eq!(if_else_stream.get().unwrap().unwrap().value, 2);
-        condition.borrow_mut().update().unwrap();
         if_else_stream.update().unwrap();
         assert_eq!(if_else_stream.get().unwrap(), None);
-        condition.borrow_mut().update().unwrap();
         if_else_stream.update().unwrap();
         assert_eq!(if_else_stream.get().unwrap().unwrap().value, 1);
     }
@@ -2077,19 +2003,19 @@ fn freeze_stream() {
     }
     impl Getter<bool, ()> for Condition {
         fn get(&self) -> Output<bool, ()> {
-            Ok(match self.time.0 {
-                0..=1 => Some(Datum::new(Time(0), false)),
-                2..=3 => Some(Datum::new(Time(0), true)),
-                4..=5 => Some(Datum::new(Time(0), false)),
+            Ok(match self.time.as_nanoseconds() {
+                0..=1 => Some(Datum::new(Time::ZERO, false)),
+                2..=3 => Some(Datum::new(Time::ZERO, true)),
+                4..=5 => Some(Datum::new(Time::ZERO, false)),
                 6..=7 => None,
-                8..=9 => Some(Datum::new(Time(0), false)),
+                8..=9 => Some(Datum::new(Time::ZERO, false)),
                 _ => unimplemented!(),
             })
         }
     }
     impl Updatable<()> for Condition {
         fn update(&mut self) -> NothingOrError<()> {
-            self.time += Time(1);
+            self.time += Time::from_nanoseconds(1);
             Ok(())
         }
     }
@@ -2098,57 +2024,37 @@ fn freeze_stream() {
     }
     impl Getter<i64, ()> for Input {
         fn get(&self) -> Output<i64, ()> {
-            Ok(Some(Datum::new(Time(0), self.time.into())))
+            Ok(Some(Datum::new(Time::ZERO, self.time.as_nanoseconds())))
         }
     }
     impl Updatable<()> for Input {
         fn update(&mut self) -> NothingOrError<()> {
-            self.time += Time(1);
+            self.time += Time::from_nanoseconds(1);
             Ok(())
         }
     }
     unsafe {
-        static mut CONDITION: Condition = Condition { time: Time(0) };
-        let condition = Reference::from_ptr(core::ptr::addr_of_mut!(CONDITION));
-        static mut INPUT: Input = Input { time: Time(0) };
-        let input = Reference::from_ptr(core::ptr::addr_of_mut!(INPUT));
-        let mut freeze = FreezeStream::new(condition.clone(), input.clone());
-        freeze.update().unwrap();
-        assert_eq!(freeze.get().unwrap().unwrap().value, 0);
-        condition.borrow_mut().update().unwrap();
-        input.borrow_mut().update().unwrap();
+        static mut CONDITION: Condition = Condition { time: Time::ZERO };
+        let condition = PointerDereferencer::new(core::ptr::addr_of_mut!(CONDITION));
+        static mut INPUT: Input = Input { time: Time::ZERO };
+        let input = PointerDereferencer::new(core::ptr::addr_of_mut!(INPUT));
+        let mut freeze = FreezeStream::new(condition, input);
         freeze.update().unwrap();
         assert_eq!(freeze.get().unwrap().unwrap().value, 1);
-        condition.borrow_mut().update().unwrap();
-        input.borrow_mut().update().unwrap();
         freeze.update().unwrap();
         assert_eq!(freeze.get().unwrap().unwrap().value, 1);
-        condition.borrow_mut().update().unwrap();
-        input.borrow_mut().update().unwrap();
         freeze.update().unwrap();
         assert_eq!(freeze.get().unwrap().unwrap().value, 1);
-        condition.borrow_mut().update().unwrap();
-        input.borrow_mut().update().unwrap();
         freeze.update().unwrap();
         assert_eq!(freeze.get().unwrap().unwrap().value, 4);
-        condition.borrow_mut().update().unwrap();
-        input.borrow_mut().update().unwrap();
         freeze.update().unwrap();
         assert_eq!(freeze.get().unwrap().unwrap().value, 5);
-        condition.borrow_mut().update().unwrap();
-        input.borrow_mut().update().unwrap();
         freeze.update().unwrap();
         assert_eq!(freeze.get().unwrap(), None);
-        condition.borrow_mut().update().unwrap();
-        input.borrow_mut().update().unwrap();
         freeze.update().unwrap();
         assert_eq!(freeze.get().unwrap(), None);
-        condition.borrow_mut().update().unwrap();
-        input.borrow_mut().update().unwrap();
         freeze.update().unwrap();
         assert_eq!(freeze.get().unwrap().unwrap().value, 8);
-        condition.borrow_mut().update().unwrap();
-        input.borrow_mut().update().unwrap();
         freeze.update().unwrap();
         assert_eq!(freeze.get().unwrap().unwrap().value, 9);
     }
@@ -2158,14 +2064,14 @@ fn command_pid() {
     struct Input {
         time: Time,
     }
-    impl Getter<State, ()> for Input {
-        fn get(&self) -> Output<State, ()> {
-            Ok(Some(Datum::new(self.time, State::default())))
+    impl Getter<LinearState, ()> for Input {
+        fn get(&self) -> Output<LinearState, ()> {
+            Ok(Some(Datum::new(self.time, LinearState::default())))
         }
     }
     impl Updatable<()> for Input {
         fn update(&mut self) -> NothingOrError<()> {
-            self.time += Time(1_000_000_000);
+            self.time += Time::from_nanoseconds(1_000_000_000);
             Ok(())
         }
     }
@@ -2176,69 +2082,444 @@ fn command_pid() {
             PIDKValues::new(1.0, 0.01, 0.1),
         );
         {
-            static mut INPUT: Input = Input { time: Time(0) };
-            let input = Reference::from_ptr(core::ptr::addr_of_mut!(INPUT));
+            static mut INPUT: Input = Input { time: Time::ZERO };
+            let input = PointerDereferencer::new(core::ptr::addr_of_mut!(INPUT));
             let mut pid = CommandPID::new(
-                input.clone(),
-                Command::new(PositionDerivative::Position, 5.0),
+                input,
+                LinearCommand::new(PositionDerivative::Position, 5.0),
                 kvals,
             );
             assert_eq!(pid.get().unwrap(), None);
             pid.update().unwrap();
             assert_eq!(pid.get().unwrap().unwrap().value, 5.0);
-            input.borrow_mut().update().unwrap();
             pid.update().unwrap();
             assert_eq!(pid.get().unwrap().unwrap().value, 5.05);
-            input.borrow_mut().update().unwrap();
             pid.update().unwrap();
             assert_eq!(pid.get().unwrap().unwrap().value, 5.1);
-            input.borrow_mut().update().unwrap();
             pid.update().unwrap();
             assert_eq!(pid.get().unwrap().unwrap().value, 5.15);
         }
 
         {
-            static mut INPUT: Input = Input { time: Time(0) };
-            let input = Reference::from_ptr(core::ptr::addr_of_mut!(INPUT));
+            static mut INPUT: Input = Input { time: Time::ZERO };
+            let input = PointerDereferencer::new(core::ptr::addr_of_mut!(INPUT));
             let mut pid = CommandPID::new(
-                input.clone(),
-                Command::new(PositionDerivative::Velocity, 5.0),
+                input,
+                LinearCommand::new(PositionDerivative::Velocity, 5.0),
                 kvals,
             );
             assert_eq!(pid.get().unwrap(), None);
             pid.update().unwrap();
             assert_eq!(pid.get().unwrap(), None);
-            input.borrow_mut().update().unwrap();
             pid.update().unwrap();
             assert_eq!(pid.get().unwrap().unwrap().value, 5.025);
-            input.borrow_mut().update().unwrap();
             pid.update().unwrap();
             assert_eq!(pid.get().unwrap().unwrap().value, 10.1);
-            input.borrow_mut().update().unwrap();
             pid.update().unwrap();
             assert_eq!(pid.get().unwrap().unwrap().value, 15.225);
         }
 
         {
-            static mut INPUT: Input = Input { time: Time(0) };
-            let input = Reference::from_ptr(core::ptr::addr_of_mut!(INPUT));
+            static mut INPUT: Input = Input { time: Time::ZERO };
+            let input = PointerDereferencer::new(core::ptr::addr_of_mut!(INPUT));
             let mut pid = CommandPID::new(
-                input.clone(),
-                Command::new(PositionDerivative::Acceleration, 5.0),
+                input,
+                LinearCommand::new(PositionDerivative::Acceleration, 5.0),
                 kvals,
             );
             assert_eq!(pid.get().unwrap(), None);
             pid.update().unwrap();
             assert_eq!(pid.get().unwrap(), None);
-            input.borrow_mut().update().unwrap();
             pid.update().unwrap();
             assert_eq!(pid.get().unwrap(), None);
-            input.borrow_mut().update().unwrap();
             pid.update().unwrap();
             assert_eq!(pid.get().unwrap().unwrap().value, 7.5625);
-            input.borrow_mut().update().unwrap();
             pid.update().unwrap();
             assert_eq!(pid.get().unwrap().unwrap().value, 20.225);
         }
     }
 }
+//XXX: This does not currently test the error handling behavior of NoneToDefault::update().
+#[test]
+fn none_to_default() {
+    #[derive(Clone, Debug, PartialEq, Eq)]
+    struct MyError(u8);
+    struct MyGetter;
+    static mut GETTER_UPDATE_CALLS: u8 = 0;
+    impl Updatable<MyError> for MyGetter {
+        fn update(&mut self) -> NothingOrError<MyError> {
+            unsafe {
+                GETTER_UPDATE_CALLS += 1;
+            }
+            Ok(())
+        }
+    }
+    static mut GETTER_GET_CALLS: u8 = 0;
+    impl Getter<u8, MyError> for MyGetter {
+        fn get(&self) -> Output<u8, MyError> {
+            unsafe {
+                GETTER_GET_CALLS += 1;
+            }
+            match unsafe { GETTER_UPDATE_CALLS } {
+                0 => panic!("missed update call"),
+                1 => Ok(Some(Datum::new(Time::from_seconds_f32(2.0), 1))),
+                2 => Ok(Some(Datum::new(Time::from_seconds_f32(2.1), 2))),
+                3 => Ok(None),
+                4 => Ok(None),
+                5 => Ok(None),
+                6 => Err(MyError(1)),
+                _ => panic!("update called too many times"),
+            }
+        }
+    }
+    struct MyTimeGetter;
+    static mut TIME_GETTER_UPDATE_CALLS: u8 = 0;
+    impl Updatable<MyError> for MyTimeGetter {
+        fn update(&mut self) -> NothingOrError<MyError> {
+            unsafe {
+                TIME_GETTER_UPDATE_CALLS += 1;
+            }
+            Ok(())
+        }
+    }
+    static mut TIME_GETTER_GET_CALLS: u8 = 0;
+    impl TimeGetter<MyError> for MyTimeGetter {
+        fn get(&self) -> TimeOutput<MyError> {
+            unsafe {
+                TIME_GETTER_GET_CALLS += 1;
+            }
+            match unsafe { GETTER_UPDATE_CALLS } {
+                0 => panic!("missed update call"),
+                1 => panic!("TimeGetter is not needed here"),
+                2 => panic!("TimeGetter is not needed here"),
+                3 => Ok(Time::from_seconds_f32(2.2)),
+                4 => Ok(Time::from_seconds_f32(2.3)),
+                5 => Err(MyError(2)),
+                6 => panic!("TimeGetter is not needed here"),
+                _ => panic!("update called too many times"),
+            }
+        }
+    }
+    let mut test = NoneToDefault::new(MyGetter, MyTimeGetter);
+    macro_rules! test_index {
+        ($g_u_1: literal, $tg_u_1: literal, $g_g_1: literal, $tg_g_1: literal, $gotten_value: expr, $g_u_2: literal, $tg_u_2: literal, $g_g_2: literal, $tg_g_2: literal) => {
+            test.update().unwrap();
+            //This is not RRTK's fault: https://github.com/rust-lang/rust/issues/131443
+            #[allow(static_mut_refs)]
+            unsafe {
+                assert_eq!(GETTER_UPDATE_CALLS, $g_u_1);
+                assert_eq!(TIME_GETTER_UPDATE_CALLS, $tg_u_1);
+                assert_eq!(GETTER_GET_CALLS, $g_g_1);
+                assert_eq!(TIME_GETTER_GET_CALLS, $tg_g_1);
+            }
+            assert_eq!(test.get(), $gotten_value);
+            #[allow(static_mut_refs)]
+            unsafe {
+                assert_eq!(GETTER_UPDATE_CALLS, $g_u_2);
+                assert_eq!(TIME_GETTER_UPDATE_CALLS, $tg_u_2);
+                assert_eq!(GETTER_GET_CALLS, $g_g_2);
+                assert_eq!(TIME_GETTER_GET_CALLS, $tg_g_2);
+            }
+        };
+    }
+
+    #[rustfmt::skip]
+    test_index!(1, 1, 0, 0, Ok(Some(Datum::new(Time::from_seconds_f32(2.0), 1))), 1, 1, 1, 0);
+    #[rustfmt::skip]
+    test_index!(2, 2, 1, 0, Ok(Some(Datum::new(Time::from_seconds_f32(2.1), 2))), 2, 2, 2, 0);
+    #[rustfmt::skip]
+    test_index!(3, 3, 2, 0, Ok(Some(Datum::new(Time::from_seconds_f32(2.2), 0))), 3, 3, 3, 1);
+    #[rustfmt::skip]
+    test_index!(4, 4, 3, 1, Ok(Some(Datum::new(Time::from_seconds_f32(2.3), 0))), 4, 4, 4, 2);
+    #[rustfmt::skip]
+    test_index!(5, 5, 4, 2, Err(error::PossibleDoubleError::B(MyError(2))), 5, 5, 5, 3);
+    #[rustfmt::skip]
+    test_index!(6, 6, 5, 3, Err(error::PossibleDoubleError::A(MyError(1))), 6, 6, 6, 3);
+}
+#[test]
+fn into_converter() {
+    #[derive(Clone, Debug, PartialEq, Eq)]
+    struct MyError(u8);
+    struct MyGetter;
+    static mut GETTER_UPDATE_CALLS: u8 = 0;
+    impl Updatable<MyError> for MyGetter {
+        fn update(&mut self) -> NothingOrError<MyError> {
+            unsafe {
+                GETTER_UPDATE_CALLS += 1;
+            }
+            Ok(())
+        }
+    }
+    static mut GETTER_GET_CALLS: u8 = 0;
+    impl Getter<u8, MyError> for MyGetter {
+        fn get(&self) -> Output<u8, MyError> {
+            unsafe {
+                GETTER_GET_CALLS += 1;
+            }
+            match unsafe { GETTER_UPDATE_CALLS } {
+                0 => panic!("missed update call"),
+                1 => Ok(Some(Datum::new(Time::from_seconds_f32(2.0), 1))),
+                2 => Ok(None),
+                3 => Err(MyError(1)),
+                _ => panic!("update called too many times"),
+            }
+        }
+    }
+    let mut test = IntoConverter::new(MyGetter);
+    macro_rules! test_index {
+        ($g_u_1: literal, $g_g_1: literal, $gotten_value: expr, $g_u_2: literal, $g_g_2: literal) => {
+            test.update().unwrap();
+            //This is not RRTK's fault: https://github.com/rust-lang/rust/issues/131443
+            #[allow(static_mut_refs)]
+            unsafe {
+                assert_eq!(GETTER_UPDATE_CALLS, $g_u_1);
+                assert_eq!(GETTER_GET_CALLS, $g_g_1);
+            }
+            assert_eq!(test.get(), $gotten_value);
+            #[allow(static_mut_refs)]
+            unsafe {
+                assert_eq!(GETTER_UPDATE_CALLS, $g_u_2);
+                assert_eq!(GETTER_GET_CALLS, $g_g_2);
+            }
+        };
+    }
+    #[rustfmt::skip]
+    test_index!(1, 0, Ok(Some(Datum::new(Time::from_seconds_f32(2.0), 1i16))), 1, 1);
+    #[rustfmt::skip]
+    test_index!(2, 1, Ok(None::<Datum<i16>>), 2, 2);
+    #[rustfmt::skip]
+    test_index!(3, 2, Err::<Option<Datum<i16>>, _>(MyError(1)), 3, 3);
+}
+#[test]
+fn error_into_converter() {
+    struct MyGetter;
+    static mut GETTER_UPDATE_CALLS: u8 = 0;
+    impl Updatable<i16> for MyGetter {
+        fn update(&mut self) -> NothingOrError<i16> {
+            unsafe {
+                GETTER_UPDATE_CALLS += 1;
+            }
+            Ok(())
+        }
+    }
+    static mut GETTER_GET_CALLS: u8 = 0;
+    impl Getter<u8, i16> for MyGetter {
+        fn get(&self) -> Output<u8, i16> {
+            unsafe {
+                GETTER_GET_CALLS += 1;
+            }
+            match unsafe { GETTER_UPDATE_CALLS } {
+                0 => panic!("missed update call"),
+                1 => Ok(Some(Datum::new(Time::from_seconds_f32(2.0), 1))),
+                2 => Ok(None),
+                3 => Err(100),
+                _ => panic!("update called too many times"),
+            }
+        }
+    }
+    let mut test = ErrorIntoConverter::new(MyGetter);
+    macro_rules! test_index {
+        ($g_u_1: literal, $g_g_1: literal, $gotten_value: expr, $g_u_2: literal, $g_g_2: literal) => {
+            <ErrorIntoConverter<_, _> as Updatable<i64>>::update(&mut test).unwrap();
+            //This is not RRTK's fault: https://github.com/rust-lang/rust/issues/131443
+            #[allow(static_mut_refs)]
+            unsafe {
+                assert_eq!(GETTER_UPDATE_CALLS, $g_u_1);
+                assert_eq!(GETTER_GET_CALLS, $g_g_1);
+            }
+            assert_eq!(test.get(), $gotten_value);
+            #[allow(static_mut_refs)]
+            unsafe {
+                assert_eq!(GETTER_UPDATE_CALLS, $g_u_2);
+                assert_eq!(GETTER_GET_CALLS, $g_g_2);
+            }
+        };
+    }
+    #[rustfmt::skip]
+    test_index!(1, 0, Ok::<_, i64>(Some(Datum::new(Time::from_seconds_f32(2.0), 1u8))), 1, 1);
+    #[rustfmt::skip]
+    test_index!(2, 1, Ok::<_, i64>(None), 2, 2);
+    #[rustfmt::skip]
+    test_index!(3, 2, Err(100i64), 3, 3);
+}
+#[test]
+fn dimension_adder() {
+    #[derive(Clone, Debug, PartialEq, Eq)]
+    struct MyError(u8);
+    struct MyGetter;
+    static mut GETTER_UPDATE_CALLS: u8 = 0;
+    impl Updatable<MyError> for MyGetter {
+        fn update(&mut self) -> NothingOrError<MyError> {
+            unsafe {
+                GETTER_UPDATE_CALLS += 1;
+            }
+            Ok(())
+        }
+    }
+    static mut GETTER_GET_CALLS: u8 = 0;
+    impl Getter<f32, MyError> for MyGetter {
+        fn get(&self) -> Output<f32, MyError> {
+            unsafe {
+                GETTER_GET_CALLS += 1;
+            }
+            match unsafe { GETTER_UPDATE_CALLS } {
+                0 => panic!("missed update call"),
+                1 => Ok(Some(Datum::new(Time::from_seconds_f32(2.0), 1.0))),
+                2 => Ok(None),
+                3 => Err(MyError(1)),
+                _ => panic!("update called too many times"),
+            }
+        }
+    }
+    let mut test =
+        DimensionAdder::<compile_time_integer::Pos1, compile_time_integer::Neg1, _>::new(MyGetter);
+    macro_rules! test_index {
+        ($g_u_1: literal, $g_g_1: literal, $gotten_value: expr, $g_u_2: literal, $g_g_2: literal) => {
+            test.update().unwrap();
+            //This is not RRTK's fault: https://github.com/rust-lang/rust/issues/131443
+            #[allow(static_mut_refs)]
+            unsafe {
+                assert_eq!(GETTER_UPDATE_CALLS, $g_u_1);
+                assert_eq!(GETTER_GET_CALLS, $g_g_1);
+            }
+            assert_eq!(test.get(), $gotten_value);
+            #[allow(static_mut_refs)]
+            unsafe {
+                assert_eq!(GETTER_UPDATE_CALLS, $g_u_2);
+                assert_eq!(GETTER_GET_CALLS, $g_g_2);
+            }
+        };
+    }
+    #[rustfmt::skip]
+    test_index!(1, 0, Ok(Some(Datum::new(Time::from_seconds_f32(2.0), MillimeterPerSecond::new(1.0)))), 1, 1);
+    #[rustfmt::skip]
+    test_index!(2, 1, Ok(None), 2, 2);
+    #[rustfmt::skip]
+    test_index!(3, 2, Err(MyError(1)), 3, 3);
+}
+#[test]
+fn dimension_remover() {
+    #[derive(Clone, Debug, PartialEq, Eq)]
+    struct MyError(u8);
+    struct MyGetter;
+    static mut GETTER_UPDATE_CALLS: u8 = 0;
+    impl Updatable<MyError> for MyGetter {
+        fn update(&mut self) -> NothingOrError<MyError> {
+            unsafe {
+                GETTER_UPDATE_CALLS += 1;
+            }
+            Ok(())
+        }
+    }
+    static mut GETTER_GET_CALLS: u8 = 0;
+    impl Getter<MillimeterPerSecond<f32>, MyError> for MyGetter {
+        fn get(&self) -> Output<MillimeterPerSecond<f32>, MyError> {
+            unsafe {
+                GETTER_GET_CALLS += 1;
+            }
+            match unsafe { GETTER_UPDATE_CALLS } {
+                0 => panic!("missed update call"),
+                1 => Ok(Some(Datum::new(
+                    Time::from_seconds_f32(2.0),
+                    MillimeterPerSecond::new(1.0),
+                ))),
+                2 => Ok(None),
+                3 => Err(MyError(1)),
+                _ => panic!("update called too many times"),
+            }
+        }
+    }
+    let mut test = DimensionRemover::new(MyGetter);
+    macro_rules! test_index {
+        ($g_u_1: literal, $g_g_1: literal, $gotten_value: expr, $g_u_2: literal, $g_g_2: literal) => {
+            test.update().unwrap();
+            //This is not RRTK's fault: https://github.com/rust-lang/rust/issues/131443
+            #[allow(static_mut_refs)]
+            unsafe {
+                assert_eq!(GETTER_UPDATE_CALLS, $g_u_1);
+                assert_eq!(GETTER_GET_CALLS, $g_g_1);
+            }
+            assert_eq!(test.get(), $gotten_value);
+            #[allow(static_mut_refs)]
+            unsafe {
+                assert_eq!(GETTER_UPDATE_CALLS, $g_u_2);
+                assert_eq!(GETTER_GET_CALLS, $g_g_2);
+            }
+        };
+    }
+    #[rustfmt::skip]
+    test_index!(1, 0, Ok(Some(Datum::new(Time::from_seconds_f32(2.0), 1.0))), 1, 1);
+    #[rustfmt::skip]
+    test_index!(2, 1, Ok(None), 2, 2);
+    #[rustfmt::skip]
+    test_index!(3, 2, Err(MyError(1)), 3, 3);
+}
+macro_rules! test_prioritize {
+    ($test_name: ident, $stream_name: ident, $first_choice: expr, $second_choice: expr) => {
+        #[test]
+        fn $test_name() {
+            use error::PossibleDoubleError;
+            struct MyGetter;
+            static mut GETTER_UPDATE_CALLS: u8 = 0;
+            impl Updatable<PossibleDoubleError<u8>> for MyGetter {
+                fn update(&mut self) -> NothingOrError<PossibleDoubleError<u8>> {
+                    unsafe {
+                        GETTER_UPDATE_CALLS += 1;
+                    }
+                    match unsafe { GETTER_UPDATE_CALLS } {
+                        0 => unreachable!(),
+                        1 => Err(PossibleDoubleError::A(1)),
+                        2 => Err(PossibleDoubleError::B(2)),
+                        3 => Err(PossibleDoubleError::AB(3, 4)),
+                        4..=6 => Ok(()),
+                        _ => panic!("update called too many times"),
+                    }
+                }
+            }
+            static mut GETTER_GET_CALLS: u8 = 0;
+            impl Getter<u8, PossibleDoubleError<u8>> for MyGetter {
+                fn get(&self) -> Output<u8, PossibleDoubleError<u8>> {
+                    unsafe {
+                        GETTER_GET_CALLS += 1;
+                    }
+                    match unsafe { GETTER_UPDATE_CALLS } {
+                        0 => panic!("missed update call"),
+                        1 => Ok(Some(Datum::new(Time::from_seconds_f32(1.5), 20))),
+                        2 => Ok(None),
+                        3 => Ok(None),
+                        4 => Err(PossibleDoubleError::A(5)),
+                        5 => Err(PossibleDoubleError::B(6)),
+                        6 => Err(PossibleDoubleError::AB(7, 8)),
+                        _ => panic!("update called too many times"),
+                    }
+                }
+            }
+            let mut test = $stream_name::new(MyGetter);
+            macro_rules! test_index {
+                ($update_value: expr, $g_u_1: literal, $g_g_1: literal, $gotten_value: expr, $g_u_2: literal, $g_g_2: literal) => {
+                    assert_eq!(test.update(), $update_value);
+                    //This is not RRTK's fault: https://github.com/rust-lang/rust/issues/131443
+                    #[allow(static_mut_refs)]
+                    unsafe {
+                        assert_eq!(GETTER_UPDATE_CALLS, $g_u_1);
+                        assert_eq!(GETTER_GET_CALLS, $g_g_1);
+                    }
+                    assert_eq!(test.get(), $gotten_value);
+                    #[allow(static_mut_refs)]
+                    unsafe {
+                        assert_eq!(GETTER_UPDATE_CALLS, $g_u_2);
+                        assert_eq!(GETTER_GET_CALLS, $g_g_2);
+                    }
+                };
+            }
+            test_index!(Err(1), 1, 0, Ok(Some(Datum::new(Time::from_seconds_f32(1.5), 20))), 1, 1);
+            test_index!(Err(2), 2, 1, Ok(None), 2, 2);
+            test_index!(Err($first_choice), 3, 2, Ok(None), 3, 3);
+            test_index!(Ok(()), 4, 3, Err(5), 4, 4);
+            test_index!(Ok(()), 5, 4, Err(6), 5, 5);
+            test_index!(Ok(()), 6, 5, Err($second_choice), 6, 6);
+        }
+    }
+}
+test_prioritize!(prioritize_a, PrioritizeA, 3, 7);
+test_prioritize!(prioritize_b, PrioritizeB, 4, 8);

@@ -1,215 +1,270 @@
 // SPDX-License-Identifier: BSD-3-Clause
-// Copyright 2024-2025 UxuginPython
-//!Streams that convert from one type to another. Some of these also do keep the same type and are
-//!for convenience in certain situations, for example when you do not want to handle a [`None`]
-//!variant yourself.
+// Copyright 2024-2026 UxuginPython
+//!Streams for converting between types and handling `None` variants.
+use crate::compile_time_integer::Integer;
 use crate::streams::*;
 ///A stream converting all `Ok(None)` values from its input to `Err(_)` variants.
-pub struct NoneToError<T: Clone, G: Getter<T, E> + ?Sized, E: Copy + Debug> {
-    input: Reference<G>,
+pub struct NoneToError<T, G, E> {
+    input: G,
+    from_none: E,
+    phantom_t: PhantomData<T>,
+}
+impl<T, G, E> NoneToError<T, G, E> {
+    ///Constructor for [`NoneToError`].
+    pub const fn new(input: G, from_none: E) -> Self {
+        Self {
+            input,
+            from_none,
+            phantom_t: PhantomData,
+        }
+    }
+}
+impl<T, G, E> Getter<T, E> for NoneToError<T, G, E>
+where
+    //These imply Self: Updatable<E> per the impl after.
+    G: Getter<T, E>,
+    E: Clone + Debug,
+{
+    fn get(&self) -> Output<T, E> {
+        let output = self.input.get()?;
+        match output {
+            Some(_) => Ok(output),
+            None => Err(self.from_none.clone()),
+        }
+    }
+}
+impl<T, G, E> Updatable<E> for NoneToError<T, G, E>
+where
+    G: Updatable<E>,
+    E: Clone + Debug,
+{
+    fn update(&mut self) -> NothingOrError<E> {
+        self.input.update()?;
+        Ok(())
+    }
+}
+///A stream converting all `Ok(None)` values from its input to a default `Ok(Some(_))` value.
+///
+///As for `PossibleDoubleError` values returned by this stream, Side A is the input `Getter`, and
+///Side B is the `TimeGetter`. Note that the `Getter::get` implementation for this type will never
+///return the `PossibleDoubleError::AB` variant; it is only necessary to use `PossibleDoubleError`
+///for it because `Getter<T, E>: Updatable<E>` and `Updatable::update` *can* return
+///`PossibleDoubleError::AB`.
+pub struct NoneToValue<T, G, TG, E> {
+    input: G,
+    time_getter: TG,
+    none_value: T,
+    phantom_e: PhantomData<E>,
+}
+impl<T, G, TG, E> NoneToValue<T, G, TG, E> {
+    ///Constructor for [`NoneToValue`].
+    pub const fn new(input: G, time_getter: TG, none_value: T) -> Self {
+        Self {
+            input,
+            time_getter,
+            none_value,
+            phantom_e: PhantomData,
+        }
+    }
+}
+impl<T, G, TG, E> Getter<T, error::PossibleDoubleError<E>> for NoneToValue<T, G, TG, E>
+where
+    T: Clone,
+    //These imply Self: Updatable
+    G: Getter<T, E>,
+    TG: TimeGetter<E>,
+    E: Clone + Debug,
+{
+    fn get(&self) -> Output<T, error::PossibleDoubleError<E>> {
+        let output = match self.input.get() {
+            Ok(ok) => ok,
+            Err(err) => return Err(error::PossibleDoubleError::A(err)),
+        };
+        match output {
+            Some(_) => Ok(output),
+            None => Ok(Some(Datum::new(
+                match self.time_getter.get() {
+                    Ok(ok) => ok,
+                    Err(err) => return Err(error::PossibleDoubleError::B(err)),
+                },
+                self.none_value.clone(),
+            ))),
+        }
+    }
+}
+impl<T, G, TG, E> Updatable<error::PossibleDoubleError<E>> for NoneToValue<T, G, TG, E>
+where
+    G: Updatable<E>,
+    TG: Updatable<E>,
+    E: Clone + Debug,
+{
+    fn update(&mut self) -> NothingOrError<error::PossibleDoubleError<E>> {
+        let side_b = self.time_getter.update();
+        let side_a = self.input.update();
+        match (side_a, side_b) {
+            (Ok(()), Ok(())) => Ok(()),
+            (Err(a), Ok(())) => Err(error::PossibleDoubleError::A(a)),
+            (Ok(()), Err(b)) => Err(error::PossibleDoubleError::B(b)),
+            (Err(a), Err(b)) => Err(error::PossibleDoubleError::AB(a, b)),
+        }
+    }
+}
+///Converts all `Ok(None)` values to `Ok(Some(T::default()))`.
+///
+///As for `PossibleDoubleError` values returned by this stream, Side A is the input `Getter`, and
+///Side B is the `TimeGetter`. Note that the `Getter::get` implementation for this type will never
+///return the `PossibleDoubleError::AB` variant; it is only necessary to use `PossibleDoubleError`
+///for it because `Getter<T, E>: Updatable<E>` and `Updatable::update` *can* return
+///`PossibleDoubleError::AB`.
+pub struct NoneToDefault<T, G, TG, E> {
+    input: G,
+    time_getter: TG,
     phantom_t: PhantomData<T>,
     phantom_e: PhantomData<E>,
 }
-impl<T: Clone, G: Getter<T, E> + ?Sized, E: Copy + Debug> NoneToError<T, G, E> {
-    ///Constructor for [`NoneToError`].
-    pub const fn new(input: Reference<G>) -> Self {
+impl<T, G, TG, E> NoneToDefault<T, G, TG, E> {
+    ///Constructor for `NoneToDefault`.
+    pub const fn new(input: G, time_getter: TG) -> Self {
         Self {
-            input: input,
+            input,
+            time_getter,
             phantom_t: PhantomData,
             phantom_e: PhantomData,
         }
     }
 }
-impl<T: Clone, G: Getter<T, E> + ?Sized, E: Copy + Debug> Getter<T, E> for NoneToError<T, G, E> {
-    fn get(&self) -> Output<T, E> {
-        let output = self.input.borrow().get()?;
-        match output {
-            Some(_) => {
-                return Ok(output);
-            }
-            None => {
-                return Err(Error::FromNone);
-            }
+impl<T, G, TG, E> Getter<T, error::PossibleDoubleError<E>> for NoneToDefault<T, G, TG, E>
+where
+    T: Default,
+    G: Getter<T, E>,
+    TG: TimeGetter<E>,
+    E: Clone + Debug,
+{
+    fn get(&self) -> Output<T, error::PossibleDoubleError<E>> {
+        let input = match self.input.get() {
+            Ok(option) => option,
+            Err(error) => return Err(error::PossibleDoubleError::A(error)),
+        };
+        if let Some(datum) = input {
+            return Ok(Some(datum));
+        }
+        let time = match self.time_getter.get() {
+            Ok(time) => time,
+            Err(error) => return Err(error::PossibleDoubleError::B(error)),
+        };
+        Ok(Some(Datum::new(time, T::default())))
+    }
+}
+impl<T, G, TG, E> Updatable<error::PossibleDoubleError<E>> for NoneToDefault<T, G, TG, E>
+where
+    G: Updatable<E>,
+    TG: Updatable<E>,
+    E: Clone + Debug,
+{
+    fn update(&mut self) -> NothingOrError<error::PossibleDoubleError<E>> {
+        let side_b = self.time_getter.update();
+        let side_a = self.input.update();
+        match (side_a, side_b) {
+            (Ok(()), Ok(())) => Ok(()),
+            (Err(a), Ok(())) => Err(error::PossibleDoubleError::A(a)),
+            (Ok(()), Err(b)) => Err(error::PossibleDoubleError::B(b)),
+            (Err(a), Err(b)) => Err(error::PossibleDoubleError::AB(a, b)),
         }
     }
 }
-impl<T: Clone, G: Getter<T, E> + ?Sized, E: Copy + Debug> Updatable<E> for NoneToError<T, G, E> {
-    ///This does not need to be called.
-    fn update(&mut self) -> NothingOrError<E> {
-        Ok(())
-    }
-}
-///A stream converting all `Ok(None)` values from its input to a default `Ok(Some(_))` value.
-pub struct NoneToValue<
-    T: Clone,
-    G: Getter<T, E> + ?Sized,
-    TG: TimeGetter<E> + ?Sized,
-    E: Copy + Debug,
-> {
-    input: Reference<G>,
-    time_getter: Reference<TG>,
-    none_value: T,
-    phantom_e: PhantomData<E>,
-}
-impl<T: Clone, G: Getter<T, E> + ?Sized, TG: TimeGetter<E> + ?Sized, E: Copy + Debug>
-    NoneToValue<T, G, TG, E>
-{
-    ///Constructor for [`NoneToValue`].
-    pub const fn new(input: Reference<G>, time_getter: Reference<TG>, none_value: T) -> Self {
-        Self {
-            input: input,
-            time_getter: time_getter,
-            none_value: none_value,
-            phantom_e: PhantomData,
-        }
-    }
-}
-impl<T: Clone, G: Getter<T, E> + ?Sized, TG: TimeGetter<E> + ?Sized, E: Copy + Debug> Getter<T, E>
-    for NoneToValue<T, G, TG, E>
-{
-    fn get(&self) -> Output<T, E> {
-        let output = self.input.borrow().get()?;
-        match output {
-            Some(_) => {
-                return Ok(output);
-            }
-            None => {
-                return Ok(Some(Datum::new(
-                    self.time_getter.borrow().get()?,
-                    self.none_value.clone(),
-                )))
-            }
-        }
-    }
-}
-impl<T: Clone, G: Getter<T, E> + ?Sized, TG: TimeGetter<E> + ?Sized, E: Copy + Debug> Updatable<E>
-    for NoneToValue<T, G, TG, E>
-{
-    fn update(&mut self) -> NothingOrError<E> {
-        Ok(())
-    }
-}
-pub use acceleration_to_state::AccelerationToState;
+pub use acceleration_to_state::*;
 mod acceleration_to_state {
     use super::*;
-    struct Update0 {
+    struct Update0<P, V, A> {
         last_update_time: Time,
-        acc: Quantity,
-        update_1: Option<Update1>,
+        acceleration: A,
+        update_1: Option<Update1<P, V>>,
     }
-    struct Update1 {
-        vel: Quantity,
-        update_2: Option<Quantity>, //position
+    struct Update1<P, V> {
+        velocity: V,
+        update_2_position: Option<P>,
     }
-    ///A stream that integrates an acceleration getter to construct a full state. Mostly useful for
-    ///encoders.
-    pub struct AccelerationToState<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> {
-        acc: Reference<G>,
-        update: Option<Update0>,
-        phantom_e: PhantomData<E>,
+    ///Doubly integrates an acceleration to create a full state object. Uses trapezoidal
+    ///integration.
+    pub struct AccelerationToState<G, S: GenericState> {
+        input: G,
+        update_0: Option<Update0<S::Position, S::Velocity, S::Acceleration>>,
     }
-    impl<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> AccelerationToState<G, E> {
-        ///Constructor for [`AccelerationToState`].
-        pub const fn new(acc: Reference<G>) -> Self {
+    impl<G, S: GenericState> AccelerationToState<G, S> {
+        ///Constructor for `AccelerationToState`.
+        pub const fn new(input: G) -> Self {
             Self {
-                acc: acc,
-                update: None,
-                phantom_e: PhantomData,
+                input,
+                update_0: None,
             }
         }
     }
-    impl<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> Getter<State, E>
-        for AccelerationToState<G, E>
+    impl<G, S: GenericState, E: Clone + Debug> Getter<S, E> for AccelerationToState<G, S>
+    where
+        Self: Updatable<E>,
     {
-        fn get(&self) -> Output<State, E> {
-            match &self.update {
-                Some(update_0) => match &update_0.update_1 {
-                    Some(update_1) => match update_1.update_2 {
-                        Some(position) => Ok(Some(Datum::new(
-                            update_0.last_update_time,
-                            State::new(position, update_1.vel, update_0.acc),
-                        ))),
-                        None => Ok(None),
-                    },
-                    None => Ok(None),
-                },
-                None => Ok(None),
+        fn get(&self) -> Output<S, E> {
+            if let Some(update_0) = &self.update_0
+                && let Some(update_1) = &update_0.update_1
+                && let Some(update_2_position) = update_1.update_2_position
+            {
+                return Ok(Some(Datum::new(
+                    update_0.last_update_time,
+                    S::generic_new(update_2_position, update_1.velocity, update_0.acceleration),
+                )));
             }
+            Ok(None)
         }
     }
-    impl<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> Updatable<E> for AccelerationToState<G, E> {
+    impl<G: Getter<S::Acceleration, E>, S: GenericState, E: Clone + Debug> Updatable<E>
+        for AccelerationToState<G, S>
+    {
         fn update(&mut self) -> NothingOrError<E> {
-            match self.acc.borrow().get() {
-                Ok(gotten) => match gotten {
-                    Some(new_acc_datum) => {
-                        let new_time = new_acc_datum.time;
-                        let new_acc = new_acc_datum.value;
-                        new_acc
-                            .unit
-                            .assert_eq_assume_ok(&MILLIMETER_PER_SECOND_SQUARED);
-                        match &self.update {
-                            Some(update_0) => {
-                                let old_time = update_0.last_update_time;
-                                let old_acc = update_0.acc;
-                                let delta_time = Quantity::from(new_time - old_time);
-                                let vel_addend =
-                                    (old_acc + new_acc) / Quantity::dimensionless(2.0) * delta_time;
-                                match &update_0.update_1 {
-                                    Some(update_1) => {
-                                        let old_vel = update_1.vel;
-                                        let new_vel = old_vel + vel_addend;
-                                        let pos_addend = (old_vel + new_vel)
-                                            / Quantity::dimensionless(2.0)
-                                            * delta_time;
-                                        match &update_1.update_2 {
-                                            Some(old_pos) => {
-                                                self.update = Some(Update0 {
-                                                    last_update_time: new_time,
-                                                    acc: new_acc,
-                                                    update_1: Some(Update1 {
-                                                        vel: new_vel,
-                                                        update_2: Some(*old_pos + pos_addend),
-                                                    }),
-                                                })
-                                            }
-                                            None => {
-                                                self.update = Some(Update0 {
-                                                    last_update_time: new_time,
-                                                    acc: new_acc,
-                                                    update_1: Some(Update1 {
-                                                        vel: new_vel,
-                                                        update_2: Some(pos_addend),
-                                                    }),
-                                                })
-                                            }
-                                        }
-                                    }
-                                    None => {
-                                        self.update = Some(Update0 {
-                                            last_update_time: new_time,
-                                            acc: new_acc,
-                                            update_1: Some(Update1 {
-                                                vel: vel_addend,
-                                                update_2: None,
-                                            }),
-                                        })
-                                    }
+            self.input.update()?;
+            match self.input.get() {
+                Ok(Some(new_acceleration_datum)) => {
+                    let new_update_time = new_acceleration_datum.time;
+                    let new_acceleration = new_acceleration_datum.value;
+                    self.update_0 = Some(Update0 {
+                        last_update_time: new_update_time,
+                        acceleration: new_acceleration,
+                        update_1: if let Some(update_0) = &self.update_0 {
+                            let old_update_time = update_0.last_update_time;
+                            let old_acceleration = update_0.acceleration;
+                            let delta_time = new_update_time - old_update_time;
+                            let added_velocity = (old_acceleration + new_acceleration)
+                                * Dimensionless::new(0.5)
+                                * delta_time;
+                            Some(if let Some(update_1) = &update_0.update_1 {
+                                let old_velocity = update_1.velocity;
+                                let new_velocity = old_velocity + added_velocity;
+                                let added_position = (old_velocity + new_velocity)
+                                    * Dimensionless::new(0.5)
+                                    * delta_time;
+                                Update1 {
+                                    velocity: new_velocity,
+                                    update_2_position: Some(
+                                        if let Some(old_position) = update_1.update_2_position {
+                                            old_position + added_position
+                                        } else {
+                                            added_position
+                                        },
+                                    ),
                                 }
-                            }
-                            None => {
-                                self.update = Some(Update0 {
-                                    last_update_time: new_time,
-                                    acc: new_acc,
-                                    update_1: None,
-                                });
-                            }
-                        }
-                    }
-                    None => (), //This just does nothing if the input gives a None. It does not reset
-                                //it or anything.
-                },
+                            } else {
+                                Update1 {
+                                    velocity: added_velocity,
+                                    update_2_position: None,
+                                }
+                            })
+                        } else {
+                            None
+                        },
+                    });
+                }
+                Ok(None) => {}
                 Err(error) => {
-                    self.update = None;
+                    self.update_0 = None;
                     return Err(error);
                 }
             }
@@ -217,105 +272,85 @@ mod acceleration_to_state {
         }
     }
 }
-pub use velocity_to_state::VelocityToState;
+pub use velocity_to_state::*;
 mod velocity_to_state {
     use super::*;
-    struct Update0 {
+    struct Update0<P, V, A> {
         last_update_time: Time,
-        vel: Quantity,
-        update_1: Option<Update1>,
+        velocity: V,
+        update_1: Option<Update1<P, A>>,
     }
-    struct Update1 {
-        acc: Quantity,
-        pos: Quantity,
+    struct Update1<P, A> {
+        position: P,
+        acceleration: A,
     }
-    ///A stream that integrates and derivates a velocity getter to construct a full state. Mostly
-    ///useful for encoders.
-    pub struct VelocityToState<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> {
-        vel: Reference<G>,
-        update: Option<Update0>,
-        phantom_e: PhantomData<E>,
+    ///Integrates and takes the derivative of a velocity to create a full state object. Uses
+    ///trapezoidal integration.
+    pub struct VelocityToState<G, S: GenericState> {
+        input: G,
+        update_0: Option<Update0<S::Position, S::Velocity, S::Acceleration>>,
     }
-    impl<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> VelocityToState<G, E> {
-        ///Constructor for [`VelocityToState`].
-        pub const fn new(vel: Reference<G>) -> Self {
+    impl<G, S: GenericState> VelocityToState<G, S> {
+        ///Constructor for `VelocityToState`.
+        pub const fn new(input: G) -> Self {
             Self {
-                vel: vel,
-                update: None,
-                phantom_e: PhantomData,
+                input,
+                update_0: None,
             }
         }
     }
-    impl<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> Getter<State, E> for VelocityToState<G, E> {
-        fn get(&self) -> Output<State, E> {
-            match &self.update {
-                Some(update_0) => match &update_0.update_1 {
-                    Some(update_1) => Ok(Some(Datum::new(
-                        update_0.last_update_time,
-                        State::new(
-                            update_1.pos.into(),
-                            update_0.vel.into(),
-                            update_1.acc.into(),
-                        ),
-                    ))),
-                    None => Ok(None),
-                },
-                None => Ok(None),
+    impl<G, S: GenericState, E: Clone + Debug> Getter<S, E> for VelocityToState<G, S>
+    where
+        Self: Updatable<E>,
+    {
+        fn get(&self) -> Output<S, E> {
+            if let Some(update_0) = &self.update_0
+                && let Some(update_1) = &update_0.update_1
+            {
+                return Ok(Some(Datum::new(
+                    update_0.last_update_time,
+                    S::generic_new(update_1.position, update_0.velocity, update_1.acceleration),
+                )));
             }
+            Ok(None)
         }
     }
-    impl<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> Updatable<E> for VelocityToState<G, E> {
+    impl<G: Getter<S::Velocity, E>, S: GenericState, E: Clone + Debug> Updatable<E>
+        for VelocityToState<G, S>
+    {
         fn update(&mut self) -> NothingOrError<E> {
-            match self.vel.borrow().get() {
-                Ok(gotten) => match gotten {
-                    Some(new_vel_datum) => {
-                        let new_time = new_vel_datum.time;
-                        let new_vel = new_vel_datum.value;
-                        new_vel.unit.assert_eq_assume_ok(&MILLIMETER_PER_SECOND);
-                        match &self.update {
-                            Some(update_0) => {
-                                let old_time = update_0.last_update_time;
-                                let delta_time = Quantity::from(new_time - old_time);
-                                let old_vel = update_0.vel;
-                                let new_acc = (new_vel - old_vel) / delta_time;
-                                let pos_addend =
-                                    (old_vel + new_vel) / Quantity::dimensionless(2.0) * delta_time;
-                                match &update_0.update_1 {
-                                    Some(update_1) => {
-                                        self.update = Some(Update0 {
-                                            last_update_time: new_time,
-                                            vel: new_vel,
-                                            update_1: Some(Update1 {
-                                                acc: new_acc,
-                                                pos: update_1.pos + pos_addend,
-                                            }),
-                                        });
-                                    }
-                                    None => {
-                                        self.update = Some(Update0 {
-                                            last_update_time: new_time,
-                                            vel: new_vel,
-                                            update_1: Some(Update1 {
-                                                acc: new_acc,
-                                                pos: pos_addend,
-                                            }),
-                                        });
-                                    }
-                                }
-                            }
-                            None => {
-                                self.update = Some(Update0 {
-                                    last_update_time: new_time,
-                                    vel: new_vel,
-                                    update_1: None,
-                                });
-                            }
-                        }
-                    }
-                    None => (),
-                },
+            self.input.update()?;
+            match self.input.get() {
+                Ok(Some(new_velocity_datum)) => {
+                    let new_update_time = new_velocity_datum.time;
+                    let new_velocity = new_velocity_datum.value;
+                    self.update_0 = Some(Update0 {
+                        last_update_time: new_update_time,
+                        velocity: new_velocity,
+                        update_1: if let Some(update_0) = &self.update_0 {
+                            let old_update_time = update_0.last_update_time;
+                            let old_velocity = update_0.velocity;
+                            let delta_time = new_update_time - old_update_time;
+                            let new_acceleration = (new_velocity - old_velocity) / delta_time;
+                            let added_position = (old_velocity + new_velocity)
+                                * Dimensionless::new(0.5)
+                                * delta_time;
+                            Some(Update1 {
+                                position: if let Some(update_1) = &update_0.update_1 {
+                                    update_1.position + added_position
+                                } else {
+                                    added_position
+                                },
+                                acceleration: new_acceleration,
+                            })
+                        } else {
+                            None
+                        },
+                    })
+                }
+                Ok(None) => {}
                 Err(error) => {
-                    self.update = None;
+                    self.update_0 = None;
                     return Err(error);
                 }
             }
@@ -323,103 +358,85 @@ mod velocity_to_state {
         }
     }
 }
-pub use position_to_state::PositionToState;
+pub use position_to_state::*;
 mod position_to_state {
     use super::*;
-    struct Update0 {
+    struct Update0<P, V, A> {
         last_update_time: Time,
-        pos: Quantity,
-        update_1: Option<Update1>,
+        position: P,
+        update_1: Option<Update1<V, A>>,
     }
-    struct Update1 {
-        vel: Quantity,
-        update_2: Option<Quantity>, //acceleration
+    struct Update1<V, A> {
+        velocity: V,
+        update_2_acceleration: Option<A>,
     }
-    ///A stream that derivates a position getter to construct a full state. Mostly useful for encoders.
-    pub struct PositionToState<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> {
-        pos: Reference<G>,
-        update: Option<Update0>,
-        phantom_e: PhantomData<E>,
+    ///Takes the second derivative of a position to create a full state object.
+    pub struct PositionToState<G, S: GenericState> {
+        input: G,
+        update_0: Option<Update0<S::Position, S::Velocity, S::Acceleration>>,
     }
-    impl<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> PositionToState<G, E> {
-        ///Constructor for [`PositionToState`].
-        pub const fn new(pos: Reference<G>) -> Self {
+    impl<G, S: GenericState> PositionToState<G, S> {
+        ///Constructor for `PositionToState`.
+        pub const fn new(input: G) -> Self {
             Self {
-                pos: pos,
-                update: None,
-                phantom_e: PhantomData,
+                input,
+                update_0: None,
             }
         }
     }
-    impl<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> Getter<State, E> for PositionToState<G, E> {
-        fn get(&self) -> Output<State, E> {
-            match &self.update {
-                Some(update_0) => match &update_0.update_1 {
-                    Some(update_1) => match update_1.update_2 {
-                        Some(acc) => Ok(Some(Datum::new(
-                            update_0.last_update_time,
-                            State::new(update_0.pos.into(), update_1.vel.into(), acc.into()),
-                        ))),
-                        None => Ok(None),
-                    },
-                    None => Ok(None),
-                },
-                None => Ok(None),
+    impl<G, S: GenericState, E: Clone + Debug> Getter<S, E> for PositionToState<G, S>
+    where
+        Self: Updatable<E>,
+    {
+        fn get(&self) -> Output<S, E> {
+            if let Some(update_0) = &self.update_0
+                && let Some(update_1) = &update_0.update_1
+                && let Some(update_2_acceleration) = update_1.update_2_acceleration
+            {
+                return Ok(Some(Datum::new(
+                    update_0.last_update_time,
+                    S::generic_new(update_0.position, update_1.velocity, update_2_acceleration),
+                )));
             }
+            Ok(None)
         }
     }
-    impl<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> Updatable<E> for PositionToState<G, E> {
+    impl<G: Getter<S::Position, E>, S: GenericState, E: Clone + Debug> Updatable<E>
+        for PositionToState<G, S>
+    {
         fn update(&mut self) -> NothingOrError<E> {
-            match self.pos.borrow().get() {
-                Ok(gotten) => match gotten {
-                    Some(new_pos_datum) => {
-                        let new_time = new_pos_datum.time;
-                        let new_pos = new_pos_datum.value;
-                        new_pos.unit.assert_eq_assume_ok(&MILLIMETER);
-                        match &self.update {
-                            Some(update_0) => {
-                                let old_time = update_0.last_update_time;
-                                let delta_time = Quantity::from(new_time - old_time);
-                                let old_pos = update_0.pos;
-                                let new_vel = (new_pos - old_pos) / delta_time;
-                                match &update_0.update_1 {
-                                    Some(update_1) => {
-                                        let old_vel = update_1.vel;
-                                        let new_acc = (new_vel - old_vel) / delta_time;
-                                        self.update = Some(Update0 {
-                                            last_update_time: new_time,
-                                            pos: new_pos,
-                                            update_1: Some(Update1 {
-                                                vel: new_vel,
-                                                update_2: Some(new_acc),
-                                            }),
-                                        });
-                                    }
-                                    None => {
-                                        self.update = Some(Update0 {
-                                            last_update_time: new_time,
-                                            pos: new_pos,
-                                            update_1: Some(Update1 {
-                                                vel: new_vel,
-                                                update_2: None,
-                                            }),
-                                        });
-                                    }
-                                }
-                            }
-                            None => {
-                                self.update = Some(Update0 {
-                                    last_update_time: new_time,
-                                    pos: new_pos,
-                                    update_1: None,
-                                });
-                            }
-                        }
-                    }
-                    None => (),
-                },
+            self.input.update()?;
+            match self.input.get() {
+                Ok(Some(new_position_datum)) => {
+                    let new_update_time = new_position_datum.time;
+                    let new_position = new_position_datum.value;
+                    self.update_0 = Some(Update0 {
+                        last_update_time: new_update_time,
+                        position: new_position,
+                        update_1: if let Some(update_0) = &self.update_0 {
+                            let old_update_time = update_0.last_update_time;
+                            let old_position = update_0.position;
+                            let delta_time = new_update_time - old_update_time;
+                            let new_velocity = (new_position - old_position) / delta_time;
+                            Some(Update1 {
+                                velocity: new_velocity,
+                                update_2_acceleration: if let Some(update_1) = &update_0.update_1 {
+                                    let old_velocity = update_1.velocity;
+                                    let new_acceleration =
+                                        (new_velocity - old_velocity) / delta_time;
+                                    Some(new_acceleration)
+                                } else {
+                                    None
+                                },
+                            })
+                        } else {
+                            None
+                        },
+                    });
+                }
+                Ok(None) => {}
                 Err(error) => {
-                    self.update = None;
+                    self.update_0 = None;
                     return Err(error);
                 }
             }
@@ -427,67 +444,198 @@ mod position_to_state {
         }
     }
 }
-///Stream to convert an [`f32`] to a [`Quantity`] with a given [`Unit`].
-pub struct FloatToQuantity<G: Getter<f32, E> + ?Sized, E: Copy + Debug> {
-    unit: Unit,
-    input: Reference<G>,
-    value: Output<f32, E>,
+///Adds a [`Quantity`] wrapper with a specific unit around a number.
+pub struct DimensionAdder<MM, S, G> {
+    input: G,
+    phantom_mm: PhantomData<MM>,
+    phantom_s: PhantomData<S>,
 }
-impl<G: Getter<f32, E>, E: Copy + Debug> FloatToQuantity<G, E> {
-    ///Constructor for [`FloatToQuantity`].
-    pub fn new(unit: Unit, input: Reference<G>) -> Self {
+impl<MM, S, G> DimensionAdder<MM, S, G> {
+    ///Constructor for `DimensionAdder`.
+    pub const fn new(input: G) -> Self {
         Self {
-            unit: unit,
-            input: input,
-            value: Ok(None),
+            input,
+            phantom_mm: PhantomData,
+            phantom_s: PhantomData,
         }
     }
 }
-impl<G: Getter<f32, E>, E: Copy + Debug> Updatable<E> for FloatToQuantity<G, E> {
+impl<T, MM, S, G, E> Getter<Quantity<T, MM, S>, E> for DimensionAdder<MM, S, G>
+where
+    MM: Integer,
+    S: Integer,
+    G: Getter<T, E>,
+    E: Clone + Debug,
+{
+    fn get(&self) -> Output<Quantity<T, MM, S>, E> {
+        self.input
+            .get()
+            .map_ok_some_value(|value| Quantity::new(value))
+    }
+}
+impl<MM, S, G, E> Updatable<E> for DimensionAdder<MM, S, G>
+where
+    G: Updatable<E>,
+    E: Clone + Debug,
+{
     fn update(&mut self) -> NothingOrError<E> {
-        self.value = self.input.borrow().get();
+        self.input.update()?;
         Ok(())
     }
 }
-impl<G: Getter<f32, E>, E: Copy + Debug> Getter<Quantity, E> for FloatToQuantity<G, E> {
-    fn get(&self) -> Output<Quantity, E> {
-        match self.value {
-            Err(err) => Err(err),
-            Ok(None) => Ok(None),
-            Ok(Some(datum)) => Ok(Some(Datum::new(
-                datum.time,
-                Quantity::new(datum.value, self.unit),
-            ))),
-        }
-    }
+///Gets the inner number from the output of a Getter returning a [`Quantity`].
+pub struct DimensionRemover<MM, S, G> {
+    input: G,
+    phantom_mm: PhantomData<MM>,
+    phantom_s: PhantomData<S>,
 }
-///Stream to convert a [`Quantity`] to a raw [`f32`].
-pub struct QuantityToFloat<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> {
-    input: Reference<G>,
-    value: Output<f32, E>,
-}
-impl<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> QuantityToFloat<G, E> {
-    ///Constructor for [`QuantityToFloat`].
-    pub fn new(input: Reference<G>) -> Self {
+impl<MM: Integer, S: Integer, G> DimensionRemover<MM, S, G> {
+    ///Constructor for `DimensionRemover`.
+    pub const fn new(input: G) -> Self {
         Self {
-            input: input,
-            value: Ok(None),
+            input,
+            phantom_mm: PhantomData,
+            phantom_s: PhantomData,
         }
     }
 }
-impl<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> Getter<f32, E> for QuantityToFloat<G, E> {
-    fn get(&self) -> Output<f32, E> {
-        self.value
+impl<T, MM, S, G, E> Getter<T, E> for DimensionRemover<MM, S, G>
+where
+    MM: Integer,
+    S: Integer,
+    G: Getter<Quantity<T, MM, S>, E>,
+    E: Clone + Debug,
+{
+    fn get(&self) -> Output<T, E> {
+        self.input
+            .get()
+            .map_ok_some_value(|quantity| quantity.into_inner())
     }
 }
-impl<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> Updatable<E> for QuantityToFloat<G, E> {
+impl<MM, S, G: Updatable<E>, E: Clone + Debug> Updatable<E> for DimensionRemover<MM, S, G> {
     fn update(&mut self) -> NothingOrError<E> {
-        let gotten = self.input.borrow().get();
-        self.value = match gotten {
-            Err(error) => Err(error),
-            Ok(None) => Ok(None),
-            Ok(Some(datum)) => Ok(Some(Datum::new(datum.time, datum.value.value))),
-        };
+        self.input.update()?;
         Ok(())
     }
 }
+///Converts the output of a Getter to another type through [`Into`]. Leaves the timestamp the same
+///and passes through `Err(_)` and `Ok(None)` identically.
+pub struct IntoConverter<TI, G> {
+    input: G,
+    phantom_ti: PhantomData<TI>,
+}
+impl<TI, G> IntoConverter<TI, G> {
+    ///Constructor for `IntoConverter`.
+    pub const fn new(input: G) -> Self {
+        Self {
+            input,
+            phantom_ti: PhantomData,
+        }
+    }
+}
+impl<TI, TO, G, E> Getter<TO, E> for IntoConverter<TI, G>
+where
+    TI: Into<TO>,
+    G: Getter<TI, E>,
+    E: Clone + Debug,
+{
+    fn get(&self) -> Output<TO, E> {
+        self.input.get().map_ok_some_value(|value| value.into())
+    }
+}
+impl<TI, G: Updatable<E>, E: Clone + Debug> Updatable<E> for IntoConverter<TI, G> {
+    fn update(&mut self) -> NothingOrError<E> {
+        self.input.update()?;
+        Ok(())
+    }
+}
+///Converts errors returned by a Getter to another type through [`Into`]. Leaves `Ok` values
+///unchanged.
+pub struct ErrorIntoConverter<G, EI> {
+    input: G,
+    phantom_ei: PhantomData<EI>,
+}
+impl<G, EI> ErrorIntoConverter<G, EI> {
+    ///Constructor for `ErrorIntoConverter`.
+    pub const fn new(input: G) -> Self {
+        Self {
+            input,
+            phantom_ei: PhantomData,
+        }
+    }
+}
+impl<T, G, EI, EO> Getter<T, EO> for ErrorIntoConverter<G, EI>
+where
+    G: Getter<T, EI>,
+    EI: Clone + Debug + Into<EO>,
+    EO: Clone + Debug,
+{
+    fn get(&self) -> Output<T, EO> {
+        self.input.get().map_err(|error| error.into())
+    }
+}
+impl<G, EI, EO> Updatable<EO> for ErrorIntoConverter<G, EI>
+where
+    G: Updatable<EI>,
+    EI: Clone + Debug + Into<EO>,
+    EO: Clone + Debug,
+{
+    fn update(&mut self) -> NothingOrError<EO> {
+        self.input.update().map_err(|error| error.into())?;
+        Ok(())
+    }
+}
+macro_rules! prioritize_stream {
+    ($name: ident, $operation: ident, $doc: literal) => {
+        #[doc = $doc]
+        pub struct $name<G> {
+            input: G,
+        }
+        impl<G> $name<G> {
+            #[doc = "Constructor for `"]
+            #[doc = stringify!($name)]
+            #[doc = "`."]
+            #[inline]
+            pub const fn new(input: G) -> Self {
+                Self { input }
+            }
+        }
+        impl<G: Updatable<error::PossibleDoubleError<E>>, E: Clone + Debug> Updatable<E>
+            for $name<G>
+        {
+            fn update(&mut self) -> NothingOrError<E> {
+                self.input
+                    .update()
+                    .map_err(|possible_double_error| possible_double_error.$operation())
+            }
+        }
+        impl<T, G: Getter<T, error::PossibleDoubleError<E>>, E: Clone + Debug> Getter<T, E>
+            for $name<G>
+        {
+            fn get(&self) -> Output<T, E> {
+                self.input
+                    .get()
+                    .map_err(|possible_double_error| possible_double_error.$operation())
+            }
+        }
+        impl<T, G: Settable<T, error::PossibleDoubleError<E>>, E: Clone + Debug> Settable<T, E>
+            for $name<G>
+        {
+            fn set(&mut self, value: T) -> NothingOrError<E> {
+                self.input
+                    .set(value)
+                    .map_err(|possible_double_error| possible_double_error.$operation())
+            }
+        }
+    };
+}
+prioritize_stream!(
+    PrioritizeA,
+    prioritize_a,
+    "Collapses `Err` variants of [`error::PossibleDoubleError`] returned by its input's `Getter`, `Settable`, and `Updatable` implementations into a single error value, keeping the Side A error if both sides have errored.\n\nThis uses [`error::PossibleDoubleError::prioritize_a`] internally."
+);
+prioritize_stream!(
+    PrioritizeB,
+    prioritize_b,
+    "Collapses `Err` variants of [`error::PossibleDoubleError`] returned by its input's `Getter`, `Settable`, and `Updatable` implementations into a single error value, keeping the Side B error if both sides have errored.\n\nThis uses [`error::PossibleDoubleError::prioritize_b`] internally."
+);

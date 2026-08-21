@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BSD-3-Clause
-// Copyright 2024-2025 UxuginPython
+// Copyright 2024-2026 UxuginPython
 use crate::*;
+use stulta::AbsoluteValue;
 ///Where you are in following a motion profile.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum MotionProfilePiece {
@@ -17,175 +18,169 @@ pub enum MotionProfilePiece {
 }
 ///A motion profile for getting from one state to another.
 #[derive(Clone, Debug, PartialEq)]
-pub struct MotionProfile {
-    start_pos: Quantity,
-    start_vel: Quantity,
+pub struct MotionProfile<C: GenericCommand> {
+    start_pos: C::Position,
+    start_vel: C::Velocity,
     t1: Time,
     t2: Time,
     t3: Time,
-    max_acc: Quantity,
-    end_command: Command,
+    max_acc: C::Acceleration,
+    end_command: C,
 }
-impl<E: Copy + Debug> History<Command, E> for MotionProfile {
-    fn get(&self, time: Time) -> Option<Datum<Command>> {
+impl<C: GenericCommand> Chronology<C> for MotionProfile<C> {
+    fn get(&self, time: Time) -> Option<Datum<C>> {
         let mode = match self.get_mode(time) {
             Some(value) => value,
             None => {
                 return None;
             }
         };
-        let value = match mode {
-            PositionDerivative::Position => self
-                .get_position(time)
-                .expect("If mode is Position, this should be Some."),
-            PositionDerivative::Velocity => self
-                .get_velocity(time)
-                .expect("If mode is Velocity, this should be Some."),
-            PositionDerivative::Acceleration => self
-                .get_acceleration(time)
-                .expect("If mode is Acceleration, this should be Some."),
+        let command = match mode {
+            PositionDerivative::Position => C::from(
+                self.get_position(time)
+                    .expect("If mode is Position, this should be Some."),
+            ),
+            PositionDerivative::Velocity => C::from(
+                self.get_velocity(time)
+                    .expect("If mode is Velocity, this should be Some."),
+            ),
+            PositionDerivative::Acceleration => C::from(
+                self.get_acceleration(time)
+                    .expect("If mode is Acceleration, this should be Some."),
+            ),
         };
-        Some(Datum::new(time, Command::new(mode, value.into())))
+        Some(Datum::new(time, command))
     }
 }
-impl<E: Copy + Debug> Updatable<E> for MotionProfile {
-    fn update(&mut self) -> NothingOrError<E> {
-        Ok(())
-    }
-}
-impl MotionProfile {
+//Depending on how you change State in the future, it's possible that some of these will be able to
+//become const fn.
+impl<C: GenericCommand> MotionProfile<C> {
     ///Constructor for [`MotionProfile`] using start and end states.
     pub fn new(
-        start_state: State,
-        end_state: State,
-        max_vel: Quantity,
-        max_acc: Quantity,
-    ) -> MotionProfile {
-        let sign = Quantity::new(
-            if end_state.position < start_state.position {
+        start_state: C::CorrespondingState,
+        end_state: C::CorrespondingState,
+        max_vel: C::Velocity,
+        max_acc: C::Acceleration,
+    ) -> Self {
+        let sign = Dimensionless::new(
+            if end_state.generic_position() < start_state.generic_position() {
                 -1.0
             } else {
                 1.0
             },
-            DIMENSIONLESS,
         );
-        let max_vel = max_vel.abs() * sign;
-        let max_acc = max_acc.abs() * sign;
-        let d_t1_vel = max_vel - start_state.get_velocity();
+        let max_vel = max_vel.rrtk_abs() * sign;
+        let max_acc = max_acc.rrtk_abs() * sign;
+        let d_t1_vel = max_vel - start_state.generic_velocity();
         let t1 = d_t1_vel / max_acc;
-        assert!(f32::from(t1) >= 0.0);
-        let d_t1_pos = (start_state.get_velocity() + max_vel) / Quantity::dimensionless(2.0) * t1;
-        let d_t3_vel = end_state.get_velocity() - max_vel;
+        assert!(t1.into_inner() >= 0.0);
+        let d_t1_pos = (start_state.generic_velocity() + max_vel) / Dimensionless::new(2.0) * t1;
+        let d_t3_vel = end_state.generic_velocity() - max_vel;
         let d_t3 = d_t3_vel / -max_acc;
-        assert!(f32::from(d_t3) >= 0.0);
-        let d_t3_pos = (max_vel + end_state.get_velocity()) / Quantity::dimensionless(2.0) * d_t3;
+        assert!(d_t3.into_inner() >= 0.0);
+        let d_t3_pos = (max_vel + end_state.generic_velocity()) / Dimensionless::new(2.0) * d_t3;
         let d_t2_pos =
-            (end_state.get_position() - start_state.get_position()) - (d_t1_pos + d_t3_pos);
+            (end_state.generic_position() - start_state.generic_position()) - (d_t1_pos + d_t3_pos);
         let d_t2 = d_t2_pos / max_vel;
-        assert!(f32::from(d_t2) >= 0.0);
+        assert!(d_t2.into_inner() >= 0.0);
         let t2 = t1 + d_t2;
         let t3 = t2 + d_t3;
-        let end_command = Command::from(end_state);
-        MotionProfile {
-            start_pos: start_state.get_position(),
-            start_vel: start_state.get_velocity(),
-            t1: Time::try_from(t1).expect(
-                "t1 must always be in seconds in max_vel and max_acc have correct dimensions",
-            ),
-            t2: Time::try_from(t2).expect(
-                "t2 must always be in seconds in max_vel and max_acc have correct dimensions",
-            ),
-            t3: Time::try_from(t3).expect(
-                "t3 must always be in seconds in max_vel and max_acc have correct dimensions",
-            ),
-            max_acc: max_acc,
-            end_command: end_command,
+        let end_command = C::from(end_state);
+        Self {
+            start_pos: start_state.generic_position(),
+            start_vel: start_state.generic_velocity(),
+            t1: Time::from(t1),
+            t2: Time::from(t2),
+            t3: Time::from(t3),
+            max_acc,
+            end_command,
         }
     }
     ///Get the intended [`PositionDerivative`] at a given time.
     pub fn get_mode(&self, t: Time) -> Option<PositionDerivative> {
         if t < Time::default() {
-            return None;
+            None
         } else if t < self.t1 {
-            return Some(PositionDerivative::Acceleration);
+            Some(PositionDerivative::Acceleration)
         } else if t < self.t2 {
-            return Some(PositionDerivative::Velocity);
+            Some(PositionDerivative::Velocity)
         } else if t < self.t3 {
-            return Some(PositionDerivative::Acceleration);
+            Some(PositionDerivative::Acceleration)
         } else {
-            return Some(self.end_command.into());
+            Some(self.end_command.into())
         }
     }
     ///Get the [`MotionProfilePiece`] at a given time.
     pub fn get_piece(&self, t: Time) -> MotionProfilePiece {
         if t < Time::default() {
-            return MotionProfilePiece::BeforeStart;
+            MotionProfilePiece::BeforeStart
         } else if t < self.t1 {
-            return MotionProfilePiece::InitialAcceleration;
+            MotionProfilePiece::InitialAcceleration
         } else if t < self.t2 {
-            return MotionProfilePiece::ConstantVelocity;
+            MotionProfilePiece::ConstantVelocity
         } else if t < self.t3 {
-            return MotionProfilePiece::EndAcceleration;
+            MotionProfilePiece::EndAcceleration
         } else {
-            return MotionProfilePiece::Complete;
+            MotionProfilePiece::Complete
         }
     }
     ///Get the intended acceleration at a given time.
-    pub fn get_acceleration(&self, t: Time) -> Option<Quantity> {
+    pub fn get_acceleration(&self, t: Time) -> Option<C::Acceleration> {
         if t < Time::default() {
-            return None;
+            None
         } else if t < self.t1 {
-            return Some(self.max_acc);
+            Some(self.max_acc)
         } else if t < self.t2 {
-            return Some(Quantity::new(0.0, MILLIMETER_PER_SECOND_SQUARED));
+            Some(C::Acceleration::default())
         } else if t < self.t3 {
-            return Some(-self.max_acc);
+            Some(-self.max_acc)
         } else {
-            return Some(self.end_command.get_acceleration());
+            Some(self.end_command.generic_get_acceleration())
         }
     }
     ///Get the intended velocity at a given time.
-    pub fn get_velocity(&self, t: Time) -> Option<Quantity> {
+    pub fn get_velocity(&self, t: Time) -> Option<C::Velocity> {
         if t < Time::default() {
-            return None;
+            None
         } else if t < self.t1 {
-            return Some(self.max_acc * Quantity::from(t) + self.start_vel);
+            Some(self.max_acc * t + self.start_vel)
         } else if t < self.t2 {
-            return Some(self.max_acc * Quantity::from(self.t1) + self.start_vel);
+            Some(self.max_acc * self.t1 + self.start_vel)
         } else if t < self.t3 {
-            return Some(self.max_acc * Quantity::from(self.t1 + self.t2 - t) + self.start_vel);
+            Some(self.max_acc * (self.t1 + self.t2 - t) + self.start_vel)
         } else {
-            return self.end_command.get_velocity();
+            self.end_command.generic_get_velocity()
         }
     }
     ///Get the intended position at a given time.
-    pub fn get_position(&self, t: Time) -> Option<Quantity> {
+    pub fn get_position(&self, t: Time) -> Option<C::Position> {
         if t < Time::default() {
-            return None;
+            None
         } else if t < self.t1 {
-            let t = Quantity::from(t);
-            return Some(
-                Quantity::dimensionless(0.5) * self.max_acc * t * t
+            Some(
+                self.max_acc * t * t * Dimensionless::new(0.5)
                     + self.start_vel * t
                     + self.start_pos,
-            );
+            )
         } else if t < self.t2 {
-            return Some(
-                self.max_acc * (self.t1 * (-self.t1 / DimensionlessInteger(2) + t))
-                    + self.start_vel * Quantity::from(t)
+            Some(
+                self.max_acc * (self.t1.as_seconds() * (-self.t1 / DimensionlessInteger(2) + t))
+                    + self.start_vel * t
                     + self.start_pos,
-            );
+            )
         } else if t < self.t3 {
-            return Some(
-                self.max_acc * (self.t1 * (-self.t1 / DimensionlessInteger(2) + self.t2))
-                    - Quantity::dimensionless(0.5)
-                        * self.max_acc
-                        * ((t - self.t2) * (t - DimensionlessInteger(2) * self.t1 - self.t2))
-                    + self.start_vel * Quantity::from(t)
+            Some(
+                self.max_acc
+                    * (self.t1.as_seconds() * (-self.t1 / DimensionlessInteger(2) + self.t2))
+                    - self.max_acc
+                        * Dimensionless::new(0.5)
+                        * ((t - self.t2).as_seconds()
+                            * (t - DimensionlessInteger(2) * self.t1 - self.t2))
+                    + self.start_vel * t
                     + self.start_pos,
-            );
+            )
         } else {
-            return self.end_command.get_position();
+            self.end_command.generic_get_position()
         }
     }
 }
@@ -194,144 +189,200 @@ mod tests {
     use super::*;
     #[test]
     fn motion_profile_new_1() {
-        let motion_profile = MotionProfile::new(
-            State::new_raw(0.0, 0.0, 0.0),
-            State::new_raw(3.0, 0.0, 0.0),
-            Quantity::new(0.1, MILLIMETER_PER_SECOND),
-            Quantity::new(0.01, MILLIMETER_PER_SECOND_SQUARED),
+        let motion_profile = MotionProfile::<LinearCommand>::new(
+            LinearState::new(
+                Millimeter::new(0.0),
+                MillimeterPerSecond::new(0.0),
+                MillimeterPerSecondSquared::new(0.0),
+            ),
+            LinearState::new(
+                Millimeter::new(3.0),
+                MillimeterPerSecond::new(0.0),
+                MillimeterPerSecondSquared::new(0.0),
+            ),
+            MillimeterPerSecond::new(0.1),
+            MillimeterPerSecondSquared::new(0.01),
         );
-        assert_eq!(motion_profile.t1, Time(10_000_000_000));
+        assert_eq!(motion_profile.t1, Time::from_nanoseconds(10_000_000_000));
         assert_eq!(
             motion_profile.t2 / DimensionlessInteger(1_000_000),
-            Time(30_000_000_000) / DimensionlessInteger(1_000_000)
+            Time::from_nanoseconds(30_000_000_000) / DimensionlessInteger(1_000_000)
         );
-        assert_eq!(motion_profile.t3, Time(40_000_000_000));
+        assert_eq!(motion_profile.t3, Time::from_nanoseconds(40_000_000_000));
         assert_eq!(
             motion_profile.max_acc,
-            Quantity::new(0.01, MILLIMETER_PER_SECOND_SQUARED)
+            MillimeterPerSecondSquared::new(0.01)
         );
     }
     #[test]
     fn motion_profile_new_2() {
-        let motion_profile = MotionProfile::new(
-            State::new_raw(1.0, 0.0, 0.0),
-            State::new_raw(3.0, 0.0, 0.0),
-            Quantity::new(0.1, MILLIMETER_PER_SECOND),
-            Quantity::new(0.01, MILLIMETER_PER_SECOND_SQUARED),
+        let motion_profile = MotionProfile::<LinearCommand>::new(
+            LinearState::new(
+                Millimeter::new(1.0),
+                MillimeterPerSecond::new(0.0),
+                MillimeterPerSecondSquared::new(0.0),
+            ),
+            LinearState::new(
+                Millimeter::new(3.0),
+                MillimeterPerSecond::new(0.0),
+                MillimeterPerSecondSquared::new(0.0),
+            ),
+            MillimeterPerSecond::new(0.1),
+            MillimeterPerSecondSquared::new(0.01),
         );
-        assert_eq!(motion_profile.t1, Time(10_000_000_000));
-        assert_eq!(motion_profile.t2, Time(20_000_000_000));
+        assert_eq!(motion_profile.t1, Time::from_nanoseconds(10_000_000_000));
+        assert_eq!(motion_profile.t2, Time::from_nanoseconds(20_000_000_000));
         assert_eq!(
             motion_profile.t3 / DimensionlessInteger(1_000_000),
-            Time(30_000_000_000) / DimensionlessInteger(1_000_000)
+            Time::from_nanoseconds(30_000_000_000) / DimensionlessInteger(1_000_000)
         );
         assert_eq!(
             motion_profile.max_acc,
-            Quantity::new(0.01, MILLIMETER_PER_SECOND_SQUARED)
+            MillimeterPerSecondSquared::new(0.01)
         );
     }
     #[test]
     fn motion_profile_new_3() {
-        let motion_profile = MotionProfile::new(
-            State::new_raw(0.0, 0.1, 0.0),
-            State::new_raw(3.0, 0.0, 0.0),
-            Quantity::new(0.1, MILLIMETER_PER_SECOND),
-            Quantity::new(0.01, MILLIMETER_PER_SECOND_SQUARED),
+        let motion_profile = MotionProfile::<LinearCommand>::new(
+            LinearState::new(
+                Millimeter::new(0.0),
+                MillimeterPerSecond::new(0.1),
+                MillimeterPerSecondSquared::new(0.0),
+            ),
+            LinearState::new(
+                Millimeter::new(3.0),
+                MillimeterPerSecond::new(0.0),
+                MillimeterPerSecondSquared::new(0.0),
+            ),
+            MillimeterPerSecond::new(0.1),
+            MillimeterPerSecondSquared::new(0.01),
         );
-        assert_eq!(motion_profile.t1, Time(0));
+        assert_eq!(motion_profile.t1, Time::from_nanoseconds(0));
         assert_eq!(
-            (motion_profile.t2 + Time(1000)) / DimensionlessInteger(1_000_000),
-            Time(25_000_000_000) / DimensionlessInteger(1_000_000)
+            (motion_profile.t2 + Time::from_nanoseconds(1000)) / DimensionlessInteger(1_000_000),
+            Time::from_nanoseconds(25_000_000_000) / DimensionlessInteger(1_000_000)
         );
         assert_eq!(
             motion_profile.t3 / DimensionlessInteger(1_000_000),
-            Time(35_000_000_000) / DimensionlessInteger(1_000_000)
+            Time::from_nanoseconds(35_000_000_000) / DimensionlessInteger(1_000_000)
         );
         assert_eq!(
             motion_profile.max_acc,
-            Quantity::new(0.01, MILLIMETER_PER_SECOND_SQUARED)
+            MillimeterPerSecondSquared::new(0.01)
         );
     }
     #[test]
     fn motion_profile_new_4() {
-        let motion_profile = MotionProfile::new(
-            State::new_raw(0.0, 0.0, 0.01),
-            State::new_raw(3.0, 0.0, 0.0),
-            Quantity::new(0.1, MILLIMETER_PER_SECOND),
-            Quantity::new(0.01, MILLIMETER_PER_SECOND_SQUARED),
+        let motion_profile = MotionProfile::<LinearCommand>::new(
+            LinearState::new(
+                Millimeter::new(0.0),
+                MillimeterPerSecond::new(0.0),
+                MillimeterPerSecondSquared::new(0.01),
+            ),
+            LinearState::new(
+                Millimeter::new(3.0),
+                MillimeterPerSecond::new(0.0),
+                MillimeterPerSecondSquared::new(0.0),
+            ),
+            MillimeterPerSecond::new(0.1),
+            MillimeterPerSecondSquared::new(0.01),
         );
-        assert_eq!(motion_profile.t1, Time(10_000_000_000));
+        assert_eq!(motion_profile.t1, Time::from_nanoseconds(10_000_000_000));
         assert_eq!(
             motion_profile.t2 / DimensionlessInteger(1_000_000),
-            Time(30_000_000_000) / DimensionlessInteger(1_000_000)
+            Time::from_nanoseconds(30_000_000_000) / DimensionlessInteger(1_000_000)
         );
-        assert_eq!(motion_profile.t3, Time(40_000_000_000));
+        assert_eq!(motion_profile.t3, Time::from_nanoseconds(40_000_000_000));
         assert_eq!(
             motion_profile.max_acc,
-            Quantity::new(0.01, MILLIMETER_PER_SECOND_SQUARED)
+            MillimeterPerSecondSquared::new(0.01)
         );
     }
     #[test]
     fn motion_profile_new_5() {
-        let motion_profile = MotionProfile::new(
-            State::new_raw(0.0, 0.0, 0.0),
-            State::new_raw(6.0, 0.0, 0.0),
-            Quantity::new(0.2, MILLIMETER_PER_SECOND),
-            Quantity::new(0.01, MILLIMETER_PER_SECOND_SQUARED),
+        let motion_profile = MotionProfile::<LinearCommand>::new(
+            LinearState::new(
+                Millimeter::new(0.0),
+                MillimeterPerSecond::new(0.0),
+                MillimeterPerSecondSquared::new(0.0),
+            ),
+            LinearState::new(
+                Millimeter::new(6.0),
+                MillimeterPerSecond::new(0.0),
+                MillimeterPerSecondSquared::new(0.0),
+            ),
+            MillimeterPerSecond::new(0.2),
+            MillimeterPerSecondSquared::new(0.01),
         );
-        assert_eq!(motion_profile.t1, Time(20_000_000_000));
+        assert_eq!(motion_profile.t1, Time::from_nanoseconds(20_000_000_000));
         assert_eq!(
             motion_profile.t2 / DimensionlessInteger(1_000_000),
-            Time(30_000_000_000) / DimensionlessInteger(1_000_000)
+            Time::from_nanoseconds(30_000_000_000) / DimensionlessInteger(1_000_000)
         );
         assert_eq!(
-            (motion_profile.t3 + Time(10000)) / DimensionlessInteger(1_000_000),
-            Time(50_000_000_000) / DimensionlessInteger(1_000_000)
+            (motion_profile.t3 + Time::from_nanoseconds(10000)) / DimensionlessInteger(1_000_000),
+            Time::from_nanoseconds(50_000_000_000) / DimensionlessInteger(1_000_000)
         );
         assert_eq!(
             motion_profile.max_acc,
-            Quantity::new(0.01, MILLIMETER_PER_SECOND_SQUARED)
+            MillimeterPerSecondSquared::new(0.01)
         );
     }
     #[test]
     fn motion_profile_new_6() {
-        let motion_profile = MotionProfile::new(
-            State::new_raw(0.0, 0.0, 0.0),
-            State::new_raw(3.0, 0.0, 0.0),
-            Quantity::new(0.1, MILLIMETER_PER_SECOND),
-            Quantity::new(0.02, MILLIMETER_PER_SECOND_SQUARED),
+        let motion_profile = MotionProfile::<LinearCommand>::new(
+            LinearState::new(
+                Millimeter::new(0.0),
+                MillimeterPerSecond::new(0.0),
+                MillimeterPerSecondSquared::new(0.0),
+            ),
+            LinearState::new(
+                Millimeter::new(3.0),
+                MillimeterPerSecond::new(0.0),
+                MillimeterPerSecondSquared::new(0.0),
+            ),
+            MillimeterPerSecond::new(0.1),
+            MillimeterPerSecondSquared::new(0.02),
         );
-        assert_eq!(motion_profile.t1, Time(5_000_000_000));
+        assert_eq!(motion_profile.t1, Time::from_nanoseconds(5_000_000_000));
         assert_eq!(
             motion_profile.t2 / DimensionlessInteger(1_000_000),
-            Time(30_000_000_000) / DimensionlessInteger(1_000_000)
+            Time::from_nanoseconds(30_000_000_000) / DimensionlessInteger(1_000_000)
         );
         assert_eq!(
             motion_profile.t3 / DimensionlessInteger(1_000_000),
-            Time(35_000_000_000) / DimensionlessInteger(1_000_000)
+            Time::from_nanoseconds(35_000_000_000) / DimensionlessInteger(1_000_000)
         );
         assert_eq!(
             motion_profile.max_acc,
-            Quantity::new(0.02, MILLIMETER_PER_SECOND_SQUARED)
+            MillimeterPerSecondSquared::new(0.02)
         );
     }
     #[test]
     fn motion_profile_new_7() {
-        let motion_profile = MotionProfile::new(
-            State::new_raw(0.0, 0.0, 0.0),
-            State::new_raw(-3.0, 0.0, 0.0),
-            Quantity::new(0.1, MILLIMETER_PER_SECOND),
-            Quantity::new(0.01, MILLIMETER_PER_SECOND_SQUARED),
+        let motion_profile = MotionProfile::<LinearCommand>::new(
+            LinearState::new(
+                Millimeter::new(0.0),
+                MillimeterPerSecond::new(0.0),
+                MillimeterPerSecondSquared::new(0.0),
+            ),
+            LinearState::new(
+                Millimeter::new(-3.0),
+                MillimeterPerSecond::new(0.0),
+                MillimeterPerSecondSquared::new(0.0),
+            ),
+            MillimeterPerSecond::new(0.1),
+            MillimeterPerSecondSquared::new(0.01),
         );
-        assert_eq!(motion_profile.t1, Time(10_000_000_000));
+        assert_eq!(motion_profile.t1, Time::from_nanoseconds(10_000_000_000));
         assert_eq!(
             motion_profile.t2 / DimensionlessInteger(1_000_000),
-            Time(30_000_000_000) / DimensionlessInteger(1_000_000)
+            Time::from_nanoseconds(30_000_000_000) / DimensionlessInteger(1_000_000)
         );
-        assert_eq!(motion_profile.t3, Time(40_000_000_000));
+        assert_eq!(motion_profile.t3, Time::from_nanoseconds(40_000_000_000));
         assert_eq!(
             motion_profile.max_acc,
-            Quantity::new(-0.01, MILLIMETER_PER_SECOND_SQUARED)
+            MillimeterPerSecondSquared::new(-0.01)
         );
     }
 }

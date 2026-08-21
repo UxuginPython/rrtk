@@ -1,167 +1,136 @@
 // SPDX-License-Identifier: BSD-3-Clause
-// Copyright 2024-2025 UxuginPython
-//!Provided [`Device`] implementors that allow a raw [`Getter`] or [`Settable`] to work with the device
-//!system.
-use crate::*;
-///Connect a [`Settable<Command, E>`] to a [`Terminal<E>`] for use as a servo motor in the device
-///system.
-pub struct ActuatorWrapper<'a, T: Settable<TerminalData, E>, E: Copy + Debug> {
-    inner: T,
-    terminal: RefCell<Terminal<'a, E>>,
-}
-impl<'a, T: Settable<TerminalData, E>, E: Copy + Debug> ActuatorWrapper<'a, T, E> {
-    ///Constructor for [`ActuatorWrapper`].
-    pub const fn new(inner: T) -> Self {
-        Self {
-            inner: inner,
-            terminal: Terminal::new(),
+// Copyright 2024-2026 UxuginPython
+//!Wrappers that connect [`Getter`]s and [`Settable`]s to the device system.
+//!
+//!There are two functions and three wrappers that call the function in their [`DeviceUpdatable`]
+//!implementations. The three wrappers cannot be unified into one because that would require
+//!specialization.
+use super::*;
+///Call the [`Getter`]'s `get` method and, if it returns `Ok(Some(_))`, write the value to a node in
+///the system.
+///
+///If `get` does not return a value (`Ok(None)` or `Err(_)`), the node's state is set to `None`.
+///If `get` returns an error, it is returned.
+pub fn get_and_write_to_node<
+    G: Getter<AngularState, E> + ?Sized,
+    const N: usize,
+    E: Clone + Debug,
+>(
+    getter: &G,
+    system: &mut System<N>,
+    node: NodeID,
+) -> NothingOrError<E> {
+    let to_set = match getter.get() {
+        Ok(option) => option.map(|datum| datum.value),
+        Err(error) => {
+            system.set_state_local(node, None);
+            return Err(error);
         }
-    }
-    ///Get a reference to this wrapper's terminal.
-    pub fn get_terminal(&self) -> &'a RefCell<Terminal<'a, E>> {
-        unsafe { &*(&self.terminal as *const RefCell<Terminal<'a, E>>) }
-    }
+    };
+    system.set_state_local(node, to_set);
+    Ok(())
 }
-impl<T: Settable<TerminalData, E>, E: Copy + Debug> Device<E> for ActuatorWrapper<'_, T, E> {
-    fn update_terminals(&mut self) -> NothingOrError<E> {
-        self.terminal.borrow_mut().update()?;
+///Write the current state of a node in the system to a [`Settable`]. This uses
+///[`System::get_state_connected`].
+pub fn set_to_node_state<
+    S: Settable<AngularState, E> + ?Sized,
+    const N: usize,
+    E: Clone + Debug,
+>(
+    settable: &mut S,
+    system: &mut System<N>,
+    node: NodeID,
+) -> NothingOrError<E> {
+    if let Some(state) = system.get_state_connected(node) {
+        settable.set(state)
+    } else {
         Ok(())
     }
 }
-impl<T: Settable<TerminalData, E>, E: Copy + Debug> Updatable<E> for ActuatorWrapper<'_, T, E> {
-    fn update(&mut self) -> NothingOrError<E> {
-        self.update_terminals()?;
-        match self
-            .terminal
-            .borrow()
-            .get()
-            .expect("Terminal TerminalData get always returns Ok")
-        {
-            Some(terminal_data) => self.inner.set(terminal_data.value)?,
-            None => {}
+macro_rules! error_handle_update {
+    ($updatable: expr, $system: expr, $node: expr) => {
+        if let Err(error) = $updatable.update() {
+            $system.set_state_local($node, None);
+            return Err(error);
         }
-        self.inner.update()?;
-        Ok(())
-    }
+    };
 }
-///Connect a [`Getter<State, E>`] to a [`Terminal<E>`] for use as an encoder in the device system.
-pub struct GetterStateDeviceWrapper<'a, T: Getter<State, E>, E: Copy + Debug> {
-    inner: T,
-    terminal: RefCell<Terminal<'a, E>>,
+///Writes a state gotten from a [`Getter`] to a node. This uses [`get_and_write_to_node`]
+///internally.
+pub struct GetterWrapper<G, E> {
+    getter: G,
+    node: NodeID,
+    phantom_e: PhantomData<E>,
 }
-impl<'a, T: Getter<State, E>, E: Copy + Debug> GetterStateDeviceWrapper<'a, T, E> {
-    ///Constructor for [`GetterStateDeviceWrapper`].
-    pub const fn new(inner: T) -> Self {
-        Self {
-            inner: inner,
-            terminal: Terminal::new(),
-        }
-    }
-    ///Get a reference to this wrapper's terminal.
-    pub fn get_terminal(&self) -> &'a RefCell<Terminal<'a, E>> {
-        unsafe { &*(&self.terminal as *const RefCell<Terminal<'a, E>>) }
-    }
-}
-impl<T: Getter<State, E>, E: Copy + Debug> Device<E> for GetterStateDeviceWrapper<'_, T, E> {
-    fn update_terminals(&mut self) -> NothingOrError<E> {
-        self.terminal.borrow_mut().update()?;
-        Ok(())
-    }
-}
-impl<T: Getter<State, E>, E: Copy + Debug> Updatable<E> for GetterStateDeviceWrapper<'_, T, E> {
-    fn update(&mut self) -> NothingOrError<E> {
-        self.inner.update()?;
-        self.update_terminals()?;
-        let new_state_datum = match self.inner.get()? {
-            None => return Ok(()),
-            Some(state_datum) => state_datum,
-        };
-        self.terminal.borrow_mut().set(new_state_datum)?;
-        Ok(())
-    }
-}
-///Connect a [`Settable<f32, E>`] motor to the device system through a
-///[`CommandPID`](streams::control::CommandPID). See
-///[`streams::control::CommandPID`] documentation for more information about how this works.
-#[cfg(feature = "alloc")]
-pub struct PIDWrapper<'a, T: Settable<f32, E>, E: Copy + Debug + 'static> {
-    terminal: RefCell<Terminal<'a, E>>,
-    time: Reference<Time>,
-    state: Reference<ConstantGetter<State, Time, E>>,
-    command: Reference<ConstantGetter<Command, Time, E>>,
-    pid: Reference<streams::control::CommandPID<ConstantGetter<State, Time, E>, E>>,
-    inner: T,
-}
-#[cfg(feature = "alloc")]
-impl<'a, T: Settable<f32, E>, E: Copy + Debug + 'static> PIDWrapper<'a, T, E> {
-    ///Constructor for [`PIDWrapper`].
-    pub fn new(
-        mut inner: T,
-        initial_time: Time,
-        initial_state: State,
-        initial_command: Command,
-        kvalues: PositionDerivativeDependentPIDKValues,
-    ) -> Self {
-        let terminal = Terminal::new();
-        let time = Reference::from_rc_ref_cell(Rc::new(RefCell::new(initial_time)));
-        let state = Reference::from_rc_ref_cell(Rc::new(RefCell::new(ConstantGetter::new(
-            time.clone(),
-            initial_state,
-        ))));
-        let command = Reference::from_rc_ref_cell(Rc::new(RefCell::new(ConstantGetter::new(
-            time.clone(),
-            initial_command,
-        ))));
-        let pid = Reference::from_rc_ref_cell(Rc::new(RefCell::new(
-            streams::control::CommandPID::new(state.clone(), initial_command, kvalues),
-        )));
-        pid.borrow_mut()
-            .follow(to_dyn!(Getter<Command, E>, command.clone()));
-        inner.follow(to_dyn!(Getter<f32, E>, pid.clone()));
-        Self {
-            terminal: terminal,
-            time: time,
-            state: state,
-            command: command,
-            pid: pid,
-            inner: inner,
-        }
-    }
-    ///Get a reference to this wrapper's terminal.
-    pub fn get_terminal(&self) -> &'a RefCell<Terminal<'a, E>> {
-        unsafe { &*(&self.terminal as *const RefCell<Terminal<'a, E>>) }
-    }
-}
-#[cfg(feature = "alloc")]
-impl<T: Settable<f32, E>, E: Copy + Debug + 'static> Device<E> for PIDWrapper<'_, T, E> {
-    fn update_terminals(&mut self) -> NothingOrError<E> {
-        self.terminal.borrow_mut().update()?;
-        Ok(())
-    }
-}
-#[cfg(feature = "alloc")]
-impl<T: Settable<f32, E>, E: Copy + Debug + 'static> Updatable<E> for PIDWrapper<'_, T, E> {
-    fn update(&mut self) -> NothingOrError<E> {
-        self.update_terminals()?;
-        let terminal_data: Option<Datum<TerminalData>> =
-            self.terminal.borrow().get().expect("This can't return Err");
-        match terminal_data {
-            Some(terminal_data) => {
-                let terminal_data = terminal_data.value;
-                *self.time.borrow_mut() = terminal_data.time;
-                match terminal_data.state {
-                    Some(state) => self.state.borrow_mut().set(state)?,
-                    None => (),
+macro_rules! constructor {
+    ($name: ident, $wrapped_field: ident, $documentation: literal) => {
+        impl<T, E> $name<T, E> {
+            #[doc = $documentation]
+            #[inline]
+            pub const fn new(node: NodeID, $wrapped_field: T) -> Self {
+                Self {
+                    $wrapped_field,
+                    node,
+                    phantom_e: PhantomData,
                 }
-                match terminal_data.command {
-                    Some(command) => self.command.borrow_mut().set(command)?,
-                    None => (),
-                }
-                self.pid.borrow_mut().update()?;
             }
-            None => (),
         }
-        self.inner.update()?;
-        Ok(())
+    };
+}
+constructor!(
+    GetterWrapper,
+    getter,
+    "Constructor for `GetterWrapper`. Although it is possible to construct the wrapper without `getter` implementing [`Getter`], there is no reason to do this as the object would be useless."
+);
+impl<G: Getter<AngularState, E>, E: Clone + Debug> DeviceUpdatable<E> for GetterWrapper<G, E> {
+    fn device_update<const N: usize>(&mut self, system: &mut System<N>) -> NothingOrError<E> {
+        error_handle_update!(self.getter, system, self.node);
+        get_and_write_to_node(&self.getter, system, self.node)
+    }
+}
+///Sets a [`Settable`] to the state of a node gotten using [`System::get_state_connected`].
+///This uses [`set_to_node_state`] internally.
+pub struct SettableWrapper<S, E> {
+    settable: S,
+    node: NodeID,
+    phantom_e: PhantomData<E>,
+}
+constructor!(
+    SettableWrapper,
+    settable,
+    "Constructor for `SettableWrapper`. Although it is possible to construct the wrapper without `settable` implementing [`Settable`], there is no reason to do this as the object would be useless."
+);
+impl<S: Settable<AngularState, E>, E: Clone + Debug> DeviceUpdatable<E> for SettableWrapper<S, E> {
+    fn device_update<const N: usize>(&mut self, system: &mut System<N>) -> NothingOrError<E> {
+        error_handle_update!(self.settable, system, self.node);
+        set_to_node_state(&mut self.settable, system, self.node)
+    }
+}
+///Combines the functionality of [`GetterWrapper`] and [`SettableWrapper`]. The Getter-Settable is
+///`set` to the state of the node from [`System::get_state_connected`] **before** the state to be
+///written with [`System::set_state_local`] is gotten with `get`. This uses both
+///[`set_to_node_state`] and [`get_and_write_to_node`] internally.
+pub struct GetterSettableWrapper<T, E> {
+    getter_settable: T,
+    node: NodeID,
+    phantom_e: PhantomData<E>,
+}
+constructor!(
+    GetterSettableWrapper,
+    getter_settable,
+    "Constructor for `GetterSettableWrapper`. Although it is possible to construct the wrapper without `getter_settable` implementing [`Getter`] and [`Settable`], there is no reason to do this as the object would be useless.\n\nNote that the wrapper requires that `getter_settable` implement both traits to be usable. Other wrappers are available in the [module](self) for types only implementing one of the traits."
+);
+impl<T, E> DeviceUpdatable<E> for GetterSettableWrapper<T, E>
+where
+    T: Getter<AngularState, E> + Settable<AngularState, E>,
+    E: Clone + Debug,
+{
+    fn device_update<const N: usize>(&mut self, system: &mut System<N>) -> NothingOrError<E> {
+        error_handle_update!(self.getter_settable, system, self.node);
+        if let Err(error) = set_to_node_state(&mut self.getter_settable, system, self.node) {
+            system.set_state_local(self.node, None);
+            return Err(error);
+        }
+        get_and_write_to_node(&self.getter_settable, system, self.node)
     }
 }

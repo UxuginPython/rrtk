@@ -1,0 +1,355 @@
+# Changes
+## 0.1.0
+Initial release.
+## 0.1.1
+Fix motion profile issue.
+## 0.2.0-alpha.1
+Start new motor-encoder system.
+## 0.2.0-alpha.2
+Function for motors to follow motion profiles.
+## 0.2.0-beta.1
+Allow the user to run a custom update loop for motion profile following as an alternative to the single function.
+## 0.2.0-beta.2
+Add an update method to encoders.
+## 0.2.0
+Add an update method to motors, allow easier detection of parts of motion profiles, and reorganize the package to use features with the motor-encoder system in a module.
+## 0.3.0-alpha.1
+Start new stream system.
+## 0.3.0-alpha.2
+Reorganize a bit and add [EWMA](https://www.itl.nist.gov/div898/handbook/pmc/section3/pmc324.htm) stream.
+## 0.3.0-alpha.3
+Add moving average stream.
+## 0.3.0-alpha.4
+- performance improvements
+    - use array instead of vec for inputs to `SumStream` and `ProductStream`
+    - avoid unnecessary weight sum calculation in `MovingAverageStream`
+    - make the number of shifts in `PIDControllerShift` a constant
+- replace all instances of `MotionProfileState` with `MotionProfilePiece`
+- add `History` trait, which is like a `Stream` but you specify a time when you `get`
+- reorganize streams into modules
+- remove unnecessary `std` requirement for a couple types
+## 0.3.0-alpha.5
+- Move from `Stream` and the previous device system to `Getter` and `Settable`. `Getter` is like a stream or encoder and `Settable` is like a writable device.
+- Add `Device` type which makes raw `Getter`s and `Settable`s work together better as mechanical devices in a system. This should represent a physical device.
+- Add `Axle` type which contains multiple `Device` objects. It uses the capabilities of each device to control the real-life system. Eg. Data is gathered from `Getter` devices (`Device::Read` for encoders and `Device::ReadWrite` for servos) and used to control motors that do not contain their own control theory processing (`Device::ImpreciseWrite`), but motors that can do this on their own (`Device::ReadWrite` and `Device::PreciseWrite` depending on whether the internal data can be read) do not need this control. This object should represent a physical linkage between devices.
+- Don't require a feature to be enabled for PID controller types
+- Change API for PID controller types to be constructed with a k-values type rather than three individual `f32`s.
+## 0.3.0-beta.1
+- Don't require a feature to be enabled for motion profiles.
+- Make `Settable` able to follow `Getter`s of the same type.
+- Add `GetterFromHistory` struct allowing `History` objects to be used as `Getter`s.
+## 0.3.0
+- Add `set_delta` and `set_time` methods to `GetterFromHistory`.
+- Move `streams::Constant` to `ConstantGetter`.
+- Implement `Settable` for `ConstantGetter`.
+- Add `get_last_request` method to `Settable`.
+- Move `MotionProfile` `get_*` methods to `Option` instead of `Result`.
+- Rename `UpdateOutput` to `NothingOrError`.
+- Fix `Axle` bug where it would try to use nonexistent PID controllers for `Device::ImpreciseWrite` objects if it had not yet received a `Command`.
+- Instead of directly implementing `set` in `Settable`, you now implement `direct_set`. You should still *call* just `set` though. This is a workaround required to make `SettableData` and `get_last_request` work correctly.
+- Move `MotionProfile` to `History<Command, E>` instead of `History<State, E>`.
+- Move timestamps to `i64` instread of `f32`. The recommended unit is nanoseconds. This is not `u64` due to the use of deltas.
+- Fix `MovingAverageStream` panicing issue.
+- Rename `StreamPID` to `PIDControllerStream`.
+- Improve performance of `PIDControllerStream`.
+- Mark `Error` enum as non-exhaustive.
+- Write three example files.
+- Derive additional traits for a few structs.
+- Give `MotionProfile` a return value after it has completed. This is based on the end state provided to the constructor. It will choose the lowest possible position derivative to satisfy the end state. This means that if acceleration is 0, the position derivative in the command will be velocity, otherwise acceleration. If velocity is also 0, it will be position, otherwise just velocity.
+- Add `get_(position|velocity|acceleration)` methods to `Command`.
+- Add `Latest` stream allowing you to choose the output of whichever of a set of streams has the later timestamp.
+- Implement `From<State>` for `Command`.
+- Rename `TimeGetterFromStream` to `TimeGetterFromGetter`.
+## 0.3.1
+- Implement several `core::ops` traits and `Copy` for `State`
+- Fix name of `PositionToState`
+- Slightly improve performance of `MotionProfile` and `(Position|Velocity|Acceleration)ToState` by removing unnecessary code
+- Improve tests
+- Minor documentation fixes
+- Add missing LGPL license notice to a few files
+## 0.4.0-alpha.1
+- Begin new device system.
+## 0.4.0-alpha.2
+- Make everything use `&RefCell<Terminal>` rather than `Rc<RefCell<Terminal>>`
+- Make math streams use generics.
+- Add `SettableCommandDeviceWrapper` and `GetterStateDeviceWrapper` allowing types only implementing `Settable<Command, _>` to be used as motors and types only implementing `Getter<State, _>` to be used as encoders.
+- Revive `PositionDerivativeDependentPIDKValues`, now with a `get_k_values` method for getting the k-values for a specific position derivative.
+- Add `evaluate` methods for `PIDKValues` and `PositionDerivativeDependentPIDKValues`.
+- Add `CommandPID`, an easier and faster way to use PID control to turn a standard DC motor and an encoder into a de facto servo.
+- Add `latest` function which gets the newer of two `Datum` objects.
+## 0.4.0-alpha.3
+- Add new `streams` submodules `flow` and `logic`.
+- Add new streams
+    - `Expirer`
+    - `flow::IfStream`
+    - `flow::IfElseStream`
+    - `flow::FreezeStream`
+    - `logic::AndStream`
+    - `logic::OrStream`
+    - `logic::NotStream`
+- Pass through `Not` for `Datum<T>` where `T` implements `Not`.
+- Add `NoneGetter`.
+- Add `Axle` very similar to 0.4.0-alpha.1 one.
+- Move `(SettableCommand|GetterState)DeviceWrapper` to `devices::wrappers` module.
+- Add experimental `Device` implementor for a differential mechanism.
+- Remove now-unused `GetterSettable` marker trait.
+- Move new device system to a new `devices` feature.
+- Minor documentation fix for `devices` module.
+## 0.4.0-beta.1
+- Make differential calculations able to trust all branches equally instead of ignoring one.
+- Remove unnecessary `Box`ing from `InputGetter` and `InputTimeGetter`.
+## 0.4.0-beta.2
+- Rename `following_update` to `update_following_data` and remove `update` calls from it.
+- Make `GetterFromHistory` use `&mut dyn History` instead of `Box<dyn History>` and make its constructors take `impl History` instead of `dyn History`.
+- Remove now-unnecessary `new_for_motion_profile` constructor for `GetterFromHistory`.
+- Remove `Clone` bound on `History<T, _>`'s `T`.
+- Make `GetterFromHistory` return the requested timestamp as its `Datum` timestamp rather than that that the internal `History` returns.
+- Make `make_input_getter` and `make_input_time_getter` functions instead of macros.
+- Add `NoneGetter` constructor. (It is a unit struct, so this is redundant.);
+- Add a `disconnect` method to `Terminal`.
+- Add methods to builtin devices for getting references to their terminals.
+- Slightly improve performance of `Terminal`'s `get` implementation by using an array of `MaybeUninit` rather than `Vec`.
+- Minor documentation fixes.
+## 0.4.0
+- Fix `Invert` `get_terminal_2` which was returning terminal 1.
+- Make terminals pass commands to their connected counterparts.
+- Rename `SettableCommandDeviceWrapper` to `ActuatorWrapper`.
+- Make `ActuatorWrapper` update its inner `Settable`.
+- Make `ActuatorWrapper` call `update_terminals` in its `Updatable` implementation.
+- Fix `CommandPID` error integral doubling bug.
+- Add `TerminalData` type containing a timestamp, an optional command, and an optional state.
+- Implement `Getter<TerminalData, _>` for `Terminal`.
+- Add `PIDWrapper`, a  wrapper very similar to `ActuatorWrapper` that uses a `CommandPID` to control a DC motor rather than needing a servo or a control system set up by the user.
+- Implement `TimeGetter` for `i64`. It will always return its value as a time.
+- Remove unused `CannotConnectTerminals` error variant.
+- Make `GetterStateDeviceWrapper` update its inner `Getter`.
+- Keep `CommandPID` from resetting itself whenever it gets a new command rather than only when the command is different.
+- Mark constructors for `State`, `Datum`, `PIDKValues`, `PositionDerivativeDependentPIDKValues`, and `Command` as `const`.
+- Documentation improvements.
+## 0.5.0-alpha.1
+- Make a new `Reference` type that can hold a `*mut T`, `Rc<RefCell<T>>`, or `*const RwLock<T>`, allowing you to not need a dynamic allocator.
+- Add `alloc` feature.
+- Temporarily remove `devices::wrappers::PIDWrapper`. It will be back by the time this is stable.
+## 0.5.0-alpha.2
+- Move to BSD 3-Clause license.
+- Implement `Clone` for `Reference`
+- Add `to_dyn!` macro for creating `Reference<dyn Trait>` objects.
+- Add function `rc_refcell_reference` and macros `static_reference!` and `static_rwlock_reference!` which work similarly to the former `make_input_getter`. They put their input into a container if required and then return a `Reference` to it.
+- Make all stream inputs `?Sized`. This allows the use of `Reference<dyn Getter<_, _>>` and `Reference<dyn TimeGetter<_, _>>` in the builtin streams.
+- Add `PIDWrapper` back.
+- Update many tests to use `Reference`.
+- Minor documentation changes.
+## 0.5.0-beta.1
+- Add `ArcRwLock`, `PtrMutex`, and `ArcMutex` `Reference` variants.
+- Standardize snake_case of `ref_cell` and `rw_lock`.
+- Standardize that the outermost container comes first in variable and function names: a `*const RwLock` is `ptr_rw_lock`, not `rw_lock_ptr`.
+## 0.5.0
+- Fix the potential for undefined behavior without an unsafe block by directly constructing `Reference` variants.
+  - Rename `Reference` to `ReferenceUnsafe`.
+    - Make `borrow` and `borrow_mut` methods of `ReferenceUnsafe` unsafe.
+  - Add a wrapper struct for `ReferenceUnsafe` under the name `Reference`.
+    - `Reference` (the wrapper struct) cannot be constructed with a raw pointer without an unsafe block or a macro that ensures that the pointer's target is static.
+    - `Reference` has all of the same methods as `ReferenceUnsafe` except that `borrow` and `borrow_mut` are safe.
+    - `Reference` has one additional method, `into_inner`, which returns its inner `ReferenceUnsafe`.
+- Rewrite `SumStream` and `ProductStream` to not require `alloc`.
+- Change macro scoping to allow both `rrtk::reference::to_dyn!` and `rrtk::to_dyn!` as valid paths, and similar scoping for other `Reference`-related macros. See the [documentation](https://docs.rs/rrtk/0.5.0) for more information.
+- Derive `Eq` for `Datum`.
+- Documentation improvements.
+## 0.6.0-alpha.0
+- Begin new dimensional analysis system.
+## 0.6.0-alpha.1
+- Use correct units in `Mul<Time>` and `Div<Time>` implementations for `Quantity`.
+- Move constant `Unit`s to the `dimensions::constants` module, all of the items of which are reexported both to the `dimensions` module and at the crate's top level.
+- Add many new constant units in addition to the original 6.
+## 0.6.0-beta.0
+- Add `dim_check_debug` and `dim_check_release` features.
+- Document feature flags in crate-level documentation.
+## 0.6.0
+- Add `FloatToQuantity` and `QuantityToFloat` streams.
+- Add `Sum2` and `Product2` streams, which are optimized for adding or multiplying two inputs faster than `SumStream` and `ProductStream`, which take any number of inputs.
+- Implement:
+  - `AddAssign` for `Time`
+  - `SubAssign` for `Time`
+  - `MulAssign<DimensionlessInteger>` for `Time`
+  - `DivAssign<DimensionlessInteger>` for `Time`
+  - `Add<Quantity>` for `Time`
+  - `Sub<Quantity>` for `Time`
+  - `Mul<Quantity>` for `Time`
+  - `Div<Quantity>` for `Time`
+  - `AddAssign` for `DimensionlessInteger`
+  - `SubAssign` for `DimensionlessInteger`
+  - `MulAssign` for `DimensionlessInteger`
+  - `DivAssign` for `DimensionlessInteger`
+  - `Add<Quantity>` for `DimensionlessInteger`
+  - `Sub<Quantity>` for `DimensionlessInteger`
+  - `Mul<Quantity>` for `DimensionlessInteger`
+  - `Div<Quantity>` for `DimensionlessInteger`
+  - `AddAssign` for `Quantity`
+  - `SubAssign` for `Quantity`
+  - `MulAssign` for `Quantity`
+  - `DivAssign` for `Quantity`
+  - `Add<Time>` for `Quantity`
+  - `Sub<Time>` for `Quantity`
+  - `AddAssign<Time>` for `Quantity`
+  - `SubAssign<Time>` for `Quantity`
+  - `MulAssign<Time>` for `Quantity`
+  - `DivAssign<Time>` for `Quantity`
+  - `Add<DimensionlessInteger>` for `Quantity`
+  - `Sub<DimensionlessInteger>` for `Quantity`
+  - `Mul<DimensionlessInteger>` for `Quantity`
+  - `Div<DimensionlessInteger>` for `Quantity`
+  - `AddAssign<DimensionlessInteger>` for `Quantity`
+  - `SubAssign<DimensionlessInteger>` for `Quantity`
+  - `MulAssign<DimensionlessInteger>` for `Quantity`
+  - `DivAssign<DimensionlessInteger>` for `Quantity`
+  - `AddAssign` for `Unit`
+  - `SubAssign` for `Unit`
+  - `MulAssign` for `Unit`
+  - `DivAssign` for `Unit`
+  - `Neg` for `Unit`
+- Make `State::update` take `Time`.
+- Make `State::set_constant_(position|velocity|acceleration)` take `Quantity`.
+- Add `State::set_constant_(position|velocity|acceleration)_raw` functions to still allow setting each position derivative with `f32`.
+- Make `State::new` take `Quantity` for position, velocity, and acceleration.
+- Add `State::new_raw` to still allow constructing `State` with `f32` values.
+- Make `(Position|Velocity|Acceleration)ToState` take `Quantity`.
+- Make `IntegralStream` and `DerivativeStream` take `Quantity`.
+- Make `EWMAStream` more generic, allowing it to take both `f32` and `Quantity`.
+- Make `MovingAverageStream` more generic, allowing it to take both `f32` and `Quantity`.
+- Mark `State::set_constant_(position|velocity|acceleration)` and their "raw" equivalents as const fn.
+- Fix bug where the implementation of `From<PositionDerivative> for Unit` would return an incorrect second exponent.
+- Fix unit issue in `MovingAverageStream`.
+- Example improvements.
+- Unit testing improvements.
+- Documentation improvements.
+## 0.6.1
+- Add optional support for [`libm`](https://crates.io/crates/libm) and [`micromath`](https://crates.io/crates/micromath) for `no_std` float computation. Both are disabled by default.
+- Propagate commands from terminals in `Axle` and `Invert` devices. (It is not possible in `Differential`).
+- Add `GearTrain` device which also propagates commands.
+- Add `replace_if_older_than` method to `Datum`.
+- Add `OptionDatumExt` trait used for adding `replace_if_none_or_older_than` and `replace_if_none_or_older_than_option` methods to `Option<Datum<T>>`.
+- Implement `Neg` for `Command`.
+- Implement `Add`, `Sub`, `Mul<f32>`, and `Div<f32>` and their respective `*Assign` traits for `Command`.
+- Implement `Getter<Command, E>` for `Terminal`.
+- Minor documentation fixes.
+## 0.7.0-alpha.0
+- Begin new compile-time dimensional analysis system using a custom compile-time integer system.
+- Somewhat rework `Time` to be more intuitive and to work more nicely with other types.
+- Make some streams more generic in the numeric types they accept, specifically `IntegralStream` and `DerivativeStream`.
+- Allow `Reference` to pass through `Getter` and `Updatable` implementations when its target implements them.
+- `#[derive(Debug)]` for some `Reference`-related types.
+- Minor documentation improvements.
+## 0.7.0-alpha.1
+Allow the use of `Getter` implementors to be used directly as stream inputs instead of needing to be in a `Reference`. One can, of course, still put stream inputs in `Reference` (as is necessary when using the same `Getter` in multiple places) since `Reference` now passes through the `Getter`, `Updatable`, and `TimeGetter` implementations of its referent.
+## 0.7.0-alpha.2
+Remove `Error` enum:
+- Change `Output` type alias (`Getter::get`'s return type) from `Result<Option<Datum<T>>, Error<E>>` to `Result<Option<Datum<T>>, E>`.
+- Change `TimeOutput` type alias (`TimeGetter::get`'s return type) from `Result<Time, Error<E>>` to `Result<Time, E>`.
+- Change `NothingOrError` type alias (`Updatable::update`'s return type) from `Result<(), Error<E>>` to `Result<(), E>`.
+- Make `NoneToError` and `TimeGetterFromGetter` require error values to return when they receive `Ok(None)`.
+  - `TimeGetterFromGetter` no longer uses `NoneToError` internally, so remove its `T: Clone` bound.
+## 0.7.0-alpha.3
+- Remove `Settable::impl_set`. Now both call `Settable::set` and implement it in the impl block instead of calling `set` and implementing `impl_set`.
+- Remove `Settable::get_last_request`.
+## 0.7.0-alpha.4
+- Remove `SettableData`, `Settable::get_settable_data_ref`, and `Settable::get_settable_data_mut`.
+- Remove `Settable::follow`, `Settable::stop_following`, and `Settable::update_following_data`.
+- Add `Feeder` to replace `Settable`'s removed following functionality.
+- Remove `Settable`'s now-unnecessary `Clone` bound.
+- Pass `Settable` through `Reference` as `Updatable` and `Getter` are.
+## 0.7.0-alpha.5
+- Add `streams::converters::IntoConverter` and `streams::converters::ErrorIntoConverter`. `IntoConverter` uses the `Into` trait to convert an `Ok(Some(_))` value to a new type, and `ErrorIntoConverter` does likewise for `Err(_)`.
+- Add `streams::converters::NoneToDefault`, which is exactly like `NoneToValue` except that it uses `T::default()` instead of holding a value of `T` and requiring that `T: Clone`.
+- Only require `Clone + Debug` for errors instead of `Copy + Debug`.
+- Allow `Sum2`, `DifferenceStream`, `Product2`, and `QuotientStream` to use different types for their two inputs and output.
+- Make `Datum` `core::ops` impls more generic by using a `NotDatum` trait as a specialization workaround.
+- Pass `Updatable`, `Getter`, `Settable`, and `TimeGetter` through `Rc<RefCell<T>>`, `Arc<RwLock<T>>`, `Arc<Mutex<T>>`, and `Box<T>`.
+- Add `PointerDereferencer` which passes through the above traits for `*mut T`, `*const RwLock<T>`, and `*const Mutex<T>`. They cannot be directly passed through due to soundness reasons.
+- Remove `Reference` and related items. Use the above new implementations instead of it.
+- Make `DimensionAdder` and `DimensionRemover` constructors `const fn`.
+- Use where clauses instead of standard bounds in many places to improve readability.
+- Make some tests cleaner using `Result::is_err` and `Option::is_none`.
+## 0.7.0-alpha.6
+- Make all streams update their inputs and, if they have them, `TimeGetter`s. (`ConstantGetter` also updates its `TimeGetter` although it is not considered a stream.)
+- Fix struct field naming mistake in `Product2`.
+## 0.7.0-alpha.7
+- Add new `error` module containing two unit structs: `CannotConvert` and `UnitInvalid`.
+- Rename `History` to `Chronology`.
+- Remove `Updatable` bound from `Chronology`.
+- Make `Chronology` work decently nicely with `PointerDereferencer`.
+- Make `GetterFromChronology` (formerly `GetterFromHistory`) use a type parameter `C: Chronology<T>` similarly to streams using `G: Getter<T, E>`.
+## 0.7.0-alpha.8
+- Give `AndStream` and `OrStream` arbitrary numbers of inputs.
+- Add `And2` and `Or2` to still allow "and" and "or" operations on two getters of different types.
+- Make several more functions `const fn`. See the diff for details.
+- Minor documentation improvements.
+## 0.7.0-alpha.9
+*This release's list of changes may be incomplete due to the significant time since alpha 8 and the fact that the changelog was updated somewhat improperly during the development of this release.*
+- Remove runtime dimensional analysis introduced in RRTK 0.6.
+- Move all `compile_time_dimensions` items into `dimensions` module.
+- Separate linear and angular state and command.
+  - Add `GenericState` and `GenericCommand` traits.
+- Begin new device system.
+- Add compile-time integer and dimension aliases.
+## 0.7.0-alpha.10
+Replace the device system again.
+## 0.7.0-alpha.11
+Start cleaning up a [really big mess](http://rrtk.org/notice/).
+## 0.7.0-beta.0
+- Almost entirely rewrite `Feeder` for better error handling.
+- Add `error::PossibleDoubleError`, an error type for when two things may error independently and have their errors reported together.
+- Add `NothingOrErrorExt` extension trait for `NothingOrError` with methods for converting between `NothingOrError<E>` (a type alias for `Result<(), E>`) and `Option<E>`.
+- Add `Getter::update_and_get`. Because `Getter<T, E>: Updatable<E>`, it is possible to add this method that calls `<Self as Updatable<E>>::update()` (handling errors appropriately) and then returns the value of `<Self as Getter<T, E>>::get()`.
+- Rename `PointerDereferencer`'s `(copy|clone|into)_inner` methods to `(copy|clone|into)_ptr` for clarity because, although it is possible to construct `PointerDereferencer` with non-pointer types, it is not recommended, and `*_inner` may be misunderstood as methods that return the referent.
+- Add `DimensionlessFraction::into_components`, which returns the numerator and denominator as a tuple.
+- Remove some code from the previous device system that was accidentally left in the last prerelease.
+- Significantly improve testing.
+## 0.7.0-beta.1
+- Add wrappers for connecting getters and settables to the current device system.
+- Implement `Div<Time>` for `DimensionlessFraction`. It returns an `f32`-based `Quantity` of inverse seconds.
+- Remove two type parameters from `Latest`, simplify its bounds, and allow constructing it with zero inputs.
+- Remove unnecessary bounds from `DimensionAdder` and use where clauses for some of its remaining bounds.
+- Use macros to generate code for `And2` and `Or2` to repeat less code.
+- Make `SumStream` and `ProductStream` return `Ok(None)` if any of their inputs do as opposed to skipping those inputs.
+- Make bounds on `EWMAStream` more consistent.
+- Define `AndStream`'s behavior with zero inputs.
+- Remove unnecessary bounds from `EWMAStream` and clarify with comments.
+- Add `#[inline]` to a couple of methods of `System`.
+## 0.7.0-beta.2
+- Fix bug where `DimensionlessFraction`'s `Ord` implementation would incorrectly compare fractions with denominators of different signs.
+- Add `DimensionlessFraction::raw_eq` method for directly checking the numerators and denominators for equality instead of the values of the fractions. For example, `dimensionless_fraction!(1, 2)` is equal to `dimensionless_fraction!(2, 4)` with `PartialEq` but not with `raw_eq`.
+- Move `NotDatum` to the `stulta` module.
+## 0.7.0-beta.3
+- Add constructors for the device wrappers. (These were forgotten in 0.7.0-beta.1.)
+- Add `from_raw` method for `AngularState` and `LinearState` allowing them to be constructed from raw `f32` values for position, velocity, and acceleration.
+## 0.7.0
+- Remove numerous unnecessary trait bounds and type parameters from various streams.
+- Add `Latest2`, which is to `Latest` as `Sum2` is to `SumStream`.
+- Add `DebugStream`, a transparent wrapper for printing to stderr whenever an RRTK trait method is invoked.
+- Make `EWMAStream` work with `Quantity`.
+- Make `NotStream` work with any type implementing `core::ops::Not` instead of only `bool`.
+- Add a few new methods to `PossibleDoubleError`: `prioritize_(a|b)` and `keep_only_(a|b)`, which allow one to more easily get a selected single error of the two possible.
+- Add some new mapping functions (see documentation for details):
+  - `Datum::map`
+  - `OptionDatumExt::map_value`
+  - Add new `OutputExt` extension trait:
+    - `map_ok` alias to `Result::map`
+    - `map_ok_some`
+    - `map_ok_some_value`
+- Make `NoneToDefault` and `NoneToValue` use `PossibleDoubleError` as their error type.
+- Make `Quantity::into_inner` and `LinearState` and `AngularState`'s `get_value` methods `const fn`.
+- Replace `dimensionless_fraction!` and `dimensionless_fraction_unchecked!` macros with `from_raw` and `from_raw_unchecked` functions.
+- Make it so that it will be possible in the future to optimize out the zero denominator case of `DimensionlessFraction` without a breaking change.
+- Improve `ExponentStream`'s error handling to match the other math streams.
+- Expand the allowed range of versions for libm and micromath dependencies.
+- Add a small prelude.
+- Make Clippy significantly happier.
+  - Run `cargo clippy --fix`.
+  - Change the level of some Clippy lints in Cargo.toml
+- Rewrite a significant amount of documentation for clarity.
+  - Rewrite the "pid" example.
+  - Write an example for the dimensional analysis system.
+  - Add a `#[diagnostic::on_unimplemented]` note for `Getter`.
+  - Fix the rendering of the second SVG in `Feeder`'s documentation.
+- Significantly improve testing.
+  - Modify one test to allow it to pass with Miri's less precise floating point math.

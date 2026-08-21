@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-// Copyright 2024-2025 UxuginPython
+// Copyright 2024-2026 UxuginPython
 //!Streams performing control theory operations.
 use crate::streams::*;
 #[cfg(feature = "alloc")]
@@ -8,21 +8,21 @@ use alloc::collections::vec_deque::VecDeque;
 //and readability would suggest doing it this way, but 8 bytes could technically be saved here if
 //needed in the future. The difference is extremely minimal.
 ///A PID controller for use with the stream system.
-pub struct PIDControllerStream<G: Getter<f32, E> + ?Sized, E: Copy + Debug> {
-    input: Reference<G>,
+pub struct PIDControllerStream<G, E> {
+    input: G,
     setpoint: f32,
     kvals: PIDKValues,
     prev_error: Option<Datum<f32>>,
     int_error: f32,
     output: Output<f32, E>,
 }
-impl<G: Getter<f32, E> + ?Sized, E: Copy + Debug> PIDControllerStream<G, E> {
+impl<G, E> PIDControllerStream<G, E> {
     ///Constructor for `PIDControllerStream`.
-    pub const fn new(input: Reference<G>, setpoint: f32, kvals: PIDKValues) -> Self {
+    pub const fn new(input: G, setpoint: f32, kvals: PIDKValues) -> Self {
         Self {
-            input: input,
-            setpoint: setpoint,
-            kvals: kvals,
+            input,
+            setpoint,
+            kvals,
             prev_error: None,
             int_error: 0.0,
             output: Ok(None),
@@ -35,14 +35,18 @@ impl<G: Getter<f32, E> + ?Sized, E: Copy + Debug> PIDControllerStream<G, E> {
         self.output = Ok(None);
     }
 }
-impl<G: Getter<f32, E> + ?Sized, E: Copy + Debug> Getter<f32, E> for PIDControllerStream<G, E> {
+impl<G, E: Clone + Debug> Getter<f32, E> for PIDControllerStream<G, E>
+where
+    Self: Updatable<E>,
+{
     fn get(&self) -> Output<f32, E> {
         self.output.clone()
     }
 }
-impl<G: Getter<f32, E> + ?Sized, E: Copy + Debug> Updatable<E> for PIDControllerStream<G, E> {
+impl<G: Getter<f32, E>, E: Clone + Debug> Updatable<E> for PIDControllerStream<G, E> {
     fn update(&mut self) -> NothingOrError<E> {
-        let process = self.input.borrow().get();
+        self.input.update()?;
+        let process = self.input.get();
         let process = match process {
             Ok(Some(value)) => value,
             Ok(None) => {
@@ -51,14 +55,16 @@ impl<G: Getter<f32, E> + ?Sized, E: Copy + Debug> Updatable<E> for PIDController
             }
             Err(error) => {
                 self.reset();
-                self.output = Err(error);
+                //XXX: This may change when you standardize when Updatable::update errors.
+                //Remove this clone if you don't return the error.
+                self.output = Err(error.clone());
                 return Err(error);
             }
         };
         let error = self.setpoint - process.value;
         let [int_error_addend, drv_error] = match &self.prev_error {
             Some(prev_error) => {
-                let delta_time = f32::from(Quantity::from(process.time - prev_error.time));
+                let delta_time = (process.time - prev_error.time).as_seconds_f32();
                 let drv_error = (error - prev_error.value) / delta_time;
                 //Trapezoidal integral approximation is more precise than rectangular.
                 let int_error_addend = delta_time * (prev_error.value + error) / 2.0;
@@ -95,26 +101,24 @@ mod command_pid {
         pub output_int_int: Option<f32>,
     }
     ///Automatically integrates the command variable of a PID controller based on the position
-    ///derivative of a [`Command`]. Designed to make it easier to use a standard DC motor and an encoder
-    ///as a de facto servo.
-    pub struct CommandPID<G: Getter<State, E> + ?Sized, E: Copy + Debug> {
-        settable_data: SettableData<Command, E>,
-        input: Reference<G>,
-        command: Command,
+    ///derivative of a [`LinearCommand`] or [`AngularCommand`]. Designed to make it easier to use a
+    ///standard DC motor and an encoder as a de facto servo.
+    pub struct CommandPID<G, C, E> {
+        input: G,
+        command: C,
         kvals: PositionDerivativeDependentPIDKValues,
-        update_state: Result<Option<Update0>, Error<E>>,
+        update_state: Result<Option<Update0>, E>,
     }
-    impl<G: Getter<State, E> + ?Sized, E: Copy + Debug> CommandPID<G, E> {
+    impl<G, C, E> CommandPID<G, C, E> {
         ///Constructor for `CommandPID`.
         pub const fn new(
-            input: Reference<G>,
-            command: Command,
+            input: G,
+            command: C,
             kvalues: PositionDerivativeDependentPIDKValues,
         ) -> Self {
             Self {
-                settable_data: SettableData::new(),
-                input: input,
-                command: command,
+                input,
+                command,
                 kvals: kvalues,
                 update_state: Ok(None),
             }
@@ -128,14 +132,11 @@ mod command_pid {
             self.update_state = Ok(None);
         }
     }
-    impl<G: Getter<State, E> + ?Sized, E: Copy + Debug> Settable<Command, E> for CommandPID<G, E> {
-        fn get_settable_data_ref(&self) -> &SettableData<Command, E> {
-            &self.settable_data
-        }
-        fn get_settable_data_mut(&mut self) -> &mut SettableData<Command, E> {
-            &mut self.settable_data
-        }
-        fn impl_set(&mut self, command: Command) -> NothingOrError<E> {
+    impl<G, C: PartialEq, E: Clone + Debug> Settable<C, E> for CommandPID<G, C, E>
+    where
+        Self: Updatable<E>,
+    {
+        fn set(&mut self, command: C) -> NothingOrError<E> {
             if command != self.command {
                 self.reset();
                 self.command = command;
@@ -143,10 +144,15 @@ mod command_pid {
             Ok(())
         }
     }
-    impl<G: Getter<State, E> + ?Sized, E: Copy + Debug> Getter<f32, E> for CommandPID<G, E> {
+    impl<G, C, E> Getter<f32, E> for CommandPID<G, C, E>
+    where
+        Self: Updatable<E>,
+        C: Copy + Into<PositionDerivative>, //Implied by GenericCommand
+        E: Clone + Debug,
+    {
         fn get(&self) -> Output<f32, E> {
             match &self.update_state {
-                Err(error) => Err(*error),
+                Err(error) => Err(error.clone()),
                 Ok(None) => Ok(None),
                 Ok(Some(update_0)) => match self.command.into() {
                     PositionDerivative::Position => {
@@ -171,10 +177,15 @@ mod command_pid {
             }
         }
     }
-    impl<G: Getter<State, E> + ?Sized, E: Copy + Debug> Updatable<E> for CommandPID<G, E> {
+    impl<G, C, E> Updatable<E> for CommandPID<G, C, E>
+    where
+        G: Getter<C::CorrespondingState, E>,
+        C: GenericCommand,
+        E: Clone + Debug,
+    {
         fn update(&mut self) -> NothingOrError<E> {
-            self.update_following_data()?;
-            let raw_get = self.input.borrow().get();
+            self.input.update()?;
+            let raw_get = self.input.get();
             let datum_state = match raw_get {
                 Ok(Some(value)) => value,
                 Ok(None) => {
@@ -182,24 +193,26 @@ mod command_pid {
                     return Ok(());
                 }
                 Err(error) => {
-                    self.update_state = Err(error);
+                    //XXX: This may change when you standardize when Updatable::update errors.
+                    //Remove this clone if you don't return the error.
+                    self.update_state = Err(error.clone());
                     return Err(error);
                 }
             };
-            let error = f32::from(self.command)
-                - f32::from(datum_state.value.get_value(self.command.into()));
+            let error = <C as Into<f32>>::into(self.command)
+                - datum_state.value.generic_get_value(self.command.into());
             match &self.update_state {
                 Ok(None) | Err(_) => {
                     let output = self.kvals.evaluate(self.command.into(), error, 0.0, 0.0);
                     self.update_state = Ok(Some(Update0 {
                         time: datum_state.time,
-                        output: output,
-                        error: error,
+                        output,
+                        error,
                         maybe_update_1: None,
                     }));
                 }
                 Ok(Some(update_0)) => {
-                    let delta_time = f32::from(Quantity::from(datum_state.time - update_0.time));
+                    let delta_time = (datum_state.time - update_0.time).as_seconds_f32();
                     let error_drv = (error - update_0.error) / delta_time;
                     let error_int_addend = (update_0.error + error) / 2.0 * delta_time;
                     match &update_0.maybe_update_1 {
@@ -213,10 +226,10 @@ mod command_pid {
                             let output_int = (update_0.output + output) / 2.0 * delta_time;
                             self.update_state = Ok(Some(Update0 {
                                 time: datum_state.time,
-                                output: output,
-                                error: error,
+                                output,
+                                error,
                                 maybe_update_1: Some(Update1 {
-                                    output_int: output_int,
+                                    output_int,
                                     error_int: error_int_addend,
                                     output_int_int: None,
                                 }),
@@ -238,11 +251,11 @@ mod command_pid {
                                 None => {
                                     self.update_state = Ok(Some(Update0 {
                                         time: datum_state.time,
-                                        output: output,
-                                        error: error,
+                                        output,
+                                        error,
                                         maybe_update_1: Some(Update1 {
-                                            output_int: output_int,
-                                            error_int: error_int,
+                                            output_int,
+                                            error_int,
                                             output_int_int: Some(output_int_int_addend),
                                         }),
                                     }));
@@ -250,11 +263,11 @@ mod command_pid {
                                 Some(output_int_int) => {
                                     self.update_state = Ok(Some(Update0 {
                                         time: datum_state.time,
-                                        output: output,
-                                        error: error,
+                                        output,
+                                        error,
                                         maybe_update_1: Some(Update1 {
-                                            output_int: output_int,
-                                            error_int: error_int,
+                                            output_int,
+                                            error_int,
                                             output_int_int: Some(
                                                 output_int_int + output_int_int_addend,
                                             ),
@@ -272,8 +285,8 @@ mod command_pid {
 }
 ///An Exponentially Weighted Moving Average stream for use with the stream system. See <https://www.itl.nist.gov/div898/handbook/pmc/section3/pmc324.htm> for more information. Because a standard EWMA requires that new data always arrive at the same interval, this implementation uses λ=1-(1-`smoothing_constant`)^Δt instead of the usual weighting factor.
 #[cfg(feature = "internal_enhanced_float")]
-pub struct EWMAStream<T: Clone + Add<Output = T>, G: Getter<T, E> + ?Sized, E: Copy + Debug> {
-    input: Reference<G>,
+pub struct EWMAStream<T, G, E> {
+    input: G,
     //As data may not come in at regular intervals as is assumed by a standard EWMA, this value
     //will be multiplied by delta time before being used.
     smoothing_constant: f32,
@@ -281,58 +294,50 @@ pub struct EWMAStream<T: Clone + Add<Output = T>, G: Getter<T, E> + ?Sized, E: C
     update_time: Option<Time>,
 }
 #[cfg(feature = "internal_enhanced_float")]
-impl<T: Clone + Add<Output = T>, G: Getter<T, E> + ?Sized, E: Copy + Debug> EWMAStream<T, G, E> {
+impl<T, G, E> EWMAStream<T, G, E> {
     ///Constructor for [`EWMAStream`].
-    pub const fn new(input: Reference<G>, smoothing_constant: f32) -> Self {
+    pub const fn new(input: G, smoothing_constant: f32) -> Self {
         Self {
-            input: input,
-            smoothing_constant: smoothing_constant,
+            input,
+            smoothing_constant,
             value: Ok(None),
             update_time: None,
         }
     }
 }
 #[cfg(feature = "internal_enhanced_float")]
-impl<
-        T: Clone + Add<Output = T> + Mul<f32, Output = T>,
-        G: Getter<T, E> + ?Sized,
-        E: Copy + Debug,
-    > Getter<T, E> for EWMAStream<T, G, E>
+impl<T, G, E> Getter<T, E> for EWMAStream<T, G, E>
+where
+    Self: Updatable<E>,
+    T: Clone,
+    E: Clone + Debug,
 {
     fn get(&self) -> Output<T, E> {
         self.value.clone()
     }
 }
 #[cfg(feature = "internal_enhanced_float")]
-impl<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> Getter<Quantity, E>
-    for EWMAStream<Quantity, G, E>
-{
-    fn get(&self) -> Output<Quantity, E> {
-        self.value.clone()
-    }
-}
-#[cfg(feature = "internal_enhanced_float")]
-impl<
-        T: Clone + Add<Output = T> + Mul<f32, Output = T>,
-        G: Getter<T, E> + ?Sized,
-        E: Copy + Debug,
-    > Updatable<E> for EWMAStream<T, G, E>
+impl<T, G, E> Updatable<E> for EWMAStream<T, G, E>
+where
+    T: Clone + Add<Output = T> + Mul<f32, Output = T>,
+    G: Getter<T, E>,
+    E: Clone + Debug,
 {
     fn update(&mut self) -> NothingOrError<E> {
-        let output = self.input.borrow().get();
+        self.input.update()?;
+        let output = self.input.get();
         let output = match output {
             Err(error) => {
-                self.value = Err(error);
+                //XXX: This may change when you standardize when Updatable::update errors.
+                //Remove this clone if you don't return the error.
+                self.value = Err(error.clone());
                 self.update_time = None;
                 return Err(error);
             }
             Ok(None) => {
-                match self.value {
-                    Err(_) => {
-                        self.value = Ok(None);
-                        self.update_time = None;
-                    }
-                    Ok(_) => {}
+                if self.value.is_err() {
+                    self.value = Ok(None);
+                    self.update_time = None;
                 }
                 return Ok(());
             }
@@ -349,7 +354,7 @@ impl<
         let prev_time = self
             .update_time
             .expect("update_time must be Some if value is");
-        let delta_time = f32::from(Quantity::from(output.time - prev_time));
+        let delta_time = (output.time - prev_time).as_seconds_f32();
         let lambda = 1.0 - powf(1.0 - self.smoothing_constant, delta_time);
         let value = prev_value.value * (1.0 - lambda) + output.value * lambda;
         self.value = Ok(Some(Datum::new(output.time, value)));
@@ -358,87 +363,95 @@ impl<
     }
 }
 #[cfg(feature = "internal_enhanced_float")]
-impl<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> Updatable<E> for EWMAStream<Quantity, G, E> {
+impl<MM, S, G, E> Updatable<E> for EWMAStream<Quantity<f32, MM, S>, G, E>
+where
+    MM: compile_time_integer::Integer,
+    S: compile_time_integer::Integer,
+    G: Getter<Quantity<f32, MM, S>, E>,
+    E: Clone + Debug,
+{
     fn update(&mut self) -> NothingOrError<E> {
-        let output = self.input.borrow().get();
+        self.input.update()?;
+        let output = self.input.get();
         let output = match output {
             Err(error) => {
-                self.value = Err(error);
+                //XXX: This may change when you standardize when Updatable::update errors.
+                //Remove this clone if you don't return the error.
+                self.value = Err(error.clone());
                 self.update_time = None;
                 return Err(error);
             }
             Ok(None) => {
-                match self.value {
-                    Err(_) => {
-                        self.value = Ok(None);
-                        self.update_time = None;
-                    }
-                    Ok(_) => {}
+                if self.value.is_err() {
+                    self.value = Ok(None);
+                    self.update_time = None;
                 }
                 return Ok(());
             }
             Ok(Some(some)) => some,
         };
         let prev_value = match &self.value {
-            Ok(Some(some)) => some.clone(),
+            Ok(Some(some)) => *some,
             _ => {
-                self.value = Ok(Some(output.clone()));
+                self.value = Ok(Some(output));
                 self.update_time = Some(output.time);
-                output.clone()
+                output
             }
         };
         let prev_time = self
             .update_time
             .expect("update_time must be Some if value is");
-        let delta_time = f32::from(Quantity::from(output.time - prev_time));
-        let lambda = Quantity::dimensionless(1.0 - powf(1.0 - self.smoothing_constant, delta_time));
+        let delta_time = (output.time - prev_time).as_seconds_f32();
+        let lambda = 1.0 - powf(1.0 - self.smoothing_constant, delta_time);
         let value =
-            prev_value.value * (Quantity::dimensionless(1.0) - lambda) + output.value * lambda;
-        self.value = Ok(Some(Datum::new(output.time, value)));
+            prev_value.value.into_inner() * (1.0 - lambda) + output.value.into_inner() * lambda;
+        self.value = Ok(Some(Datum::new(output.time, Quantity::new(value))));
         self.update_time = Some(output.time);
         Ok(())
     }
 }
 ///A moving average stream for use with the stream system.
 #[cfg(feature = "alloc")]
-pub struct MovingAverageStream<T, G: Getter<T, E> + ?Sized, E: Copy + Debug> {
-    input: Reference<G>,
+pub struct MovingAverageStream<T, G, E> {
+    input: G,
     window: Time,
     value: Output<T, E>,
     input_values: VecDeque<Datum<T>>,
 }
 #[cfg(feature = "alloc")]
-impl<T, G: Getter<T, E> + ?Sized, E: Copy + Debug> MovingAverageStream<T, G, E> {
+impl<T, G, E> MovingAverageStream<T, G, E> {
     ///Constructor for [`MovingAverageStream`].
-    pub const fn new(input: Reference<G>, window: Time) -> Self {
+    pub const fn new(input: G, window: Time) -> Self {
         Self {
-            input: input,
-            window: window,
+            input,
+            window,
             value: Ok(None),
             input_values: VecDeque::new(),
         }
     }
 }
 #[cfg(feature = "alloc")]
-impl<
-        T: Clone + Default + AddAssign + Mul<f32, Output = T> + DivAssign<f32>,
-        G: Getter<T, E> + ?Sized,
-        E: Copy + Debug,
-    > Getter<T, E> for MovingAverageStream<T, G, E>
+impl<T, G, E> Getter<T, E> for MovingAverageStream<T, G, E>
+where
+    Self: Updatable<E>,
+    Output<T, E>: Clone,
+    E: Clone + Debug,
 {
     fn get(&self) -> Output<T, E> {
         self.value.clone()
     }
 }
 #[cfg(feature = "alloc")]
-impl<
-        T: Clone + Default + AddAssign + Mul<f32, Output = T> + DivAssign<f32>,
-        G: Getter<T, E> + ?Sized,
-        E: Copy + Debug,
-    > Updatable<E> for MovingAverageStream<T, G, E>
+impl<T, N1, G, E> Updatable<E> for MovingAverageStream<T, G, E>
+where
+    T: Clone + Mul<Time, Output = N1>,
+    N1: Default + AddAssign + Div<Time, Output = T>,
+    G: Getter<T, E>,
+    E: Clone + Debug,
 {
     fn update(&mut self) -> NothingOrError<E> {
-        let output = self.input.borrow().get();
+        self.input.update()?;
+        let output = self.input.get();
         let output = match output {
             Ok(Some(thing)) => thing,
             Ok(None) => {
@@ -454,13 +467,15 @@ impl<
                 return Ok(());
             }
             Err(error) => {
-                self.value = Err(error);
+                //XXX: This may change when you standardize when Updatable::update errors.
+                //Remove this clone if you don't return the error.
+                self.value = Err(error.clone());
                 self.input_values.clear();
                 return Err(error);
             }
         };
         self.input_values.push_back(output.clone());
-        if self.input_values.len() == 0 {
+        if self.input_values.is_empty() {
             self.value = Ok(Some(output));
             return Ok(());
         }
@@ -476,75 +491,13 @@ impl<
         start_times.push_front(output.time - self.window);
         let mut weights = Vec::with_capacity(self.input_values.len());
         for i in 0..self.input_values.len() {
-            weights.push(f32::from(Quantity::from(end_times[i] - start_times[i])));
+            weights.push(end_times[i] - start_times[i]);
         }
-        let mut value = T::default();
+        let mut value = N1::default();
         for i in 0..self.input_values.len() {
             value += self.input_values[i].value.clone() * weights[i];
         }
-        value /= f32::from(Quantity::from(self.window));
-        self.value = Ok(Some(Datum::new(output.time, value)));
-        Ok(())
-    }
-}
-#[cfg(feature = "alloc")]
-impl<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> Getter<Quantity, E>
-    for MovingAverageStream<Quantity, G, E>
-{
-    fn get(&self) -> Output<Quantity, E> {
-        self.value.clone()
-    }
-}
-#[cfg(feature = "alloc")]
-impl<G: Getter<Quantity, E> + ?Sized, E: Copy + Debug> Updatable<E>
-    for MovingAverageStream<Quantity, G, E>
-{
-    fn update(&mut self) -> NothingOrError<E> {
-        let output = self.input.borrow().get();
-        let output = match output {
-            Ok(Some(thing)) => thing,
-            Ok(None) => {
-                match self.value {
-                    Ok(_) => {}
-                    Err(_) => {
-                        //We got an Ok(None) from input, so there's not a problem anymore, but we
-                        //still don't have a value. Set it to Ok(None) and leave input_values
-                        //empty.
-                        self.value = Ok(None);
-                    }
-                }
-                return Ok(());
-            }
-            Err(error) => {
-                self.value = Err(error);
-                self.input_values.clear();
-                return Err(error);
-            }
-        };
-        self.input_values.push_back(output.clone());
-        if self.input_values.len() == 0 {
-            self.value = Ok(Some(output));
-            return Ok(());
-        }
-        while self.input_values[0].time <= output.time - self.window {
-            self.input_values.pop_front();
-        }
-        let mut end_times = Vec::new();
-        for i in &self.input_values {
-            end_times.push(i.time);
-        }
-        let mut start_times = VecDeque::from(end_times.clone());
-        start_times.pop_back();
-        start_times.push_front(output.time - self.window);
-        let mut weights = Vec::with_capacity(self.input_values.len());
-        for i in 0..self.input_values.len() {
-            weights.push(Quantity::from(end_times[i] - start_times[i]));
-        }
-        let mut value = self.input_values[0].value.clone() * weights[0];
-        for i in 1..self.input_values.len() {
-            value += self.input_values[i].value.clone() * weights[i];
-        }
-        value /= Quantity::from(self.window);
+        let value = value / self.window;
         self.value = Ok(Some(Datum::new(output.time, value)));
         Ok(())
     }

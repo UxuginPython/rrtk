@@ -1,448 +1,379 @@
 // SPDX-License-Identifier: BSD-3-Clause
-// Copyright 2024-2025 UxuginPython
-//!RRTK's device system works through a graph-like structure where each device holds objects called
-//!terminals in [`RefCell`]s. Terminals represent anywhere that a device can connect to another.
-//!Connected terminals hold references to eachother's [`RefCell`]s. This module holds builtin
-//!devices.
-use crate::*;
+// Copyright 2024-2026 UxuginPython
+//!A graph-based system for tracking the rotational states of mechanical components throughout your
+//!robot.
+//!
+//!The system uses a set of *devices*, each of which is allowed to read and write to a specific set
+//!of *nodes*. Nodes, their states, and connections between them are managed by the [`System`];
+//!devices read and write to nodes using [`NodeID`]s provided by it. `NodeID`s issued by a `System`
+//!must only be used with that same `System`. Using `NodeID`s with other `System`s will often
+//!result in panics.
+//!
+//!Two devices should never read or write to the same node. Instead, each device should have its
+//!own node, and those nodes should be connected through the `System`. This avoids issues such as
+//!nodes oscillating between the states being written by different devices.
+//!
+//!For more information, see the "devices" example.
+use super::*;
+pub mod provided;
 pub mod wrappers;
-///A device such that positive for one terminal is negative for the other.
-///As this device has only one degree of freedom, it propagates [`Command`]s given to its terminals
-///as well as [`State`]s.
-pub struct Invert<'a, E: Copy + Debug> {
-    term1: RefCell<Terminal<'a, E>>,
-    term2: RefCell<Terminal<'a, E>>,
+type SystemID = u16;
+type LocalNodeID = usize;
+static mut NEXT_SYSTEM_ID: SystemID = 0;
+///A unique identifier for a node of a [`System`]. `NodeID` is used to interact with nodes through
+///the `System`.
+///
+///The internal value is not accessible. `NodeID` can only be constructed by [`System::new_node`];
+///it cannot be constructed directly.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct NodeID {
+    system: SystemID,
+    node: LocalNodeID,
 }
-impl<'a, E: Copy + Debug> Invert<'a, E> {
-    ///Constructor for [`Invert`].
+impl NodeID {
+    //This is intentionally not pub.
+    #[inline]
+    const fn new(system: SystemID, node: LocalNodeID) -> Self {
+        Self { system, node }
+    }
+    ///Checks whether two `NodeID`s were issued by the same [`System`]. This is different from the
+    ///`PartialEq` implementation, which also checks if the `NodeID`s refer to the same node.
+    #[inline]
+    pub const fn same_system(&self, other: Self) -> bool {
+        self.system == other.system
+    }
+}
+struct Node {
+    prev: Option<LocalNodeID>,
+    next: Option<LocalNodeID>,
+    state_local: Option<AngularState>,
+}
+impl Node {
     pub const fn new() -> Self {
         Self {
-            term1: Terminal::new(),
-            term2: Terminal::new(),
+            prev: None,
+            next: None,
+            state_local: None,
         }
     }
-    ///Get a reference to the side 1 terminal of the invert device.
-    pub fn get_terminal_1(&self) -> &'a RefCell<Terminal<'a, E>> {
-        //We don't want to extend the `&self` reference beyond the scope of the function, but we
-        //need need the `term` reference to last for 'a, so we do this to get a reference with a
-        //longer lifetime. This should be OK since both terminals are restricted to the 'a
-        //lifetime.
-        unsafe { &*(&self.term1 as *const RefCell<Terminal<'a, E>>) }
-    }
-    ///Get a reference to the side 2 terminal of the invert device.
-    pub fn get_terminal_2(&self) -> &'a RefCell<Terminal<'a, E>> {
-        unsafe { &*(&self.term2 as *const RefCell<Terminal<'a, E>>) }
-    }
 }
-impl<E: Copy + Debug> Updatable<E> for Invert<'_, E> {
-    fn update(&mut self) -> NothingOrError<E> {
-        self.update_terminals()?;
-        let get1: Option<Datum<State>> = self
-            .term1
-            .borrow()
-            .get()
-            .expect("Terminal get will always return Ok");
-        let get2: Option<Datum<State>> = self
-            .term2
-            .borrow()
-            .get()
-            .expect("Terminal get will always return Ok");
-        match get1 {
-            None => match get2 {
-                None => {}
-                Some(datum2) => {
-                    let newdatum1 = Datum::new(datum2.time, -datum2.value);
-                    self.term1.borrow_mut().set(newdatum1)?;
-                }
-            },
-            Some(datum1) => match get2 {
-                None => {
-                    let newdatum2 = Datum::new(datum1.time, -datum1.value);
-                    self.term2.borrow_mut().set(newdatum2)?;
-                }
-                Some(datum2) => {
-                    let state1 = datum1.value;
-                    let state2 = datum2.value;
-                    let time = if datum1.time >= datum2.time {
-                        datum1.time
-                    } else {
-                        datum2.time
-                    };
-                    //average with negative state2 as it is inverted from state1
-                    let new_state = (state1 - state2) / 2.0;
-                    self.term1.borrow_mut().set(Datum::new(time, new_state))?;
-                    self.term2.borrow_mut().set(Datum::new(time, -new_state))?;
-                }
-            },
+///A struct that tracks the states of axles throughout your robot. It is based on a system of nodes
+///that can be connected. `N` is the maximum number of nodes. The structure is implemented using a
+///form of doubly linked list.
+///
+///See the [module documentation](self) for more information.
+pub struct System<const N: usize> {
+    system_id: SystemID,
+    nodes: [Option<Node>; N],
+}
+impl<const N: usize> System<N> {
+    ///Constructor.
+    #[inline]
+    pub const fn new() -> Self {
+        let system_id;
+        unsafe {
+            system_id = NEXT_SYSTEM_ID;
+            NEXT_SYSTEM_ID += 1;
         }
-        let get1: Option<Datum<Command>> = self
-            .term1
-            .borrow()
-            .get()
-            .expect("Terminal get will always return Ok");
-        let get2: Option<Datum<Command>> = self
-            .term2
-            .borrow()
-            .get()
-            .expect("Terminal get will always return Ok");
-        let mut maybe_datum: Option<Datum<Command>> = None;
-        maybe_datum.replace_if_none_or_older_than_option(get1);
-        match get2 {
-            Some(x) => {
-                maybe_datum.replace_if_none_or_older_than(-x);
-            }
-            None => {}
-        }
-        match maybe_datum {
-            Some(datum_command) => {
-                self.term1.borrow_mut().set(datum_command)?;
-                self.term2.borrow_mut().set(-datum_command)?;
-            }
-            None => {}
-        }
-        Ok(())
-    }
-}
-impl<E: Copy + Debug> Device<E> for Invert<'_, E> {
-    fn update_terminals(&mut self) -> NothingOrError<E> {
-        self.term1.borrow_mut().update()?;
-        self.term2.borrow_mut().update()?;
-        Ok(())
-    }
-}
-///A gear train, a mechanism consisting of a two or more gears meshed together.
-///As this device has only one degree of freedom, it propagates [`Command`]s given to its terminals
-///as well as [`State`]s.
-pub struct GearTrain<'a, E: Copy + Debug> {
-    term1: RefCell<Terminal<'a, E>>,
-    term2: RefCell<Terminal<'a, E>>,
-    ratio: f32,
-}
-impl<'a, E: Copy + Debug> GearTrain<'a, E> {
-    ///Construct a [`GearTrain`] with the ratio as an `f32`.
-    pub const fn with_ratio_raw(ratio: f32) -> Self {
         Self {
-            term1: Terminal::new(),
-            term2: Terminal::new(),
-            ratio: ratio,
+            system_id,
+            nodes: [const { None }; N],
         }
     }
-    ///Construct a [`GearTrain`] with the ratio as a dimensionless [`Quantity`].
-    pub const fn with_ratio(ratio: Quantity) -> Self {
-        ratio.unit.assert_eq_assume_ok(&DIMENSIONLESS);
-        Self::with_ratio_raw(ratio.value)
+    ///Returns true only if this system contains the provided node.
+    #[inline]
+    pub const fn contains(&self, node_id: NodeID) -> bool {
+        self.system_id == node_id.system
     }
-    ///Construct a [`GearTrain`] from an array of the numbers of teeth on each gear in the train.
-    pub const fn new<const N: usize>(teeth: [f32; N]) -> Self {
-        if N < 2 {
-            panic!("rrtk::devices::GearTrain::new must be provided with at least two gear tooth counts.");
+    #[inline]
+    const fn assert_contains(&self, node_id: NodeID) -> LocalNodeID {
+        assert!(
+            self.contains(node_id),
+            "rrtk System does not contain provided node"
+        );
+        node_id.node
+    }
+    #[inline]
+    const fn node_ref_from_local_id(&self, node_id: LocalNodeID) -> &Node {
+        if let Some(node) = &self.nodes[node_id] {
+            node
+        } else {
+            panic!("rrtk System invariant violated");
         }
-        let ratio = teeth[0] / teeth[teeth.len() - 1] * if N % 2 == 0 { -1.0 } else { 1.0 };
-        Self::with_ratio_raw(ratio)
     }
-    ///Get a reference to the side 1 terminal of the device where (side 1) * ratio = (side 2).
-    pub fn get_terminal_1(&self) -> &'a RefCell<Terminal<'a, E>> {
-        unsafe { &*(&self.term1 as *const RefCell<Terminal<'a, E>>) }
+    #[inline]
+    const fn node_mut_from_local_id(&mut self, node_id: LocalNodeID) -> &mut Node {
+        if let Some(ref mut node) = self.nodes[node_id] {
+            node
+        } else {
+            panic!("rrtk System invariant violated");
+        }
     }
-    ///Get a reference to the side 2 terminal of the device where (side 1) * ratio = (side 2).
-    pub fn get_terminal_2(&self) -> &'a RefCell<Terminal<'a, E>> {
-        unsafe { &*(&self.term2 as *const RefCell<Terminal<'a, E>>) }
+    ///Returns the last state a node has been directly set to using
+    ///[`set_state_local`](Self::set_state_local). This does not account for connected nodes.
+    pub const fn get_state_local(&self, node_id: NodeID) -> Option<AngularState> {
+        let node_id = self.assert_contains(node_id);
+        let node = self.node_ref_from_local_id(node_id);
+        node.state_local
+    }
+    ///Set the state of a node. The set value can be accessed by [`get_state_local`](Self::get_state_local).
+    pub const fn set_state_local(&mut self, node_id: NodeID, state: Option<AngularState>) {
+        let node_id = self.assert_contains(node_id);
+        let node = self.node_mut_from_local_id(node_id);
+        node.state_local = state;
+    }
+    fn get_average_state_over_iterator<I: Iterator<Item = LocalNodeID>>(
+        &self,
+        iterator: I,
+    ) -> Option<AngularState> {
+        let mut contributing = 0u16;
+        let mut state = AngularState::ZERO;
+        for node_id in iterator {
+            let node = self.node_ref_from_local_id(node_id);
+            if let Some(state_local) = node.state_local {
+                state += state_local;
+                contributing += 1;
+            }
+        }
+        if contributing >= 1 {
+            Some(state / Dimensionless::new(contributing as f32))
+        } else {
+            None
+        }
+    }
+    ///Returns the average state of all nodes connected to the provided node, **excluding** the
+    ///provided node itself. To avoid feedback loops, this is the recommended function to use in
+    ///your calculations (as opposed to [`get_state_local`](Self::get_state_local) or
+    ///[`get_state_true`](Self::get_state_true)).
+    #[inline] //Inlining this function itself; not inlining get_average_state_over_iterator.
+    pub fn get_state_connected(&self, node_id: NodeID) -> Option<AngularState> {
+        let node_id = self.assert_contains(node_id);
+        self.get_average_state_over_iterator(self.iter_connected(node_id))
+    }
+    ///Returns the average state of all nodes connected to the provided node, **including** the
+    ///provided node itself. This value is mostly useful when displaying information and should
+    ///generally not be used directly in calculations due to feedback loops.
+    ///[`get_state_connected`](Self::get_state_connected) is recommended instead to avoid this
+    ///issue.
+    #[inline] //same as get_state_connected
+    pub fn get_state_true(&self, node_id: NodeID) -> Option<AngularState> {
+        let node_id = self.assert_contains(node_id);
+        self.get_average_state_over_iterator(
+            self.iter_connected(node_id)
+                .chain(core::iter::once(node_id)),
+        )
+    }
+    ///Returns the ID for a new node if the `System` has capacity for one.
+    pub const fn new_node(&mut self) -> Option<NodeID> {
+        //A for loop over 0..N that works in a const context.
+        let mut i = 0usize;
+        while i < N {
+            if self.nodes[i].is_none() {
+                self.nodes[i] = Some(Node::new());
+                return Some(NodeID::new(self.system_id, i));
+            }
+            i += 1;
+        }
+        None
+    }
+    const fn beginning(&self, node_id: LocalNodeID) -> LocalNodeID {
+        let mut node_id = node_id;
+        loop {
+            let node = self.node_ref_from_local_id(node_id);
+            if let Some(prev_id) = node.prev {
+                node_id = prev_id;
+            } else {
+                break;
+            }
+        }
+        node_id
+    }
+    const fn end(&self, node_id: LocalNodeID) -> LocalNodeID {
+        let mut node_id = node_id;
+        loop {
+            let node = self.node_ref_from_local_id(node_id);
+            if let Some(next_id) = node.next {
+                node_id = next_id;
+            } else {
+                break;
+            }
+        }
+        node_id
+    }
+    #[inline]
+    fn iter_connected(&self, node_id: LocalNodeID) -> ConnectedIterator<'_, N> {
+        ConnectedIterator::new(self, node_id)
+    }
+    ///Connects two nodes. The order of the two may marginally affect performance but will not
+    ///change behavior beyond that. Connections between nodes are transitive (i.e. if A is
+    ///connected to B and B is connected to C then A is connected to C) and bidirectional.
+    pub const fn connect(&mut self, node_a_id: NodeID, node_b_id: NodeID) {
+        let node_a_id = self.assert_contains(node_a_id);
+        let node_b_id = self.assert_contains(node_b_id);
+        let a_end_id = self.end(node_a_id);
+        let b_beginning_id = self.beginning(node_b_id);
+        let a_end = self.node_mut_from_local_id(a_end_id);
+        a_end.next = Some(b_beginning_id);
+        let b_beginning = self.node_mut_from_local_id(b_beginning_id);
+        b_beginning.prev = Some(a_end_id);
+    }
+    ///Disconnects a node from all other nodes connected to it. Connected nodes will stay connected
+    ///to eachother. (e.g. if A is connected to B and B is connected to C, A will stay connected to
+    ///C if B is disconnected.)
+    pub const fn disconnect(&mut self, node_id: NodeID) {
+        let node_id = self.assert_contains(node_id);
+        let node = self.node_ref_from_local_id(node_id);
+        let maybe_prev_id = node.prev;
+        let maybe_next_id = node.next;
+        if let Some(prev_id) = maybe_prev_id {
+            let prev = self.node_mut_from_local_id(prev_id);
+            prev.next = maybe_next_id;
+        }
+        if let Some(next_id) = maybe_next_id {
+            let next = self.node_mut_from_local_id(next_id);
+            next.prev = maybe_prev_id;
+        }
     }
 }
-impl<E: Copy + Debug> Updatable<E> for GearTrain<'_, E> {
-    fn update(&mut self) -> NothingOrError<E> {
-        self.update_terminals()?;
-        let get1: Option<Datum<State>> = self
-            .term1
-            .borrow()
-            .get()
-            .expect("Terminal get will always return Ok");
-        let get2: Option<Datum<State>> = self
-            .term2
-            .borrow()
-            .get()
-            .expect("Terminal get will always return Ok");
-        match get1 {
-            Some(datum1) => match get2 {
-                Some(datum2) => {
-                    let state1 = datum1.value;
-                    let state2 = datum2.value;
-                    let time = if datum1.time >= datum2.time {
-                        datum1.time
-                    } else {
-                        datum2.time
-                    };
-                    //https://www.desmos.com/3d/gvwbqszr5e
-                    let r_squared_plus_1 = self.ratio * self.ratio + 1.0;
-                    let x_plus_r_y = state1 + state2 * self.ratio;
-                    let newstate1 = x_plus_r_y / r_squared_plus_1;
-                    let newstate2 = (x_plus_r_y * self.ratio) / r_squared_plus_1;
-                    self.term1.borrow_mut().set(Datum::new(time, newstate1))?;
-                    self.term2.borrow_mut().set(Datum::new(time, newstate2))?;
-                }
-                None => {
-                    let newdatum2 = datum1 * self.ratio;
-                    self.term2.borrow_mut().set(newdatum2)?;
-                }
-            },
-            None => match get2 {
-                Some(datum2) => {
-                    let newdatum1 = datum2 / self.ratio;
-                    self.term1.borrow_mut().set(newdatum1)?;
-                }
-                None => {}
-            },
-        }
-        let get1: Option<Datum<Command>> = self
-            .term1
-            .borrow()
-            .get()
-            .expect("Terminal get will always return Ok");
-        let get2: Option<Datum<Command>> = self
-            .term2
-            .borrow()
-            .get()
-            .expect("Terminal get will always return Ok");
-        match get1 {
-            Some(datum1) => match get2 {
-                Some(datum2) => {
-                    if datum1.time >= datum2.time {
-                        let newdatum2 = datum1 * self.ratio;
-                        self.term2.borrow_mut().set(newdatum2)?;
-                    } else {
-                        let newdatum1 = datum2 / self.ratio;
-                        self.term1.borrow_mut().set(newdatum1)?;
-                    }
-                }
-                None => {
-                    let newdatum2 = datum1 * self.ratio;
-                    self.term2.borrow_mut().set(newdatum2)?;
-                }
-            },
-            None => match get2 {
-                Some(datum2) => {
-                    let newdatum1 = datum2 / self.ratio;
-                    self.term1.borrow_mut().set(newdatum1)?;
-                }
-                None => {}
-            },
-        }
-        Ok(())
-    }
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[repr(u8)]
+enum ConnectedIteratorState {
+    Forward,
+    Backward,
+    Done,
 }
-impl<E: Copy + Debug> Device<E> for GearTrain<'_, E> {
-    fn update_terminals(&mut self) -> NothingOrError<E> {
-        self.term1.borrow_mut().update()?;
-        self.term2.borrow_mut().update()?;
-        Ok(())
-    }
+///This iterator intentionally excludes the head node.
+struct ConnectedIterator<'a, const N: usize> {
+    system: &'a System<N>,
+    head_node: LocalNodeID,
+    node_to_return: LocalNodeID,
+    state: ConnectedIteratorState,
 }
-///A connection between terminals that are not directly connected, such as when three or more
-///terminals are connected. Code-wise, this is almost exactly the same as directly connecting two
-///terminals, but this type can connect more than two terminals. There is some freedom in exactly
-///what you do with each of these ways of connecting terminals and what they represent physically,
-///but the intention is that [`connect`] is for only two and [`Axle`] is for more. Using an [`Axle`] for
-///only two terminals is possible but may have a slight performance cost. (The type even
-///technically allows for only one or even zero connected terminals, but there is almost certainly
-///no legitimate use for this.)
-///As this device has only one degree of freedom, it propagates [`Command`]s given to its terminals
-///as well as [`State`]s.
-pub struct Axle<'a, const N: usize, E: Copy + Debug> {
-    inputs: [RefCell<Terminal<'a, E>>; N],
-}
-impl<'a, const N: usize, E: Copy + Debug> Axle<'a, N, E> {
-    ///Constructor for [`Axle`].
-    pub fn new() -> Self {
-        let mut inputs: [core::mem::MaybeUninit<RefCell<Terminal<'a, E>>>; N] =
-            [const { core::mem::MaybeUninit::uninit() }; N];
-        for i in &mut inputs {
-            i.write(Terminal::new());
-        }
-        //transmute doesn't work well with generics, so this does the same thing through pointers instead.
-        let inputs: [RefCell<Terminal<'a, E>>; N] = unsafe {
-            inputs
-                .as_ptr()
-                .cast::<[RefCell<Terminal<'a, E>>; N]>()
-                .read()
+impl<'a, const N: usize> ConnectedIterator<'a, N> {
+    fn new(system: &'a System<N>, node: LocalNodeID) -> Self {
+        //We set node_to_return to the head node and then skip it.
+        let mut new_self = Self {
+            system,
+            head_node: node,
+            node_to_return: node,
+            state: ConnectedIteratorState::Forward,
         };
-        Self { inputs: inputs }
-    }
-    ///Get a reference to one of the axle's terminals.
-    pub fn get_terminal(&self, terminal: usize) -> &'a RefCell<Terminal<'a, E>> {
-        unsafe { &*(&self.inputs[terminal] as *const RefCell<Terminal<'a, E>>) }
+        new_self.next();
+        new_self
     }
 }
-impl<const N: usize, E: Copy + Debug> Updatable<E> for Axle<'_, N, E> {
-    fn update(&mut self) -> NothingOrError<E> {
-        self.update_terminals()?;
-        let mut count = 0u16;
-        let mut datum = Datum::new(Time(i64::MIN), State::default());
-        for i in &self.inputs {
-            match i.borrow().get()? {
-                Some(gotten_datum) => {
-                    datum += gotten_datum;
-                    count += 1;
+impl<const N: usize> Iterator for ConnectedIterator<'_, N> {
+    type Item = LocalNodeID;
+    fn next(&mut self) -> Option<LocalNodeID> {
+        match self.state {
+            ConnectedIteratorState::Forward => {
+                let to_return = self.node_to_return;
+                let to_return_node = self.system.node_ref_from_local_id(to_return);
+                if let Some(next_to_return) = to_return_node.next {
+                    self.node_to_return = next_to_return;
+                } else {
+                    //Basically the same thing as in the constructor. Set it to go backward,
+                    //set node_to_return to the head node, and then skip it.
+                    self.state = ConnectedIteratorState::Backward;
+                    self.node_to_return = self.head_node;
+                    self.next();
                 }
-                None => (),
+                Some(to_return)
             }
-        }
-        if count >= 1 {
-            datum /= count as f32;
-            for i in &self.inputs {
-                i.borrow_mut().set(datum.clone())?;
+            ConnectedIteratorState::Backward => {
+                let to_return = self.node_to_return;
+                let to_return_node = self.system.node_ref_from_local_id(to_return);
+                if let Some(next_to_return) = to_return_node.prev {
+                    self.node_to_return = next_to_return;
+                } else {
+                    self.state = ConnectedIteratorState::Done;
+                }
+                Some(to_return)
             }
+            ConnectedIteratorState::Done => None,
         }
-        let mut maybe_datum: Option<Datum<Command>> = None;
-        for i in &self.inputs {
-            maybe_datum.replace_if_none_or_older_than_option(i.borrow().get()?);
+    }
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        if !matches!(self.state, ConnectedIteratorState::Done) {
+            (1, None)
+        } else {
+            (0, Some(0))
         }
-        if let Some(datum) = maybe_datum {
-            for i in &self.inputs {
-                i.borrow_mut().set(datum.clone())?;
-            }
-        }
-        Ok(())
     }
 }
-impl<const N: usize, E: Copy + Debug> Device<E> for Axle<'_, N, E> {
-    fn update_terminals(&mut self) -> NothingOrError<E> {
-        for i in &self.inputs {
-            i.borrow_mut().update()?;
-        }
-        Ok(())
-    }
+///Very similar to the [`Updatable`] trait except that it requires a mutable reference to the
+///system controlling the device's nodes.
+pub trait DeviceUpdatable<E> {
+    ///Update the states of the device's terminals based on the device's mechanical constraints.
+    fn device_update<const N: usize>(&mut self, system: &mut System<N>) -> NothingOrError<E>;
 }
-///Since each branch of a differential is dependent on the other two, we can calculate each with
-///only the others. This allows you to select a branch to completely calculate and not call
-///[`get`](Terminal::get)
-///on. For example, if you have encoders on two branches, you would probably want to calculate the
-///third from their readings. If you have encoders on all three branches, you can also choose to
-///use all three values from them with the [`Equal`](DifferentialDistrust::Equal) variant.
-pub enum DifferentialDistrust {
-    ///Calculate the state of side 1 from sum and side 2 and do not call [`get`](Terminal::get) on it.
-    Side1,
-    ///Calculate the state of side 2 from sum and side 1 and do not call [`get`](Terminal::get) on it.
-    Side2,
-    ///Calculate the state of sum from side 1 and side 2 and do not call [`get`](Terminal::get) on it.
-    Sum,
-    ///Trust all branches equally in the calculation. Note that this is a bit slower.
-    Equal,
-}
-///A mechanical differential mechanism.
-///As this device has two degrees of freedom, it is not able to propagate [`Command`]s given to its
-///terminals as it does with [`State`]s.
-pub struct Differential<'a, E: Copy + Debug> {
-    side1: RefCell<Terminal<'a, E>>,
-    side2: RefCell<Terminal<'a, E>>,
-    sum: RefCell<Terminal<'a, E>>,
-    distrust: DifferentialDistrust,
-}
-impl<'a, E: Copy + Debug> Differential<'a, E> {
-    ///Constructor for [`Differential`]. Trusts all branches equally.
-    pub const fn new() -> Self {
-        Self {
-            side1: Terminal::new(),
-            side2: Terminal::new(),
-            sum: Terminal::new(),
-            distrust: DifferentialDistrust::Equal,
-        }
+#[cfg(test)]
+mod tests {
+    #![allow(unused)]
+    use super::*;
+    #[test]
+    fn connected_iterator() {
+        let mut system = System::<6>::new();
+        let [n0, n1, n2, n3, n4, n5] = [
+            system.new_node().unwrap(),
+            system.new_node().unwrap(),
+            system.new_node().unwrap(),
+            system.new_node().unwrap(),
+            system.new_node().unwrap(),
+            system.new_node().unwrap(),
+        ];
+        system.connect(n1, n3);
+        system.connect(n4, n3);
+        let mut iter = system.iter_connected(3);
+        assert_eq!(iter.next(), Some(1));
+        assert_eq!(iter.next(), Some(4));
+        assert_eq!(iter.next(), None);
     }
-    ///Constructor for [`Differential`] where you choose what to distrust.
-    pub fn with_distrust(distrust: DifferentialDistrust) -> Self {
-        Self {
-            side1: Terminal::new(),
-            side2: Terminal::new(),
-            sum: Terminal::new(),
-            distrust: distrust,
-        }
-    }
-    ///Get a reference to the side 1 terminal of the differential.
-    pub fn get_side_1(&self) -> &'a RefCell<Terminal<'a, E>> {
-        unsafe { &*(&self.side1 as *const RefCell<Terminal<'a, E>>) }
-    }
-    ///Get a reference to the side 2 terminal of the differential.
-    pub fn get_side_2(&self) -> &'a RefCell<Terminal<'a, E>> {
-        unsafe { &*(&self.side2 as *const RefCell<Terminal<'a, E>>) }
-    }
-    ///Get a reference to the sum terminal of the differential.
-    pub fn get_sum(&self) -> &'a RefCell<Terminal<'a, E>> {
-        unsafe { &*(&self.sum as *const RefCell<Terminal<'a, E>>) }
-    }
-}
-impl<E: Copy + Debug> Updatable<E> for Differential<'_, E> {
-    fn update(&mut self) -> NothingOrError<E> {
-        self.update_terminals()?;
-        match self.distrust {
-            DifferentialDistrust::Side1 => {
-                let sum: Datum<State> = match self.sum.borrow().get()? {
-                    Some(sum) => sum,
-                    None => return Ok(()),
-                };
-                let side2: Datum<State> = match self.side2.borrow().get()? {
-                    Some(side2) => side2,
-                    None => return Ok(()),
-                };
-                self.side1.borrow_mut().set(sum - side2)?;
-            }
-            DifferentialDistrust::Side2 => {
-                let sum: Datum<State> = match self.sum.borrow().get()? {
-                    Some(sum) => sum,
-                    None => return Ok(()),
-                };
-                let side1: Datum<State> = match self.side1.borrow().get()? {
-                    Some(side1) => side1,
-                    None => return Ok(()),
-                };
-                self.side2.borrow_mut().set(sum - side1)?;
-            }
-            DifferentialDistrust::Sum => {
-                let side1: Datum<State> = match self.side1.borrow().get()? {
-                    Some(side1) => side1,
-                    None => return Ok(()),
-                };
-                let side2: Datum<State> = match self.side2.borrow().get()? {
-                    Some(side2) => side2,
-                    None => return Ok(()),
-                };
-                self.sum.borrow_mut().set(side1 + side2)?;
-            }
-            DifferentialDistrust::Equal => {
-                let sum: Datum<State> = match self.sum.borrow().get()? {
-                    Some(sum) => sum,
-                    None => return Ok(()),
-                };
-                let side1: Datum<State> = match self.side1.borrow().get()? {
-                    Some(side1) => side1,
-                    None => return Ok(()),
-                };
-                let side2: Datum<State> = match self.side2.borrow().get()? {
-                    Some(side2) => side2,
-                    None => return Ok(()),
-                };
-                //This minimizes (x-a)^2+(y-b)^2+(z-c)^2 given a+b=c where x, y, and z are the
-                //measured values of side1, side2, and sum respectively and a, b, and c are their
-                //calculated estimated values based on all three constrained to add. This
-                //essentially means that the estimated values will be as close to the measured
-                //values as possible while forcing the two sides to add to the sum branch.
-                self.sum
-                    .borrow_mut()
-                    .set((side1 + side2 + sum * 2.0) / 3.0)?;
-                self.side1
-                    .borrow_mut()
-                    .set((side1 * 2.0 - side2 + sum) / 3.0)?;
-                self.side2
-                    .borrow_mut()
-                    .set((-side1 + side2 * 2.0 + sum) / 3.0)?;
-            }
-        }
-        Ok(())
-    }
-}
-impl<E: Copy + Debug> Device<E> for Differential<'_, E> {
-    fn update_terminals(&mut self) -> NothingOrError<E> {
-        self.side1.borrow_mut().update()?;
-        self.side2.borrow_mut().update()?;
-        self.sum.borrow_mut().update()?;
-        Ok(())
+    #[test]
+    fn state_connected() {
+        let mut system = System::<6>::new();
+        let [n0, n1, n2, n3, n4, n5] = [
+            system.new_node().unwrap(),
+            system.new_node().unwrap(),
+            system.new_node().unwrap(),
+            system.new_node().unwrap(),
+            system.new_node().unwrap(),
+            system.new_node().unwrap(),
+        ];
+        system.connect(n1, n3);
+        system.connect(n3, n2);
+        system.connect(n4, n1);
+        system.set_state_local(
+            n2,
+            Some(AngularState::new(
+                Dimensionless::new(3.0),
+                InverseSecond::new(9.0),
+                InverseSecondSquared::new(1.0),
+            )),
+        );
+        system.set_state_local(
+            n3,
+            Some(AngularState::new(
+                Dimensionless::new(3.0),
+                InverseSecond::new(1.0),
+                InverseSecondSquared::new(3.0),
+            )),
+        );
+        system.set_state_local(
+            n4,
+            Some(AngularState::new(
+                Dimensionless::new(9.0),
+                InverseSecond::new(1.0),
+                InverseSecondSquared::new(3.0),
+            )),
+        );
+        assert_eq!(
+            system.get_state_connected(n3),
+            Some(AngularState::new(
+                Dimensionless::new(6.0),        // (3 + 9) / 2
+                InverseSecond::new(5.0),        // (9 + 1) / 2
+                InverseSecondSquared::new(2.0)  // (1 + 3) / 2
+            ))
+        );
     }
 }

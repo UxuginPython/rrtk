@@ -1,238 +1,312 @@
 // SPDX-License-Identifier: BSD-3-Clause
-// Copyright 2024-2025 UxuginPython
-//!Logic operations for boolean getters.
+// Copyright 2024-2026 UxuginPython
+//!Logic operations for boolean Getters.
 use crate::streams::*;
-//TODO: make these take arrays of inputs with generic lengths.
-enum AndState {
-    DefinitelyFalse, //An input returned false.
-    MaybeTrue,       //An input returned None and no input has returned false, so we can't assume an
-    //output.
-    ReturnableTrue, //No input has returned None or false.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum LogicState {
+    ReturnableFalse,
+    NeitherReturnable,
+    ReturnableTrue,
 }
-impl AndState {
+impl LogicState {
     #[inline]
-    fn none(&mut self) {
+    const fn not_returnable_true(&mut self) {
+        if let Self::ReturnableTrue = self {
+            *self = Self::NeitherReturnable;
+        }
+    }
+    #[inline]
+    const fn not_returnable_false(&mut self) {
+        if let Self::ReturnableFalse = self {
+            *self = Self::NeitherReturnable;
+        }
+    }
+    #[inline]
+    const fn from_bool(was: bool) -> Self {
+        if was {
+            Self::ReturnableTrue
+        } else {
+            Self::ReturnableFalse
+        }
+    }
+    #[inline]
+    const fn const_eq(&self, other: &Self) -> bool {
         match self {
-            AndState::ReturnableTrue => *self = AndState::MaybeTrue,
-            _ => (),
+            Self::ReturnableFalse => matches!(other, Self::ReturnableFalse),
+            Self::NeitherReturnable => matches!(other, Self::NeitherReturnable),
+            Self::ReturnableTrue => matches!(other, Self::ReturnableTrue),
+        }
+    }
+    #[inline]
+    const fn not_returnable_with_value(&mut self, value: bool) {
+        if Self::from_bool(value).const_eq(self) {
+            *self = Self::NeitherReturnable;
         }
     }
 }
-///Performs an and operation on two boolean getters. This will return [`None`] if it can't verify
-///that the result should be [`true`] or [`false`]. This is caused by inputs returning [`None`]. It's a
-///bit difficult to state exactly how this is determined, so here's a truth table:
-///| Input 1         | Input 2         | [`AndStream`]   |
-///|-----------------|-----------------|-----------------|
-///| [`Some(false)`] | [`Some(false)`] | [`Some(false)`] |
-///| [`None`]        | [`Some(false)`] | [`Some(false)`] |
-///| [`Some(true)`]  | [`Some(false)`] | [`Some(false)`] |
-///| [`Some(false)`] | [`None`]        | [`Some(false)`] |
-///| [`None`]        | [`None`]        | [`None`]        |
-///| [`Some(true)`]  | [`None`]        | [`None`]        |
-///| [`Some(false)`] | [`Some(true)`]  | [`Some(false)`] |
-///| [`None`]        | [`Some(true)`]  | [`None`]        |
-///| [`Some(true)`]  | [`Some(true)`]  | [`Some(true)`]  |
-pub struct AndStream<G1: Getter<bool, E> + ?Sized, G2: Getter<bool, E> + ?Sized, E: Copy + Debug> {
-    input1: Reference<G1>,
-    input2: Reference<G2>,
-    phantom_e: PhantomData<E>,
+///Performs a logical "and" operation on an arbitrary number of inputs. More specifically, follows
+///these rules, starting at the top and proceeding as needed:
+///1. If an input returns an error, return the error.
+///2. If no input returns an error, if an input returns false, return false.
+///3. If no input returns false, if an input returns None, return None.
+///4. If no input returns None (all returned true), return true.
+///
+///Returns the latest timestamp of any input (if not Err or None).
+///
+///With no inputs, i.e. with `N == 0`, always returns `Ok(None)`.
+///
+///If you only need two inputs, you should probably use [`And2`] instead, which may be slightly
+///faster and allows its inputs to have different types.
+pub struct AndStream<const N: usize, G> {
+    inputs: [G; N],
 }
-impl<G1: Getter<bool, E> + ?Sized, G2: Getter<bool, E> + ?Sized, E: Copy + Debug>
-    AndStream<G1, G2, E>
-{
-    ///Constructor for [`AndStream`].
-    pub const fn new(input1: Reference<G1>, input2: Reference<G2>) -> Self {
-        Self {
-            input1: input1,
-            input2: input2,
-            phantom_e: PhantomData,
-        }
+impl<const N: usize, G> AndStream<N, G> {
+    ///Constructor for `AndStream`.
+    pub const fn new(inputs: [G; N]) -> Self {
+        Self { inputs }
     }
 }
-impl<G1: Getter<bool, E> + ?Sized, G2: Getter<bool, E> + ?Sized, E: Copy + Debug> Getter<bool, E>
-    for AndStream<G1, G2, E>
-{
-    fn get(&self) -> Output<bool, E> {
-        let gotten1 = self.input1.borrow().get()?;
-        let gotten2 = self.input2.borrow().get()?;
-        //Never assume the boolean value of a None from an input:
-        //To return true, we require that both inputs return true (not None).
-        //To return false, we require that at least one input returns false (not None).
-        //If neither of these is met, return None.
-        let mut time = None;
-        let mut and_state = AndState::ReturnableTrue;
-        match gotten1 {
-            Some(datum) => {
-                time = Some(datum.time);
-                if !datum.value {
-                    and_state = AndState::DefinitelyFalse;
-                }
-            }
-            None => {
-                and_state.none();
-            }
-        }
-        match gotten2 {
-            Some(datum) => {
-                match time {
-                    Some(existing) => {
-                        if datum.time > existing {
-                            time = Some(datum.time);
-                        }
-                    }
-                    None => time = Some(datum.time),
-                }
-                if !datum.value {
-                    and_state = AndState::DefinitelyFalse;
-                }
-            }
-            None => {
-                and_state.none();
-            }
-        }
-        let time = match time {
-            Some(time) => time,
-            None => return Ok(None),
-        };
-        match and_state {
-            AndState::DefinitelyFalse => Ok(Some(Datum::new(time, false))),
-            AndState::MaybeTrue => Ok(None),
-            AndState::ReturnableTrue => Ok(Some(Datum::new(time, true))),
-        }
-    }
-}
-impl<G1: Getter<bool, E> + ?Sized, G2: Getter<bool, E> + ?Sized, E: Copy + Debug> Updatable<E>
-    for AndStream<G1, G2, E>
-{
+impl<const N: usize, G: Updatable<E>, E: Clone + Debug> Updatable<E> for AndStream<N, G> {
     fn update(&mut self) -> NothingOrError<E> {
+        for getter in &mut self.inputs {
+            getter.update()?;
+        }
         Ok(())
     }
 }
-enum OrState {
-    DefinitelyTrue, //An input returned true.
-    MaybeFalse,     //An input returned None and no input has returned true, so we can't assume an
-    //output.
-    ReturnableFalse, //No input has returned None or true.
-}
-impl OrState {
-    #[inline]
-    fn none(&mut self) {
-        match self {
-            OrState::ReturnableFalse => *self = OrState::MaybeFalse,
-            _ => (),
-        }
-    }
-}
-///Performs an or operation on two boolean getters. This will return [`None`] if it can't verify that
-///the result should be [`true`] or [`false`].
-///| Input 1         | Input 2       | [`OrStream`]      |
-///|-----------------|---------------|-------------------|
-///| [`Some(false)`] | [`Some(false)`] | [`Some(false)`] |
-///| [`None`]        | [`Some(false)`] | [`None`]        |
-///| [`Some(true)`]  | [`Some(false)`] | [`Some(true)`]  |
-///| [`Some(false)`] | [`None`]        | [`None`]        |
-///| [`None`]        | [`None`]        | [`None`]        |
-///| [`Some(true)`]  | [`None`]        | [`Some(true)`]  |
-///| [`Some(false)`] | [`Some(true)`]  | [`Some(true)`]  |
-///| [`None`]        | [`Some(true)`]  | [`Some(true)`]  |
-///| [`Some(true)`]  | [`Some(true)`]  | [`Some(true)`]  |
-pub struct OrStream<G1: Getter<bool, E> + ?Sized, G2: Getter<bool, E> + ?Sized, E: Copy + Debug> {
-    input1: Reference<G1>,
-    input2: Reference<G2>,
-    phantom_e: PhantomData<E>,
-}
-impl<G1: Getter<bool, E> + ?Sized, G2: Getter<bool, E> + ?Sized, E: Copy + Debug>
-    OrStream<G1, G2, E>
-{
-    ///Constructor for [`OrStream`].
-    pub const fn new(input1: Reference<G1>, input2: Reference<G2>) -> Self {
-        Self {
-            input1: input1,
-            input2: input2,
-            phantom_e: PhantomData,
-        }
-    }
-}
-impl<G1: Getter<bool, E> + ?Sized, G2: Getter<bool, E> + ?Sized, E: Copy + Debug> Getter<bool, E>
-    for OrStream<G1, G2, E>
-{
+impl<const N: usize, G: Getter<bool, E>, E: Clone + Debug> Getter<bool, E> for AndStream<N, G> {
     fn get(&self) -> Output<bool, E> {
-        let gotten1 = self.input1.borrow().get()?;
-        let gotten2 = self.input2.borrow().get()?;
-        let mut time = None;
-        let mut or_state = OrState::ReturnableFalse;
-        match gotten1 {
-            Some(datum) => {
-                time = Some(datum.time);
-                if datum.value {
-                    or_state = OrState::DefinitelyTrue;
-                }
-            }
-            None => {
-                or_state.none();
-            }
+        if N == 0 {
+            return Ok(None);
         }
-        match gotten2 {
-            Some(datum) => {
-                match time {
-                    Some(existing) => {
-                        if datum.time > existing {
-                            time = Some(datum.time);
-                        }
+        let mut logic_state = LogicState::ReturnableTrue;
+        let mut time = Time::ZERO;
+        for getter in &self.inputs {
+            match getter.get()? {
+                None => logic_state.not_returnable_true(),
+                Some(datum) => {
+                    if datum.time > time {
+                        time = datum.time;
                     }
-                    None => time = Some(datum.time),
-                }
-                if datum.value {
-                    or_state = OrState::DefinitelyTrue;
+                    if !datum.value {
+                        logic_state = LogicState::ReturnableFalse;
+                    }
                 }
             }
-            None => {
-                or_state.none();
-            }
         }
-        let time = match time {
-            Some(time) => time,
-            None => return Ok(None),
-        };
-        match or_state {
-            OrState::DefinitelyTrue => Ok(Some(Datum::new(time, true))),
-            OrState::MaybeFalse => Ok(None),
-            OrState::ReturnableFalse => Ok(Some(Datum::new(time, false))),
-        }
+        Ok(match logic_state {
+            LogicState::ReturnableTrue => Some(Datum::new(time, true)),
+            LogicState::ReturnableFalse => Some(Datum::new(time, false)),
+            LogicState::NeitherReturnable => None,
+        })
     }
 }
-impl<G1: Getter<bool, E> + ?Sized, G2: Getter<bool, E> + ?Sized, E: Copy + Debug> Updatable<E>
-    for OrStream<G1, G2, E>
-{
+///Performs a logical "or" operation on an arbitrary number of inputs. More specifically, follows
+///these rules, starting at the top and proceeding as needed:
+///1. If an input returns an error, return the error.
+///2. If no input returns an error, if an input returns true, return true.
+///3. If no input returns true, if an input returns None, return None.
+///4. If no input returns None (all returned false), return false.
+///
+///Returns the latest timestamp of any input (if not Err or None).
+///
+///With no inputs, i.e. with `N == 0`, always returns `Ok(None)`.
+///
+///If you only need two inputs, you should probably use [`Or2`] instead, which may be slightly
+///faster and allows its inputs to have different types.
+pub struct OrStream<const N: usize, G> {
+    inputs: [G; N],
+}
+impl<const N: usize, G> OrStream<N, G> {
+    ///Constructor for `OrStream`.
+    pub const fn new(inputs: [G; N]) -> Self {
+        Self { inputs }
+    }
+}
+impl<const N: usize, G: Updatable<E>, E: Clone + Debug> Updatable<E> for OrStream<N, G> {
     fn update(&mut self) -> NothingOrError<E> {
+        for getter in &mut self.inputs {
+            getter.update()?;
+        }
         Ok(())
     }
 }
-///Performs a not operation on a boolean getter.
-pub struct NotStream<G: Getter<bool, E> + ?Sized, E: Copy + Debug> {
-    input: Reference<G>,
-    phantom_e: PhantomData<E>,
+impl<const N: usize, G: Getter<bool, E>, E: Clone + Debug> Getter<bool, E> for OrStream<N, G> {
+    fn get(&self) -> Output<bool, E> {
+        if N == 0 {
+            return Ok(None);
+        }
+        let mut logic_state = LogicState::ReturnableFalse;
+        let mut time = Time::ZERO;
+        for getter in &self.inputs {
+            match getter.get()? {
+                None => logic_state.not_returnable_false(),
+                Some(datum) => {
+                    if datum.time > time {
+                        time = datum.time;
+                    }
+                    if datum.value {
+                        logic_state = LogicState::ReturnableTrue;
+                    }
+                }
+            }
+        }
+        Ok(match logic_state {
+            LogicState::ReturnableTrue => Some(Datum::new(time, true)),
+            LogicState::ReturnableFalse => Some(Datum::new(time, false)),
+            LogicState::NeitherReturnable => None,
+        })
+    }
 }
-impl<G: Getter<bool, E> + ?Sized, E: Copy + Debug> NotStream<G, E> {
+macro_rules! make_gate {
+    ($name: ident, $default: literal, $struct_doc: literal, $constructor_doc: literal) => {
+        #[doc = $struct_doc]
+        pub struct $name<G1, G2> {
+            input1: G1,
+            input2: G2,
+        }
+        impl<G1, G2> $name<G1, G2> {
+            #[doc = $constructor_doc]
+            pub const fn new(input1: G1, input2: G2) -> Self {
+                Self { input1, input2 }
+            }
+        }
+        impl<G1, G2, E> Updatable<E> for $name<G1, G2>
+        where
+            G1: Updatable<E>,
+            G2: Updatable<E>,
+            E: Clone + Debug,
+        {
+            fn update(&mut self) -> NothingOrError<E> {
+                self.input1.update()?;
+                self.input2.update()?;
+                Ok(())
+            }
+        }
+        impl<G1, G2, E> Getter<bool, E> for $name<G1, G2>
+        where
+            G1: Getter<bool, E>,
+            G2: Getter<bool, E>,
+            E: Clone + Debug,
+        {
+            fn get(&self) -> Output<bool, E> {
+                let mut logic_state = LogicState::from_bool($default);
+                let mut time = Time::ZERO;
+                macro_rules! error_handle_input {
+                    ($input: ident, $skip_time_check: literal) => {
+                        match self.$input.get()? {
+                            None => logic_state.not_returnable_with_value($default),
+                            Some(datum) => {
+                                if $skip_time_check || datum.time > time {
+                                    time = datum.time;
+                                }
+                                if $default ^ datum.value {
+                                    logic_state = LogicState::from_bool(!$default);
+                                }
+                            }
+                        }
+                    };
+                }
+                error_handle_input!(input1, true);
+                error_handle_input!(input2, false);
+                Ok(match logic_state {
+                    LogicState::ReturnableTrue => Some(Datum::new(time, true)),
+                    LogicState::ReturnableFalse => Some(Datum::new(time, false)),
+                    LogicState::NeitherReturnable => None,
+                })
+            }
+        }
+    };
+}
+make_gate!(
+    Or2,
+    false,
+    r#"Performs a logical "or" operation on two input Getters which can be of different types. More
+specifically, follows these rules, starting at the top and proceeding as needed:
+1. If an input returns an error, return the error.
+2. If neither input returns an error, if an input returns true, return true.
+3. If neither input returns true, if an input returns None, return None.
+4. If neither input returns None (both returned false), return false.
+
+Returns the later timestamp of the two inputs if they both return Some.
+
+If you need more than two inputs, you may consider using [`OrStream`] instead of a chain of
+`Or2`, especially if the inputs are of the same type."#,
+    "Constructor for `Or2`. Unlike [`OrStream`], its inputs can be of different types."
+);
+make_gate!(
+    And2,
+    true,
+    r#"Performs a logical "and" operation on two input Getters which can be of different types. More
+specifically, follows these rules, starting at the top and proceeding as needed:
+1. If an input returns an error, return the error.
+2. If neither input returns an error, if an input returns false, return false.
+3. If neither input returns false, if an input returns None, return None.
+4. If neither input returns None (both returned true), return true.
+
+Returns the later timestamp of the two inputs if they both return Some.
+
+If you need more than two inputs, you may consider using [`AndStream`] instead of a chain of
+`And2`, especially if the inputs are of the same type."#,
+    "Constructor for `And2`. Unlike [`AndStream`], its inputs can be of different types."
+);
+///Performs a not operation on a boolean Getter.
+pub struct NotStream<TI, G> {
+    input: G,
+    phantom_ti: PhantomData<TI>,
+}
+impl<TI, G> NotStream<TI, G> {
     ///Constructor for [`NotStream`].
-    pub const fn new(input: Reference<G>) -> Self {
+    pub const fn new(input: G) -> Self {
         Self {
-            input: input,
-            phantom_e: PhantomData,
+            input,
+            phantom_ti: PhantomData,
         }
     }
 }
-impl<G: Getter<bool, E> + ?Sized, E: Copy + Debug> Getter<bool, E> for NotStream<G, E> {
-    fn get(&self) -> Output<bool, E> {
-        match self.input.borrow().get() {
-            Ok(Some(datum)) => Ok(Some(!datum)),
-            Ok(None) => Ok(None),
-            Err(error) => Err(error),
-        }
+impl<TI, TO, G, E> Getter<TO, E> for NotStream<TI, G>
+where
+    TI: Not<Output = TO>,
+    G: Getter<TI, E>,
+    E: Clone + Debug,
+{
+    fn get(&self) -> Output<TO, E> {
+        Ok(self.input.get()?.map(|datum| !datum))
     }
 }
-impl<G: Getter<bool, E> + ?Sized, E: Copy + Debug> Updatable<E> for NotStream<G, E> {
+impl<TI, G: Updatable<E>, E: Clone + Debug> Updatable<E> for NotStream<TI, G> {
     fn update(&mut self) -> NothingOrError<E> {
+        self.input.update()?;
         Ok(())
     }
+}
+#[test]
+fn logic_state_const_eq() {
+    const LOGIC_STATES: [LogicState; 3] = [
+        LogicState::ReturnableFalse,
+        LogicState::NeitherReturnable,
+        LogicState::ReturnableTrue,
+    ];
+    for (a, state_a) in LOGIC_STATES.into_iter().enumerate() {
+        for (b, state_b) in LOGIC_STATES.into_iter().enumerate() {
+            assert_eq!(a == b, state_a == state_b);
+            assert_eq!(a == b, state_a.const_eq(&state_b));
+        }
+    }
+}
+#[test]
+fn not_returnable_with_value() {
+    macro_rules! perform_test {
+        ($start: ident, $not_returnable_with: literal, $end: ident) => {
+            let mut x = LogicState::$start;
+            x.not_returnable_with_value($not_returnable_with);
+            assert_eq!(x, LogicState::$end);
+        };
+    }
+    perform_test!(ReturnableFalse, false, NeitherReturnable);
+    perform_test!(NeitherReturnable, false, NeitherReturnable);
+    perform_test!(ReturnableTrue, false, ReturnableTrue);
+    perform_test!(ReturnableFalse, true, ReturnableFalse);
+    perform_test!(NeitherReturnable, true, NeitherReturnable);
+    perform_test!(ReturnableTrue, true, NeitherReturnable);
 }
