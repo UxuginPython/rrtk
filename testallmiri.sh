@@ -1,5 +1,5 @@
 #!/bin/bash
-#Generated automatically by rrtk 0.7.0-beta.3
+#Generated automatically by rrtk 0.7.0
 set -e
 echo
 cargo miri test --no-default-features
