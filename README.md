@@ -1,4 +1,4 @@
-# Rust Robotics ToolKit
+# RRTK: Rust Robotics ToolKit
 **A data flow-based robotics framework designed for embedded systems.**
 
 RRTK works almost entirely without `std` and `alloc`. It is not specific to any device or API.
@@ -9,12 +9,16 @@ RRTK is free and open source software licensed under the permissive BSD 3-Clause
 ## Features
 - Architecture based on `Getter`, `Settable`, and `Updatable` traits
 - Stream system for data processing
-    - Basic arithmetic, exponentiation, and integral and derivative
-    - Logic and control flow management
-    - PID control
-    - Moving average
-    - Exponentially weighted moving average (EWMA)
+    - The `Getter` trait can be implemented on types which hold other Getters as inputs. These types are useful for data processing. They are called *streams*.
     - New streams can be added easily with the `Getter` trait.
+    - All data are timestamped.
+    - Included:
+        - Basic arithmetic including exponentiation
+        - Numerical trapezoidal integration and differentiation
+        - Logic and control flow management
+        - PID control
+        - Moving average
+        - Exponentially weighted moving average (EWMA)
 - Graph-based device control system
     - Devices hold terminals which can be connected together
     - Differential, gear train, and clutch provided
@@ -22,6 +26,7 @@ RRTK is free and open source software licensed under the permissive BSD 3-Clause
 - Trapezoidal motion profile following
 - No dependencies by default, but support for [libm](https://crates.io/crates/libm) and [micromath](https://crates.io/crates/micromath) available
     - No features of libm or micromath enabled
+    - Compatible with almost any versions of libm and micromath
 - Compile-time dimensional analysis system
 
 ## Related Crates
