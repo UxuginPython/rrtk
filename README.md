@@ -6,7 +6,7 @@ RRTK works almost entirely without `std` and `alloc`. It is not specific to any 
 ## License: BSD 3-Clause
 RRTK is free and open source software licensed under the permissive BSD 3-Clause "New" or "Revised" License. See the LICENSE file in the repository for more information.
 
-## Features
+## Feature overview
 - Architecture based on `Getter`, `Settable`, and `Updatable` traits
     - For getting or setting multiple things, `Getter` and `Settable` can be implemented multiple times using the newtype pattern.
     - All data returned by `Getter` are timestamped.
@@ -30,6 +30,13 @@ RRTK is free and open source software licensed under the permissive BSD 3-Clause
 
 ## Stream system
 Special `Getter` implementors called *streams* can be created that hold other Getters as input and, in their own `Getter` implementation, return values calculated from what is returned by those input Getters. They take input from Getters, process it, and return it from their own `Getter` implementations. Streams can be chained for more complex operations. Streams always update their inputs in their own `Updatable` implementations. RRTK includes many common and useful streams, and it is very easy to implement your own through the Getter trait. The stream system is designed to be a simple, efficient way of managing real-time data processing.
+
+See the documentation for the `streams` module and the "pid" example for more information.
+
+## Device system
+The device system is a way of managing the rotational states of various components in your robot. It is based on a graph structure. Each mechanical device implements `DeviceUpdatable` and is allowed to write to a certain reserved set of *nodes* that no other device may write to. The actual information stored in each node is held not by the device but in a special `System` struct. `System` manages the states of nodes and how the nodes are connected. This allows different robot components to communicate easily and efficiently. For example, a motor may adjust its voltage based on the velocity reported by a rotary encoder. RRTK includes device implementations for a few simple mechanical components as well as wrappers for using implementors of `Getter` and `Settable`, including streams, with the device system.
+
+See the documentation for the `devices` module and the "devices" example for more information. Note that the device system is only available with the `devices` feature enabled.
 
 ## Related Crates
 Currently, neither of these works very well with the 0.7.* release series. They will be updated eventually, but improving RRTK itself is being prioritized more right now.
