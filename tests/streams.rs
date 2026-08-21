@@ -938,10 +938,11 @@ fn exponent_stream() {
         if let Ok(Some(x)) = stream.get() {
             assert_eq!(x.time, Time::from_nanoseconds(2));
             //This appears to be an instance of https://github.com/rust-lang/miri/issues/4208
-            #[cfg(not(miri))]
-            assert_eq!(x.value, 125.0);
-            #[cfg(miri)]
-            assert!(124.99995 < x.value && x.value < 125.00005);
+            if cfg!(miri) {
+                assert!(124.99995 < x.value && x.value < 125.00005);
+            } else {
+                assert_eq!(x.value, 125.0);
+            }
         } else {
             panic!();
         }
@@ -1123,7 +1124,13 @@ fn ewma_stream() {
         stream.update().unwrap();
         assert_eq!(stream.get().unwrap().unwrap().value, 105.927490234375);
         stream.update().unwrap();
-        assert_eq!(stream.get().unwrap().unwrap().value, 104.20921325683594);
+        if cfg!(miri) {
+            let value = stream.get().unwrap().unwrap().value;
+            let should_be = 104.20921325683594;
+            assert!(should_be - 0.00001 < value && value < should_be + 0.00001);
+        } else {
+            assert_eq!(stream.get().unwrap().unwrap().value, 104.20921325683594);
+        }
         stream.update().unwrap();
         assert_eq!(stream.get().unwrap().unwrap().value, 107.18018245697021);
         stream.update().unwrap();
