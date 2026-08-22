@@ -149,17 +149,17 @@ impl Div<Time> for f32 {
 pub struct DimensionlessInteger(pub i64);
 impl DimensionlessInteger {
     ///Constructor for [`DimensionlessInteger`].
-    #[inline]
+    #[inline(always)]
     pub const fn new(value: i64) -> Self {
         Self(value)
     }
     ///`x.const_eq(y)` is exactly equivalent to `x == y` except that it works in const contexts.
-    #[inline]
+    #[inline(always)]
     pub const fn const_eq(&self, rhs: &Self) -> bool {
         self.0 == rhs.0
     }
     ///Checks if the integer is zero.
-    #[inline]
+    #[inline(always)]
     pub const fn is_zero(&self) -> bool {
         self.0 == 0
     }
@@ -210,8 +210,7 @@ impl MulAssign for DimensionlessInteger {
 impl Div for DimensionlessInteger {
     type Output = DimensionlessFraction;
     fn div(self, rhs: Self) -> DimensionlessFraction {
-        assert_ne!(rhs, Self::new(0));
-        DimensionlessFraction(self, rhs)
+        DimensionlessFraction::new(self, rhs)
     }
 }
 impl Neg for DimensionlessInteger {
@@ -254,9 +253,9 @@ impl DimensionlessFraction {
     ///Constructor that verifies that the denominator is not zero and panics if it is.
     #[inline]
     pub const fn new(num: DimensionlessInteger, denom: DimensionlessInteger) -> Self {
-        let denom = NonZero::new(denom.into_inner())
+        let denom = NonZero::new(denom.0)
             .expect("tried to construct DimensionlessFraction with zero denominator");
-        Self(num.into_inner(), denom)
+        Self(num.0, denom)
     }
     ///Constructor that does not check if the denominator is zero.
     ///
@@ -269,7 +268,7 @@ impl DimensionlessFraction {
         if cfg!(debug_assertions) {
             Self::new(num, denom)
         } else {
-            Self(num.into_inner(), NonZero::new_unchecked(denom.into_inner()))
+            Self(num.0, unsafe { NonZero::new_unchecked(denom.0) })
         }
     }
     ///Constructor from raw `i64` values for numerator and denominator. They are immediately
@@ -297,7 +296,7 @@ impl DimensionlessFraction {
     ///Reciprocal function (1/x) that panics if the new denominator is zero.
     #[inline]
     pub const fn reciprocal(&self) -> Self {
-        Self::new(self.1, self.0)
+        Self::from_raw(self.1.get(), self.0)
     }
     ///Reciprocal function (1/x) that does not check if the new denominator is zero.
     ///
@@ -307,7 +306,7 @@ impl DimensionlessFraction {
         if cfg!(debug_assertions) {
             self.reciprocal()
         } else {
-            Self(self.1, self.0)
+            unsafe { Self::from_raw_unchecked(self.1.get(), self.0) }
         }
     }
     ///Converts the fraction into a tuple `(numerator, denominator)`.
@@ -325,7 +324,10 @@ impl DimensionlessFraction {
     ///```
     #[inline]
     pub const fn into_components(self) -> (DimensionlessInteger, DimensionlessInteger) {
-        (self.0, self.1)
+        (
+            DimensionlessInteger(self.0),
+            DimensionlessInteger(self.1.get()),
+        )
     }
     ///Converts the fraction to its closest `f32` approximation.
     ///There is also a [`From`] implementation that does this.
