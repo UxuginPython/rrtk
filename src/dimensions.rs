@@ -229,7 +229,7 @@ impl Mul<Time> for DimensionlessInteger {
 ///
 ///There is a memory safety guarantee that the denominator is nonzero. This means that undefined
 ///behavior immediately occurs if an instance of this type exists with a zero denominator,
-///regardless of whether the instance used in any way.
+///regardless of whether the instance is used in any way.
 #[derive(Clone, Copy, Debug)]
 pub struct DimensionlessFraction(i64, NonZero<i64>);
 impl DimensionlessFraction {
@@ -296,6 +296,15 @@ impl DimensionlessFraction {
                 DimensionlessInteger::new(denom),
             )
         }
+    }
+    ///Constructor from an `i64` numerator and a `NonZero<i64>` denominator.
+    ///
+    ///The numerator and denominator are internally stored by `DimensionlessFraction` as these
+    ///types, so this is the most efficient constructor. As for safety, it is the caller's
+    ///responsibility to make sure that the `NonZero` denominator is valid.
+    #[inline(always)]
+    pub const fn from_true_raw(num: i64, denom: NonZero<i64>) -> Self {
+        Self(num, denom)
     }
     ///Reciprocal function (1/x) that panics if the new denominator is zero.
     #[inline]
