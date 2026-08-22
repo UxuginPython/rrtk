@@ -222,6 +222,18 @@ impl<const N: usize> System<N> {
         debug_assert!(!matches!(beginning.prev, Previous::PreviousNode(_)));
         beginning.prev = Previous::beginning_from_option_command(command);
     }
+    pub fn get_command(&self, node_id: NodeID) -> Option<AngularCommand> {
+        let node_id = self.assert_contains(node_id);
+        let beginning_id = self.beginning(node_id);
+        let beginning = self.node_ref_from_local_id(beginning_id);
+        match beginning.prev {
+            Previous::BeginningNoCommand => None,
+            Previous::BeginningWithCommand(command) => Some(command),
+            Previous::PreviousNode(_) => {
+                unreachable!("the beginning node, by definition, has no previous node")
+            }
+        }
+    }
     #[inline]
     fn iter_connected(&self, node_id: LocalNodeID) -> ConnectedIterator<'_, N> {
         ConnectedIterator::new(self, node_id)
