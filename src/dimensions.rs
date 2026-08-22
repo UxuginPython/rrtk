@@ -333,13 +333,13 @@ impl DimensionlessFraction {
     ///There is also a [`From`] implementation that does this.
     #[inline]
     pub const fn as_f32(&self) -> f32 {
-        self.0.0 as f32 / self.1.0 as f32
+        self.0 as f32 / self.1.get() as f32
     }
     ///Converts the fraction to its closest `f64` approximation.
     ///There is also a [`From`] implementation that does this.
     #[inline]
     pub const fn as_f64(&self) -> f64 {
-        self.0.0 as f64 / self.1.0 as f64
+        self.0 as f64 / self.1.get() as f64
     }
     ///Wraps the output of [`as_f32`](Self::as_f32) in a `Dimensionless` wrapper.
     ///There is also a [`From`] implementation that does this.
@@ -358,21 +358,25 @@ impl DimensionlessFraction {
     ///method tests whether a=c and b=d.
     #[inline]
     pub const fn raw_eq(&self, rhs: &Self) -> bool {
-        self.0.const_eq(&rhs.0) && self.1.const_eq(&rhs.1)
+        self.0 == rhs.0 && self.1.get() == rhs.1.get()
     }
 }
 impl From<DimensionlessInteger> for DimensionlessFraction {
     fn from(was: DimensionlessInteger) -> Self {
-        Self(was, DimensionlessInteger::new(1))
+        Self(
+            was.0,
+            const { NonZero::new(1).expect("literal 1 is not 0") },
+        )
     }
 }
 impl Ord for DimensionlessFraction {
     fn cmp(&self, rhs: &Self) -> core::cmp::Ordering {
-        let a = self.0 * rhs.1;
-        let b = self.1 * rhs.0;
+        let a = self.0 * rhs.1.get();
+        let b = self.1.get() * rhs.0;
         let cmp = a.cmp(&b);
         //This is true if the signs of the denominators match.
-        if (self.1 < DimensionlessInteger(0)) == (rhs.1 < DimensionlessInteger(0)) {
+        //This assumes that neither denominator is zero.
+        if (self.1.get() < 0) == (rhs.1.get() < 0) {
             cmp
         } else {
             cmp.reverse()
