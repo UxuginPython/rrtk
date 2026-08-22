@@ -227,18 +227,22 @@ impl Mul<Time> for DimensionlessInteger {
 }
 ///An exact rational number type for dimensionless values.
 ///
-///There is a memory safety guarantee that the denominator is nonzero. RRTK does not currently
-///exhibit any undefined behavior if this precondition is violated, but this may change in the
-///future **without** being considered a breaking change.
+///There is a memory safety guarantee that the denominator is nonzero. This means that undefined
+///behavior immediately occurs if an instance of this type exists with a zero denominator,
+///regardless of whether the instance used in any way.
 #[derive(Clone, Copy, Debug)]
 pub struct DimensionlessFraction(i64, NonZero<i64>);
 impl DimensionlessFraction {
-    ///Checks whether the denominator is zero and panics if it is.
+    ///Tries to check whether the denominator is zero and panic if it is.
+    ///
+    ///As long as the denominator is nonzero, this method is guaranteed to do nothing. Importantly,
+    ///however, if the denominator *is* zero, undefined behavior has already begun, and this method
+    ///cannot do anything about it. It will still try to panic, but nothing is guaranteed.
     #[inline]
     pub const fn assert_valid(&self) {
         assert!(
             self.1.get() != 0,
-            "DimensionlessFraction with zero denominator detected"
+            "DimensionlessFraction with zero denominator detected - this indicates undefined behavior"
         );
     }
     ///With debug assertions enabled, identical to [`assert_valid`](Self::assert_valid). With debug
@@ -247,7 +251,7 @@ impl DimensionlessFraction {
     pub const fn debug_assert_valid(&self) {
         debug_assert!(
             self.1.get() != 0,
-            "DimensionlessFraction with zero denominator detected"
+            "DimensionlessFraction with zero denominator detected - this indicates undefined behavior"
         );
     }
     ///Constructor that verifies that the denominator is not zero and panics if it is.
