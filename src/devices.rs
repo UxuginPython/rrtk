@@ -49,6 +49,15 @@ enum Previous {
     BeginningNoCommand,
     BeginningWithCommand(AngularCommand),
 }
+impl Previous {
+    #[inline]
+    const fn beginning_from_option_command(maybe_command: Option<AngularCommand>) -> Self {
+        match maybe_command {
+            Some(command) => Self::BeginningWithCommand(command),
+            None => Self::BeginningNoCommand,
+        }
+    }
+}
 struct Node {
     prev: Previous,
     next: Option<LocalNodeID>,
@@ -205,6 +214,13 @@ impl<const N: usize> System<N> {
             }
         }
         node_id
+    }
+    pub const fn set_command(&mut self, node_id: NodeID, command: Option<AngularCommand>) {
+        let node_id = self.assert_contains(node_id);
+        let beginning_id = self.beginning(node_id);
+        let beginning = self.node_mut_from_local_id(beginning_id);
+        debug_assert!(!matches!(beginning.prev, Previous::PreviousNode(_)));
+        beginning.prev = Previous::beginning_from_option_command(command);
     }
     #[inline]
     fn iter_connected(&self, node_id: LocalNodeID) -> ConnectedIterator<'_, N> {
