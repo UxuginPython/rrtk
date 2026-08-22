@@ -11,6 +11,7 @@
 //!with integers than floating point numbers but still must interact with floating point values.
 use super::*;
 use compile_time_integer::*;
+use core::num::NonZero;
 //This attribute currently cannot be in the actual file with #![].
 #[rustfmt::skip]
 pub mod dimension_aliases;
@@ -231,13 +232,13 @@ impl Mul<Time> for DimensionlessInteger {
 ///exhibit any undefined behavior if this precondition is violated, but this may change in the
 ///future **without** being considered a breaking change.
 #[derive(Clone, Copy, Debug)]
-pub struct DimensionlessFraction(DimensionlessInteger, DimensionlessInteger);
+pub struct DimensionlessFraction(i64, NonZero<i64>);
 impl DimensionlessFraction {
     ///Checks whether the denominator is zero and panics if it is.
     #[inline]
     pub const fn assert_valid(&self) {
         assert!(
-            !self.1.is_zero(),
+            self.1.get() != 0,
             "DimensionlessFraction with zero denominator detected"
         );
     }
@@ -246,16 +247,16 @@ impl DimensionlessFraction {
     #[inline]
     pub const fn debug_assert_valid(&self) {
         debug_assert!(
-            !self.1.is_zero(),
+            self.1.get() != 0,
             "DimensionlessFraction with zero denominator detected"
         );
     }
     ///Constructor that verifies that the denominator is not zero and panics if it is.
     #[inline]
     pub const fn new(num: DimensionlessInteger, denom: DimensionlessInteger) -> Self {
-        let new = Self(num, denom);
-        new.assert_valid();
-        new
+        let denom = NonZero::new(denom.into_inner())
+            .expect("tried to construct DimensionlessFraction with zero denominator");
+        Self(num.into_inner(), denom)
     }
     ///Constructor that does not check if the denominator is zero.
     ///
@@ -268,7 +269,7 @@ impl DimensionlessFraction {
         if cfg!(debug_assertions) {
             Self::new(num, denom)
         } else {
-            Self(num, denom)
+            Self(num.into_inner(), NonZero::new_unchecked(denom.into_inner()))
         }
     }
     ///Constructor from raw `i64` values for numerator and denominator. They are immediately
