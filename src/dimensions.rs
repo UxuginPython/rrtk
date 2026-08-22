@@ -400,10 +400,19 @@ impl Neg for DimensionlessFraction {
         Self(-self.0, self.1)
     }
 }
+//This change is not considered breaking because The Book says "Relying on integer overflow’s
+//wrapping behavior is considered an error."
+//https://doc.rust-lang.org/book/ch03-02-data-types.html#integer-overflow
+///This implementation panics if the denominator multiplication overflows, even in release mode.
 impl Mul for DimensionlessFraction {
     type Output = Self;
     fn mul(self, rhs: Self) -> Self {
-        Self(self.0 * rhs.0, self.1 * rhs.1)
+        Self(
+            self.0 * rhs.0,
+            self.1
+                .checked_mul(rhs.1)
+                .expect("denominator overflow when multiplying DimensionlessFractions"),
+        )
     }
 }
 impl MulAssign for DimensionlessFraction {
@@ -426,7 +435,10 @@ impl DivAssign for DimensionlessFraction {
 impl Add for DimensionlessFraction {
     type Output = Self;
     fn add(self, rhs: Self) -> Self {
-        Self(self.0 * rhs.1 + rhs.0 * self.1, self.1 * rhs.1)
+        Self::from_raw(
+            self.0 * rhs.1.get() + rhs.0 * self.1.get(),
+            self.1.get() * rhs.1.get(),
+        )
     }
 }
 impl AddAssign for DimensionlessFraction {
@@ -448,7 +460,7 @@ impl SubAssign for DimensionlessFraction {
 impl Mul<DimensionlessInteger> for DimensionlessFraction {
     type Output = Self;
     fn mul(self, rhs: DimensionlessInteger) -> Self {
-        Self(self.0 * rhs, self.1)
+        Self(self.0 * rhs.0, self.1)
     }
 }
 impl MulAssign<DimensionlessInteger> for DimensionlessFraction {
@@ -460,7 +472,7 @@ impl Div<DimensionlessInteger> for DimensionlessFraction {
     type Output = Self;
     #[expect(clippy::suspicious_arithmetic_impl)]
     fn div(self, rhs: DimensionlessInteger) -> Self {
-        Self(self.0, self.1 * rhs)
+        Self::from_raw(self.0, self.1.get() * rhs.0)
     }
 }
 impl DivAssign<DimensionlessInteger> for DimensionlessFraction {
@@ -493,7 +505,7 @@ impl SubAssign<DimensionlessInteger> for DimensionlessFraction {
 impl Mul<Time> for DimensionlessFraction {
     type Output = Time;
     fn mul(self, rhs: Time) -> Time {
-        rhs * self.0 / self.1
+        Time::from_nanoseconds(rhs.as_nanoseconds() * self.0 / self.1.get())
     }
 }
 impl Mul<DimensionlessFraction> for DimensionlessInteger {
@@ -821,14 +833,4 @@ impl Div<Time> for DimensionlessFraction {
     fn div(self, rhs: Time) -> InverseSecond<f32> {
         self.as_quantity_f32() / rhs
     }
-}
-//RRTK intentionally does not provide a way to construct DimensionlessFraction with zero denominator
-//in debug mode at all--*_unchecked still does the checks with debug assertions on. We therefore
-//need to use the tuple struct raw construction syntax in the same module as DimensionlessFraction
-//is defined.
-#[test]
-#[should_panic]
-fn invalid_dimensionless_fraction() {
-    let x = DimensionlessFraction(DimensionlessInteger(-3), DimensionlessInteger(0));
-    x.assert_valid();
 }

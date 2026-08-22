@@ -43,7 +43,8 @@ fn div_by_zero_constructor_validation() {
 fn div_by_zero_constructor_validation_from_raw() {
     let _ = DimensionlessFraction::from_raw(1, 0);
 }
-//The failure case is tested in the invalid_dimensionless_fraction test in src/dimensions.rs.
+//Note that the failure case is untested because that would require the undefinied behavior of
+//creating a zero-valued NonZero.
 #[test]
 fn assert_valid() {
     let x = DimensionlessFraction::from_raw(-1, 2);
