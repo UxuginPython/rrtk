@@ -43,15 +43,21 @@ impl NodeID {
         self.system == other.system
     }
 }
+#[derive(Clone, Copy, Debug, PartialEq)]
+enum Previous {
+    PreviousNode(LocalNodeID),
+    BeginningNoCommand,
+    BeginningWithCommand(AngularCommand),
+}
 struct Node {
-    prev: Option<LocalNodeID>,
+    prev: Previous,
     next: Option<LocalNodeID>,
     state_local: Option<AngularState>,
 }
 impl Node {
     pub const fn new() -> Self {
         Self {
-            prev: None,
+            prev: Previous::BeginningNoCommand,
             next: None,
             state_local: None,
         }
@@ -180,7 +186,7 @@ impl<const N: usize> System<N> {
         let mut node_id = node_id;
         loop {
             let node = self.node_ref_from_local_id(node_id);
-            if let Some(prev_id) = node.prev {
+            if let Previous::PreviousNode(prev_id) = node.prev {
                 node_id = prev_id;
             } else {
                 break;
@@ -204,9 +210,11 @@ impl<const N: usize> System<N> {
     fn iter_connected(&self, node_id: LocalNodeID) -> ConnectedIterator<'_, N> {
         ConnectedIterator::new(self, node_id)
     }
-    ///Connects two nodes. The order of the two may marginally affect performance but will not
-    ///change behavior beyond that. Connections between nodes are transitive (i.e. if A is
-    ///connected to B and B is connected to C then A is connected to C) and bidirectional.
+    ///Connects two nodes. Connections between nodes are transitive (i.e. if A is connected to B and
+    ///B is connected to C then A is connected to C) and bidirectional.
+    ///
+    ///If both Node A and Node B have received a Command, Node A's command is kept. Except for that,
+    ///the order of the nodes has no effect.
     pub const fn connect(&mut self, node_a_id: NodeID, node_b_id: NodeID) {
         let node_a_id = self.assert_contains(node_a_id);
         let node_b_id = self.assert_contains(node_b_id);
@@ -215,7 +223,7 @@ impl<const N: usize> System<N> {
         let a_end = self.node_mut_from_local_id(a_end_id);
         a_end.next = Some(b_beginning_id);
         let b_beginning = self.node_mut_from_local_id(b_beginning_id);
-        b_beginning.prev = Some(a_end_id);
+        b_beginning.prev = Previous::PreviousNode(a_end_id);
     }
     ///Disconnects a node from all other nodes connected to it. Connected nodes will stay connected
     ///to eachother. (e.g. if A is connected to B and B is connected to C, A will stay connected to
@@ -223,15 +231,16 @@ impl<const N: usize> System<N> {
     pub const fn disconnect(&mut self, node_id: NodeID) {
         let node_id = self.assert_contains(node_id);
         let node = self.node_ref_from_local_id(node_id);
-        let maybe_prev_id = node.prev;
+        let previous = node.prev;
         let maybe_next_id = node.next;
-        if let Some(prev_id) = maybe_prev_id {
+        if let Previous::PreviousNode(prev_id) = previous {
             let prev = self.node_mut_from_local_id(prev_id);
             prev.next = maybe_next_id;
         }
         if let Some(next_id) = maybe_next_id {
             let next = self.node_mut_from_local_id(next_id);
-            next.prev = maybe_prev_id;
+            //This can carry other nothing, the new previous node, or the command.
+            next.prev = previous;
         }
     }
 }
@@ -283,7 +292,7 @@ impl<const N: usize> Iterator for ConnectedIterator<'_, N> {
             ConnectedIteratorState::Backward => {
                 let to_return = self.node_to_return;
                 let to_return_node = self.system.node_ref_from_local_id(to_return);
-                if let Some(next_to_return) = to_return_node.prev {
+                if let Previous::PreviousNode(next_to_return) = to_return_node.prev {
                     self.node_to_return = next_to_return;
                 } else {
                     self.state = ConnectedIteratorState::Done;
