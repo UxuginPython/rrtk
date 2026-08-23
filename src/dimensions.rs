@@ -383,9 +383,11 @@ impl DimensionlessFraction {
             .expect("tried to construct DimensionlessFraction with zero denominator");
         Self(layout_compatibility::as_i64(num), denom)
     }
-    ///Constructor that does not check if the denominator is zero.
+    ///Constructor that does **not** check if the denominator is zero.
     ///
-    ///With debug assertions enabled, this will still perform the zero denominator check.
+    ///Calling this function with a denominator of zero is undefined behavior.
+    ///However, with debug assertions enabled, this will still perform the nonzero denominator
+    ///assertion.
     #[inline(always)]
     pub const unsafe fn new_unchecked<N, D>(num: N, denom: D) -> Self
     where
@@ -411,10 +413,13 @@ impl DimensionlessFraction {
                 .expect("tried to construct DimensionlessFraction with zero denominator"),
         )
     }
+    //FIXME: It seems inconsistent to sometime have the check in debug mode anyway and sometimes
+    //not.
     ///Constructor from raw `i64` values for numerator and denominator.
     ///
     ///This constructor does **not** verify that the denominator is nonzero. Calling this function
-    ///with a denominator of zero is undefined behavior.
+    ///with a denominator of zero is undefined behavior. This function does **not** perform the
+    ///nonzero denominator assertion, even with debug assertions enabled.
     #[inline]
     pub const unsafe fn from_raw_unchecked(num: i64, denom: i64) -> Self {
         Self(num, unsafe { NonZero::new_unchecked(denom) })
@@ -433,9 +438,11 @@ impl DimensionlessFraction {
     pub const fn reciprocal(&self) -> Self {
         Self::from_raw(self.1.get(), self.0)
     }
-    ///Reciprocal function (1/x) that does not check if the new denominator is zero.
+    ///Reciprocal function (1/x) that does **not** check if the new denominator is zero.
     ///
-    ///With debug assertions enabled, this will still perform the zero denominator check.
+    ///Calling this function on a fraction equal to 0 is undefined behavior.
+    ///However, with debug assertions enabled, this will still perform the nonzero denominator
+    ///assertion.
     #[inline(always)]
     pub const unsafe fn reciprocal_unchecked(&self) -> Self {
         if cfg!(debug_assertions) {
