@@ -525,6 +525,14 @@ impl DimensionlessFraction {
         self.0 == rhs.0 && self.1.get() == rhs.1.get()
     }
 }
+///The default `DimensionlessFraction` is 0, specifically 0/1, to match the other Rust numeric
+///types.
+impl Default for DimensionlessFraction {
+    #[inline(always)]
+    fn default() -> Self {
+        const { Self::from_raw(0, 1) }
+    }
+}
 impl From<DimensionlessInteger> for DimensionlessFraction {
     fn from(was: DimensionlessInteger) -> Self {
         Self(
