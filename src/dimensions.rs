@@ -163,6 +163,27 @@ impl DimensionlessInteger {
     pub const fn is_zero(&self) -> bool {
         self.0 == 0
     }
+    ///Converts from `DimensionlessInteger` to `Quantity<i64, Zero, Zero>`.
+    ///
+    ///The following two lines are guaranteed to have the same effect given `DimensionlessInteger`
+    ///variable `x`:
+    ///```
+    ///# use rrtk::*;
+    ///# let x = DimensionlessInteger(4);
+    ///let y = x.as_quantity();
+    ///# assert_eq!(y, dimensions::layout_compatibility::safe_transmute(x));
+    ///```
+    ///```
+    ///# use rrtk::*;
+    ///# use rrtk::compile_time_integer::Zero;
+    ///# let x = DimensionlessInteger(4);
+    ///let y: Quantity<i64, Zero, Zero> = dimensions::layout_compatibility::safe_transmute(x);
+    ///# assert_eq!(y, x.as_quantity());
+    ///```
+    #[inline(always)]
+    pub const fn as_quantity(self) -> Quantity<i64, Zero, Zero> {
+        Quantity::new(self.0)
+    }
 }
 impl From<i64> for DimensionlessInteger {
     fn from(was: i64) -> Self {
@@ -776,6 +797,28 @@ impl<T, MM: Integer, S: Integer> Quantity<T, MM, S> {
         let x_ptr: *const ManuallyDrop<Self> = &raw const x;
         let y_ptr: *const T = x_ptr.cast();
         unsafe { core::ptr::read(y_ptr) }
+    }
+}
+impl Quantity<i64, Zero, Zero> {
+    ///Converts from `Quantity<i64, Zero, Zero>` to `DimensionlessInteger`.
+    ///
+    ///The following two lines are guaranteed to have the same effect given
+    ///`Quantity<i64, Zero, Zero>` variable `x`:
+    ///```
+    ///# use rrtk::*;
+    ///# let x = Dimensionless::new(4_i64);
+    ///let y = x.as_dimensionless_integer();
+    ///# assert_eq!(y, dimensions::layout_compatibility::safe_transmute(x));
+    ///```
+    ///```
+    ///# use rrtk::*;
+    ///# let x = Dimensionless::new(4_i64);
+    ///let y: DimensionlessInteger = dimensions::layout_compatibility::safe_transmute(x);
+    ///# assert_eq!(y, x.as_dimensionless_integer());
+    ///```
+    #[inline(always)]
+    pub const fn as_dimensionless_integer(self) -> DimensionlessInteger {
+        DimensionlessInteger(self.2)
     }
 }
 macro_rules! impl_quantity_abs {
