@@ -225,6 +225,29 @@ impl Mul<Time> for DimensionlessInteger {
         Time(self.0 * rhs.0)
     }
 }
+pub mod layout_compatibility {
+    use super::*;
+    pub mod representing {
+        use super::*;
+        pub struct Time;
+        pub struct Quantity<MM: Integer, S: Integer> {
+            phantom_mm: PhantomData<MM>,
+            phantom_s: PhantomData<S>,
+        }
+    }
+    pub unsafe trait DimensionedI64 {
+        type Representing;
+    }
+    unsafe impl<MM: Integer, S: Integer> DimensionedI64 for Quantity<i64, MM, S> {
+        type Representing = representing::Quantity<MM, S>;
+    }
+    unsafe impl DimensionedI64 for DimensionlessInteger {
+        type Representing = representing::Quantity<Zero, Zero>;
+    }
+    unsafe impl DimensionedI64 for Time {
+        type Representing = representing::Time;
+    }
+}
 ///An exact rational number type for dimensionless values.
 ///
 ///There is a memory safety guarantee that the denominator is nonzero. This means that undefined
