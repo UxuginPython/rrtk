@@ -272,7 +272,9 @@ pub mod layout_compatibility {
     ///A trait that allows safely transmuting between certain types that are internally identical to
     ///`i64`.
     ///
-    ///Implementing this trait yourself is discouraged.
+    ///Implementing this trait yourself is discouraged. It is also important to note that this trait
+    ///is **not** implemented for `i64` itself since the raw `i64` type does not specify dimension
+    ///or unit.
     ///# Safety
     ///To implement this trait for a type, the type must have the same
     ///[type layout](https://doc.rust-lang.org/reference/type-layout.html) as `i64`. This is most
@@ -315,18 +317,18 @@ pub mod layout_compatibility {
         let transmute = Transmute { src };
         unsafe { transmute.dst }
     }
-    ///Safely transmute a dimensioned type that is technically identical to `i64` to `i64`.
+    ///Safely transmute a dimensioned type that is technically identical to `i64` to `i64` itself.
     ///
     ///See the documentation for [`DimensionedI64`] for information on how it is determined what
     ///types qualify for this. The most important compatible types are:
-    ///- [`Quantity<i64, _, _>`] of whatever unit is specified as exponents of the millimeter and
+    ///- [`Quantity<i64, _, _>`] as whatever unit is specified as exponents of the millimeter and
     ///  the second
-    ///- [`DimensionlessInteger`] as the same integer
+    ///- [`DimensionlessInteger`] as the same integer without dimension
     ///- [`Time`] as nanoseconds
     pub const fn as_i64<T: DimensionedI64>(was: T) -> i64 {
         unsafe { force_transmute(was) }
     }
-    ///Safely transmute between certain types that are technically identical to `i64`.
+    ///Safely transmute between certain dimensioned `i64`-based types.
     ///
     ///To be used with `safe_transmute`, the two types must:
     ///1. be technically identical to `i64`, and
@@ -353,9 +355,10 @@ pub struct DimensionlessFraction(i64, NonZero<i64>);
 impl DimensionlessFraction {
     ///Tries to check whether the denominator is zero and panic if it is.
     ///
-    ///As long as the denominator is nonzero, this method is guaranteed to do nothing. Importantly,
-    ///however, if the denominator *is* zero, undefined behavior has already begun, and this method
-    ///cannot do anything about it. It will still try to panic, but nothing is guaranteed.
+    ///As long as the denominator is nonzero, this method is guaranteed to have no effect.
+    ///Importantly, however, if the denominator *is* zero, undefined behavior has already begun, and
+    ///this method cannot do anything about it. It will still try to panic, but nothing is
+    ///guaranteed.
     #[inline]
     pub const fn assert_valid(&self) {
         assert!(
@@ -372,7 +375,7 @@ impl DimensionlessFraction {
             "DimensionlessFraction with zero denominator detected - this indicates undefined behavior"
         );
     }
-    ///Constructor that verifies that the denominator is not zero and panics if it is.
+    ///Constructor that panics if the provided denominator is zero.
     #[inline]
     pub const fn new<N, D>(num: N, denom: D) -> Self
     where
@@ -383,7 +386,7 @@ impl DimensionlessFraction {
             .expect("tried to construct DimensionlessFraction with zero denominator");
         Self(layout_compatibility::as_i64(num), denom)
     }
-    ///Constructor that does **not** check if the denominator is zero.
+    ///Constructor that does **not** verify that the denominator is nonzero.
     ///
     ///Calling this function with a denominator of zero is undefined behavior.
     ///However, with debug assertions enabled, this will still perform the nonzero denominator
@@ -402,9 +405,8 @@ impl DimensionlessFraction {
             })
         }
     }
-    ///Constructor from raw `i64` values for numerator and denominator.
-    ///
-    ///This constructor verifies that the denominator is nonzero and panics otherwise.
+    ///Constructor from raw `i64` values for numerator and denominator that panics if the provided
+    ///denominator is zero.
     #[inline]
     pub const fn from_raw(num: i64, denom: i64) -> Self {
         Self(
@@ -413,13 +415,13 @@ impl DimensionlessFraction {
                 .expect("tried to construct DimensionlessFraction with zero denominator"),
         )
     }
-    //FIXME: It seems inconsistent to sometime have the check in debug mode anyway and sometimes
+    //FIXME: It seems inconsistent to sometimes have the check in debug mode anyway and sometimes
     //not.
-    ///Constructor from raw `i64` values for numerator and denominator.
+    ///Constructor from raw `i64` values for numerator and denominator that does **not** verify that
+    ///the denominator is nonzero.
     ///
-    ///This constructor does **not** verify that the denominator is nonzero. Calling this function
-    ///with a denominator of zero is undefined behavior. This function does **not** perform the
-    ///nonzero denominator assertion, even with debug assertions enabled.
+    ///Calling this function with a denominator of zero is undefined behavior. This function does
+    ///not perform the nonzero denominator assertion, even with debug assertions enabled.
     #[inline]
     pub const unsafe fn from_raw_unchecked(num: i64, denom: i64) -> Self {
         Self(num, unsafe { NonZero::new_unchecked(denom) })
@@ -438,7 +440,7 @@ impl DimensionlessFraction {
     pub const fn reciprocal(&self) -> Self {
         Self::from_raw(self.1.get(), self.0)
     }
-    ///Reciprocal function (1/x) that does **not** check if the new denominator is zero.
+    ///Reciprocal function (1/x) that does **not** verify that the new denominator is nonzero.
     ///
     ///Calling this function on a fraction equal to 0 is undefined behavior.
     ///However, with debug assertions enabled, this will still perform the nonzero denominator
