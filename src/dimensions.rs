@@ -235,7 +235,7 @@ pub mod layout_compatibility {
             phantom_s: PhantomData<S>,
         }
     }
-    pub unsafe trait DimensionedI64 {
+    pub unsafe trait DimensionedI64: Copy {
         type Representing;
     }
     unsafe impl<MM: Integer, S: Integer> DimensionedI64 for Quantity<i64, MM, S> {
@@ -246,6 +246,24 @@ pub mod layout_compatibility {
     }
     unsafe impl DimensionedI64 for Time {
         type Representing = representing::Time;
+    }
+    const unsafe fn force_transmute<Src: Copy, Dst: Copy>(src: Src) -> Dst {
+        union Transmute<A: Copy, B: Copy> {
+            src: A,
+            dst: B,
+        }
+        let transmute = Transmute { src };
+        unsafe { transmute.dst }
+    }
+    pub const fn as_i64<T: DimensionedI64>(was: T) -> i64 {
+        unsafe { force_transmute(was) }
+    }
+    pub const fn safe_transmute<Src, Dst>(was: Src) -> Dst
+    where
+        Src: DimensionedI64,
+        Dst: DimensionedI64<Representing = Src::Representing>,
+    {
+        unsafe { force_transmute(was) }
     }
 }
 ///An exact rational number type for dimensionless values.
