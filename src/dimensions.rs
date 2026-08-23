@@ -225,17 +225,55 @@ impl Mul<Time> for DimensionlessInteger {
         Time(self.0 * rhs.0)
     }
 }
+///Some useful items for transmuting between dimensioned types that internally use `i64`,
+///specifically [`Quantity<i64, _, _>`] and [`DimensionlessInteger`].
 pub mod layout_compatibility {
     use super::*;
+    ///Zero-sized types for use as [`DimensionedI64::Representing`].
     pub mod representing {
         use super::*;
+        ///The [`DimensionedI64::Representing`] of [`dimensions::Time`].
+        ///
+        ///Because [`dimensions::Quantity`] uses seconds and [`dimensions::Time`] nanoseconds, they
+        ///cannot have the same `Representing`.
         pub struct Time;
+        ///The [`DimensionedI64::Representing`] used by [`dimensions::Quantity`] and
+        ///[`dimensions::DimensionlessInteger`].
+        ///
+        ///See the [`DimensionedI64`] documentation for an explanation of the requirements met that
+        ///allow `dimensions::DimensionlessInteger` to share a `Represented` with
+        ///`dimensions::Quantity<i64, Zero, Zero>`.
         pub struct Quantity<MM: Integer, S: Integer> {
             phantom_mm: PhantomData<MM>,
             phantom_s: PhantomData<S>,
         }
     }
-    pub unsafe trait DimensionedI64: Copy {
+    ///A trait that allows safely transmuting between certain types that are internally identical to
+    ///`i64`.
+    ///
+    ///Implementing this trait yourself is discouraged.
+    ///# Safety
+    ///To implement this trait for a type, the type must have the same
+    ///[type layout](https://doc.rust-lang.org/reference/type-layout.html) as `i64`. This is most
+    ///easily achieved through `#[repr(transparent)]` where the only non-ZST field is either `i64`
+    ///or another type with an identical layout. Furthermore, the conceptual meaning of the
+    ///numerical value of the type must not be lost when transmuting to `i64`.
+    ///For example, `Quantity<u64, _, _>` cannot implement `DimensionedI64` because, although `u64`
+    ///and `i64` have the same layout, a bit pattern used by `u64` to represent one value can refer
+    ///to a different value when interpreted as `i64`.
+    ///
+    ///Furthermore, the type, when transmuted to `i64`, must have the same conceptual meaning as any
+    ///other implementor of `DimensionedI64` with the same `Representing` would when transmuted to
+    ///`i64`. This means that the dimension, unit, and technical representation must be the same.
+    ///For example, `Quantity<i64, Zero, OnePlus<Zero>>` and `Time` are both internally identical to
+    ///`i64`, and they even have the same dimension, but their units are different: `Quantity` uses
+    ///seconds and `Time` nanoseconds when treated as `i64`, so they must have different
+    ///`Representing`.
+    pub unsafe trait DimensionedI64: Copy + Sized {
+        ///A marker for type with the same conceptual meaning, including dimension, unit, and
+        ///technical representation.
+        ///
+        ///See the [trait documentation](Self) for more information.
         type Representing;
     }
     unsafe impl<MM: Integer, S: Integer> DimensionedI64 for Quantity<i64, MM, S> {
@@ -256,9 +294,26 @@ pub mod layout_compatibility {
         let transmute = Transmute { src };
         unsafe { transmute.dst }
     }
+    ///Safely transmute a dimensioned type that is technically identical to `i64` to `i64`.
+    ///
+    ///See the documentation for [`DimensionedI64`] for information on how it is determined what
+    ///types qualify for this. The most important compatible types are:
+    ///- [`Quantity<i64, _, _>`] of whatever unit is specified as exponents of the millimeter and
+    ///  the second
+    ///- [`DimensionlessInteger`] as the same integer
+    ///- [`Time`] as nanoseconds
     pub const fn as_i64<T: DimensionedI64>(was: T) -> i64 {
         unsafe { force_transmute(was) }
     }
+    ///Safely transmute between certain types that are technically identical to `i64`.
+    ///
+    ///To be used with `safe_transmute`, the two types must:
+    ///1. be technically identical to `i64`, and
+    ///2. have the same conceptual meaning, including dimension, unit, and technical representation.
+    ///
+    ///See the documentation for [`DimensionedI64`] for more details on on how it is determined
+    ///exactly what types qualify for this. The most important compatible transmutation is between
+    ///[`Quantity<i64, _, _>`] and [`DimensionlessInteger`] in either direction.
     pub const fn safe_transmute<Src, Dst>(was: Src) -> Dst
     where
         Src: DimensionedI64,
