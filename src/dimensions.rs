@@ -400,27 +400,24 @@ impl DimensionlessFraction {
             })
         }
     }
-    ///Constructor from raw `i64` values for numerator and denominator. They are immediately
-    ///converted to [`DimensionlessInteger`]. This constructor verifies that the denominator is
-    ///nonzero and panics otherwise.
+    ///Constructor from raw `i64` values for numerator and denominator.
+    ///
+    ///This constructor verifies that the denominator is nonzero and panics otherwise.
     #[inline]
     pub const fn from_raw(num: i64, denom: i64) -> Self {
-        Self::new(
-            DimensionlessInteger::new(num),
-            DimensionlessInteger::new(denom),
+        Self(
+            num,
+            NonZero::new(denom)
+                .expect("tried to construct DimensionlessFraction with zero denominator"),
         )
     }
-    ///Constructor from raw `i64` values for numerator and denominator. They are immediately
-    ///converted to [`DimensionlessInteger`]. This constructor does **not** verify that the
-    ///denominator is nonzero.
+    ///Constructor from raw `i64` values for numerator and denominator.
+    ///
+    ///This constructor does **not** verify that the denominator is nonzero. Calling this function
+    ///with a denominator of zero is undefined behavior.
     #[inline]
     pub const unsafe fn from_raw_unchecked(num: i64, denom: i64) -> Self {
-        unsafe {
-            Self::new_unchecked(
-                DimensionlessInteger::new(num),
-                DimensionlessInteger::new(denom),
-            )
-        }
+        Self(num, unsafe { NonZero::new_unchecked(denom) })
     }
     ///Constructor from an `i64` numerator and a `NonZero<i64>` denominator.
     ///
