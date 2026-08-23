@@ -248,6 +248,7 @@ pub mod layout_compatibility {
         type Representing = representing::Time;
     }
     const unsafe fn force_transmute<Src: Copy, Dst: Copy>(src: Src) -> Dst {
+        #[repr(C)]
         union Transmute<A: Copy, B: Copy> {
             src: A,
             dst: B,
@@ -297,23 +298,30 @@ impl DimensionlessFraction {
     }
     ///Constructor that verifies that the denominator is not zero and panics if it is.
     #[inline]
-    pub const fn new(num: DimensionlessInteger, denom: DimensionlessInteger) -> Self {
-        let denom = NonZero::new(denom.0)
+    pub const fn new<N, D>(num: N, denom: D) -> Self
+    where
+        N: layout_compatibility::DimensionedI64,
+        D: layout_compatibility::DimensionedI64<Representing = N::Representing>,
+    {
+        let denom = NonZero::new(layout_compatibility::as_i64(denom))
             .expect("tried to construct DimensionlessFraction with zero denominator");
-        Self(num.0, denom)
+        Self(layout_compatibility::as_i64(num), denom)
     }
     ///Constructor that does not check if the denominator is zero.
     ///
     ///With debug assertions enabled, this will still perform the zero denominator check.
     #[inline(always)]
-    pub const unsafe fn new_unchecked(
-        num: DimensionlessInteger,
-        denom: DimensionlessInteger,
-    ) -> Self {
+    pub const unsafe fn new_unchecked<N, D>(num: N, denom: D) -> Self
+    where
+        N: layout_compatibility::DimensionedI64,
+        D: layout_compatibility::DimensionedI64<Representing = N::Representing>,
+    {
         if cfg!(debug_assertions) {
             Self::new(num, denom)
         } else {
-            Self(num.0, unsafe { NonZero::new_unchecked(denom.0) })
+            Self(layout_compatibility::as_i64(num), unsafe {
+                NonZero::new_unchecked(layout_compatibility::as_i64(denom))
+            })
         }
     }
     ///Constructor from raw `i64` values for numerator and denominator. They are immediately
