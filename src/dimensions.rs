@@ -324,7 +324,7 @@ impl DimensionlessFraction {
     }
     ///Converts the fraction into a tuple `(numerator, denominator)`.
     ///
-    ///The following code is guaranteed to leave mutable `DimensionlessInteger` variables `x` and
+    ///The following code is guaranteed to leave mutable [`DimensionlessInteger`] variables `x` and
     ///`y` with the same values that they had before the code was run as long as `y` is nonzero.
     ///```
     ///# use rrtk::{DimensionlessFraction, DimensionlessInteger};
@@ -341,6 +341,26 @@ impl DimensionlessFraction {
             DimensionlessInteger(self.0),
             DimensionlessInteger(self.1.get()),
         )
+    }
+    ///Converts the fraction into a tuple `(numerator, denominator)`.
+    ///
+    ///Unlike [`into_components`](Self::into_components), this method returns `(i64, NonZero<i64>)`,
+    ///which matches the internal representations of the numerator and denominator.
+    ///
+    ///The following code is guaranteed to leave mutable `i64` variable `x` and mutable
+    ///[`NonZero<i64>`] variable `y` with the same values that they had before the code was run.
+    ///```
+    ///# use rrtk::DimensionlessFraction;
+    ///# let mut x = 2_i64;
+    ///# let mut y = core::num::NonZero::new(3_i64).expect("literal value 3 is not 0");
+    ///let frac = DimensionlessFraction::from_true_raw(x, y);
+    ///(x, y) = frac.into_true_components();
+    ///# assert_eq!(x, 2);
+    ///# assert_eq!(y.get(), 3);
+    ///```
+    #[inline(always)]
+    pub const fn into_true_components(self) -> (i64, NonZero<i64>) {
+        (self.0, self.1)
     }
     ///Converts the fraction to its closest `f32` approximation.
     ///There is also a [`From`] implementation that does this.
