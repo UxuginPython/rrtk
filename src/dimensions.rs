@@ -9,6 +9,38 @@
 //!special struct called [`Quantity`], which is a transparent struct holding only a value at
 //!runtime. There are also a few other specialized types for values that are better represented
 //!with integers than floating point numbers but still must interact with floating point values.
+//!
+//!# Unit safety
+//!The dimensional analysis system uses a concept called *unit safety* to explain how dimensional
+//!analysis is handled in various operations. Although unit safety can be mentally modeled in a
+//!similar way to memory safety, the two are unrelated technically. Memory safety or unsafety should
+//!not be taken to imply unit safety or unsafety, and unit safety or unsafety should not be taken to
+//!imply memory safety or unsafety.
+//!
+//!To understand unit safety, one must first understand *unit correctness*. To be *unit-correct*,
+//!code must meet the following conditions:
+//!- For this list, "numerical type" means any Rust standard number type
+//!  (`(u|i)(8|16|32|64|128|size)`, `f32`, `f64`, `NonZero`, and any other similar type) or any of
+//!  the following: [`Quantity`], [`Time`], [`DimensionlessInteger`], [`DimensionlessFraction`].
+//!- For this list, "standard interpretation" means the way that a type was intended to be used. For
+//!  example, although it is possible to store unsigned 8-bit integer values in `i8` and transmute
+//!  them on the fly, this is clearly not what `i8` was designed for, and `u8` should be used
+//!  instead.
+//!- For this list, "marked unit" means the single unit that a given type is intended to represent
+//!  if the type is dimensioned. Note that the *marked unit* can be the dimensionless unit as is the
+//!  case for `DimensionlessInteger`, `DimensionlessFraction`, and `Quantity<_, Zero, Zero>`.
+//!- How does the *marked unit* thing work with `Time`?
+//!
+//!fff
+//!- For this list, "value" means any instance of a standard Rust numerical type (e.g. `u16` and
+//!  `f32`) or any instance of [`Quantity`], [`Time`], [`DimensionlessInteger`], or
+//!  [`DimensionlessFraction`].
+//!- All values used in the code must represent a value of the correct unit when interpreted in the
+//!  standard way for the type.
+//!jjj
+//!- All numerical values that are marked with units must be marked with the correct units. No
+//!  numerical value may be stored in a type in a way that implies that it has a different unit than
+//!  it does.
 use super::*;
 use compile_time_integer::*;
 use core::num::NonZero;
