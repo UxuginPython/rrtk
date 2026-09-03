@@ -32,6 +32,31 @@ use core::num::NonZero;
 #[rustfmt::skip]
 pub mod dimension_aliases;
 pub use dimension_aliases::*;
+//TODO: seal this??
+pub trait DimensionMarker {}
+pub mod dimension_markers {
+    use super::*;
+    pub struct MillimeterSecond<MM: Integer, S: Integer>(PhantomData<MM>, PhantomData<S>);
+    impl<MM: Integer, S: Integer> DimensionMarker for MillimeterSecond<MM, S> {}
+    #[non_exhaustive]
+    pub struct Nanosecond;
+    impl DimensionMarker for Nanosecond {}
+}
+pub trait Marked {
+    type DimensionMarker;
+}
+impl<MM: Integer, S: Integer> Marked for Quantity<MM, S> {
+    type DimensionMarker = dimension_markers::MillimeterSecond<MM, S>;
+}
+impl Marked for DimensionlessInteger {
+    type DimensionMarker = dimension_markers::MillimeterSecond<Zero, Zero>;
+}
+impl Marked for DimensionlessFraction {
+    type DimensionMarker = dimension_markers::MillimeterSecond<Zero, Zero>;
+}
+impl Marked for Time {
+    type DimensionMarker = dimension_markers::Nanosecond;
+}
 ///A time stored internally in `i64` nanoseconds.
 ///
 ///`Time` is often converted to [`Second<f32>`] to interact with quantities of other dimensions.
