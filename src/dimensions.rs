@@ -62,6 +62,34 @@ macro_rules! impl_all_can_represent {
 impl_all_can_represent!(
     u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64
 );
+pub unsafe trait Transparent {
+    type Inner;
+}
+unsafe impl<T, MM: Integer, S: Integer> Transparent for Quantity<T, MM, S> {
+    type Inner = T;
+}
+unsafe impl Transparent for DimensionlessInteger {
+    type Inner = i64;
+}
+unsafe impl Transparent for Time {
+    type Inner = i64;
+}
+macro_rules! impl_all_transparent {
+    ($num_type: ty, $($other_impls: ty),+) => {
+        unsafe impl Transparent for $num_type {
+            type Inner = Self;
+        }
+        impl_all_transparent!($($other_impls),+);
+    };
+    ($num_type: ty) => {
+        unsafe impl Transparent for $num_type {
+            type Inner = Self;
+        }
+    };
+}
+impl_all_transparent!(
+    u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64
+);
 ///A time stored internally in `i64` nanoseconds.
 ///
 ///`Time` is often converted to [`Second<f32>`] to interact with quantities of other dimensions.
