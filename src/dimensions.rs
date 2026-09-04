@@ -90,6 +90,22 @@ macro_rules! impl_all_transparent {
 impl_all_transparent!(
     u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64
 );
+const unsafe fn force_transmute<Src: Copy, Dst: Copy>(src: Src) -> Dst {
+    #[repr(C)]
+    union Transmute<A: Copy, B: Copy> {
+        src: A,
+        dst: B,
+    }
+    let transmute = Transmute { src };
+    unsafe { transmute.dst }
+}
+pub const fn transmute_memory_safe<A, B>(was: A) -> B
+where
+    A: Transparent + Copy,
+    B: Transparent<Inner = A::Inner> + Copy,
+{
+    unsafe { force_transmute(was) }
+}
 ///A time stored internally in `i64` nanoseconds.
 ///
 ///`Time` is often converted to [`Second<f32>`] to interact with quantities of other dimensions.
