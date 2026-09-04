@@ -32,103 +32,105 @@ use core::num::NonZero;
 #[rustfmt::skip]
 pub mod dimension_aliases;
 pub use dimension_aliases::*;
-//TODO: seal this??
-pub trait UnitMarker {}
-pub mod unit_markers {
+pub mod transmute_safe {
     use super::*;
-    pub struct MillimeterSecond<MM: Integer, S: Integer>(PhantomData<MM>, PhantomData<S>);
-    impl<MM: Integer, S: Integer> UnitMarker for MillimeterSecond<MM, S> {}
-    #[non_exhaustive]
-    pub struct Nanosecond;
-    impl UnitMarker for Nanosecond {}
-}
-pub trait CanRepresent<U: UnitMarker> {}
-impl<T, MM: Integer, S: Integer> CanRepresent<unit_markers::MillimeterSecond<MM, S>>
-    for Quantity<T, MM, S>
-{
-}
-impl CanRepresent<unit_markers::MillimeterSecond<Zero, Zero>> for DimensionlessInteger {}
-impl CanRepresent<unit_markers::MillimeterSecond<Zero, Zero>> for DimensionlessFraction {}
-impl CanRepresent<unit_markers::Nanosecond> for Time {}
-macro_rules! impl_all_can_represent {
-    ($num_type: ty, $($other_impls: ty),+) => {
-        impl<U: UnitMarker> CanRepresent<U> for $num_type {}
-        impl_all_can_represent!($($other_impls),+);
-    };
-    ($num_type: ty) => {
-        impl<U: UnitMarker> CanRepresent<U> for $num_type {}
-    };
-}
-impl_all_can_represent!(
-    u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64
-);
-pub trait OnlyRepresents: CanRepresent<Self::Unit> {
-    type Unit: UnitMarker;
-}
-impl<T, MM: Integer, S: Integer> OnlyRepresents for Quantity<T, MM, S> {
-    type Unit = unit_markers::MillimeterSecond<MM, S>;
-}
-impl OnlyRepresents for DimensionlessInteger {
-    type Unit = unit_markers::MillimeterSecond<Zero, Zero>;
-}
-impl OnlyRepresents for DimensionlessFraction {
-    type Unit = unit_markers::MillimeterSecond<Zero, Zero>;
-}
-impl OnlyRepresents for Time {
-    type Unit = unit_markers::Nanosecond;
-}
-pub unsafe trait Transparent {
-    type Inner;
-}
-unsafe impl<T, MM: Integer, S: Integer> Transparent for Quantity<T, MM, S> {
-    type Inner = T;
-}
-unsafe impl Transparent for DimensionlessInteger {
-    type Inner = i64;
-}
-unsafe impl Transparent for Time {
-    type Inner = i64;
-}
-macro_rules! impl_all_transparent {
-    ($num_type: ty, $($other_impls: ty),+) => {
-        unsafe impl Transparent for $num_type {
-            type Inner = Self;
-        }
-        impl_all_transparent!($($other_impls),+);
-    };
-    ($num_type: ty) => {
-        unsafe impl Transparent for $num_type {
-            type Inner = Self;
-        }
-    };
-}
-impl_all_transparent!(
-    u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64
-);
-const unsafe fn force_transmute<Src: Copy, Dst: Copy>(src: Src) -> Dst {
-    #[repr(C)]
-    union Transmute<A: Copy, B: Copy> {
-        src: A,
-        dst: B,
+    pub trait UnitMarker {}
+    pub mod unit_markers {
+        use super::*;
+        pub struct MillimeterSecond<MM: Integer, S: Integer>(PhantomData<MM>, PhantomData<S>);
+        impl<MM: Integer, S: Integer> UnitMarker for MillimeterSecond<MM, S> {}
+        #[non_exhaustive]
+        pub struct Nanosecond;
+        impl UnitMarker for Nanosecond {}
     }
-    let transmute = Transmute { src };
-    unsafe { transmute.dst }
-}
-#[inline(always)]
-pub const fn transmute_memory_safe<A, B>(was: A) -> B
-where
-    A: Transparent + Copy,
-    B: Transparent<Inner = A::Inner> + Copy,
-{
-    unsafe { force_transmute(was) }
-}
-#[inline(always)]
-pub const fn transmute_unit_safe<A, B>(was: A) -> B
-where
-    A: Transparent + Copy + OnlyRepresents,
-    B: Transparent<Inner = A::Inner> + Copy + CanRepresent<A::Unit>,
-{
-    transmute_memory_safe(was)
+    pub trait CanRepresent<U: UnitMarker> {}
+    impl<T, MM: Integer, S: Integer> CanRepresent<unit_markers::MillimeterSecond<MM, S>>
+        for Quantity<T, MM, S>
+    {
+    }
+    impl CanRepresent<unit_markers::MillimeterSecond<Zero, Zero>> for DimensionlessInteger {}
+    impl CanRepresent<unit_markers::MillimeterSecond<Zero, Zero>> for DimensionlessFraction {}
+    impl CanRepresent<unit_markers::Nanosecond> for Time {}
+    macro_rules! impl_all_can_represent {
+        ($num_type: ty, $($other_impls: ty),+) => {
+            impl<U: UnitMarker> CanRepresent<U> for $num_type {}
+            impl_all_can_represent!($($other_impls),+);
+        };
+        ($num_type: ty) => {
+            impl<U: UnitMarker> CanRepresent<U> for $num_type {}
+        };
+    }
+    impl_all_can_represent!(
+        u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64
+    );
+    pub trait OnlyRepresents: CanRepresent<Self::Unit> {
+        type Unit: UnitMarker;
+    }
+    impl<T, MM: Integer, S: Integer> OnlyRepresents for Quantity<T, MM, S> {
+        type Unit = unit_markers::MillimeterSecond<MM, S>;
+    }
+    impl OnlyRepresents for DimensionlessInteger {
+        type Unit = unit_markers::MillimeterSecond<Zero, Zero>;
+    }
+    impl OnlyRepresents for DimensionlessFraction {
+        type Unit = unit_markers::MillimeterSecond<Zero, Zero>;
+    }
+    impl OnlyRepresents for Time {
+        type Unit = unit_markers::Nanosecond;
+    }
+    pub unsafe trait Transparent {
+        type Inner;
+    }
+    unsafe impl<T, MM: Integer, S: Integer> Transparent for Quantity<T, MM, S> {
+        type Inner = T;
+    }
+    unsafe impl Transparent for DimensionlessInteger {
+        type Inner = i64;
+    }
+    unsafe impl Transparent for Time {
+        type Inner = i64;
+    }
+    macro_rules! impl_all_transparent {
+        ($num_type: ty, $($other_impls: ty),+) => {
+            unsafe impl Transparent for $num_type {
+                type Inner = Self;
+            }
+            impl_all_transparent!($($other_impls),+);
+        };
+        ($num_type: ty) => {
+            unsafe impl Transparent for $num_type {
+                type Inner = Self;
+            }
+        };
+    }
+    impl_all_transparent!(
+        u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64
+    );
+    const unsafe fn force_transmute<Src: Copy, Dst: Copy>(src: Src) -> Dst {
+        #[repr(C)]
+        union Transmute<A: Copy, B: Copy> {
+            src: A,
+            dst: B,
+        }
+        let transmute = Transmute { src };
+        unsafe { transmute.dst }
+    }
+    #[inline(always)]
+    pub const fn transmute_memory_safe<A, B>(was: A) -> B
+    where
+        A: Transparent + Copy,
+        B: Transparent<Inner = A::Inner> + Copy,
+    {
+        unsafe { force_transmute(was) }
+    }
+    #[inline(always)]
+    pub const fn transmute_unit_safe<A, B>(was: A) -> B
+    where
+        A: Transparent + Copy + OnlyRepresents,
+        B: Transparent<Inner = A::Inner> + Copy + CanRepresent<A::Unit>,
+    {
+        transmute_memory_safe(was)
+    }
 }
 ///A time stored internally in `i64` nanoseconds.
 ///
@@ -360,105 +362,6 @@ impl Mul<Time> for DimensionlessInteger {
         Time(self.0 * rhs.0)
     }
 }
-///Some useful items for transmuting between dimensioned types that internally use `i64`,
-///specifically [`Quantity<i64, _, _>`] and [`DimensionlessInteger`].
-pub mod layout_compatibility {
-    use super::*;
-    ///Zero-sized types for use as [`DimensionedI64::Representing`].
-    pub mod representing {
-        use super::*;
-        ///The [`DimensionedI64::Representing`] of [`dimensions::Time`].
-        ///
-        ///Because [`dimensions::Quantity`] uses seconds and [`dimensions::Time`] nanoseconds, they
-        ///cannot have the same `Representing`.
-        pub struct Time;
-        ///The [`DimensionedI64::Representing`] used by [`dimensions::Quantity`] and
-        ///[`dimensions::DimensionlessInteger`].
-        ///
-        ///See the [`DimensionedI64`] documentation for an explanation of the requirements met that
-        ///allow `dimensions::DimensionlessInteger` to share a `Represented` with
-        ///`dimensions::Quantity<i64, Zero, Zero>`.
-        pub struct Quantity<MM: Integer, S: Integer> {
-            phantom_mm: PhantomData<MM>,
-            phantom_s: PhantomData<S>,
-        }
-    }
-    ///A trait that allows safely transmuting between certain types that are internally identical to
-    ///`i64`.
-    ///
-    ///Implementing this trait yourself is discouraged. It is also important to note that this trait
-    ///is **not** implemented for `i64` itself since the raw `i64` type does not specify dimension
-    ///or unit.
-    ///# Safety
-    ///To implement this trait for a type, the type must have the same
-    ///[type layout](https://doc.rust-lang.org/reference/type-layout.html) as `i64`. This is most
-    ///easily achieved through `#[repr(transparent)]` where the only non-ZST field is either `i64`
-    ///or another type with an identical layout. Furthermore, the conceptual meaning of the
-    ///numerical value of the type must not be lost when transmuting to `i64`.
-    ///For example, `Quantity<u64, _, _>` cannot implement `DimensionedI64` because, although `u64`
-    ///and `i64` have the same layout, a bit pattern used by `u64` to represent one value can refer
-    ///to a different value when interpreted as `i64`.
-    ///
-    ///Furthermore, the type, when transmuted to `i64`, must have the same conceptual meaning as any
-    ///other implementor of `DimensionedI64` with the same `Representing` would when transmuted to
-    ///`i64`. This means that the dimension, unit, and technical representation must be the same.
-    ///For example, `Quantity<i64, Zero, OnePlus<Zero>>` and `Time` are both internally identical to
-    ///`i64`, and they even have the same dimension, but their units are different: `Quantity` uses
-    ///seconds and `Time` nanoseconds when treated as `i64`, so they must have different
-    ///`Representing`.
-    pub unsafe trait DimensionedI64: Copy + Sized {
-        ///A marker for type with the same conceptual meaning, including dimension, unit, and
-        ///technical representation.
-        ///
-        ///See the [trait documentation](Self) for more information.
-        type Representing;
-    }
-    unsafe impl<MM: Integer, S: Integer> DimensionedI64 for Quantity<i64, MM, S> {
-        type Representing = representing::Quantity<MM, S>;
-    }
-    unsafe impl DimensionedI64 for DimensionlessInteger {
-        type Representing = representing::Quantity<Zero, Zero>;
-    }
-    unsafe impl DimensionedI64 for Time {
-        type Representing = representing::Time;
-    }
-    const unsafe fn force_transmute<Src: Copy, Dst: Copy>(src: Src) -> Dst {
-        #[repr(C)]
-        union Transmute<A: Copy, B: Copy> {
-            src: A,
-            dst: B,
-        }
-        let transmute = Transmute { src };
-        unsafe { transmute.dst }
-    }
-    ///Safely transmute a dimensioned type that is technically identical to `i64` to `i64` itself.
-    ///
-    ///See the documentation for [`DimensionedI64`] for information on how it is determined what
-    ///types qualify for this. The most important compatible types are:
-    ///- [`Quantity<i64, _, _>`] as whatever unit is specified as exponents of the millimeter and
-    ///  the second
-    ///- [`DimensionlessInteger`] as the same integer without dimension
-    ///- [`Time`] as nanoseconds
-    pub const fn as_i64<T: DimensionedI64>(was: T) -> i64 {
-        unsafe { force_transmute(was) }
-    }
-    ///Safely transmute between certain dimensioned `i64`-based types.
-    ///
-    ///To be used with `safe_transmute`, the two types must:
-    ///1. be technically identical to `i64`, and
-    ///2. have the same conceptual meaning, including dimension, unit, and technical representation.
-    ///
-    ///See the documentation for [`DimensionedI64`] for more details on on how it is determined
-    ///exactly what types qualify for this. The most important compatible transmutation is between
-    ///[`Quantity<i64, _, _>`] and [`DimensionlessInteger`] in either direction.
-    pub const fn safe_transmute<Src, Dst>(was: Src) -> Dst
-    where
-        Src: DimensionedI64,
-        Dst: DimensionedI64<Representing = Src::Representing>,
-    {
-        unsafe { force_transmute(was) }
-    }
-}
 ///An exact rational number type for dimensionless values.
 ///
 ///There is a memory safety guarantee that the denominator is nonzero. This means that undefined
@@ -493,12 +396,14 @@ impl DimensionlessFraction {
     #[inline]
     pub const fn new<N, D>(num: N, denom: D) -> Self
     where
-        N: Transparent<Inner = i64> + OnlyRepresents + Copy,
-        D: Transparent<Inner = i64> + OnlyRepresents<Unit = N::Unit> + Copy,
+        N: transmute_safe::Transparent<Inner = i64> + transmute_safe::OnlyRepresents + Copy,
+        D: transmute_safe::Transparent<Inner = i64>
+            + transmute_safe::OnlyRepresents<Unit = N::Unit>
+            + Copy,
     {
-        let denom = NonZero::new(transmute_unit_safe(denom))
+        let denom = NonZero::new(transmute_safe::transmute_unit_safe(denom))
             .expect("tried to construct DimensionlessFraction with zero denominator");
-        Self(transmute_unit_safe(num), denom)
+        Self(transmute_safe::transmute_unit_safe(num), denom)
     }
     ///Constructor that does **not** verify that the denominator is nonzero.
     ///
@@ -508,14 +413,16 @@ impl DimensionlessFraction {
     #[inline(always)]
     pub const unsafe fn new_unchecked<N, D>(num: N, denom: D) -> Self
     where
-        N: Transparent<Inner = i64> + OnlyRepresents + Copy,
-        D: Transparent<Inner = i64> + OnlyRepresents<Unit = N::Unit> + Copy,
+        N: transmute_safe::Transparent<Inner = i64> + transmute_safe::OnlyRepresents + Copy,
+        D: transmute_safe::Transparent<Inner = i64>
+            + transmute_safe::OnlyRepresents<Unit = N::Unit>
+            + Copy,
     {
         if cfg!(debug_assertions) {
             Self::new(num, denom)
         } else {
-            Self(transmute_unit_safe(num), unsafe {
-                NonZero::new_unchecked(transmute_unit_safe(denom))
+            Self(transmute_safe::transmute_unit_safe(num), unsafe {
+                NonZero::new_unchecked(transmute_safe::transmute_unit_safe(denom))
             })
         }
     }
