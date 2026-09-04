@@ -36,7 +36,11 @@
 //!A *unit-safe* operation is simply an operation that is guaranteed not to cause
 //!*unit-incorrectness* itself, whereas a *unit-unsafe* operation requires its caller to verify some
 //!precondition to ensure *unit-correctness*.
-//!TODO: elaborate
+//!
+//!*Unit-incorrectness* begins as soon as a numerical value is created of a type that does not
+//!implement `CanRepresent` for the value's unit. *Unit-safe* code is guaranteed not to have this
+//!effect. All code should be *unit-correct*, even if it is *unit-unsafe*; to reiterate,
+//!*unit-unsafe* code requires that a precondition be met to ensure *unit-correctness*.
 //!
 //!Note that *unit-safe* code may still **propagate** *unit-incorrectness*. It is expected that code
 //!will assume that its inputs are *unit-correct*, so if they are not, *unit-incorrectness* can
@@ -45,6 +49,13 @@
 //!impossible, to perform an in-code check for *unit-correctness*, and you would probably lose most
 //!of the benefits of this dimensional analysis system if you were to try, so there is absolutely
 //!nothing wrong about assuming *unit-correctness*.)
+//!
+//!The majority of operations in this module are *unit-safe*. The most common *unit-unsafe*
+//!operation is initial construction of dimensioned values from raw numbers, which, obviously,
+//!requires the caller to ensure that said numbers are of the correct unit. All *unit-unsafe*
+//!operations in RRTK are clearly marked as such in this documentation.
+//!TODO: actually mark the unit-unsafe things
+//!TODO: decide whether it's a dash or a space
 use super::*;
 use compile_time_integer::*;
 use core::num::NonZero;
