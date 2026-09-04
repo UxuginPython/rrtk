@@ -18,13 +18,17 @@
 //!imply memory safety or unsafety.
 //!
 //!To understand unit safety, one must first understand *unit correctness*. For code to be
-//!*unit-correct*, no numerical value it has may be *marked* with an incorrect unit.
-//!## Marked units
-//!There are a few ways for a value to be *marked* with a unit. Here are a few:
-//!- Values stored in `Quantity` are marked with the unit specified by the unit parameters.
-//!- `DimensionlessInteger` and `DimensionlessFraction` are marked as dimensionless.
-//!- The argument to [`Time::from_nanoseconds`] is marked as nanoseconds.
-//!- The argument to [`Time::from_seconds_f32`] is marked as seconds.
+//!*unit-correct*, all numerical values in the code must be stored in types implementing
+//![`transmute_safe::CanRepresent`] for their proper unit. In other words, no type can store a
+//!numerical value unless it implements [`CanRepresent`](transmute_safe::CanRepresent) for that
+//!value's unit. Furthermore, *unit-correct* code may never implement
+//![`CanRepresent`](transmute_safe::CanRepresent) multiple times on a type that implements
+//![`transmute_safe::OnlyRepresents`].
+//!
+//!The specifics of how *unit correctness* should work are still being worked out, so this
+//!definition may be loosened in the future. Tightening it, however, would be considered a breaking
+//!change, so if you follow the current definition, your code is guaranteed to continue to be
+//!considered *unit-correct* for the rest of the RRTK 0.7 series.
 use super::*;
 use compile_time_integer::*;
 use core::num::NonZero;
