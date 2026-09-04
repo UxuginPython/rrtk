@@ -493,12 +493,12 @@ impl DimensionlessFraction {
     #[inline]
     pub const fn new<N, D>(num: N, denom: D) -> Self
     where
-        N: layout_compatibility::DimensionedI64,
-        D: layout_compatibility::DimensionedI64<Representing = N::Representing>,
+        N: Transparent<Inner = i64> + OnlyRepresents + Copy,
+        D: Transparent<Inner = i64> + OnlyRepresents<Unit = N::Unit> + Copy,
     {
-        let denom = NonZero::new(layout_compatibility::as_i64(denom))
+        let denom = NonZero::new(transmute_unit_safe(denom))
             .expect("tried to construct DimensionlessFraction with zero denominator");
-        Self(layout_compatibility::as_i64(num), denom)
+        Self(transmute_unit_safe(num), denom)
     }
     ///Constructor that does **not** verify that the denominator is nonzero.
     ///
@@ -508,14 +508,14 @@ impl DimensionlessFraction {
     #[inline(always)]
     pub const unsafe fn new_unchecked<N, D>(num: N, denom: D) -> Self
     where
-        N: layout_compatibility::DimensionedI64,
-        D: layout_compatibility::DimensionedI64<Representing = N::Representing>,
+        N: Transparent<Inner = i64> + OnlyRepresents + Copy,
+        D: Transparent<Inner = i64> + OnlyRepresents<Unit = N::Unit> + Copy,
     {
         if cfg!(debug_assertions) {
             Self::new(num, denom)
         } else {
-            Self(layout_compatibility::as_i64(num), unsafe {
-                NonZero::new_unchecked(layout_compatibility::as_i64(denom))
+            Self(transmute_unit_safe(num), unsafe {
+                NonZero::new_unchecked(transmute_unit_safe(denom))
             })
         }
     }
