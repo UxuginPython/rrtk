@@ -99,12 +99,21 @@ const unsafe fn force_transmute<Src: Copy, Dst: Copy>(src: Src) -> Dst {
     let transmute = Transmute { src };
     unsafe { transmute.dst }
 }
+#[inline(always)]
 pub const fn transmute_memory_safe<A, B>(was: A) -> B
 where
     A: Transparent + Copy,
     B: Transparent<Inner = A::Inner> + Copy,
 {
     unsafe { force_transmute(was) }
+}
+#[inline(always)]
+pub const fn transmute_unit_safe<U: UnitMarker, A, B>(was: A) -> B
+where
+    A: Transparent + Copy + CanRepresent<U>,
+    B: Transparent<Inner = A::Inner> + Copy + CanRepresent<U>,
+{
+    transmute_memory_safe(was)
 }
 ///A time stored internally in `i64` nanoseconds.
 ///
