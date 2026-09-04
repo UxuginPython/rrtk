@@ -54,7 +54,6 @@
 //!operation is initial construction of dimensioned values from raw numbers, which, obviously,
 //!requires the caller to ensure that said numbers are of the correct unit. All *unit-unsafe*
 //!operations in RRTK are clearly marked as such in this documentation.
-//!TODO: actually mark the unit-unsafe things
 //!TODO: decide whether it's a dash or a space
 use super::*;
 use compile_time_integer::*;
@@ -173,10 +172,14 @@ impl Time {
     ///Zero time. You would get this from `Time::from_nanoseconds(0)`.
     pub const ZERO: Self = Time(0);
     ///Construct a `Time` from `i64` nanoseconds, which is how the time is stored internally.
+    ///
+    ///This function is **unit-unsafe**.
     pub const fn from_nanoseconds(value: i64) -> Self {
         Self(value)
     }
     ///Construct a `Time` from `f32` seconds.
+    ///
+    ///This function is **unit-unsafe**.
     pub const fn from_seconds_f32(value: f32) -> Self {
         Self((value * 1_000_000_000.0) as i64)
     }
@@ -260,6 +263,9 @@ impl DivAssign<DimensionlessInteger> for Time {
 }
 ///Converts the time to `f32` seconds before the operation. This is to make `f32` compatible with
 ///[`streams::math::IntegralStream`].
+///
+///This implementation is technically unit-safe since `f32` can have any unit, but it should be used
+///with caution.
 impl Mul<f32> for Time {
     type Output = f32;
     fn mul(self, rhs: f32) -> f32 {
@@ -267,6 +273,9 @@ impl Mul<f32> for Time {
     }
 }
 ///Converts the time to `f32` seconds before the operation.
+///
+///This implementation is technically unit-safe since `f32` can have any unit, but it should be used
+///with caution.
 impl Mul<Time> for f32 {
     type Output = Self;
     fn mul(self, rhs: Time) -> Self {
@@ -274,6 +283,9 @@ impl Mul<Time> for f32 {
     }
 }
 ///Converts the time to `f32` seconds before the operation.
+///
+///This implementation is technically unit-safe since `f32` can have any unit, but it should be used
+///with caution.
 impl Div<f32> for Time {
     type Output = f32;
     fn div(self, rhs: f32) -> f32 {
@@ -282,6 +294,9 @@ impl Div<f32> for Time {
 }
 ///Converts the time to `f32` seconds before the operation. This is to make `f32` compatible with
 ///[`streams::math::DerivativeStream`].
+///
+///This implementation is technically unit-safe since `f32` can have any unit, but it should be used
+///with caution.
 impl Div<Time> for f32 {
     type Output = Self;
     fn div(self, rhs: Time) -> Self {
@@ -296,6 +311,8 @@ impl Div<Time> for f32 {
 pub struct DimensionlessInteger(pub i64);
 impl DimensionlessInteger {
     ///Constructor for [`DimensionlessInteger`].
+    ///
+    ///This function is **unit-unsafe**.
     #[inline(always)]
     pub const fn new(value: i64) -> Self {
         Self(value)
@@ -332,6 +349,7 @@ impl DimensionlessInteger {
         Quantity::new(self.0)
     }
 }
+///This implementation is **unit-unsafe**.
 impl From<i64> for DimensionlessInteger {
     fn from(was: i64) -> Self {
         Self(was)
@@ -424,6 +442,8 @@ impl DimensionlessFraction {
         );
     }
     ///Constructor that panics if the provided denominator is zero.
+    ///
+    ///Unlike most constructors of dimensioned types, this function **is unit-safe**.
     #[inline]
     pub const fn new<N, D>(num: N, denom: D) -> Self
     where
@@ -441,6 +461,8 @@ impl DimensionlessFraction {
     ///Calling this function with a denominator of zero is undefined behavior.
     ///However, with debug assertions enabled, this will still perform the nonzero denominator
     ///assertion.
+    ///
+    ///Unlike most constructors of dimensioned types, this function **is unit-safe**.
     #[inline(always)]
     pub const unsafe fn new_unchecked<N, D>(num: N, denom: D) -> Self
     where
@@ -459,6 +481,8 @@ impl DimensionlessFraction {
     }
     ///Constructor from raw `i64` values for numerator and denominator that panics if the provided
     ///denominator is zero.
+    ///
+    ///This function is **unit-unsafe**.
     #[inline]
     pub const fn from_raw(num: i64, denom: i64) -> Self {
         Self(
@@ -474,6 +498,8 @@ impl DimensionlessFraction {
     ///
     ///Calling this function with a denominator of zero is undefined behavior. This function does
     ///not perform the nonzero denominator assertion, even with debug assertions enabled.
+    ///
+    ///This function is **unit-unsafe**.
     #[inline]
     pub const unsafe fn from_raw_unchecked(num: i64, denom: i64) -> Self {
         Self(num, unsafe { NonZero::new_unchecked(denom) })
@@ -483,6 +509,8 @@ impl DimensionlessFraction {
     ///The numerator and denominator are internally stored by `DimensionlessFraction` as these
     ///types, so this is the most efficient constructor. As for safety, it is the caller's
     ///responsibility to make sure that the `NonZero` denominator is valid.
+    ///
+    ///This function is **unit-unsafe**.
     #[inline(always)]
     pub const fn from_true_raw(num: i64, denom: NonZero<i64>) -> Self {
         Self(num, denom)
@@ -845,6 +873,8 @@ pub use div;
 pub struct Quantity<T, MM: Integer, S: Integer>(PhantomData<MM>, PhantomData<S>, pub(crate) T);
 impl<T, MM: Integer, S: Integer> Quantity<T, MM, S> {
     ///Constructor for `Quantity`.
+    ///
+    ///This function is **unit-unsafe**.
     #[inline]
     pub const fn new(inner: T) -> Self {
         Self(PhantomData, PhantomData, inner)
