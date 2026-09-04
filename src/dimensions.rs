@@ -33,30 +33,35 @@ use core::num::NonZero;
 pub mod dimension_aliases;
 pub use dimension_aliases::*;
 //TODO: seal this??
-pub trait DimensionMarker {}
-pub mod dimension_markers {
+pub trait UnitMarker {}
+pub mod unit_markers {
     use super::*;
     pub struct MillimeterSecond<MM: Integer, S: Integer>(PhantomData<MM>, PhantomData<S>);
-    impl<MM: Integer, S: Integer> DimensionMarker for MillimeterSecond<MM, S> {}
+    impl<MM: Integer, S: Integer> UnitMarker for MillimeterSecond<MM, S> {}
     #[non_exhaustive]
     pub struct Nanosecond;
-    impl DimensionMarker for Nanosecond {}
+    impl UnitMarker for Nanosecond {}
 }
-pub trait Marked {
-    type DimensionMarker;
+pub trait CanRepresent<U: UnitMarker> {}
+impl<T, MM: Integer, S: Integer> CanRepresent<unit_markers::MillimeterSecond<MM, S>>
+    for Quantity<T, MM, S>
+{
 }
-impl<MM: Integer, S: Integer> Marked for Quantity<MM, S> {
-    type DimensionMarker = dimension_markers::MillimeterSecond<MM, S>;
+impl CanRepresent<unit_markers::MillimeterSecond<Zero, Zero>> for DimensionlessInteger {}
+impl CanRepresent<unit_markers::MillimeterSecond<Zero, Zero>> for DimensionlessFraction {}
+impl CanRepresent<unit_markers::Nanosecond> for Time {}
+macro_rules! impl_all_can_represent {
+    ($num_type: ty, $($other_impls: ty),+) => {
+        impl<U: UnitMarker> CanRepresent<U> for $num_type {}
+        impl_all_can_represent!($($other_impls),+);
+    };
+    ($num_type: ty) => {
+        impl<U: UnitMarker> CanRepresent<U> for $num_type {}
+    };
 }
-impl Marked for DimensionlessInteger {
-    type DimensionMarker = dimension_markers::MillimeterSecond<Zero, Zero>;
-}
-impl Marked for DimensionlessFraction {
-    type DimensionMarker = dimension_markers::MillimeterSecond<Zero, Zero>;
-}
-impl Marked for Time {
-    type DimensionMarker = dimension_markers::Nanosecond;
-}
+impl_all_can_represent!(
+    u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64
+);
 ///A time stored internally in `i64` nanoseconds.
 ///
 ///`Time` is often converted to [`Second<f32>`] to interact with quantities of other dimensions.
