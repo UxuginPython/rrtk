@@ -62,6 +62,21 @@ macro_rules! impl_all_can_represent {
 impl_all_can_represent!(
     u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64
 );
+pub trait OnlyRepresents: CanRepresent<Self::Unit> {
+    type Unit: UnitMarker;
+}
+impl<T, MM: Integer, S: Integer> OnlyRepresents for Quantity<T, MM, S> {
+    type Unit = unit_markers::MillimeterSecond<MM, S>;
+}
+impl OnlyRepresents for DimensionlessInteger {
+    type Unit = unit_markers::MillimeterSecond<Zero, Zero>;
+}
+impl OnlyRepresents for DimensionlessFraction {
+    type Unit = unit_markers::MillimeterSecond<Zero, Zero>;
+}
+impl OnlyRepresents for Time {
+    type Unit = unit_markers::Nanosecond;
+}
 pub unsafe trait Transparent {
     type Inner;
 }
@@ -108,10 +123,10 @@ where
     unsafe { force_transmute(was) }
 }
 #[inline(always)]
-pub const fn transmute_unit_safe<U: UnitMarker, A, B>(was: A) -> B
+pub const fn transmute_unit_safe<A, B>(was: A) -> B
 where
-    A: Transparent + Copy + CanRepresent<U>,
-    B: Transparent<Inner = A::Inner> + Copy + CanRepresent<U>,
+    A: Transparent + Copy + OnlyRepresents,
+    B: Transparent<Inner = A::Inner> + Copy + CanRepresent<A::Unit>,
 {
     transmute_memory_safe(was)
 }
