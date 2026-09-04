@@ -17,6 +17,7 @@
 //!not be taken to imply unit safety or unsafety, and unit safety or unsafety should not be taken to
 //!imply memory safety or unsafety.
 //!
+//!## How do you know if code is *unit-correct*?
 //!To understand unit safety, one must first understand *unit correctness*. For code to be
 //!*unit-correct*, all numerical values in the code must be stored in types implementing
 //![`transmute_safe::CanRepresent`] for their proper unit. In other words, no type can store a
@@ -29,6 +30,21 @@
 //!definition may be loosened in the future. Tightening it, however, would be considered a breaking
 //!change, so if you follow the current definition, your code is guaranteed to continue to be
 //!considered *unit-correct* for the rest of the RRTK 0.7 series.
+//!
+//!## How do you know if code is *unit-safe*?
+//!All code should be *unit-correct*; any code that is *unit-incorrect* is considered to have a bug.
+//!A *unit-safe* operation is simply an operation that is guaranteed not to cause
+//!*unit-incorrectness* itself, whereas a *unit-unsafe* operation requires its caller to verify some
+//!precondition to ensure *unit-correctness*.
+//!TODO: elaborate
+//!
+//!Note that *unit-safe* code may still **propagate** *unit-incorrectness*. It is expected that code
+//!will assume that its inputs are *unit-correct*, so if they are not, *unit-incorrectness* can
+//!spread. This incorrectness is considered to be a bug in whatever originally generated
+//!*unit-incorrect* values, not in the code that is propagating them. (It is very difficult, if not
+//!impossible, to perform an in-code check for *unit-correctness*, and you would probably lose most
+//!of the benefits of this dimensional analysis system if you were to try, so there is absolutely
+//!nothing wrong about assuming *unit-correctness*.)
 use super::*;
 use compile_time_integer::*;
 use core::num::NonZero;
