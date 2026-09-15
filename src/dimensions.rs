@@ -55,6 +55,46 @@
 //!requires the caller to ensure that said numbers are of the correct unit. All *unit-unsafe*
 //!operations in RRTK are clearly marked as such in this documentation.
 //!TODO: decide whether it's a dash or a space
+//!
+//!# Unit-correctness and unit-safety
+//!All code using the dimensional analysis system should be *unit-correct*; otherwise, it is
+//!considered to have a bug. *Unit-safe* operations make it easier to write unit-correct code by
+//!guaranteeing that they cannot be used to create unit-incorrectness themselves.
+//!
+//!Unit-safety and memory safety are unconnected technically, but they can be mentally modeled in
+//!somewhat similar ways. Like undefined behavior, unit-incorrectness can spread through a program
+//!and contaminate other data. Importantly, though, this is always deterministic, defined behavior.
+//!Similarly, like safe code never causes undefined behavior, unit-safe code never causes
+//!unit-incorrectness. Likewise, unit-unsafe code requires the called to uphold a precondition to
+//!maintain unit-correctness like unsafe code requires a precondition for memory safety.
+//!
+//!## What, exactly, is unit-correctness?
+//!Unit-correct code is code that uses the dimensional analysis system correctly. It may be more
+//!helpful, though, to think of it as code that does *not* use the dimensional analysis system
+//!*incorrectly*. There are a few ways that code can be considered unit-incorrect:
+//!- Marking a value with an incorrect unit.
+//!  ```
+//!  # use rrtk::dimensions::dimension_aliases::MillimeterPerSecond;
+//!  let voltage = 5.0;
+//!  let speed = MillimeterPerSecond::new(volts);
+//!  ```
+//!- Storing a value in an incorrect format.
+//!  ```
+//!  # use rrtk::dimensions::dimension_aliases::Millimeter;
+//!  # use core::mem::transmute;
+//!  let raw_distance: f64 = 500.0;
+//!  let wrong_distance: Millimeter<i64> = unsafe { transmute(raw_distance) };
+//!  ```
+//!- Incorrectly implementing one of the traits in the [`transmute_safe`] submodule.
+//!  ```
+//!  # use rrtk::dimensions::transmute_safe::*;
+//!  struct MyValue(f32);
+//!  impl CanRepresent<unit_markers::Nanosecond> for MyValue {}
+//!  impl CanRepresent<unit_markers::MillimeterSecond<Pos1, Zero>> for MyValue {}
+//!  impl OnlyRepresents for MyValue {
+//!      type Unit = unit_markers::Nanosecond;
+//!  }
+//!  ```
 use super::*;
 use compile_time_integer::*;
 use core::num::NonZero;
