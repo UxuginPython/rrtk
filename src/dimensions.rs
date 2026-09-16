@@ -73,6 +73,10 @@ pub mod transmute_safe {
         pub struct Nanosecond;
         impl UnitMarker for Nanosecond {}
     }
+    ///Trait indicating that a numerical value type can represent a value of a certain unit.
+    ///
+    ///This trait can be implemented multiple times for the same type, but it must not be
+    ///implemented multiple times for any type also implementing [`OnlyRepresents`].
     pub trait CanRepresent<U: UnitMarker> {}
     impl<T, MM: Integer, S: Integer> CanRepresent<unit_markers::MillimeterSecond<MM, S>>
         for Quantity<T, MM, S>
@@ -93,6 +97,10 @@ pub mod transmute_safe {
     impl_all_can_represent!(
         u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64
     );
+    ///Trait indicating that a numerical value type can only represent a value of one certain unit.
+    ///
+    ///This trait cannot be implemented multiple times for the same type. Furthermore, any type
+    ///implementing this trait must not implement [`CanRepresent`] multiple times.
     pub trait OnlyRepresents: CanRepresent<Self::Unit> {
         type Unit: UnitMarker;
     }
