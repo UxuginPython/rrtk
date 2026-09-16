@@ -76,7 +76,7 @@
 //!  ```
 //!  # use rrtk::dimensions::dimension_aliases::MillimeterPerSecond;
 //!  let voltage = 5.0;
-//!  let speed = MillimeterPerSecond::new(volts);
+//!  let speed = MillimeterPerSecond::new(voltage);
 //!  ```
 //!- Storing a value in an incorrect format.
 //!  ```
@@ -88,6 +88,7 @@
 //!- Incorrectly implementing one of the traits in the [`transmute_safe`] submodule.
 //!  ```
 //!  # use rrtk::dimensions::transmute_safe::*;
+//!  # use rrtk::compile_time_integer::integer_aliases::*;
 //!  struct MyValue(f32);
 //!  impl CanRepresent<unit_markers::Nanosecond> for MyValue {}
 //!  impl CanRepresent<unit_markers::MillimeterSecond<Pos1, Zero>> for MyValue {}
@@ -375,13 +376,13 @@ impl DimensionlessInteger {
     ///# use rrtk::*;
     ///# let x = DimensionlessInteger(4);
     ///let y = x.as_quantity();
-    ///# assert_eq!(y, dimensions::layout_compatibility::safe_transmute(x));
+    ///# assert_eq!(y, dimensions::transmute_safe::transmute_unit_safe(x));
     ///```
     ///```
     ///# use rrtk::*;
     ///# use rrtk::compile_time_integer::Zero;
     ///# let x = DimensionlessInteger(4);
-    ///let y: Quantity<i64, Zero, Zero> = dimensions::layout_compatibility::safe_transmute(x);
+    ///let y: Quantity<i64, Zero, Zero> = dimensions::transmute_safe::transmute_unit_safe(x);
     ///# assert_eq!(y, x.as_quantity());
     ///```
     #[inline(always)]
@@ -944,12 +945,12 @@ impl Quantity<i64, Zero, Zero> {
     ///# use rrtk::*;
     ///# let x = Dimensionless::new(4_i64);
     ///let y = x.as_dimensionless_integer();
-    ///# assert_eq!(y, dimensions::layout_compatibility::safe_transmute(x));
+    ///# assert_eq!(y, dimensions::transmute_safe::transmute_unit_safe(x));
     ///```
     ///```
     ///# use rrtk::*;
     ///# let x = Dimensionless::new(4_i64);
-    ///let y: DimensionlessInteger = dimensions::layout_compatibility::safe_transmute(x);
+    ///let y: DimensionlessInteger = dimensions::transmute_safe::transmute_unit_safe(x);
     ///# assert_eq!(y, x.as_dimensionless_integer());
     ///```
     #[inline(always)]
