@@ -5,73 +5,16 @@
 //!dimension mismatch errors at compile time without runtime overhead.
 //!
 //!This is done through a
-//![semi-hack](compile_time_integer) representing integers as types and adding type parameters to a
+//![system](compile_time_integer) representing integers as types and adding type parameters to a
 //!special struct called [`Quantity`], which is a transparent struct holding only a value at
 //!runtime. There are also a few other specialized types for values that are better represented
 //!with integers than floating point numbers but still must interact with floating point values.
 //!
-//!# Unit safety
-//!The dimensional analysis system uses a concept called *unit safety* to explain how dimensional
-//!analysis is handled in various operations. Although unit safety can be mentally modeled in a
-//!similar way to memory safety, the two are unrelated technically. Memory safety or unsafety should
-//!not be taken to imply unit safety or unsafety, and unit safety or unsafety should not be taken to
-//!imply memory safety or unsafety.
-//!
-//!## How do you know if code is *unit-correct*?
-//!To understand unit safety, one must first understand *unit correctness*. For code to be
-//!*unit-correct*, all numerical values in the code must be stored in types implementing
-//![`transmute_safe::CanRepresent`] for their proper unit. In other words, no type can store a
-//!numerical value unless it implements [`CanRepresent`](transmute_safe::CanRepresent) for that
-//!value's unit. Furthermore, *unit-correct* code may never implement
-//![`CanRepresent`](transmute_safe::CanRepresent) multiple times on a type that implements
-//![`transmute_safe::OnlyRepresents`].
-//!
-//!The specifics of how *unit correctness* should work are still being worked out, so this
-//!definition may be loosened in the future. Tightening it, however, would be considered a breaking
-//!change, so if you follow the current definition, your code is guaranteed to continue to be
-//!considered *unit-correct* for the rest of the RRTK 0.7 series.
-//!
-//!## How do you know if code is *unit-safe*?
-//!All code should be *unit-correct*; any code that is *unit-incorrect* is considered to have a bug.
-//!A *unit-safe* operation is simply an operation that is guaranteed not to cause
-//!*unit-incorrectness* itself, whereas a *unit-unsafe* operation requires its caller to verify some
-//!precondition to ensure *unit-correctness*.
-//!
-//!*Unit-incorrectness* begins as soon as a numerical value is created of a type that does not
-//!implement `CanRepresent` for the value's unit. *Unit-safe* code is guaranteed not to have this
-//!effect. All code should be *unit-correct*, even if it is *unit-unsafe*; to reiterate,
-//!*unit-unsafe* code requires that a precondition be met to ensure *unit-correctness*.
-//!
-//!Note that *unit-safe* code may still **propagate** *unit-incorrectness*. It is expected that code
-//!will assume that its inputs are *unit-correct*, so if they are not, *unit-incorrectness* can
-//!spread. This incorrectness is considered to be a bug in whatever originally generated
-//!*unit-incorrect* values, not in the code that is propagating them. (It is very difficult, if not
-//!impossible, to perform an in-code check for *unit-correctness*, and you would probably lose most
-//!of the benefits of this dimensional analysis system if you were to try, so there is absolutely
-//!nothing wrong about assuming *unit-correctness*.)
-//!
-//!The majority of operations in this module are *unit-safe*. The most common *unit-unsafe*
-//!operation is initial construction of dimensioned values from raw numbers, which, obviously,
-//!requires the caller to ensure that said numbers are of the correct unit. All *unit-unsafe*
-//!operations in RRTK are clearly marked as such in this documentation.
-//!TODO: decide whether it's a dash or a space
-//!
-//!# Unit-correctness and unit-safety
-//!All code using the dimensional analysis system should be *unit-correct*; otherwise, it is
-//!considered to have a bug. *Unit-safe* operations make it easier to write unit-correct code by
-//!guaranteeing that they cannot be used to create unit-incorrectness themselves.
-//!
-//!Unit-safety and memory safety are unconnected technically, but they can be mentally modeled in
-//!somewhat similar ways. Like undefined behavior, unit-incorrectness can spread through a program
-//!and contaminate other data. Importantly, though, this is always deterministic, defined behavior.
-//!Similarly, like safe code never causes undefined behavior, unit-safe code never causes
-//!unit-incorrectness. Likewise, unit-unsafe code requires the called to uphold a precondition to
-//!maintain unit-correctness like unsafe code requires a precondition for memory safety.
-//!
-//!## What, exactly, is unit-correctness?
+//!# Unit-correctness
 //!Unit-correct code is code that uses the dimensional analysis system correctly. It may be more
 //!helpful, though, to think of it as code that does *not* use the dimensional analysis system
-//!*incorrectly*. There are a few ways that code can be considered unit-incorrect:
+//!*incorrectly*. All code using the dimensional analysis system should be unit-correct; otherwise,
+//!it is considered to have a bug. There are a few ways that code can be unit-incorrect:
 //!- Marking a value with an incorrect unit.
 //!  ```
 //!  # use rrtk::dimensions::dimension_aliases::MillimeterPerSecond;
@@ -96,6 +39,22 @@
 //!      type Unit = unit_markers::Nanosecond;
 //!  }
 //!  ```
+//!
+//!# Unit-safety
+//!Unit-safe operations make it easier to write unit-correct code by guaranteeing that they cannot
+//!be used to create unit-incorrectness themselves.
+//!
+//!Unit-safety and memory safety are unconnected technically, but they can be mentally modeled in
+//!somewhat similar ways. Like undefined behavior, unit-incorrectness can spread through a program
+//!and contaminate other data. Importantly, though, this is always deterministic, defined behavior.
+//!Similarly, like safe code never causes undefined behavior, unit-safe code never causes
+//!unit-incorrectness. Likewise, unit-unsafe code requires the caller to uphold a precondition to
+//!maintain unit-correctness like unsafe code requires a precondition for memory safety.
+//!
+//!The majority of operations in this module are unit-safe. The most common unit-unsafe operation is
+//!initial construction of dimensioned values from raw numbers, which, obviously, requires the
+//!caller to ensure that said numbers are of the correct unit. All unit-unsafe operations in RRTK
+//!are clearly marked as such in this documentation.
 use super::*;
 use compile_time_integer::*;
 use core::num::NonZero;
