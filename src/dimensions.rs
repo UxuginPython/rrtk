@@ -76,7 +76,8 @@ pub mod transmute_safe {
     ///Trait indicating that a numerical value type can represent a value of a certain unit.
     ///
     ///This trait can be implemented multiple times for the same type, but it must not be
-    ///implemented multiple times for any type also implementing [`OnlyRepresents`].
+    ///implemented multiple times for any type also implementing [`OnlyRepresents`]. See the
+    ///documentation there for more information.
     pub trait CanRepresent<U: UnitMarker> {}
     impl<T, MM: Integer, S: Integer> CanRepresent<unit_markers::MillimeterSecond<MM, S>>
         for Quantity<T, MM, S>
@@ -100,7 +101,15 @@ pub mod transmute_safe {
     ///Trait indicating that a numerical value type can only represent a value of one certain unit.
     ///
     ///This trait cannot be implemented multiple times for the same type. Furthermore, any type
-    ///implementing this trait must not implement [`CanRepresent`] multiple times.
+    ///implementing this trait must not implement [`CanRepresent`] multiple times, i.e., it must
+    ///implement `CanRepresent<Self::Unit>` but not any other `CanRepresent<T>`. RRTK reserves the
+    ///right to enforce this as a trait bound as a non-breaking change if it becomes possible to do
+    ///so in a future version of Rust.
+    ///
+    ///This has two important implications: Firstly, it means that implementing `OnlyRepresents` is
+    ///a promise that one will not add any new `CanRepresent` implementation without a breaking
+    ///change. Secondly, it means that implementing `CanRepresent` multiple times is a promise that
+    ///one will not implement `OnlyRepresents` without a breaking change.
     pub trait OnlyRepresents: CanRepresent<Self::Unit> {
         type Unit: UnitMarker;
     }
