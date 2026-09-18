@@ -163,7 +163,7 @@ pub mod transmute_safe {
     ///
     ///The intended use for this trait is when a type is `#[repr(transparent)]` to allow transmuting
     ///between the type and the inner type that its representation is identical to.
-    pub unsafe trait Transparent {
+    pub unsafe trait Transparent: Sized {
         ///The inner type of the `#[repr(transparent)]` of the implementor. It must not ever cause
         ///undefined behavior to transmute between this type and the implementor in either
         ///direction.
