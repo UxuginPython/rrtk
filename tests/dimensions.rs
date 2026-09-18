@@ -61,3 +61,34 @@ fn as_quantity() {
         Dimensionless::new(-91_i64),
     )
 }
+#[test]
+fn transmute_unit_safe() {
+    use dimensions::transmute_safe::*;
+    let w: f32 = transmute_unit_safe(MillimeterPerSecond::new(39.0));
+    assert_eq!(w, 39.0);
+    let x: i64 = transmute_unit_safe(DimensionlessInteger(20));
+    assert_eq!(x, 20);
+    let y: DimensionlessInteger = transmute_unit_safe(Dimensionless::new(40i64));
+    assert_eq!(y, DimensionlessInteger(40));
+    let z: Dimensionless<i64> = transmute_unit_safe(DimensionlessInteger(39));
+    assert_eq!(z, Dimensionless::new(39));
+}
+#[test]
+fn transmute_memory_safe() {
+    use dimensions::transmute_safe::*;
+    let w: f32 = transmute_memory_safe(MillimeterPerSecond::new(39.0));
+    assert_eq!(w, 39.0);
+    let x: i64 = transmute_memory_safe(DimensionlessInteger(20));
+    assert_eq!(x, 20);
+    let y: DimensionlessInteger = transmute_memory_safe(Dimensionless::new(40i64));
+    assert_eq!(y, DimensionlessInteger(40));
+    let z: Dimensionless<i64> = transmute_memory_safe(DimensionlessInteger(39));
+    assert_eq!(z, Dimensionless::new(39));
+
+    let a: MillimeterPerSecond<f32> = transmute_memory_safe(20.0f32);
+    assert_eq!(a, MillimeterPerSecond::new(20.0));
+    let b: DimensionlessInteger = transmute_memory_safe(21i64);
+    assert_eq!(b, DimensionlessInteger(21));
+    let c: Time = transmute_memory_safe(3_000_000_000_i64);
+    assert_eq!(c, Time::from_seconds_f32(3.0));
+}
