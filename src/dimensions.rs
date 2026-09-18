@@ -62,18 +62,50 @@ use core::num::NonZero;
 #[rustfmt::skip]
 pub mod dimension_aliases;
 pub use dimension_aliases::*;
+///Tools for safely transmuting between different types in the dimension system in certain
+///circumstances.
+///
+///Implementing traits in this module outside of RRTK is discouraged, but it is supported.
 pub mod transmute_safe {
     use super::*;
+    ///Marker trait for types that can be used as unit marker types for [`CanRepresent`]'s `U` type
+    ///parameter and [`OnlyRepresents::Unit`].
+    ///
+    ///Unit marker types are zero-sized types representing a unit for a numerical value at the type
+    ///level. Unit marker types should never be constructed since they only operate at the type
+    ///level. Every possible unit should have one and only one unit marker type representing it. For
+    ///nanoseconds, this is [`unit_markers::Nanosecond`]. For any unit composed of exponents of
+    ///millimeters and seconds, including the dimensionless unit, this is
+    ///[`unit_markers::MillimeterSecond`].
     pub trait UnitMarker {}
+    ///Unit marker types to be used as [`CanRepresent`]'s `U` type parameter and
+    ///[`OnlyRepresents::Unit`].
     pub mod unit_markers {
         use super::*;
+        ///Unit marker type indicating that a numerical type can represent a value with a unit
+        ///composed of a certain exponent of millimeters and a certain exponent of seconds.
+        ///
+        ///This includes the dimensionless unit since it is equal to mm<sup>0</sup>s<sup>0</sup>.
+        ///
+        ///The types parameters of this type match those of [`Quantity`], and `Quantity` uses it for
+        ///its [`CanRepresent`] and [`OnlyRepresents`] implementations.
         pub struct MillimeterSecond<MM: Integer, S: Integer>(PhantomData<MM>, PhantomData<S>);
         impl<MM: Integer, S: Integer> UnitMarker for MillimeterSecond<MM, S> {}
+        ///Unit marker type indicating that a numerical type can represent nanoseconds.
+        ///
+        ///The [`Time`] type is an example of this.
+        ///
+        ///This struct is `#[non_exhaustive]` not because fields will be added in the future but to
+        ///prevent its construction. Unit marker types should never be constructed since they only
+        ///operate at the type level. See the documentation of the [`UnitMarker`] trait for more
+        ///information.
         #[non_exhaustive]
         pub struct Nanosecond;
         impl UnitMarker for Nanosecond {}
     }
     ///Trait indicating that a numerical value type can represent a value of a certain unit.
+    ///
+    ///The `U` parameter is equivalent to [`OnlyRepresents::Unit`].
     ///
     ///This trait can be implemented multiple times for the same type, but it must not be
     ///implemented multiple times for any type also implementing [`OnlyRepresents`]. See the
@@ -111,6 +143,7 @@ pub mod transmute_safe {
     ///change. Secondly, it means that implementing `CanRepresent` multiple times is a promise that
     ///one will not implement `OnlyRepresents` without a breaking change.
     pub trait OnlyRepresents: CanRepresent<Self::Unit> {
+        ///The unit marker type. See the [`UnitMarker`] trait's documentation for more information.
         type Unit: UnitMarker;
     }
     impl<T, MM: Integer, S: Integer> OnlyRepresents for Quantity<T, MM, S> {
@@ -125,7 +158,15 @@ pub mod transmute_safe {
     impl OnlyRepresents for Time {
         type Unit = unit_markers::Nanosecond;
     }
+    ///Trait indicating that it is memory safe to transmute any instance of the implementor to
+    ///`Inner` and to transmute any instance of `Inner` to the implementor.
+    ///
+    ///The intended use for this trait is when a type is `#[repr(transparent)]` to allow transmuting
+    ///between the type and the inner type that its representation is identical to.
     pub unsafe trait Transparent {
+        ///The inner type of the `#[repr(transparent)]` of the implementor. It must not ever cause
+        ///undefined behavior to transmute between this type and the implementor in either
+        ///direction.
         type Inner;
     }
     unsafe impl<T, MM: Integer, S: Integer> Transparent for Quantity<T, MM, S> {
@@ -162,6 +203,13 @@ pub mod transmute_safe {
         let transmute = Transmute { src };
         unsafe { transmute.dst }
     }
+    ///Allows transmuting between certain types of the dimensional analysis system in safe code.
+    ///This function is **unit-unsafe**.
+    ///
+    ///For a version of this function that *is* unit-safe, see [`transmute_unit_safe`]. That
+    ///function is preferred over this one in cases where either can be used.
+    ///
+    ///Memory safety is enforced by the [`Transparent`] trait bound.
     #[inline(always)]
     pub const fn transmute_memory_safe<A, B>(was: A) -> B
     where
@@ -170,6 +218,14 @@ pub mod transmute_safe {
     {
         unsafe { force_transmute(was) }
     }
+    ///Allows transmuting between certain types of the dimensional analysis system in safe code.
+    ///This function is identical to [`transmute_memory_safe`] except that it is also **unit-safe**.
+    ///
+    ///It is recommended to use this function rather than `transmute_memory_safe` where it is
+    ///possible.
+    ///
+    ///Memory safety is enforced by the [`Transparent`] trait bound. Unit-safety is enforced through
+    ///the [`OnlyRepresents`] and [`CanRepresent`] trait bounds.
     #[inline(always)]
     pub const fn transmute_unit_safe<A, B>(was: A) -> B
     where
