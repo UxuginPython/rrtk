@@ -629,8 +629,9 @@ impl DimensionlessFraction {
     ///
     ///This method is **unit-unsafe**. It is very easy to use it to cause unit-incorrectness, which
     ///is why it's deprecated. This method must only be called on `DimensionlessFraction`s whose
-    ///numerator and denominator are also themselves dimensionless. RRTK 0.7.0 required this for all
-    ///`DimensionlessFraction`s, but the requirement was removed in RRTK 0.7.1.
+    ///numerator and denominator are also themselves dimensionless. RRTK 0.7.0 required all
+    ///`DimensionlessFraction`s to have dimensionless components, but this requirement was removed
+    ///in RRTK 0.7.1.
     #[deprecated(
         since = "0.7.1",
         note = "This method makes it too easy to cause unit-incorrectness using `DimensionlessFraction`s with dimensioned numerator and denominator. Use `into_true_components` instead."
