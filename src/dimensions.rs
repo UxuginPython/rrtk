@@ -489,6 +489,13 @@ impl Mul<Time> for DimensionlessInteger {
 ///There is a memory safety guarantee that the denominator is nonzero. This means that undefined
 ///behavior immediately occurs if an instance of this type exists with a zero denominator,
 ///regardless of whether the instance is used in any way.
+///
+///Note that `DimensionlessFraction` only requires that the fraction value itself be dimensionless;
+///the numerator and denominator themselves are not necessarily dimensionless. It is allowed for the
+///numerator and denominator to have dimension as long as they have the same units so that the units
+///cancel out in the fraction's division. For example, a fraction of millimeters divided by
+///millimeters is dimensionless although its numerator and demoninator are not, and
+///`DimensionlessFraction` allows this.
 #[derive(Clone, Copy, Debug)]
 pub struct DimensionlessFraction(i64, NonZero<i64>);
 impl DimensionlessFraction {
@@ -609,7 +616,7 @@ impl DimensionlessFraction {
     ///Converts the fraction into a tuple `(numerator, denominator)`.
     ///
     ///The following code is guaranteed to leave mutable [`DimensionlessInteger`] variables `x` and
-    ///`y` with the same values that they had before the code was run as long as `y` is nonzero.
+    ///`y` with the same values that they had before the code was run as long as `y` is nonzero:
     ///```
     ///# use rrtk::{DimensionlessFraction, DimensionlessInteger};
     ///# let mut x = DimensionlessInteger(2);
@@ -619,6 +626,15 @@ impl DimensionlessFraction {
     ///# assert_eq!(x.0, 2);
     ///# assert_eq!(y.0, 3);
     ///```
+    ///
+    ///This method is **unit-unsafe**. It is very easy to use it to cause unit-incorrectness, which
+    ///is why it's deprecated. This method must only be called on `DimensionlessFraction`s whose
+    ///numerator and denominator are also themselves dimensionless. RRTK 0.7.0 required this for all
+    ///`DimensionlessFraction`s, but the requirement was removed in RRTK 0.7.1.
+    #[deprecated(
+        since = "0.7.1",
+        note = "This method makes it too easy to cause unit-incorrectness using `DimensionlessFraction`s with dimensioned numerator and denominator. Use `into_true_components` instead."
+    )]
     #[inline]
     pub const fn into_components(self) -> (DimensionlessInteger, DimensionlessInteger) {
         (
@@ -632,7 +648,7 @@ impl DimensionlessFraction {
     ///which matches the internal representations of the numerator and denominator.
     ///
     ///The following code is guaranteed to leave mutable `i64` variable `x` and mutable
-    ///[`NonZero<i64>`] variable `y` with the same values that they had before the code was run.
+    ///[`NonZero<i64>`] variable `y` with the same values that they had before the code was run:
     ///```
     ///# use rrtk::DimensionlessFraction;
     ///# let mut x = 2_i64;
