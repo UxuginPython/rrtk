@@ -495,7 +495,8 @@ impl Mul<Time> for DimensionlessInteger {
 ///numerator and denominator to have dimension as long as they have the same units so that the units
 ///cancel out in the fraction's division. For example, a fraction of millimeters divided by
 ///millimeters is dimensionless although its numerator and demoninator are not, and
-///`DimensionlessFraction` allows this.
+///`DimensionlessFraction` allows this. Furthermore, `DimensionlessFraction` does not store the
+///original unit information of its numerator and denominator.
 #[derive(Clone, Copy, Debug)]
 pub struct DimensionlessFraction(i64, NonZero<i64>);
 impl DimensionlessFraction {
@@ -631,7 +632,22 @@ impl DimensionlessFraction {
     ///is why it's deprecated. This method must only be called on `DimensionlessFraction`s whose
     ///numerator and denominator are also themselves dimensionless. RRTK 0.7.0 required all
     ///`DimensionlessFraction`s to have dimensionless components, but this requirement was removed
-    ///in RRTK 0.7.1.
+    ///in RRTK 0.7.1. Additionally, since `DimensionlessFraction` does not store the original unit
+    ///information of its numerator and denominator (and it can't since that would require adding a
+    ///type parameter), this method cannot be modified to allow it to be correct for all
+    ///`DimensionlessFraction`s.
+    ///
+    ///Here is an example of how this method can cause subtle unit-incorrectness:
+    ///```
+    ///# use rrtk::dimensions::*;
+    ///let a = Millimeter::new(2_i64);
+    ///let b = Millimeter::new(3_i64);
+    ///let frac = DimensionlessFraction::new(a, b);
+    ///let (x, y) = frac.into_components();
+    ///```
+    ///Someone unfamiliar with RRTK might reasonably assume that `x == a` and `b == y`, and purely
+    ///numerically, that is correct, but `x` and `y` are incorrectly marked as dimensionless whereas
+    ///`a` and `b` are in millimeters.
     #[deprecated(
         since = "0.7.1",
         note = "This method makes it too easy to cause unit-incorrectness using `DimensionlessFraction`s with dimensioned numerator and denominator. Use `into_true_components` instead."
