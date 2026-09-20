@@ -645,7 +645,7 @@ impl DimensionlessFraction {
     ///let frac = DimensionlessFraction::new(a, b);
     ///let (x, y) = frac.into_components();
     ///```
-    ///Someone unfamiliar with RRTK might reasonably assume that `x == a` and `b == y`, and purely
+    ///Someone unfamiliar with RRTK might reasonably assume that `x == a` and `y == b`, and purely
     ///numerically, that is correct, but `x` and `y` are incorrectly marked as dimensionless whereas
     ///`a` and `b` are in millimeters.
     #[deprecated(
