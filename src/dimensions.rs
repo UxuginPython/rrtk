@@ -630,12 +630,10 @@ impl DimensionlessFraction {
     ///
     ///This method is **unit-unsafe**. It is very easy to use it to cause unit-incorrectness, which
     ///is why it's deprecated. This method must only be called on `DimensionlessFraction`s whose
-    ///numerator and denominator are also themselves dimensionless. RRTK 0.7.0 required all
-    ///`DimensionlessFraction`s to have dimensionless components, but this requirement was removed
-    ///in RRTK 0.7.1. Additionally, since `DimensionlessFraction` does not store the original unit
-    ///information of its numerator and denominator (and it can't since that would require adding a
-    ///type parameter), this method cannot be modified to allow it to be correct for all
-    ///`DimensionlessFraction`s.
+    ///numerator and denominator are also themselves dimensionless. Since `DimensionlessFraction`
+    ///does not store the original unit information of its numerator and denominator (and it can't
+    ///since that would require adding a type parameter), this method cannot be modified to allow it
+    ///to be correct for all `DimensionlessFraction`s.
     ///
     ///Here is an example of how this method can cause subtle unit-incorrectness:
     ///```
@@ -647,10 +645,12 @@ impl DimensionlessFraction {
     ///```
     ///Someone unfamiliar with RRTK might reasonably assume that `x == a` and `y == b`, and purely
     ///numerically, that is correct, but `x` and `y` are incorrectly marked as dimensionless whereas
-    ///`a` and `b` are in millimeters.
+    ///`a` and `b` are in millimeters. [`into_true_components`](Self::into_true_components) is
+    ///recommended instead because it does not return types with marked units and so is unit-correct
+    ///for all `DimensionlessFraction`s.
     #[deprecated(
         since = "0.7.1",
-        note = "This method makes it too easy to cause unit-incorrectness using `DimensionlessFraction`s with dimensioned numerator and denominator. Use `into_true_components` instead."
+        note = "This method makes it too easy to cause unit-incorrectness using `DimensionlessFraction`s with dimensioned numerator and denominator. Use `into_true_components` instead. See the documentation for more information."
     )]
     #[inline]
     pub const fn into_components(self) -> (DimensionlessInteger, DimensionlessInteger) {
