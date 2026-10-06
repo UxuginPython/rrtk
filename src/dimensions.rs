@@ -6,8 +6,8 @@
 //!
 //!This is done through a
 //![system](compile_time_integer) representing integers as types and adding type parameters to a
-//!special struct called [`Quantity`], which is a transparent struct holding only a value at
-//!runtime. There are also a few other specialized types for values that are better represented
+//!special struct called [`Quantity`], which is a `#[repr(transparent)]` struct holding only a value
+//!at runtime. There are also a few other specialized types for values that are better represented
 //!with integers than floating point numbers but still must interact with floating point values.
 //!
 //!# Unit-correctness
@@ -15,20 +15,20 @@
 //!helpful, though, to think of it as code that does *not* use the dimensional analysis system
 //!*incorrectly*. All code using the dimensional analysis system should be unit-correct; otherwise,
 //!it is considered to have a bug. There are a few ways that code can be unit-incorrect:
-//!- Marking a value with an incorrect unit.
+//!- Marking a value with an incorrect unit:
 //!  ```
 //!  # use rrtk::dimensions::dimension_aliases::MillimeterPerSecond;
 //!  let voltage = 5.0;
 //!  let speed = MillimeterPerSecond::new(voltage);
 //!  ```
-//!- Storing a value in an incorrect format.
+//!- Storing a value in an incorrect format:
 //!  ```
 //!  # use rrtk::dimensions::dimension_aliases::Millimeter;
 //!  # use core::mem::transmute;
 //!  let raw_distance: f64 = 500.0;
 //!  let wrong_distance: Millimeter<i64> = unsafe { transmute(raw_distance) };
 //!  ```
-//!- Incorrectly implementing one of the traits in the [`transmute_safe`] submodule.
+//!- Incorrectly implementing one of the traits in the [`transmute_safe`] submodule:
 //!  ```
 //!  # use rrtk::dimensions::transmute_safe::*;
 //!  # use rrtk::compile_time_integer::integer_aliases::*;
@@ -41,8 +41,8 @@
 //!  ```
 //!
 //!# Unit-safety
-//!Unit-safe operations make it easier to write unit-correct code by guaranteeing that they cannot
-//!be used to create unit-incorrectness themselves.
+//!Unit-safe operations make it easier to write unit-correct code by guaranteeing that calling them
+//!cannot directly create unit-incorrectness.
 //!
 //!Unit-safety and memory safety are unconnected technically, but they can be mentally modeled in
 //!somewhat similar ways. Like undefined behavior, unit-incorrectness can spread through a program
@@ -78,7 +78,7 @@ pub mod transmute_safe {
     ///millimeters and seconds, including the dimensionless unit, this is
     ///[`unit_markers::MillimeterSecond`].
     pub trait UnitMarker {}
-    ///Unit marker types to be used as [`CanRepresent`]'s `U` type parameter and
+    ///[Unit marker](UnitMarker) types to be used as [`CanRepresent`]'s `U` type parameter and
     ///[`OnlyRepresents::Unit`].
     pub mod unit_markers {
         use super::*;
