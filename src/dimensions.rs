@@ -540,10 +540,9 @@ impl DimensionlessFraction {
     ///Constructor that does **not** verify that the denominator is nonzero.
     ///
     ///Calling this function with a denominator of zero is undefined behavior.
-    ///However, with debug assertions enabled, this will still perform the nonzero denominator
-    ///assertion.
     ///
-    ///Unlike most constructors of dimensioned types, this function **is unit-safe**.
+    ///Unlike most constructors of dimensioned types, this function **is unit-safe** as long as
+    ///*memory* safety preconditions are upheld.
     #[inline(always)]
     pub const unsafe fn new_unchecked<N, D>(num: N, denom: D) -> Self
     where
@@ -552,13 +551,9 @@ impl DimensionlessFraction {
             + transmute_safe::OnlyRepresents<Unit = N::Unit>
             + Copy,
     {
-        if cfg!(debug_assertions) {
-            Self::new(num, denom)
-        } else {
-            Self(transmute_safe::transmute_unit_safe(num), unsafe {
-                NonZero::new_unchecked(transmute_safe::transmute_unit_safe(denom))
-            })
-        }
+        Self(transmute_safe::transmute_unit_safe(num), unsafe {
+            NonZero::new_unchecked(transmute_safe::transmute_unit_safe(denom))
+        })
     }
     ///Constructor from raw `i64` values for numerator and denominator that panics if the provided
     ///denominator is zero.
@@ -572,16 +567,13 @@ impl DimensionlessFraction {
                 .expect("tried to construct DimensionlessFraction with zero denominator"),
         )
     }
-    //FIXME: It seems inconsistent to sometimes have the check in debug mode anyway and sometimes
-    //not.
     ///Constructor from raw `i64` values for numerator and denominator that does **not** verify that
     ///the denominator is nonzero.
     ///
-    ///Calling this function with a denominator of zero is undefined behavior. This function does
-    ///not perform the nonzero denominator assertion, even with debug assertions enabled.
+    ///Calling this function with a denominator of zero is undefined behavior.
     ///
     ///This function is **unit-unsafe**.
-    #[inline]
+    #[inline(always)]
     pub const unsafe fn from_raw_unchecked(num: i64, denom: i64) -> Self {
         Self(num, unsafe { NonZero::new_unchecked(denom) })
     }
@@ -604,15 +596,9 @@ impl DimensionlessFraction {
     ///Reciprocal function (1/x) that does **not** verify that the new denominator is nonzero.
     ///
     ///Calling this function on a fraction equal to 0 is undefined behavior.
-    ///However, with debug assertions enabled, this will still perform the nonzero denominator
-    ///assertion.
     #[inline(always)]
     pub const unsafe fn reciprocal_unchecked(&self) -> Self {
-        if cfg!(debug_assertions) {
-            self.reciprocal()
-        } else {
-            unsafe { Self::from_raw_unchecked(self.1.get(), self.0) }
-        }
+        unsafe { Self::from_raw_unchecked(self.1.get(), self.0) }
     }
     ///Converts the fraction into a tuple `(numerator, denominator)`.
     ///
