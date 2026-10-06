@@ -353,3 +353,9 @@ Start cleaning up a [really big mess](http://rrtk.org/notice/).
   - Fix the rendering of the second SVG in `Feeder`'s documentation.
 - Significantly improve testing.
   - Modify one test to allow it to pass with Miri's less precise floating point math.
+## 0.7.1
+- Create the concept of unit-correctness and unit-safety to better explain how the dimensional analysis system is to be used.
+- Add the `dimensions::transmute_safe` module with a few new traits and methods that allow transmuting certain types related to dimensional analysis in memory safe code. 
+- Formally allow `DimensionlessFraction` to have dimensioned numerator and denominator as long as the value of the fraction itself is dimensionless.
+  - Deprecate `DimensionlessFraction::into_components`, which can too easily cause unit-incorrectness with these changes. `into_true_components`, which returns raw number types, should be used instead.
+- Make zero division in `DimensionlessFraction` an invalid bit pattern by using `NonZero` in the denominator's internal representation to allow for the null pointer optimization.
