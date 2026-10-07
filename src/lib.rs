@@ -76,7 +76,7 @@ pub mod prelude {
 ///Error types used for a few things in RRTK.
 pub mod error {
     use super::*;
-    ///The error type used when a [`TryFrom`] fails.
+    ///A general error type for when a [`TryFrom`] fails.
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]
     pub struct CannotConvert;
     ///The error type for when an operation fails because of a division-by-zero error.

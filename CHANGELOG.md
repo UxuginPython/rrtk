@@ -359,3 +359,10 @@ Start cleaning up a [really big mess](http://rrtk.org/notice/).
 - Formally allow `DimensionlessFraction` to have dimensioned numerator and denominator as long as the value of the fraction itself is dimensionless.
   - Deprecate `DimensionlessFraction::into_components`, which can too easily cause unit-incorrectness with these changes. `into_true_components`, which returns raw number types, should be used instead.
 - Make zero division in `DimensionlessFraction` an invalid bit pattern by using `NonZero` in the denominator's internal representation to allow for the null pointer optimization.
+## 0.7.2-alpha.0
+Add some support for num-rational:
+- Implement `From<num_rational::Rational64>` for `DimensionlessFraction`.
+- Implement `TryFrom<DimensionlessFraction>` for `num_rational::Rational64`.
+  - Create `error::ZeroDivision`, a specific error type for division-by-zero errors.
+- Implement `From<DimensionlessInteger>` for `num_rational::Rational64`.
+- Implement `stulta::NotDatum` for `num_rational::Ratio` and `num_rational::ParseRatioError`.
