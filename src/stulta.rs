@@ -121,3 +121,7 @@ where
 impl NotDatum for MotionProfilePiece {}
 impl NotDatum for PIDKValues {}
 impl NotDatum for PositionDerivativeDependentPIDKValues {}
+#[cfg(feature = "num-rational")]
+impl<T> NotDatum for num_rational::Ratio<T> {}
+#[cfg(feature = "num-rational")]
+impl NotDatum for num_rational::ParseRatioError {}
