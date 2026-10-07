@@ -484,6 +484,13 @@ impl Mul<Time> for DimensionlessInteger {
         Time(self.0 * rhs.0)
     }
 }
+#[cfg(feature = "num-rational")]
+impl From<DimensionlessInteger> for num_rational::Rational64 {
+    #[inline(always)]
+    fn from(was: DimensionlessInteger) -> Self {
+        Self::from_integer(was.0)
+    }
+}
 ///An exact rational number type for dimensionless values.
 ///
 ///There is a memory safety guarantee that the denominator is nonzero. This means that undefined
@@ -922,6 +929,27 @@ impl From<DimensionlessFraction> for Dimensionless<f32> {
 impl From<DimensionlessFraction> for Dimensionless<f64> {
     fn from(was: DimensionlessFraction) -> Self {
         was.as_quantity_f64()
+    }
+}
+///This implementation uses [`num_rational::Ratio::new_raw`] internally; it does not reduce the
+///fraction. Call [`num_rational::Ratio::reduced`] to reduce the new `Ratio` if desired.
+#[cfg(feature = "num-rational")]
+impl From<DimensionlessFraction> for num_rational::Rational64 {
+    #[inline]
+    fn from(was: DimensionlessFraction) -> Self {
+        let components = was.into_true_components();
+        Self::new_raw(components.0, components.1.get())
+    }
+}
+///This operation is **unit-unsafe**. It requires the `Ratio` to be dimensionless for
+///unit-correctness.
+#[cfg(feature = "num-rational")]
+impl From<num_rational::Rational64> for DimensionlessFraction {
+    #[inline]
+    fn from(was: num_rational::Rational64) -> Self {
+        //TODO: Decide if you'd rather use Ratio::into_raw().
+        //We don't use the more modern Ratio::into_raw() for compatibility with older versions.
+        Self::from_raw(*was.numer(), *was.denom())
     }
 }
 ///Gets the resulting type from multiplying values of two types. (Alias for
