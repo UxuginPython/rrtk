@@ -94,6 +94,35 @@ fn as_quantity_f64() {
     assert_eq!(Dimensionless::<f64>::from(x), Dimensionless::new(1.5f64));
 }
 #[test]
+fn from_true_raw() {
+    let a = 4_i64;
+    let b = core::num::NonZero::new(6_i64).expect("hardcoded 6 is not 0");
+    let test = DimensionlessFraction::from_true_raw(a, b);
+    assert_eq!(test.as_f64(), 2.0 / 3.0);
+}
+#[test]
+fn into_components() {
+    let test = DimensionlessFraction::from_raw(4_i64, 6_i64);
+    let should_be = (DimensionlessInteger(4_i64), DimensionlessInteger(6_i64));
+    #[expect(deprecated)]
+    {
+        assert_eq!(test.into_components(), should_be);
+    }
+}
+#[test]
+fn into_true_components() {
+    let test = DimensionlessFraction::from_raw(4, 6);
+    let should_be = (
+        4_i64,
+        core::num::NonZero::new(6_i64).expect("hardcoded 6 is not 0"),
+    );
+    assert_eq!(test.into_true_components(), should_be);
+}
+#[test]
+fn dimensionless_fraction_default() {
+    assert!(DimensionlessFraction::default().raw_eq(&DimensionlessFraction::from_raw(0, 1)));
+}
+#[test]
 fn neg() {
     let x = DimensionlessFraction::from_raw(1, 2);
     assert_eq!(-x, DimensionlessFraction::from_raw(-1, 2));
