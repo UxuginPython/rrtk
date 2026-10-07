@@ -5,16 +5,236 @@
 //!dimension mismatch errors at compile time without runtime overhead.
 //!
 //!This is done through a
-//![semi-hack](compile_time_integer) representing integers as types and adding type parameters to a
-//!special struct called [`Quantity`], which is a transparent struct holding only a value at
-//!runtime. There are also a few other specialized types for values that are better represented
+//![system](compile_time_integer) representing integers as types and adding type parameters to a
+//!special struct called [`Quantity`], which is a `#[repr(transparent)]` struct holding only a value
+//!at runtime. There are also a few other specialized types for values that are better represented
 //!with integers than floating point numbers but still must interact with floating point values.
+//!
+//!# Unit-correctness
+//!Unit-correct code is code that uses the dimensional analysis system correctly. It may be more
+//!helpful, though, to think of it as code that does *not* use the dimensional analysis system
+//!*incorrectly*. All code using the dimensional analysis system should be unit-correct; otherwise,
+//!it is considered to have a bug. There are a few ways that code can be unit-incorrect:
+//!- Marking a value with an incorrect unit:
+//!  ```
+//!  # use rrtk::dimensions::dimension_aliases::MillimeterPerSecond;
+//!  let voltage = 5.0;
+//!  let speed = MillimeterPerSecond::new(voltage);
+//!  ```
+//!- Storing a value in an incorrect format:
+//!  ```
+//!  # use rrtk::dimensions::dimension_aliases::Millimeter;
+//!  # use core::mem::transmute;
+//!  let raw_distance: f64 = 500.0;
+//!  let wrong_distance: Millimeter<i64> = unsafe { transmute(raw_distance) };
+//!  ```
+//!- Incorrectly implementing one of the traits in the [`transmute_safe`] submodule:
+//!  ```
+//!  # use rrtk::dimensions::transmute_safe::*;
+//!  # use rrtk::compile_time_integer::integer_aliases::*;
+//!  struct MyValue(f32);
+//!  impl CanRepresent<unit_markers::Nanosecond> for MyValue {}
+//!  impl CanRepresent<unit_markers::MillimeterSecond<Pos1, Zero>> for MyValue {}
+//!  impl OnlyRepresents for MyValue {
+//!      type Unit = unit_markers::Nanosecond;
+//!  }
+//!  ```
+//!
+//!# Unit-safety
+//!Unit-safe operations make it easier to write unit-correct code by guaranteeing that calling them
+//!cannot directly create unit-incorrectness.
+//!
+//!Unit-safety and memory safety are unconnected technically, but they can be mentally modeled in
+//!somewhat similar ways. Like undefined behavior, unit-incorrectness can spread through a program
+//!and contaminate other data. Importantly, though, this is always deterministic, defined behavior.
+//!Similarly, like safe code never causes undefined behavior, unit-safe code never causes
+//!unit-incorrectness. Likewise, unit-unsafe code requires the caller to uphold a precondition to
+//!maintain unit-correctness like unsafe code requires a precondition for memory safety.
+//!
+//!The majority of operations in this module are unit-safe. The most common unit-unsafe operation is
+//!initial construction of dimensioned values from raw numbers, which, obviously, requires the
+//!caller to ensure that said numbers are of the correct unit. All unit-unsafe operations in RRTK
+//!are clearly marked as such in this documentation.
 use super::*;
 use compile_time_integer::*;
+use core::num::NonZero;
 //This attribute currently cannot be in the actual file with #![].
 #[rustfmt::skip]
 pub mod dimension_aliases;
 pub use dimension_aliases::*;
+///Tools for safely transmuting between different types in the dimension system in certain
+///circumstances.
+///
+///Implementing traits in this module outside of RRTK is discouraged, but it is supported.
+pub mod transmute_safe {
+    use super::*;
+    ///Marker trait for types that can be used as unit marker types for [`CanRepresent`]'s `U` type
+    ///parameter and [`OnlyRepresents::Unit`].
+    ///
+    ///Unit marker types are zero-sized types representing a unit for a numerical value at the type
+    ///level. Unit marker types should never be constructed since they only operate at the type
+    ///level. Every possible unit should have one and only one unit marker type representing it. For
+    ///nanoseconds, this is [`unit_markers::Nanosecond`]. For any unit composed of exponents of
+    ///millimeters and seconds, including the dimensionless unit, this is
+    ///[`unit_markers::MillimeterSecond`].
+    pub trait UnitMarker {}
+    ///[Unit marker](UnitMarker) types to be used as [`CanRepresent`]'s `U` type parameter and
+    ///[`OnlyRepresents::Unit`].
+    pub mod unit_markers {
+        use super::*;
+        ///Unit marker type indicating that a numerical type can represent a value with a unit
+        ///composed of a certain exponent of millimeters and a certain exponent of seconds.
+        ///
+        ///This includes the dimensionless unit since it is equal to mm<sup>0</sup>s<sup>0</sup>.
+        ///
+        ///The types parameters of this type match those of [`Quantity`], and `Quantity` uses it for
+        ///its [`CanRepresent`] and [`OnlyRepresents`] implementations.
+        pub struct MillimeterSecond<MM: Integer, S: Integer>(PhantomData<MM>, PhantomData<S>);
+        impl<MM: Integer, S: Integer> UnitMarker for MillimeterSecond<MM, S> {}
+        ///Unit marker type indicating that a numerical type can represent nanoseconds.
+        ///
+        ///The [`Time`] type is an example of this.
+        ///
+        ///This struct is `#[non_exhaustive]` not because fields will be added in the future but to
+        ///prevent its construction. Unit marker types should never be constructed since they only
+        ///operate at the type level. See the documentation of the [`UnitMarker`] trait for more
+        ///information.
+        #[non_exhaustive]
+        pub struct Nanosecond;
+        impl UnitMarker for Nanosecond {}
+    }
+    ///Trait indicating that a numerical value type can represent a value of a certain unit.
+    ///
+    ///The `U` parameter is equivalent to [`OnlyRepresents::Unit`].
+    ///
+    ///This trait can be implemented multiple times for the same type, but it must not be
+    ///implemented multiple times for any type also implementing [`OnlyRepresents`]. See the
+    ///documentation there for more information.
+    pub trait CanRepresent<U: UnitMarker> {}
+    impl<T, MM: Integer, S: Integer> CanRepresent<unit_markers::MillimeterSecond<MM, S>>
+        for Quantity<T, MM, S>
+    {
+    }
+    impl CanRepresent<unit_markers::MillimeterSecond<Zero, Zero>> for DimensionlessInteger {}
+    impl CanRepresent<unit_markers::MillimeterSecond<Zero, Zero>> for DimensionlessFraction {}
+    impl CanRepresent<unit_markers::Nanosecond> for Time {}
+    macro_rules! impl_all_can_represent {
+        ($num_type: ty, $($other_impls: ty),+) => {
+            impl<U: UnitMarker> CanRepresent<U> for $num_type {}
+            impl_all_can_represent!($($other_impls),+);
+        };
+        ($num_type: ty) => {
+            impl<U: UnitMarker> CanRepresent<U> for $num_type {}
+        };
+    }
+    impl_all_can_represent!(
+        u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64
+    );
+    ///Trait indicating that a numerical value type can only represent a value of one certain unit.
+    ///
+    ///This trait cannot be implemented multiple times for the same type. Furthermore, any type
+    ///implementing this trait must not implement [`CanRepresent`] multiple times, i.e., it must
+    ///implement `CanRepresent<Self::Unit>` but not any other `CanRepresent<T>`. RRTK reserves the
+    ///right to enforce this as a trait bound as a non-breaking change if it becomes possible to do
+    ///so in a future version of Rust.
+    ///
+    ///This has two important implications: Firstly, it means that implementing `OnlyRepresents` is
+    ///a promise that one will not add any new `CanRepresent` implementation without a breaking
+    ///change. Secondly, it means that implementing `CanRepresent` multiple times is a promise that
+    ///one will not implement `OnlyRepresents` without a breaking change.
+    pub trait OnlyRepresents: CanRepresent<Self::Unit> {
+        ///The unit marker type. See the [`UnitMarker`] trait's documentation for more information.
+        type Unit: UnitMarker;
+    }
+    impl<T, MM: Integer, S: Integer> OnlyRepresents for Quantity<T, MM, S> {
+        type Unit = unit_markers::MillimeterSecond<MM, S>;
+    }
+    impl OnlyRepresents for DimensionlessInteger {
+        type Unit = unit_markers::MillimeterSecond<Zero, Zero>;
+    }
+    impl OnlyRepresents for DimensionlessFraction {
+        type Unit = unit_markers::MillimeterSecond<Zero, Zero>;
+    }
+    impl OnlyRepresents for Time {
+        type Unit = unit_markers::Nanosecond;
+    }
+    ///Trait indicating that it is memory safe to transmute any instance of the implementor to
+    ///`Inner` and to transmute any instance of `Inner` to the implementor.
+    ///
+    ///The intended use for this trait is when a type is `#[repr(transparent)]` to allow transmuting
+    ///between the type and the inner type that its representation is identical to.
+    pub unsafe trait Transparent: Sized {
+        ///The inner type of the `#[repr(transparent)]` of the implementor. It must not ever cause
+        ///undefined behavior to transmute between this type and the implementor in either
+        ///direction.
+        type Inner;
+    }
+    unsafe impl<T, MM: Integer, S: Integer> Transparent for Quantity<T, MM, S> {
+        type Inner = T;
+    }
+    unsafe impl Transparent for DimensionlessInteger {
+        type Inner = i64;
+    }
+    unsafe impl Transparent for Time {
+        type Inner = i64;
+    }
+    macro_rules! impl_all_transparent {
+        ($num_type: ty, $($other_impls: ty),+) => {
+            unsafe impl Transparent for $num_type {
+                type Inner = Self;
+            }
+            impl_all_transparent!($($other_impls),+);
+        };
+        ($num_type: ty) => {
+            unsafe impl Transparent for $num_type {
+                type Inner = Self;
+            }
+        };
+    }
+    impl_all_transparent!(
+        u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64
+    );
+    const unsafe fn force_transmute<Src: Copy, Dst: Copy>(src: Src) -> Dst {
+        #[repr(C)]
+        union Transmute<A: Copy, B: Copy> {
+            src: A,
+            dst: B,
+        }
+        let transmute = Transmute { src };
+        unsafe { transmute.dst }
+    }
+    ///Allows transmuting between certain types of the dimensional analysis system in safe code.
+    ///This function is **unit-unsafe**.
+    ///
+    ///For a version of this function that *is* unit-safe, see [`transmute_unit_safe`]. That
+    ///function is preferred over this one in cases where either can be used.
+    ///
+    ///Memory safety is enforced by the [`Transparent`] trait bound.
+    #[inline(always)]
+    pub const fn transmute_memory_safe<A, B>(was: A) -> B
+    where
+        A: Transparent + Copy,
+        B: Transparent<Inner = A::Inner> + Copy,
+    {
+        unsafe { force_transmute(was) }
+    }
+    ///Allows transmuting between certain types of the dimensional analysis system in safe code.
+    ///This function is identical to [`transmute_memory_safe`] except that it is also **unit-safe**.
+    ///
+    ///It is recommended to use this function rather than `transmute_memory_safe` where it is
+    ///possible.
+    ///
+    ///Memory safety is enforced by the [`Transparent`] trait bound. Unit-safety is enforced through
+    ///the [`OnlyRepresents`] and [`CanRepresent`] trait bounds.
+    #[inline(always)]
+    pub const fn transmute_unit_safe<A, B>(was: A) -> B
+    where
+        A: Transparent + Copy + OnlyRepresents,
+        B: Transparent<Inner = A::Inner> + Copy + CanRepresent<A::Unit>,
+    {
+        transmute_memory_safe(was)
+    }
+}
 ///A time stored internally in `i64` nanoseconds.
 ///
 ///`Time` is often converted to [`Second<f32>`] to interact with quantities of other dimensions.
@@ -25,10 +245,14 @@ impl Time {
     ///Zero time. You would get this from `Time::from_nanoseconds(0)`.
     pub const ZERO: Self = Time(0);
     ///Construct a `Time` from `i64` nanoseconds, which is how the time is stored internally.
+    ///
+    ///This function is **unit-unsafe**.
     pub const fn from_nanoseconds(value: i64) -> Self {
         Self(value)
     }
     ///Construct a `Time` from `f32` seconds.
+    ///
+    ///This function is **unit-unsafe**.
     pub const fn from_seconds_f32(value: f32) -> Self {
         Self((value * 1_000_000_000.0) as i64)
     }
@@ -112,6 +336,9 @@ impl DivAssign<DimensionlessInteger> for Time {
 }
 ///Converts the time to `f32` seconds before the operation. This is to make `f32` compatible with
 ///[`streams::math::IntegralStream`].
+///
+///This implementation is technically unit-safe since `f32` can have any unit, but it should be used
+///with caution.
 impl Mul<f32> for Time {
     type Output = f32;
     fn mul(self, rhs: f32) -> f32 {
@@ -119,6 +346,9 @@ impl Mul<f32> for Time {
     }
 }
 ///Converts the time to `f32` seconds before the operation.
+///
+///This implementation is technically unit-safe since `f32` can have any unit, but it should be used
+///with caution.
 impl Mul<Time> for f32 {
     type Output = Self;
     fn mul(self, rhs: Time) -> Self {
@@ -126,6 +356,9 @@ impl Mul<Time> for f32 {
     }
 }
 ///Converts the time to `f32` seconds before the operation.
+///
+///This implementation is technically unit-safe since `f32` can have any unit, but it should be used
+///with caution.
 impl Div<f32> for Time {
     type Output = f32;
     fn div(self, rhs: f32) -> f32 {
@@ -134,6 +367,9 @@ impl Div<f32> for Time {
 }
 ///Converts the time to `f32` seconds before the operation. This is to make `f32` compatible with
 ///[`streams::math::DerivativeStream`].
+///
+///This implementation is technically unit-safe since `f32` can have any unit, but it should be used
+///with caution.
 impl Div<Time> for f32 {
     type Output = Self;
     fn div(self, rhs: Time) -> Self {
@@ -148,21 +384,45 @@ impl Div<Time> for f32 {
 pub struct DimensionlessInteger(pub i64);
 impl DimensionlessInteger {
     ///Constructor for [`DimensionlessInteger`].
-    #[inline]
+    ///
+    ///This function is **unit-unsafe**.
+    #[inline(always)]
     pub const fn new(value: i64) -> Self {
         Self(value)
     }
     ///`x.const_eq(y)` is exactly equivalent to `x == y` except that it works in const contexts.
-    #[inline]
+    #[inline(always)]
     pub const fn const_eq(&self, rhs: &Self) -> bool {
         self.0 == rhs.0
     }
     ///Checks if the integer is zero.
-    #[inline]
+    #[inline(always)]
     pub const fn is_zero(&self) -> bool {
         self.0 == 0
     }
+    ///Converts from `DimensionlessInteger` to `Quantity<i64, Zero, Zero>`.
+    ///
+    ///The following two lines are guaranteed to have the same effect given `DimensionlessInteger`
+    ///variable `x`:
+    ///```
+    ///# use rrtk::*;
+    ///# let x = DimensionlessInteger(4);
+    ///let y = x.as_quantity();
+    ///# assert_eq!(y, dimensions::transmute_safe::transmute_unit_safe(x));
+    ///```
+    ///```
+    ///# use rrtk::*;
+    ///# use rrtk::compile_time_integer::Zero;
+    ///# let x = DimensionlessInteger(4);
+    ///let y: Quantity<i64, Zero, Zero> = dimensions::transmute_safe::transmute_unit_safe(x);
+    ///# assert_eq!(y, x.as_quantity());
+    ///```
+    #[inline(always)]
+    pub const fn as_quantity(self) -> Quantity<i64, Zero, Zero> {
+        Quantity::new(self.0)
+    }
 }
+///This implementation is **unit-unsafe**.
 impl From<i64> for DimensionlessInteger {
     fn from(was: i64) -> Self {
         Self(was)
@@ -209,8 +469,7 @@ impl MulAssign for DimensionlessInteger {
 impl Div for DimensionlessInteger {
     type Output = DimensionlessFraction;
     fn div(self, rhs: Self) -> DimensionlessFraction {
-        assert_ne!(rhs, Self::new(0));
-        DimensionlessFraction(self, rhs)
+        DimensionlessFraction::new(self, rhs)
     }
 }
 impl Neg for DimensionlessInteger {
@@ -227,18 +486,31 @@ impl Mul<Time> for DimensionlessInteger {
 }
 ///An exact rational number type for dimensionless values.
 ///
-///There is a memory safety guarantee that the denominator is nonzero. RRTK does not currently
-///exhibit any undefined behavior if this precondition is violated, but this may change in the
-///future **without** being considered a breaking change.
+///There is a memory safety guarantee that the denominator is nonzero. This means that undefined
+///behavior immediately occurs if an instance of this type exists with a zero denominator,
+///regardless of whether the instance is used in any way.
+///
+///Note that `DimensionlessFraction` only requires that the fraction value itself be dimensionless;
+///the numerator and denominator themselves are not necessarily dimensionless. It is allowed for the
+///numerator and denominator to have dimension as long as they have the same units so that the units
+///cancel out in the fraction's division. For example, a fraction of millimeters divided by
+///millimeters is dimensionless although its numerator and demoninator are not, and
+///`DimensionlessFraction` allows this. Furthermore, `DimensionlessFraction` does not store the
+///original unit information of its numerator and denominator.
 #[derive(Clone, Copy, Debug)]
-pub struct DimensionlessFraction(DimensionlessInteger, DimensionlessInteger);
+pub struct DimensionlessFraction(i64, NonZero<i64>);
 impl DimensionlessFraction {
-    ///Checks whether the denominator is zero and panics if it is.
+    ///Tries to check whether the denominator is zero and panic if it is.
+    ///
+    ///As long as the denominator is nonzero, this method is guaranteed to have no effect.
+    ///Importantly, however, if the denominator *is* zero, undefined behavior has already begun, and
+    ///this method cannot do anything about it. It will still try to panic, but nothing is
+    ///guaranteed.
     #[inline]
     pub const fn assert_valid(&self) {
         assert!(
-            !self.1.is_zero(),
-            "DimensionlessFraction with zero denominator detected"
+            self.1.get() != 0,
+            "DimensionlessFraction with zero denominator detected - this indicates undefined behavior"
         );
     }
     ///With debug assertions enabled, identical to [`assert_valid`](Self::assert_valid). With debug
@@ -246,73 +518,92 @@ impl DimensionlessFraction {
     #[inline]
     pub const fn debug_assert_valid(&self) {
         debug_assert!(
-            !self.1.is_zero(),
-            "DimensionlessFraction with zero denominator detected"
+            self.1.get() != 0,
+            "DimensionlessFraction with zero denominator detected - this indicates undefined behavior"
         );
     }
-    ///Constructor that verifies that the denominator is not zero and panics if it is.
-    #[inline]
-    pub const fn new(num: DimensionlessInteger, denom: DimensionlessInteger) -> Self {
-        let new = Self(num, denom);
-        new.assert_valid();
-        new
-    }
-    ///Constructor that does not check if the denominator is zero.
+    ///Constructor that panics if the provided denominator is zero.
     ///
-    ///With debug assertions enabled, this will still perform the zero denominator check.
-    #[inline(always)]
-    pub const unsafe fn new_unchecked(
-        num: DimensionlessInteger,
-        denom: DimensionlessInteger,
-    ) -> Self {
-        if cfg!(debug_assertions) {
-            Self::new(num, denom)
-        } else {
-            Self(num, denom)
-        }
+    ///Unlike most constructors of dimensioned types, this function **is unit-safe**.
+    #[inline]
+    pub const fn new<N, D>(num: N, denom: D) -> Self
+    where
+        N: transmute_safe::Transparent<Inner = i64> + transmute_safe::OnlyRepresents + Copy,
+        D: transmute_safe::Transparent<Inner = i64>
+            + transmute_safe::OnlyRepresents<Unit = N::Unit>
+            + Copy,
+    {
+        let denom = NonZero::new(transmute_safe::transmute_unit_safe(denom))
+            .expect("tried to construct DimensionlessFraction with zero denominator");
+        Self(transmute_safe::transmute_unit_safe(num), denom)
     }
-    ///Constructor from raw `i64` values for numerator and denominator. They are immediately
-    ///converted to [`DimensionlessInteger`]. This constructor verifies that the denominator is
-    ///nonzero and panics otherwise.
+    ///Constructor that does **not** verify that the denominator is nonzero.
+    ///
+    ///Calling this function with a denominator of zero is undefined behavior.
+    ///
+    ///Unlike most constructors of dimensioned types, this function **is unit-safe** as long as
+    ///*memory* safety preconditions are upheld.
+    #[inline(always)]
+    pub const unsafe fn new_unchecked<N, D>(num: N, denom: D) -> Self
+    where
+        N: transmute_safe::Transparent<Inner = i64> + transmute_safe::OnlyRepresents + Copy,
+        D: transmute_safe::Transparent<Inner = i64>
+            + transmute_safe::OnlyRepresents<Unit = N::Unit>
+            + Copy,
+    {
+        Self(transmute_safe::transmute_unit_safe(num), unsafe {
+            NonZero::new_unchecked(transmute_safe::transmute_unit_safe(denom))
+        })
+    }
+    ///Constructor from raw `i64` values for numerator and denominator that panics if the provided
+    ///denominator is zero.
+    ///
+    ///This function is **unit-unsafe**.
     #[inline]
     pub const fn from_raw(num: i64, denom: i64) -> Self {
-        Self::new(
-            DimensionlessInteger::new(num),
-            DimensionlessInteger::new(denom),
+        Self(
+            num,
+            NonZero::new(denom)
+                .expect("tried to construct DimensionlessFraction with zero denominator"),
         )
     }
-    ///Constructor from raw `i64` values for numerator and denominator. They are immediately
-    ///converted to [`DimensionlessInteger`]. This constructor does **not** verify that the
-    ///denominator is nonzero.
-    #[inline]
+    ///Constructor from raw `i64` values for numerator and denominator that does **not** verify that
+    ///the denominator is nonzero.
+    ///
+    ///Calling this function with a denominator of zero is undefined behavior.
+    ///
+    ///This function is **unit-unsafe**.
+    #[inline(always)]
     pub const unsafe fn from_raw_unchecked(num: i64, denom: i64) -> Self {
-        unsafe {
-            Self::new_unchecked(
-                DimensionlessInteger::new(num),
-                DimensionlessInteger::new(denom),
-            )
-        }
+        Self(num, unsafe { NonZero::new_unchecked(denom) })
+    }
+    ///Constructor from an `i64` numerator and a `NonZero<i64>` denominator.
+    ///
+    ///The numerator and denominator are internally stored by `DimensionlessFraction` as these
+    ///types, so this is the most efficient constructor. As for safety, it is the caller's
+    ///responsibility to make sure that the `NonZero` denominator is valid.
+    ///
+    ///This function is **unit-unsafe**.
+    #[inline(always)]
+    pub const fn from_true_raw(num: i64, denom: NonZero<i64>) -> Self {
+        Self(num, denom)
     }
     ///Reciprocal function (1/x) that panics if the new denominator is zero.
     #[inline]
     pub const fn reciprocal(&self) -> Self {
-        Self::new(self.1, self.0)
+        Self::from_raw(self.1.get(), self.0)
     }
-    ///Reciprocal function (1/x) that does not check if the new denominator is zero.
+    ///Reciprocal function (1/x) that does **not** verify that the new denominator is nonzero.
     ///
-    ///With debug assertions enabled, this will still perform the zero denominator check.
+    ///Calling this function on a fraction equal to 0 is undefined behavior.
     #[inline(always)]
     pub const unsafe fn reciprocal_unchecked(&self) -> Self {
-        if cfg!(debug_assertions) {
-            self.reciprocal()
-        } else {
-            Self(self.1, self.0)
-        }
+        unsafe { Self::from_raw_unchecked(self.1.get(), self.0) }
     }
     ///Converts the fraction into a tuple `(numerator, denominator)`.
     ///
-    ///The following code is guaranteed to leave mutable `DimensionlessInteger` variables `x` and
-    ///`y` with the same values that they had before the code was run as long as `y` is nonzero.
+    ///The following code is guaranteed to leave mutable [`DimensionlessInteger`] variables `x` and
+    ///`y` with the same values that they had before the code was run as long as `y` is nonzero:
     ///```
     ///# use rrtk::{DimensionlessFraction, DimensionlessInteger};
     ///# let mut x = DimensionlessInteger(2);
@@ -322,21 +613,69 @@ impl DimensionlessFraction {
     ///# assert_eq!(x.0, 2);
     ///# assert_eq!(y.0, 3);
     ///```
+    ///
+    ///This method is **unit-unsafe**. It is very easy to use it to cause unit-incorrectness, which
+    ///is why it's deprecated. This method must only be called on `DimensionlessFraction`s whose
+    ///numerator and denominator are also themselves dimensionless. Since `DimensionlessFraction`
+    ///does not store the original unit information of its numerator and denominator (and it can't
+    ///since that would require adding a type parameter), this method cannot be modified to allow it
+    ///to be correct for all `DimensionlessFraction`s.
+    ///
+    ///Here is an example of how this method can cause subtle unit-incorrectness:
+    ///```
+    ///# use rrtk::dimensions::*;
+    ///let a = Millimeter::new(2_i64);
+    ///let b = Millimeter::new(3_i64);
+    ///let frac = DimensionlessFraction::new(a, b);
+    ///let (x, y) = frac.into_components();
+    ///```
+    ///Someone unfamiliar with RRTK might reasonably assume that `x == a` and `y == b`, and purely
+    ///numerically, that is correct, but `x` and `y` are incorrectly marked as dimensionless whereas
+    ///`a` and `b` are in millimeters. [`into_true_components`](Self::into_true_components) is
+    ///recommended instead because it does not return types with marked units and so is unit-correct
+    ///for all `DimensionlessFraction`s.
+    #[deprecated(
+        since = "0.7.1",
+        note = "This method makes it too easy to cause unit-incorrectness using `DimensionlessFraction`s with dimensioned numerator and denominator. Use `into_true_components` instead. See the documentation for more information."
+    )]
     #[inline]
     pub const fn into_components(self) -> (DimensionlessInteger, DimensionlessInteger) {
+        (
+            DimensionlessInteger(self.0),
+            DimensionlessInteger(self.1.get()),
+        )
+    }
+    ///Converts the fraction into a tuple `(numerator, denominator)`.
+    ///
+    ///Unlike [`into_components`](Self::into_components), this method returns `(i64, NonZero<i64>)`,
+    ///which matches the internal representations of the numerator and denominator.
+    ///
+    ///The following code is guaranteed to leave mutable `i64` variable `x` and mutable
+    ///[`NonZero<i64>`] variable `y` with the same values that they had before the code was run:
+    ///```
+    ///# use rrtk::DimensionlessFraction;
+    ///# let mut x = 2_i64;
+    ///# let mut y = core::num::NonZero::new(3_i64).expect("literal value 3 is not 0");
+    ///let frac = DimensionlessFraction::from_true_raw(x, y);
+    ///(x, y) = frac.into_true_components();
+    ///# assert_eq!(x, 2);
+    ///# assert_eq!(y.get(), 3);
+    ///```
+    #[inline(always)]
+    pub const fn into_true_components(self) -> (i64, NonZero<i64>) {
         (self.0, self.1)
     }
     ///Converts the fraction to its closest `f32` approximation.
     ///There is also a [`From`] implementation that does this.
     #[inline]
     pub const fn as_f32(&self) -> f32 {
-        self.0.0 as f32 / self.1.0 as f32
+        self.0 as f32 / self.1.get() as f32
     }
     ///Converts the fraction to its closest `f64` approximation.
     ///There is also a [`From`] implementation that does this.
     #[inline]
     pub const fn as_f64(&self) -> f64 {
-        self.0.0 as f64 / self.1.0 as f64
+        self.0 as f64 / self.1.get() as f64
     }
     ///Wraps the output of [`as_f32`](Self::as_f32) in a `Dimensionless` wrapper.
     ///There is also a [`From`] implementation that does this.
@@ -355,21 +694,33 @@ impl DimensionlessFraction {
     ///method tests whether a=c and b=d.
     #[inline]
     pub const fn raw_eq(&self, rhs: &Self) -> bool {
-        self.0.const_eq(&rhs.0) && self.1.const_eq(&rhs.1)
+        self.0 == rhs.0 && self.1.get() == rhs.1.get()
+    }
+}
+///The default `DimensionlessFraction` is 0, specifically 0/1, to match the other Rust numeric
+///types.
+impl Default for DimensionlessFraction {
+    #[inline(always)]
+    fn default() -> Self {
+        const { Self::from_raw(0, 1) }
     }
 }
 impl From<DimensionlessInteger> for DimensionlessFraction {
     fn from(was: DimensionlessInteger) -> Self {
-        Self(was, DimensionlessInteger::new(1))
+        Self(
+            was.0,
+            const { NonZero::new(1).expect("literal 1 is not 0") },
+        )
     }
 }
 impl Ord for DimensionlessFraction {
     fn cmp(&self, rhs: &Self) -> core::cmp::Ordering {
-        let a = self.0 * rhs.1;
-        let b = self.1 * rhs.0;
+        let a = self.0 * rhs.1.get();
+        let b = self.1.get() * rhs.0;
         let cmp = a.cmp(&b);
         //This is true if the signs of the denominators match.
-        if (self.1 < DimensionlessInteger(0)) == (rhs.1 < DimensionlessInteger(0)) {
+        //This assumes that neither denominator is zero.
+        if (self.1.get() < 0) == (rhs.1.get() < 0) {
             cmp
         } else {
             cmp.reverse()
@@ -393,10 +744,19 @@ impl Neg for DimensionlessFraction {
         Self(-self.0, self.1)
     }
 }
+//This change is not considered breaking because The Book says "Relying on integer overflow’s
+//wrapping behavior is considered an error."
+//https://doc.rust-lang.org/book/ch03-02-data-types.html#integer-overflow
+///This implementation panics if the denominator multiplication overflows, even in release mode.
 impl Mul for DimensionlessFraction {
     type Output = Self;
     fn mul(self, rhs: Self) -> Self {
-        Self(self.0 * rhs.0, self.1 * rhs.1)
+        Self(
+            self.0 * rhs.0,
+            self.1
+                .checked_mul(rhs.1)
+                .expect("denominator overflow when multiplying DimensionlessFractions"),
+        )
     }
 }
 impl MulAssign for DimensionlessFraction {
@@ -419,7 +779,10 @@ impl DivAssign for DimensionlessFraction {
 impl Add for DimensionlessFraction {
     type Output = Self;
     fn add(self, rhs: Self) -> Self {
-        Self(self.0 * rhs.1 + rhs.0 * self.1, self.1 * rhs.1)
+        Self::from_raw(
+            self.0 * rhs.1.get() + rhs.0 * self.1.get(),
+            self.1.get() * rhs.1.get(),
+        )
     }
 }
 impl AddAssign for DimensionlessFraction {
@@ -441,7 +804,7 @@ impl SubAssign for DimensionlessFraction {
 impl Mul<DimensionlessInteger> for DimensionlessFraction {
     type Output = Self;
     fn mul(self, rhs: DimensionlessInteger) -> Self {
-        Self(self.0 * rhs, self.1)
+        Self(self.0 * rhs.0, self.1)
     }
 }
 impl MulAssign<DimensionlessInteger> for DimensionlessFraction {
@@ -453,7 +816,7 @@ impl Div<DimensionlessInteger> for DimensionlessFraction {
     type Output = Self;
     #[expect(clippy::suspicious_arithmetic_impl)]
     fn div(self, rhs: DimensionlessInteger) -> Self {
-        Self(self.0, self.1 * rhs)
+        Self::from_raw(self.0, self.1.get() * rhs.0)
     }
 }
 impl DivAssign<DimensionlessInteger> for DimensionlessFraction {
@@ -486,7 +849,7 @@ impl SubAssign<DimensionlessInteger> for DimensionlessFraction {
 impl Mul<Time> for DimensionlessFraction {
     type Output = Time;
     fn mul(self, rhs: Time) -> Time {
-        rhs * self.0 / self.1
+        Time::from_nanoseconds(rhs.as_nanoseconds() * self.0 / self.1.get())
     }
 }
 impl Mul<DimensionlessFraction> for DimensionlessInteger {
@@ -602,6 +965,8 @@ pub use div;
 pub struct Quantity<T, MM: Integer, S: Integer>(PhantomData<MM>, PhantomData<S>, pub(crate) T);
 impl<T, MM: Integer, S: Integer> Quantity<T, MM, S> {
     ///Constructor for `Quantity`.
+    ///
+    ///This function is **unit-unsafe**.
     #[inline]
     pub const fn new(inner: T) -> Self {
         Self(PhantomData, PhantomData, inner)
@@ -620,6 +985,28 @@ impl<T, MM: Integer, S: Integer> Quantity<T, MM, S> {
         let x_ptr: *const ManuallyDrop<Self> = &raw const x;
         let y_ptr: *const T = x_ptr.cast();
         unsafe { core::ptr::read(y_ptr) }
+    }
+}
+impl Quantity<i64, Zero, Zero> {
+    ///Converts from `Quantity<i64, Zero, Zero>` to `DimensionlessInteger`.
+    ///
+    ///The following two lines are guaranteed to have the same effect given
+    ///`Quantity<i64, Zero, Zero>` variable `x`:
+    ///```
+    ///# use rrtk::*;
+    ///# let x = Dimensionless::new(4_i64);
+    ///let y = x.as_dimensionless_integer();
+    ///# assert_eq!(y, dimensions::transmute_safe::transmute_unit_safe(x));
+    ///```
+    ///```
+    ///# use rrtk::*;
+    ///# let x = Dimensionless::new(4_i64);
+    ///let y: DimensionlessInteger = dimensions::transmute_safe::transmute_unit_safe(x);
+    ///# assert_eq!(y, x.as_dimensionless_integer());
+    ///```
+    #[inline(always)]
+    pub const fn as_dimensionless_integer(self) -> DimensionlessInteger {
+        DimensionlessInteger(self.2)
     }
 }
 macro_rules! impl_quantity_abs {
@@ -814,14 +1201,4 @@ impl Div<Time> for DimensionlessFraction {
     fn div(self, rhs: Time) -> InverseSecond<f32> {
         self.as_quantity_f32() / rhs
     }
-}
-//RRTK intentionally does not provide a way to construct DimensionlessFraction with zero denominator
-//in debug mode at all--*_unchecked still does the checks with debug assertions on. We therefore
-//need to use the tuple struct raw construction syntax in the same module as DimensionlessFraction
-//is defined.
-#[test]
-#[should_panic]
-fn invalid_dimensionless_fraction() {
-    let x = DimensionlessFraction(DimensionlessInteger(-3), DimensionlessInteger(0));
-    x.assert_valid();
 }
