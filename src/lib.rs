@@ -76,6 +76,9 @@ pub mod error {
     ///The error type used when a [`TryFrom`] fails.
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]
     pub struct CannotConvert;
+    ///The error type for when an operation fails because of a division-by-zero error.
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    pub struct ZeroDivision;
     ///A type for when multiple things may error independently and both errors must be able to be
     ///returned. This only keeps track of when at least one has errored, i.e., it does not have an
     ///`Ok` variant.

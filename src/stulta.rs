@@ -106,6 +106,7 @@ impl NotDatum for LinearCommand {}
 impl NotDatum for AngularCommand {}
 impl NotDatum for PositionDerivative {}
 impl NotDatum for error::CannotConvert {}
+impl NotDatum for error::ZeroDivision {}
 impl NotDatum for Time {}
 impl NotDatum for DimensionlessInteger {}
 impl NotDatum for compile_time_integer::Zero {}

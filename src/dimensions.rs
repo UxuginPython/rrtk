@@ -942,14 +942,24 @@ impl From<DimensionlessFraction> for num_rational::Rational64 {
     }
 }
 ///This operation is **unit-unsafe**. It requires the `Ratio` to be dimensionless for
-///unit-correctness.
+///unit-correctness. The `Err` variant is returned if the `Ratio` has a denominator of 0.
 #[cfg(feature = "num-rational")]
-impl From<num_rational::Rational64> for DimensionlessFraction {
+impl TryFrom<num_rational::Rational64> for DimensionlessFraction {
+    type Error = error::ZeroDivision;
     #[inline]
-    fn from(was: num_rational::Rational64) -> Self {
+    fn try_from(was: num_rational::Rational64) -> Result<Self, error::ZeroDivision> {
         //TODO: Decide if you'd rather use Ratio::into_raw().
-        //We don't use the more modern Ratio::into_raw() for compatibility with older versions.
-        Self::from_raw(*was.numer(), *was.denom())
+        //We currently don't use the more modern Ratio::into_raw() for compatibility with older
+        //versions of num-rational.
+        let denom = *was.denom();
+        if denom == 0 {
+            Err(error::ZeroDivision)
+        } else {
+            let numer = *was.numer();
+            //SAFETY: We just verified that the denominator is nonzero, which is the only
+            //precondition for from_raw_unchecked.
+            Ok(unsafe { Self::from_raw_unchecked(numer, denom) })
+        }
     }
 }
 ///Gets the resulting type from multiplying values of two types. (Alias for
