@@ -13,6 +13,9 @@
 //!- `libm` - Use [`libm`](https://crates.io/crates/libm) for float exponentiation when `std` is not available.
 //!- `micromath` - Use [`micromath`](https://crates.io/crates/micromath) for float exponentiation
 //!  when `std` and `libm` are unavailable.
+//!- `num-rational` - Enable support for [`num-rational`](https://crates.io/crates/num-rational).
+//!  This enables a few conversions between `num_rational::Rational64` and RRTK's
+//!  `DimensionlessFraction` and `DimensionlessInteger` types.
 //!- `internal_enhanced_float` - Do not enable this yourself.
 //!
 //!RRTK prefers **`std`** over **`libm`** and `libm` over **`micromath`** when multiple are
