@@ -3,7 +3,7 @@
 
 [package]
 name = "rrtk"
-version = "0.7.1"
+version = "0.7.2-alpha.0"
 license = "BSD-3-Clause"
 edition = "2024"
 rust-version = "1.95"
