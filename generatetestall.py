@@ -42,9 +42,9 @@ for i in features:
             if not(i in k[1] and j in k[1]):
                 new_combinations.append(k[1])
         combinations = new_combinations
-test = '\n'.join(i.rstrip() for i in f'#!/bin/bash\n#Generated automatically by rrtk {version}\nset -e\n{'\n'.join(f'echo {' '.join(i)}\ncargo test --no-default-features{' --features' if len(i) > 0 else ''} {','.join(i)}' for i in combinations)}'.split('\n')).strip()+'\n'
-check = '\n'.join(i.rstrip() for i in f'#!/bin/bash\n#Generated automatically by rrtk {version}\nset -e\n{'\n'.join(f'echo {' '.join(i)}\ncargo check --no-default-features{' --features' if len(i) > 0 else ''} {','.join(i)}' for i in combinations)}'.split('\n')).strip()+'\n'
-miri_test = '\n'.join(i.rstrip() for i in f'#!/bin/bash\n#Generated automatically by rrtk {version}\nset -e\n{'\n'.join(f'echo {' '.join(i)}\ncargo miri test --no-default-features{' --features' if len(i) > 0 else ''} {','.join(i)}' for i in combinations)}'.split('\n')).strip()+'\n'
+test = '\n'.join(i.rstrip() for i in f'#!/bin/bash\n#Generated automatically for rrtk {version}\nset -e\n{'\n'.join(f'echo {' '.join(i)}\ncargo test --no-default-features{' --features' if len(i) > 0 else ''} {','.join(i)}' for i in combinations)}'.split('\n')).strip()+'\n'
+check = '\n'.join(i.rstrip() for i in f'#!/bin/bash\n#Generated automatically for rrtk {version}\nset -e\n{'\n'.join(f'echo {' '.join(i)}\ncargo check --no-default-features{' --features' if len(i) > 0 else ''} {','.join(i)}' for i in combinations)}'.split('\n')).strip()+'\n'
+miri_test = '\n'.join(i.rstrip() for i in f'#!/bin/bash\n#Generated automatically for rrtk {version}\nset -e\n{'\n'.join(f'echo {' '.join(i)}\ncargo miri test --no-default-features{' --features' if len(i) > 0 else ''} {','.join(i)}' for i in combinations)}'.split('\n')).strip()+'\n'
 file = open('testall.sh', 'w')
 file.write(test)
 file.close()
