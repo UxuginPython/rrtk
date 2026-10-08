@@ -963,6 +963,21 @@ impl From<DimensionlessFraction> for num_rational::Rational64 {
         Self::new_raw(components.0, components.1.get())
     }
 }
+#[cfg(feature = "num-traits")]
+impl num_traits::bounds::Bounded for DimensionlessFraction {
+    #[inline(always)]
+    fn min_value() -> Self {
+        const { Self(i64::MIN, NonZero::new(1).expect("hardcoded 1 is not 0")) }
+    }
+    ///Because `i64::MIN` has a greater magnitude than `i64::MAX` (specifically,
+    ///|`i64::MIN`|=`i64::MAX`+1), this value is defined as `i64::MIN`/-1 rather than `i64::MAX`/1.
+    ///Note that this makes the value quite unwieldy.
+    #[inline(always)]
+    fn max_value() -> Self {
+        //TODO decide if you really want it that way
+        const { Self(i64::MIN, NonZero::new(-1).expect("hardcoded -1 is not 0")) }
+    }
+}
 ///This operation is **unit-unsafe**. It requires the `Ratio` to be dimensionless for
 ///unit-correctness. The `Err` variant is returned if the `Ratio` has a denominator of 0.
 #[cfg(feature = "num-rational")]
