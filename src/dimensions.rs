@@ -376,6 +376,17 @@ impl Div<Time> for f32 {
         self / rhs.as_seconds_f32()
     }
 }
+#[cfg(feature = "num-traits")]
+impl num_traits::bounds::Bounded for Time {
+    #[inline(always)]
+    fn min_value() -> Self {
+        Self(i64::MIN)
+    }
+    #[inline(always)]
+    fn max_value() -> Self {
+        Self(i64::MAX)
+    }
+}
 ///A dimensionless value stored as an integer. Used almost exclusively for when a time, stored
 ///as an integer, must be multiplied by a constant factor as in numerical integrals and motion
 ///profiles.
@@ -489,6 +500,17 @@ impl From<DimensionlessInteger> for num_rational::Rational64 {
     #[inline(always)]
     fn from(was: DimensionlessInteger) -> Self {
         Self::from_integer(was.0)
+    }
+}
+#[cfg(feature = "num-traits")]
+impl num_traits::bounds::Bounded for DimensionlessInteger {
+    #[inline(always)]
+    fn min_value() -> Self {
+        Self(i64::MIN)
+    }
+    #[inline(always)]
+    fn max_value() -> Self {
+        Self(i64::MAX)
     }
 }
 ///An exact rational number type for dimensionless values.
