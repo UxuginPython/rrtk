@@ -1355,6 +1355,24 @@ impl<T: num_traits::bounds::UpperBounded, MM: Integer, S: Integer> num_traits::b
         Self::new(T::max_value())
     }
 }
+#[cfg(feature = "num-traits")]
+impl<T: num_traits::identities::Zero, MM: Integer, S: Integer> num_traits::identities::Zero
+    for Quantity<T, MM, S>
+{
+    #[inline]
+    fn zero() -> Self {
+        Self::new(T::zero())
+    }
+    fn is_zero(&self) -> bool {
+        self.2.is_zero()
+    }
+}
+#[cfg(feature = "num-traits")]
+impl<T: num_traits::identities::ConstZero, MM: Integer, S: Integer>
+    num_traits::identities::ConstZero for Quantity<T, MM, S>
+{
+    const ZERO: Self = Self::new(T::ZERO);
+}
 //FIXME? It is a little weird that this just makes stuff a float when everything could in theory
 //stay integer. It's just a lot easier to do one-off types for dimensionless and time quantities
 //than it is to maintain a whole other side of the dimensional analysis system for exact values.
