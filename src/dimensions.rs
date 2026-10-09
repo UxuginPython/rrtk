@@ -529,6 +529,33 @@ impl num_traits::bounds::Bounded for DimensionlessInteger {
         Self(i64::MAX)
     }
 }
+#[cfg(feature = "num-traits")]
+impl num_traits::identities::Zero for DimensionlessInteger {
+    #[inline(always)]
+    fn zero() -> Self {
+        Self(0)
+    }
+    //FIXME: Is this going to cause a problem?
+    #[inline(always)]
+    fn is_zero(&self) -> bool {
+        self.is_zero()
+    }
+}
+#[cfg(feature = "num-traits")]
+impl num_traits::identities::ConstZero for DimensionlessInteger {
+    const ZERO: Self = Self(0);
+}
+#[cfg(feature = "num-traits")]
+impl num_traits::identities::One for DimensionlessInteger {
+    #[inline(always)]
+    fn one() -> Self {
+        Self(1)
+    }
+}
+#[cfg(feature = "num-traits")]
+impl num_traits::identities::ConstOne for DimensionlessInteger {
+    const ONE: Self = Self(1);
+}
 ///An exact rational number type for dimensionless values.
 ///
 ///There is a memory safety guarantee that the denominator is nonzero. This means that undefined
