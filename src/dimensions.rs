@@ -1042,6 +1042,33 @@ impl TryFrom<num_rational::Rational64> for DimensionlessFraction {
         }
     }
 }
+#[cfg(feature = "num-traits")]
+impl num_traits::identities::Zero for DimensionlessFraction {
+    #[inline(always)]
+    fn zero() -> Self {
+        const { Self::from_raw(0, 1) }
+    }
+    //FIXME: Is this going to cause a problem?
+    #[inline(always)]
+    fn is_zero(&self) -> bool {
+        *self == const { Self::from_raw(0, 1) }
+    }
+}
+#[cfg(feature = "num-traits")]
+impl num_traits::identities::ConstZero for DimensionlessFraction {
+    const ZERO: Self = Self::from_raw(0, 1);
+}
+#[cfg(feature = "num-traits")]
+impl num_traits::identities::One for DimensionlessFraction {
+    #[inline(always)]
+    fn one() -> Self {
+        const { Self::from_raw(1, 1) }
+    }
+}
+#[cfg(feature = "num-traits")]
+impl num_traits::identities::ConstOne for DimensionlessFraction {
+    const ONE: Self = Self::from_raw(1, 1);
+}
 ///Gets the resulting type from multiplying values of two types. (Alias for
 ///`<$a as Mul<$b>>::Output`.)
 ///
