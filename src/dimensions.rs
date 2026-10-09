@@ -387,6 +387,22 @@ impl num_traits::bounds::Bounded for Time {
         Self(i64::MAX)
     }
 }
+#[cfg(feature = "num-traits")]
+impl num_traits::identities::Zero for Time {
+    #[inline(always)]
+    fn zero() -> Self {
+        Self::ZERO
+    }
+    #[inline(always)]
+    fn is_zero(&self) -> bool {
+        self.0 == 0
+    }
+}
+//FIXME: Is it a problem to have two Self::ZEROs?
+#[cfg(feature = "num-traits")]
+impl num_traits::identities::ConstZero for Time {
+    const ZERO: Self = Self::ZERO;
+}
 ///A dimensionless value stored as an integer. Used almost exclusively for when a time, stored
 ///as an integer, must be multiplied by a constant factor as in numerical integrals and motion
 ///profiles.
@@ -1271,6 +1287,7 @@ impl<T: stulta::AbsoluteValue, MM: Integer, S: Integer> stulta::AbsoluteValue
 impl<T: num_traits::bounds::LowerBounded, MM: Integer, S: Integer> num_traits::bounds::LowerBounded
     for Quantity<T, MM, S>
 {
+    #[inline]
     fn min_value() -> Self {
         Self::new(T::min_value())
     }
@@ -1279,6 +1296,7 @@ impl<T: num_traits::bounds::LowerBounded, MM: Integer, S: Integer> num_traits::b
 impl<T: num_traits::bounds::UpperBounded, MM: Integer, S: Integer> num_traits::bounds::UpperBounded
     for Quantity<T, MM, S>
 {
+    #[inline]
     fn max_value() -> Self {
         Self::new(T::max_value())
     }
