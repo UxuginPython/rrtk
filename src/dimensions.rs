@@ -556,6 +556,15 @@ impl num_traits::identities::One for DimensionlessInteger {
 impl num_traits::identities::ConstOne for DimensionlessInteger {
     const ONE: Self = Self(1);
 }
+///This operation panics if the `DimensionlessInteger` is equal to 0.
+#[cfg(feature = "num-traits")]
+impl num_traits::ops::inv::Inv for DimensionlessInteger {
+    type Output = DimensionlessFraction;
+    #[inline]
+    fn inv(self) -> DimensionlessFraction {
+        DimensionlessFraction::from(self).reciprocal()
+    }
+}
 ///An exact rational number type for dimensionless values.
 ///
 ///There is a memory safety guarantee that the denominator is nonzero. This means that undefined
@@ -1069,6 +1078,7 @@ impl num_traits::identities::One for DimensionlessFraction {
 impl num_traits::identities::ConstOne for DimensionlessFraction {
     const ONE: Self = Self::from_raw(1, 1);
 }
+///This operation panics if the `DimensionlessFraction` is equal to 0.
 #[cfg(feature = "num-traits")]
 impl num_traits::ops::inv::Inv for DimensionlessFraction {
     type Output = Self;
