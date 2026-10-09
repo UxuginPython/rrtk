@@ -92,3 +92,14 @@ fn transmute_memory_safe() {
     let c: Time = transmute_memory_safe(3_000_000_000_i64);
     assert_eq!(c, Time::from_seconds_f32(3.0));
 }
+#[cfg(feature = "num-traits")]
+#[test]
+fn quantity_inv() {
+    use num_traits::ops::inv::Inv;
+    let start = MillimeterPerSecond::new(4.0);
+    let test = start.inv();
+    let reference = SecondPerMillimeter::new(0.25);
+    assert_eq!(test, reference);
+    let manual = Dimensionless::new(1.0) / start;
+    assert_eq!(manual, reference);
+}
