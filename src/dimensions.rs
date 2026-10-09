@@ -1069,6 +1069,14 @@ impl num_traits::identities::One for DimensionlessFraction {
 impl num_traits::identities::ConstOne for DimensionlessFraction {
     const ONE: Self = Self::from_raw(1, 1);
 }
+#[cfg(feature = "num-traits")]
+impl num_traits::ops::inv::Inv for DimensionlessFraction {
+    type Output = Self;
+    #[inline(always)]
+    fn inv(self) -> Self {
+        self.reciprocal()
+    }
+}
 ///Gets the resulting type from multiplying values of two types. (Alias for
 ///`<$a as Mul<$b>>::Output`.)
 ///
