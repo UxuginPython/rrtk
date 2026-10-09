@@ -1266,6 +1266,23 @@ impl<T: stulta::AbsoluteValue, MM: Integer, S: Integer> stulta::AbsoluteValue
         Self::new(self.2.rrtk_abs())
     }
 }
+//TODO: Decide if you want to do it like this or with num_traits::bounds::Bounded.
+#[cfg(feature = "num-traits")]
+impl<T: num_traits::bounds::LowerBounded, MM: Integer, S: Integer> num_traits::bounds::LowerBounded
+    for Quantity<T, MM, S>
+{
+    fn min_value() -> Self {
+        Self::new(T::min_value())
+    }
+}
+#[cfg(feature = "num-traits")]
+impl<T: num_traits::bounds::UpperBounded, MM: Integer, S: Integer> num_traits::bounds::UpperBounded
+    for Quantity<T, MM, S>
+{
+    fn max_value() -> Self {
+        Self::new(T::max_value())
+    }
+}
 //FIXME? It is a little weird that this just makes stuff a float when everything could in theory
 //stay integer. It's just a lot easier to do one-off types for dimensionless and time quantities
 //than it is to maintain a whole other side of the dimensional analysis system for exact values.
