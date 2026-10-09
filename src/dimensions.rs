@@ -1408,6 +1408,19 @@ impl<T: num_traits::identities::ConstOne> num_traits::identities::ConstOne
 {
     const ONE: Self = Self::new(T::ONE);
 }
+#[cfg(feature = "num-traits")]
+impl<T, MM, S> num_traits::ops::inv::Inv for Quantity<T, MM, S>
+where
+    T: num_traits::ops::inv::Inv<Output = T>,
+    MM: Integer,
+    S: Integer,
+{
+    type Output = Quantity<T, MM::Negative, S::Negative>;
+    #[inline]
+    fn inv(self) -> Quantity<T, MM::Negative, S::Negative> {
+        Quantity::new(self.2.inv())
+    }
+}
 //FIXME? It is a little weird that this just makes stuff a float when everything could in theory
 //stay integer. It's just a lot easier to do one-off types for dimensionless and time quantities
 //than it is to maintain a whole other side of the dimensional analysis system for exact values.
