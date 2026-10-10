@@ -1471,6 +1471,42 @@ where
         Quantity::new(self.2.inv())
     }
 }
+#[cfg(feature = "num-traits")]
+impl<T, MM, S> num_traits::ops::checked::CheckedAdd for Quantity<T, MM, S>
+where
+    T: num_traits::ops::checked::CheckedAdd,
+    MM: Integer,
+    S: Integer,
+{
+    #[inline]
+    fn checked_add(&self, rhs: &Self) -> Option<Self> {
+        self.2.checked_add(&rhs.2).map(|inner| Self::new(inner))
+    }
+}
+#[cfg(feature = "num-traits")]
+impl<T, MM, S> num_traits::ops::checked::CheckedSub for Quantity<T, MM, S>
+where
+    T: num_traits::ops::checked::CheckedSub,
+    MM: Integer,
+    S: Integer,
+{
+    #[inline]
+    fn checked_sub(&self, rhs: &Self) -> Option<Self> {
+        self.2.checked_sub(&rhs.2).map(|inner| Self::new(inner))
+    }
+}
+#[cfg(feature = "num-traits")]
+impl<T, MM, S> num_traits::ops::checked::CheckedNeg for Quantity<T, MM, S>
+where
+    T: num_traits::ops::checked::CheckedNeg,
+    MM: Integer,
+    S: Integer,
+{
+    #[inline]
+    fn checked_neg(&self) -> Option<Self> {
+        self.2.checked_neg().map(|inner| Self::new(inner))
+    }
+}
 //FIXME? It is a little weird that this just makes stuff a float when everything could in theory
 //stay integer. It's just a lot easier to do one-off types for dimensionless and time quantities
 //than it is to maintain a whole other side of the dimensional analysis system for exact values.
