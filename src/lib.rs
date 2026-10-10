@@ -196,7 +196,8 @@ impl PIDKValues {
     ///
     ///This method is identical to [`PIDKValues::evaluate`] except that it uses Fused Multiply-Add.
     ///This marginally increases precision, and it may or may not improve performance depending on
-    ///your CPU's instruction set. See the documentation of [`f32::mul_add`] for more information.
+    ///your CPU's instruction set. See the documentation of [`f32::mul_add`], which this method uses
+    ///internally, for more information.
     #[cfg(feature = "std")]
     #[inline]
     pub const fn evaluate_fma(
