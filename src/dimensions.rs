@@ -403,6 +403,14 @@ impl num_traits::identities::Zero for Time {
 impl num_traits::identities::ConstZero for Time {
     const ZERO: Self = Self::ZERO;
 }
+#[cfg(feature = "num-traits")]
+impl num_traits::ops::inv::Inv for Time {
+    type Output = InverseSecond<f32>;
+    #[inline]
+    fn inv(self) -> InverseSecond<f32> {
+        self.as_seconds().inv()
+    }
+}
 ///A dimensionless value stored as an integer. Used almost exclusively for when a time, stored
 ///as an integer, must be multiplied by a constant factor as in numerical integrals and motion
 ///profiles.
