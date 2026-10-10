@@ -418,24 +418,19 @@ impl num_traits::ops::checked::CheckedNeg for Time {
         self.0.checked_neg().map(|nanoseconds| Self(nanoseconds))
     }
 }
-#[cfg(feature = "num-traits")]
-impl num_traits::ops::checked::CheckedAdd for Time {
-    #[inline]
-    fn checked_add(&self, rhs: &Self) -> Option<Self> {
-        self.0
-            .checked_add(rhs.0)
-            .map(|nanoseconds| Self(nanoseconds))
-    }
+macro_rules! impl_checked_op {
+    ($trait_name: path, $type_to_impl_for: ty, $method_name: ident) => {
+        #[cfg(feature = "num-traits")]
+        impl $trait_name for $type_to_impl_for {
+            #[inline]
+            fn $method_name(&self, rhs: &Self) -> Option<Self> {
+                self.0.$method_name(rhs.0).map(|inner| Self(inner))
+            }
+        }
+    };
 }
-#[cfg(feature = "num-traits")]
-impl num_traits::ops::checked::CheckedSub for Time {
-    #[inline]
-    fn checked_sub(&self, rhs: &Self) -> Option<Self> {
-        self.0
-            .checked_sub(rhs.0)
-            .map(|nanoseconds| Self(nanoseconds))
-    }
-}
+impl_checked_op!(num_traits::ops::checked::CheckedAdd, Time, checked_add);
+impl_checked_op!(num_traits::ops::checked::CheckedSub, Time, checked_sub);
 ///A dimensionless value stored as an integer. Used almost exclusively for when a time, stored
 ///as an integer, must be multiplied by a constant factor as in numerical integrals and motion
 ///profiles.
@@ -605,27 +600,21 @@ impl num_traits::ops::checked::CheckedNeg for DimensionlessInteger {
         self.0.checked_neg().map(|inner| Self(inner))
     }
 }
-#[cfg(feature = "num-traits")]
-impl num_traits::ops::checked::CheckedAdd for DimensionlessInteger {
-    #[inline]
-    fn checked_add(&self, rhs: &Self) -> Option<Self> {
-        self.0.checked_add(rhs.0).map(|inner| Self(inner))
-    }
-}
-#[cfg(feature = "num-traits")]
-impl num_traits::ops::checked::CheckedSub for DimensionlessInteger {
-    #[inline]
-    fn checked_sub(&self, rhs: &Self) -> Option<Self> {
-        self.0.checked_sub(rhs.0).map(|inner| Self(inner))
-    }
-}
-#[cfg(feature = "num-traits")]
-impl num_traits::ops::checked::CheckedMul for DimensionlessInteger {
-    #[inline]
-    fn checked_mul(&self, rhs: &Self) -> Option<Self> {
-        self.0.checked_mul(rhs.0).map(|inner| Self(inner))
-    }
-}
+impl_checked_op!(
+    num_traits::ops::checked::CheckedAdd,
+    DimensionlessInteger,
+    checked_add
+);
+impl_checked_op!(
+    num_traits::ops::checked::CheckedSub,
+    DimensionlessInteger,
+    checked_sub
+);
+impl_checked_op!(
+    num_traits::ops::checked::CheckedMul,
+    DimensionlessInteger,
+    checked_mul
+);
 ///An exact rational number type for dimensionless values.
 ///
 ///There is a memory safety guarantee that the denominator is nonzero. This means that undefined
