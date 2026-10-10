@@ -411,6 +411,31 @@ impl num_traits::ops::inv::Inv for Time {
         self.as_seconds().inv()
     }
 }
+#[cfg(feature = "num-traits")]
+impl num_traits::ops::checked::CheckedNeg for Time {
+    #[inline]
+    fn checked_neg(&self) -> Option<Self> {
+        self.0.checked_neg().map(|nanoseconds| Self(nanoseconds))
+    }
+}
+#[cfg(feature = "num-traits")]
+impl num_traits::ops::checked::CheckedAdd for Time {
+    #[inline]
+    fn checked_add(&self, rhs: &Self) -> Option<Self> {
+        self.0
+            .checked_add(rhs.0)
+            .map(|nanoseconds| Self(nanoseconds))
+    }
+}
+#[cfg(feature = "num-traits")]
+impl num_traits::ops::checked::CheckedSub for Time {
+    #[inline]
+    fn checked_sub(&self, rhs: &Self) -> Option<Self> {
+        self.0
+            .checked_sub(rhs.0)
+            .map(|nanoseconds| Self(nanoseconds))
+    }
+}
 ///A dimensionless value stored as an integer. Used almost exclusively for when a time, stored
 ///as an integer, must be multiplied by a constant factor as in numerical integrals and motion
 ///profiles.
