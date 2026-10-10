@@ -181,24 +181,34 @@ impl PIDKValues {
     pub const fn new(kp: f32, ki: f32, kd: f32) -> Self {
         Self { kp, ki, kd }
     }
+    ///Calculate the control variable using the coefficients given error, its integral, and its
+    ///derivative.
+    ///
+    ///There is also a [version](Self::evaluate_fma) of this method that uses Fused Multiply-Add.
+    #[inline]
+    pub const fn evaluate(&self, error: f32, error_integral: f32, error_derivative: f32) -> f32 {
+        self.kp * error + self.ki * error_integral + self.kd * error_derivative
+    }
     //micromath just does normal a*b+c with possibly a little more overhead, and libm doesn't
     //provide mul_add, so std is the only one where this makes sense.
     ///Calculate the control variable using the coefficients given error, its integral, and its
     ///derivative.
+    ///
+    ///This method is identical to [`PIDKValues::evaluate`] except that it uses Fused Multiply-Add.
+    ///This marginally increases precision, and it may or may not improve performance depending on
+    ///your CPU's instruction set. See the documentation of [`f32::mul_add`] for more information.
     #[cfg(feature = "std")]
     #[inline]
-    pub const fn evaluate(&self, error: f32, error_integral: f32, error_derivative: f32) -> f32 {
+    pub const fn evaluate_fma(
+        &self,
+        error: f32,
+        error_integral: f32,
+        error_derivative: f32,
+    ) -> f32 {
         self.kp.mul_add(
             error,
             self.ki.mul_add(error_integral, self.kd * error_derivative),
         )
-    }
-    ///Calculate the control variable using the coefficients given error, its integral, and its
-    ///derivative.
-    #[cfg(not(feature = "std"))]
-    #[inline]
-    pub const fn evaluate(&self, error: f32, error_integral: f32, error_derivative: f32) -> f32 {
-        self.kp * error + self.ki * error_integral + self.kd * error_derivative
     }
 }
 ///A set of PID k-values for controlling each position derivative.
