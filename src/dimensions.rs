@@ -1507,6 +1507,24 @@ where
         self.2.checked_neg().map(|inner| Self::new(inner))
     }
 }
+#[cfg(feature = "num-traits")]
+impl<T: num_traits::ops::checked::CheckedMul> num_traits::ops::checked::CheckedMul
+    for Quantity<T, Zero, Zero>
+{
+    #[inline]
+    fn checked_mul(&self, rhs: &Self) -> Option<Self> {
+        self.2.checked_mul(&rhs.2).map(|inner| Self::new(inner))
+    }
+}
+#[cfg(feature = "num-traits")]
+impl<T: num_traits::ops::checked::CheckedDiv> num_traits::ops::checked::CheckedDiv
+    for Quantity<T, Zero, Zero>
+{
+    #[inline]
+    fn checked_div(&self, rhs: &Self) -> Option<Self> {
+        self.2.checked_div(&rhs.2).map(|inner| Self::new(inner))
+    }
+}
 //FIXME? It is a little weird that this just makes stuff a float when everything could in theory
 //stay integer. It's just a lot easier to do one-off types for dimensionless and time quantities
 //than it is to maintain a whole other side of the dimensional analysis system for exact values.
