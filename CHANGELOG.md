@@ -366,3 +366,11 @@ Add some support for num-rational:
   - Create `error::ZeroDivision`, a specific error type for division-by-zero errors.
 - Implement `From<DimensionlessInteger>` for `num_rational::Rational64`.
 - Implement `stulta::NotDatum` for `num_rational::Ratio` and `num_rational::ParseRatioError`.
+## 0.7.2-alpha.1
+- Add some support for num-traits:
+  - Implement `LowerBounded` and `UpperBounded` for `Quantity`.
+  - Implement `Bounded` for `Time`, `DimensionlessInteger`, and `DimensionlessFraction`.
+  - Implement `Zero`, `ConstZero`, `One`, and `ConstOne` for `Quantity`, `DimensionlessInteger`, and `DimensionlessFraction`.
+  - Implement `Zero` and `ConstZero` for `Time`.
+  - Implement `Inv` for `DimensionlessFraction`, `Quantity`, `DimensionlessInteger`, and `Time`.
+- Add `PIDKValues::evaluate_fma`, which is identical to `PIDKValues::evaluate` except that it uses Fused Multiply-Add.
