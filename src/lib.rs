@@ -184,6 +184,7 @@ pub struct PIDKValues {
 }
 impl PIDKValues {
     ///Constructor for [`PIDKValues`].
+    #[inline(always)]
     pub const fn new(kp: f32, ki: f32, kd: f32) -> Self {
         Self { kp, ki, kd }
     }
