@@ -598,6 +598,34 @@ impl num_traits::ops::inv::Inv for DimensionlessInteger {
         DimensionlessFraction::from(self).reciprocal()
     }
 }
+#[cfg(feature = "num-traits")]
+impl num_traits::ops::checked::CheckedNeg for DimensionlessInteger {
+    #[inline]
+    fn checked_neg(&self) -> Option<Self> {
+        self.0.checked_neg().map(|inner| Self(inner))
+    }
+}
+#[cfg(feature = "num-traits")]
+impl num_traits::ops::checked::CheckedAdd for DimensionlessInteger {
+    #[inline]
+    fn checked_add(&self, rhs: &Self) -> Option<Self> {
+        self.0.checked_add(rhs.0).map(|inner| Self(inner))
+    }
+}
+#[cfg(feature = "num-traits")]
+impl num_traits::ops::checked::CheckedSub for DimensionlessInteger {
+    #[inline]
+    fn checked_sub(&self, rhs: &Self) -> Option<Self> {
+        self.0.checked_sub(rhs.0).map(|inner| Self(inner))
+    }
+}
+#[cfg(feature = "num-traits")]
+impl num_traits::ops::checked::CheckedMul for DimensionlessInteger {
+    #[inline]
+    fn checked_mul(&self, rhs: &Self) -> Option<Self> {
+        self.0.checked_mul(rhs.0).map(|inner| Self(inner))
+    }
+}
 ///An exact rational number type for dimensionless values.
 ///
 ///There is a memory safety guarantee that the denominator is nonzero. This means that undefined
