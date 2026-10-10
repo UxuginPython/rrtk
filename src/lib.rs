@@ -189,8 +189,8 @@ impl PIDKValues {
     pub const fn evaluate(&self, error: f32, error_integral: f32, error_derivative: f32) -> f32 {
         self.kp * error + self.ki * error_integral + self.kd * error_derivative
     }
-    //micromath just does normal a*b+c with possibly a little more overhead, and libm doesn't
-    //provide mul_add, so std is the only one where this makes sense.
+    //TODO: Figure out and then document exactly when this should be available. libm provides FMA,
+    //but it's allegedly slow. micromath aliases FMA to standard unfused multiply-add.
     ///Calculate the control variable using the coefficients given error, its integral, and its
     ///derivative.
     ///
