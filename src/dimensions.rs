@@ -845,7 +845,6 @@ impl DimensionlessFraction {
             // for that case.
             //SAFETY: Hardcoded 1 is not 0.
             Self(i64::MIN, NONZERO_I64_MIN) => Self(-1, unsafe { NonZero::new_unchecked(1) }),
-            Self(num, NONZERO_I64_MIN) => Self(-num, NONZERO_I64_MIN),
             Self(i64::MIN, denom) => Self(i64::MIN, -denom),
             Self(num, denom) => Self(-num, *denom),
         }
