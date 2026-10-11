@@ -1137,6 +1137,20 @@ impl num_traits::ops::inv::Inv for DimensionlessFraction {
         self.reciprocal()
     }
 }
+//FIXME: Do you really want -value and value.checked_neg().unwrap() to return different things in
+//some cases? As it stands, fractions with i64::MIN numerator will overflow with -value but return a
+//correct Some value with value.checked_neg().
+#[cfg(feature = "num-traits")]
+impl num_traits::ops::checked::CheckedNeg for DimensionlessFraction {
+    #[inline]
+    fn checked_neg(&self) -> Option<Self> {
+        if self.0 == i64::MIN {
+            self.1.checked_neg().map(|value| Self(i64::MIN, value))
+        } else {
+            Some(Self(-self.0, self.1))
+        }
+    }
+}
 ///Gets the resulting type from multiplying values of two types. (Alias for
 ///`<$a as Mul<$b>>::Output`.)
 ///
