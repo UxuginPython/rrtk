@@ -840,11 +840,11 @@ impl DimensionlessFraction {
     pub fn neg_extreme(&self) -> Self {
         const NONZERO_I64_MIN: NonZero<i64> =
             NonZero::new(i64::MIN).expect("i64::MIN is negative, not zero");
+        const NONZERO_ONE: NonZero<i64> = NonZero::new(1).expect("1 is not 0");
         match self {
             // i64::MIN / i64::MIN = 1, just like with any other number, so we can just hardcode -1
             // for that case.
-            //SAFETY: Hardcoded 1 is not 0.
-            Self(i64::MIN, NONZERO_I64_MIN) => Self(-1, unsafe { NonZero::new_unchecked(1) }),
+            Self(i64::MIN, NONZERO_I64_MIN) => Self(-1, NONZERO_ONE),
             Self(i64::MIN, denom) => Self(i64::MIN, -denom),
             Self(num, denom) => Self(-num, *denom),
         }
