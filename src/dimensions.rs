@@ -827,6 +827,16 @@ impl DimensionlessFraction {
     pub const fn raw_eq(&self, rhs: &Self) -> bool {
         self.0 == rhs.0 && self.1.get() == rhs.1.get()
     }
+    ///`fraction.neg_extreme()` is exactly like `-fraction` except that it has some extra logic to
+    ///avoid overflows.
+    ///
+    ///`DimensionlessFraction` internally stores its numerator and denominator as `i64`, and there
+    ///is one value of `i64`, [`i64::MIN`], that it is not possible to negate without an overflow.
+    ///Because of the way `DimensionlessFraction` is designed, it is possible to negate every
+    ///`DimensionlessFraction`, including ones with `i64::MIN` numerator or denominator, but it does
+    ///require a small amount of overhead for detecting and resolving these edge cases. This is not
+    ///done in the `Neg` and `CheckedNeg` (num-traits-only) implementations because it is such a
+    ///rare case.
     pub fn neg_extreme(&self) -> Self {
         const NONZERO_I64_MIN: NonZero<i64> =
             NonZero::new(i64::MIN).expect("i64::MIN is negative, not zero");
