@@ -827,6 +827,19 @@ impl DimensionlessFraction {
     pub const fn raw_eq(&self, rhs: &Self) -> bool {
         self.0 == rhs.0 && self.1.get() == rhs.1.get()
     }
+    ///Exactly like `checked_neg` (available with num-traits enabled) except with a little extra
+    ///logic for extreme values.
+    ///
+    ///The `Neg` and `CheckedNeg` implementations only try to negate the numerator. This method
+    ///first detects whether the numerator is equal to `i64::MIN`, the only `i64` value that cannot
+    ///be negated, and tries to negate the denominator instead if this is the case.
+    pub fn neg_extreme(&self) -> Option<Self> {
+        if self.0 == i64::MIN {
+            self.1.checked_neg().map(|value| Self(i64::MIN, value))
+        } else {
+            Some(Self(-self.0, self.1))
+        }
+    }
 }
 ///The default `DimensionlessFraction` is 0, specifically 0/1, to match the other Rust numeric
 ///types.
@@ -1137,18 +1150,11 @@ impl num_traits::ops::inv::Inv for DimensionlessFraction {
         self.reciprocal()
     }
 }
-//FIXME: Do you really want -value and value.checked_neg().unwrap() to return different things in
-//some cases? As it stands, fractions with i64::MIN numerator will overflow with -value but return a
-//correct Some value with value.checked_neg().
 #[cfg(feature = "num-traits")]
 impl num_traits::ops::checked::CheckedNeg for DimensionlessFraction {
     #[inline]
     fn checked_neg(&self) -> Option<Self> {
-        if self.0 == i64::MIN {
-            self.1.checked_neg().map(|value| Self(i64::MIN, value))
-        } else {
-            Some(Self(-self.0, self.1))
-        }
+        self.0.checked_neg().map(|value| Self(value, self.1))
     }
 }
 ///Gets the resulting type from multiplying values of two types. (Alias for
