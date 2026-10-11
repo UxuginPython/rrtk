@@ -827,17 +827,12 @@ impl DimensionlessFraction {
     pub const fn raw_eq(&self, rhs: &Self) -> bool {
         self.0 == rhs.0 && self.1.get() == rhs.1.get()
     }
-    ///Exactly like `checked_neg` (available with num-traits enabled) except with a little extra
-    ///logic for extreme values.
-    ///
-    ///The `Neg` and `CheckedNeg` implementations only try to negate the numerator. This method
-    ///first detects whether the numerator is equal to `i64::MIN`, the only `i64` value that cannot
-    ///be negated, and tries to negate the denominator instead if this is the case.
-    pub fn neg_extreme(&self) -> Option<Self> {
-        if self.0 == i64::MIN {
-            self.1.checked_neg().map(|value| Self(i64::MIN, value))
-        } else {
-            Some(Self(-self.0, self.1))
+    pub fn neg_extreme(&self) -> Self {
+        match (self.0, self.1.get()) {
+            (i64::MIN, i64::MIN) => Self::from_raw(-1, 1),
+            (num, i64::MIN) => Self::from_raw(-num, i64::MIN),
+            (i64::MIN, denom) => Self::from_raw(i64::MIN, -denom),
+            (num, denom) => Self::from_raw(num, denom),
         }
     }
 }
