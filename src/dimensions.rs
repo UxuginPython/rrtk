@@ -1554,6 +1554,27 @@ impl<T: num_traits::ops::checked::CheckedDiv> num_traits::ops::checked::CheckedD
         self.2.checked_div(&rhs.2).map(|inner| Self::new(inner))
     }
 }
+#[cfg(feature = "num-traits")]
+impl<X, M, B, Y, MM1, S1, MM2, S2>
+    num_traits::MulAdd<Quantity<M, MM2, S2>, Quantity<B, MM1::Plus<MM2>, S1::Plus<S2>>>
+    for Quantity<X, MM1, S1>
+where
+    X: num_traits::MulAdd<M, B, Output = Y>,
+    MM1: Integer,
+    S1: Integer,
+    MM2: Integer,
+    S2: Integer,
+{
+    type Output = Quantity<Y, MM1::Plus<MM2>, S1::Plus<S2>>;
+    #[inline]
+    fn mul_add(
+        self,
+        m: Quantity<M, MM2, S2>,
+        b: Quantity<B, MM1::Plus<MM2>, S1::Plus<S2>>,
+    ) -> Quantity<Y, MM1::Plus<MM2>, S1::Plus<S2>> {
+        Quantity::new(self.2.mul_add(m.2, b.2))
+    }
+}
 //FIXME? It is a little weird that this just makes stuff a float when everything could in theory
 //stay integer. It's just a lot easier to do one-off types for dimensionless and time quantities
 //than it is to maintain a whole other side of the dimensional analysis system for exact values.
