@@ -1597,6 +1597,19 @@ where
     }
 }
 #[cfg(feature = "num-traits")]
+impl<X, M, B, MM, S> num_traits::MulAddAssign<Dimensionless<M>, Quantity<B, MM, S>>
+    for Quantity<X, MM, S>
+where
+    X: num_traits::MulAddAssign<M, B>,
+    MM: Integer,
+    S: Integer,
+{
+    #[inline(always)]
+    fn mul_add_assign(&mut self, m: Dimensionless<M>, b: Quantity<B, MM, S>) {
+        self.2.mul_add_assign(m.2, b.2);
+    }
+}
+#[cfg(feature = "num-traits")]
 impl<T, MM, S> num_traits::cast::AsPrimitive<T> for Quantity<T, MM, S>
 where
     T: Copy + 'static,
