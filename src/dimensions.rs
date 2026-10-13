@@ -194,6 +194,7 @@ pub mod transmute_safe {
     impl_all_transparent!(
         u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64
     );
+    #[inline]
     const unsafe fn force_transmute<Src: Copy, Dst: Copy>(src: Src) -> Dst {
         #[repr(C)]
         union Transmute<A: Copy, B: Copy> {
@@ -247,29 +248,35 @@ impl Time {
     ///Construct a `Time` from `i64` nanoseconds, which is how the time is stored internally.
     ///
     ///This function is **unit-unsafe**.
+    #[inline(always)]
     pub const fn from_nanoseconds(value: i64) -> Self {
         Self(value)
     }
     ///Construct a `Time` from `f32` seconds.
     ///
     ///This function is **unit-unsafe**.
+    #[inline]
     pub const fn from_seconds_f32(value: f32) -> Self {
         Self((value * 1_000_000_000.0) as i64)
     }
     ///Construct a `Time` from [`Quantity`] seconds stored using `f32`.
+    #[inline]
     pub fn from_seconds(value: Second<f32>) -> Self {
         Self::from_seconds_f32(value.into_inner())
     }
     ///Get the internal `i64` nanoseconds from the `Time`.
+    #[inline(always)]
     pub const fn as_nanoseconds(self) -> i64 {
         self.0
     }
     ///Get the value of the `Time` as `f32` seconds.
+    #[inline]
     pub const fn as_seconds_f32(self) -> f32 {
         (self.0 as f32) / 1_000_000_000.0
     }
     ///Get the value of the `Time` as [`Quantity`] seconds stored using `f32`.
     ///Effectively a wrapper for [`as_seconds`](Self::as_seconds).
+    #[inline]
     pub const fn as_seconds(self) -> Second<f32> {
         Second::new(self.as_seconds_f32())
     }
@@ -688,7 +695,7 @@ impl DimensionlessFraction {
     ///
     ///Unlike most constructors of dimensioned types, this function **is unit-safe** as long as
     ///*memory* safety preconditions are upheld.
-    #[inline(always)]
+    #[inline]
     pub const unsafe fn new_unchecked<N, D>(num: N, denom: D) -> Self
     where
         N: transmute_safe::Transparent<Inner = i64> + transmute_safe::OnlyRepresents + Copy,
