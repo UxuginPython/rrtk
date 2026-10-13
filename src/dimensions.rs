@@ -431,6 +431,13 @@ macro_rules! impl_checked_op {
 }
 impl_checked_op!(num_traits::ops::checked::CheckedAdd, Time, checked_add);
 impl_checked_op!(num_traits::ops::checked::CheckedSub, Time, checked_sub);
+#[cfg(feature = "num-traits")]
+impl num_traits::cast::AsPrimitive<i64> for Time {
+    #[inline(always)]
+    fn as_(self) -> i64 {
+        self.0
+    }
+}
 ///A dimensionless value stored as an integer. Used almost exclusively for when a time, stored
 ///as an integer, must be multiplied by a constant factor as in numerical integrals and motion
 ///profiles.
@@ -615,6 +622,13 @@ impl_checked_op!(
     DimensionlessInteger,
     checked_mul
 );
+#[cfg(feature = "num-traits")]
+impl num_traits::cast::AsPrimitive<i64> for DimensionlessInteger {
+    #[inline(always)]
+    fn as_(self) -> i64 {
+        self.0
+    }
+}
 ///An exact rational number type for dimensionless values.
 ///
 ///There is a memory safety guarantee that the denominator is nonzero. This means that undefined
@@ -1573,6 +1587,18 @@ where
         b: Quantity<B, MM1::Plus<MM2>, S1::Plus<S2>>,
     ) -> Quantity<Y, MM1::Plus<MM2>, S1::Plus<S2>> {
         Quantity::new(self.2.mul_add(m.2, b.2))
+    }
+}
+#[cfg(feature = "num-traits")]
+impl<T, MM, S> num_traits::cast::AsPrimitive<T> for Quantity<T, MM, S>
+where
+    T: Copy + 'static,
+    MM: Integer + 'static,
+    S: Integer + 'static,
+{
+    #[inline(always)]
+    fn as_(self) -> T {
+        self.2
     }
 }
 //FIXME? It is a little weird that this just makes stuff a float when everything could in theory
