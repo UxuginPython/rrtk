@@ -13,8 +13,9 @@ pub use libm::powf;
 #[cfg(all(feature = "micromath", not(feature = "std"), not(feature = "libm")))]
 pub use micromath::F32Ext;
 
-#[cfg(all(feature = "libm", not(feature = "std")))]
-pub use libm::fmaf;
+//TODO in 0.8: Increase the minimum version of libm to 0.1.2 to get fmaf.
+//#[cfg(all(feature = "libm", not(feature = "std")))]
+//pub use libm::fmaf;
 #[cfg(feature = "std")]
 #[inline(always)]
 pub const fn fmaf(x: f32, y: f32, z: f32) -> f32 {

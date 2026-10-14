@@ -196,6 +196,7 @@ impl PIDKValues {
     pub const fn evaluate(&self, error: f32, error_integral: f32, error_derivative: f32) -> f32 {
         self.kp * error + self.ki * error_integral + self.kd * error_derivative
     }
+    //TODO fix these docs
     ///Calculate the control variable using the coefficients given error, its integral, and its
     ///derivative.
     ///
@@ -208,7 +209,8 @@ impl PIDKValues {
     ///|micromath                          |...is not available. micromath's `mul_add` just performs unfused multiply-add, so this function would be no different from standard `evaluate`.|
     ///|libm                               |...is available but not recommended. libm does perform actual FMA, but it's relatively slow because the float math is not hardware-accelerated.|
     ///|std                                |...is available. It depends on your hardware whether this will be faster or slower than `evaluate`.                                            |
-    #[cfg(any(feature = "std", feature = "libm"))]
+    //#[cfg(any(feature = "std", feature = "libm"))]
+    #[cfg(feature = "std")] //TODO: see enhanced_float
     #[inline]
     pub fn evaluate_fma(&self, error: f32, error_integral: f32, error_derivative: f32) -> f32 {
         fmaf(
