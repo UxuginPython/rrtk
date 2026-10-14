@@ -191,24 +191,23 @@ impl PIDKValues {
     ///Calculate the control variable using the coefficients given error, its integral, and its
     ///derivative.
     ///
-    ///There is also a [version](Self::evaluate_fma) of this method that uses Fused Multiply-Add.
+    ///There is also a [version](Self::evaluate_fma) of this method that uses fused multiply-add.
     #[inline]
     pub const fn evaluate(&self, error: f32, error_integral: f32, error_derivative: f32) -> f32 {
         self.kp * error + self.ki * error_integral + self.kd * error_derivative
     }
-    //TODO fix these docs
     ///Calculate the control variable using the coefficients given error, its integral, and its
     ///derivative.
     ///
-    ///This method is identical to [`PIDKValues::evaluate`] except that it uses Fused Multiply-Add.
+    ///This method is identical to [`PIDKValues::evaluate`] except that it uses fused multiply-add,
+    ///or FMA.
     ///This marginally increases precision, and it may improve or reduce performance depending on
     ///your CPU's instruction set. See the documentation of [`f32::mul_add`] for more information.
-    ///|With this floating point library...|this function...                                                                                                                               |
-    ///|-----------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------|
-    ///|no enhanced floating point         |...is not available. Rust does not currently have no-std FMA.                                                                                  |
-    ///|micromath                          |...is not available. micromath's `mul_add` just performs unfused multiply-add, so this function would be no different from standard `evaluate`.|
-    ///|libm                               |...is available but not recommended. libm does perform actual FMA, but it's relatively slow because the float math is not hardware-accelerated.|
-    ///|std                                |...is available. It depends on your hardware whether this will be faster or slower than `evaluate`.                                            |
+    ///
+    ///This function is only available with `std` enabled. Although `libm` now does provide FMA,
+    ///RRTK supports versions of `libm` from before this was added. Additionally, the `libm`
+    ///implementation is very slow compared to a dedicated CPU instruction for FMA. `micromath` does
+    ///not provide a true FMA, just an alias to unfused multiply-add.
     //#[cfg(any(feature = "std", feature = "libm"))]
     #[cfg(feature = "std")] //TODO: see enhanced_float
     #[inline]
