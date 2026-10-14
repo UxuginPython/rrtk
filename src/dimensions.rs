@@ -405,7 +405,6 @@ impl num_traits::identities::Zero for Time {
         self.0 == 0
     }
 }
-//FIXME: Is it a problem to have two Self::ZEROs?
 #[cfg(feature = "num-traits")]
 impl num_traits::identities::ConstZero for Time {
     const ZERO: Self = Self::ZERO;
@@ -577,7 +576,6 @@ impl num_traits::identities::Zero for DimensionlessInteger {
     fn zero() -> Self {
         Self(0)
     }
-    //FIXME: Is this going to cause a problem?
     #[inline(always)]
     fn is_zero(&self) -> bool {
         self.is_zero()
@@ -1150,7 +1148,6 @@ impl num_traits::identities::Zero for DimensionlessFraction {
     fn zero() -> Self {
         const { Self::from_raw(0, 1) }
     }
-    //FIXME: Is this going to cause a problem?
     #[inline(always)]
     fn is_zero(&self) -> bool {
         *self == const { Self::from_raw(0, 1) }
