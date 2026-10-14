@@ -16,10 +16,14 @@
 //!- `num-rational` - Enable support for [`num-rational`](https://crates.io/crates/num-rational).
 //!  This enables a few conversions between `num_rational::Rational64` and RRTK's
 //!  `DimensionlessFraction` and `DimensionlessInteger` types.
+//!- `num-traits` - Enable support for [`num-traits`](https://crates.io/crates/num-traits). When
+//!  this feature is enabled, several of the traits are implemented for various types in the
+//!  [dimensional analysis system](dimensions).
 //!- `internal_enhanced_float` - Do not enable this yourself.
 //!
 //!RRTK prefers **`std`** over **`libm`** and `libm` over **`micromath`** when multiple are
-//!available.
+//!available. If `std` or `libm` is enabled along with `num-traits`, the corresponding features of
+//!`num-traits` will also be enabled (e.g. `rrtk/std` + `rrtk/num-traits` -> `num-traits/std`).
 #![warn(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
 #[cfg(all(
