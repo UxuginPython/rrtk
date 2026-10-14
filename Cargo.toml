@@ -26,9 +26,9 @@ num-rational = { version = "0.4.2", default-features = false, optional = true }
 num-traits = { version = "0.2.19", default-features = false, optional = true }
 [features]
 alloc = []
-std = ["alloc", "internal_enhanced_float"]
+std = ["alloc", "internal_enhanced_float", "num-traits?/std"]
 devices = []
-libm = ["dep:libm", "internal_enhanced_float"]
+libm = ["dep:libm", "internal_enhanced_float", "num-traits?/libm"]
 micromath = ["dep:micromath", "internal_enhanced_float"]
 num-rational = ["dep:num-rational"]
 num-traits = ["dep:num-traits"]
