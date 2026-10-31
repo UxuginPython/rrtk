@@ -7,13 +7,15 @@ use rrtk::dimensions::*;
 fn dimensionless_integer_to_ratio() {
     let start = DimensionlessInteger(5);
     let test = Rational64::from(start);
-    assert_eq!(test.into_raw(), (5, 1));
+    assert_eq!(*test.numer(), 5);
+    assert_eq!(*test.denom(), 1);
 }
 #[test]
 fn dimensionless_fraction_to_ratio() {
     let start = DimensionlessFraction::from_raw(4, 6);
     let test = Rational64::from(start);
-    assert_eq!(test.into_raw(), (4, 6));
+    assert_eq!(*test.numer(), 4);
+    assert_eq!(*test.denom(), 6);
 }
 #[test]
 fn ratio_to_dimensionless_fraction() {
