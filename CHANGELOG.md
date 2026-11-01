@@ -374,3 +374,11 @@ Add some support for num-rational:
   - Implement `Zero` and `ConstZero` for `Time`.
   - Implement `Inv` for `DimensionlessFraction`, `Quantity`, `DimensionlessInteger`, and `Time`.
 - Add `PIDKValues::evaluate_fma`, which is identical to `PIDKValues::evaluate` except that it uses Fused Multiply-Add.
+## 0.7.2-beta.0
+- Implement num-traits's checked operations for `Time`, `DimensionlessInteger`, and `Quantity`.
+- Add `DimensionlessFraction::neg_extreme`, which is identical to the negation operator except that it can handle very extreme values better.
+- Implement `num_traits::MulAdd` and `num_traits::MulAddAssign` for `Quantity`. This allows Fused Multiply-Add in some cases.
+- Implement `num_traits::AsPrimitive` for `Time`, `DimensionlessInteger`, and `Quantity`.
+- Restore compatibility with libm 0.1.0 by disabling `PIDKValues::evaluate_fma` without std.
+- Expand the range of supported versions of `num-rational` and `num-traits`.
+- Improve inlining of some functions.
