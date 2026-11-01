@@ -72,3 +72,29 @@ fn const_one() {
         Dimensionless::new(1.0)
     );
 }
+#[test]
+fn bounded() {
+    use num_traits::bounds::Bounded;
+    assert_eq!(Time::min_value(), Time::from_nanoseconds(i64::MIN));
+    assert_eq!(Time::max_value(), Time::from_nanoseconds(i64::MAX));
+    assert_eq!(
+        DimensionlessInteger::min_value(),
+        DimensionlessInteger(i64::MIN)
+    );
+    assert_eq!(
+        DimensionlessInteger::max_value(),
+        DimensionlessInteger(i64::MAX)
+    );
+    assert!(
+        DimensionlessFraction::min_value().raw_eq(&DimensionlessFraction::from_raw(i64::MIN, 1))
+    );
+    assert!(
+        DimensionlessFraction::max_value().raw_eq(&DimensionlessFraction::from_raw(i64::MIN, -1))
+    );
+}
+#[test]
+fn upper_lower_bounded() {
+    use num_traits::bounds::{LowerBounded, UpperBounded};
+    assert_eq!(Millimeter::<i8>::min_value(), Millimeter::new(i8::MIN));
+    assert_eq!(Millimeter::<i8>::max_value(), Millimeter::new(i8::MAX));
+}
