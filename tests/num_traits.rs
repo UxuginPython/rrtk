@@ -98,3 +98,10 @@ fn upper_lower_bounded() {
     assert_eq!(Millimeter::<i8>::min_value(), Millimeter::new(i8::MIN));
     assert_eq!(Millimeter::<i8>::max_value(), Millimeter::new(i8::MAX));
 }
+#[test]
+fn as_primitive() {
+    use num_traits::AsPrimitive;
+    assert_eq!(InverseSecond::new(1.0).as_(), 1.0);
+    assert_eq!(Time::from_nanoseconds(1).as_(), 1);
+    assert_eq!(DimensionlessInteger(2).as_(), 2);
+}
