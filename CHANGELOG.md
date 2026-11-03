@@ -382,3 +382,6 @@ Add some support for num-rational:
 - Restore compatibility with libm 0.1.0 by disabling `PIDKValues::evaluate_fma` without std.
 - Expand the range of supported versions of `num-rational` and `num-traits`.
 - Improve inlining of some functions.
+## 0.7.2-beta.1
+- Correct some incorrect type aliases in `rrtk::dimensions::dimension_aliases`.
+- Minor improvements to testing and documentation.

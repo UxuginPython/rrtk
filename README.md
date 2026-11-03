@@ -23,9 +23,9 @@ RRTK is free and open source software licensed under the permissive BSD 3-Clause
     - Differential, gear train, and clutch
     - Wrappers for implementors of `Getter` and `Settable`, including streams
 - Trapezoidal motion profile following
-- No dependencies by default, but support for [libm](https://crates.io/crates/libm) and [micromath](https://crates.io/crates/micromath) available
-    - No features of libm or micromath enabled
-    - Compatible with almost any versions of libm and micromath
+- No dependencies by default, but support for [libm](https://crates.io/crates/libm), [micromath](https://crates.io/crates/micromath), [num-traits](https://crates.io/crates/num-traits), and [num-rational](https://crates.io/crates/num-rational) available
+    - No features of libm, micromath, or num-rational enabled
+    - Compatible with almost any versions of libm, micromath, and num-rational
 - Compile-time dimensional analysis system
 
 ## Stream system
