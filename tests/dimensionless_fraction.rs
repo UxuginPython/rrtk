@@ -391,3 +391,26 @@ fn sub_int_reverse() {
         DimensionlessFraction::from_raw(1, 3)
     );
 }
+#[test]
+fn neg_extreme() {
+    assert!(
+        DimensionlessFraction::from_raw(-4, -2)
+            .neg_extreme()
+            .raw_eq(&DimensionlessFraction::from_raw(4, -2))
+    );
+    assert!(
+        DimensionlessFraction::from_raw(3, i64::MIN)
+            .neg_extreme()
+            .raw_eq(&DimensionlessFraction::from_raw(-3, i64::MIN))
+    );
+    assert!(
+        DimensionlessFraction::from_raw(i64::MIN, -5)
+            .neg_extreme()
+            .raw_eq(&DimensionlessFraction::from_raw(i64::MIN, 5))
+    );
+    assert!(
+        DimensionlessFraction::from_raw(i64::MIN, i64::MIN)
+            .neg_extreme()
+            .raw_eq(&DimensionlessFraction::from_raw(-1, 1))
+    );
+}
