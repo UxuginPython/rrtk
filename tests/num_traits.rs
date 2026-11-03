@@ -105,3 +105,67 @@ fn as_primitive() {
     assert_eq!(Time::from_nanoseconds(1).as_(), 1);
     assert_eq!(DimensionlessInteger(2).as_(), 2);
 }
+#[test]
+fn inv() {
+    use num_traits::Inv;
+    assert_eq!(
+        Time::from_nanoseconds(2_000_000_000).inv(),
+        InverseSecond::new(0.5)
+    );
+    assert!(
+        DimensionlessInteger(-4)
+            .inv()
+            .raw_eq(&DimensionlessFraction::from_raw(1, -4))
+    );
+    assert!(
+        DimensionlessInteger(-1)
+            .inv()
+            .raw_eq(&DimensionlessFraction::from_raw(1, -1))
+    );
+    assert_eq!(
+        MillimeterPerSecondCubed::new(8.0).inv(),
+        SecondCubedPerMillimeter::new(0.125)
+    );
+}
+#[test]
+#[should_panic]
+fn inv_zero_fraction() {
+    use num_traits::Inv;
+    let _ = DimensionlessFraction::from_raw(0, 1).inv();
+}
+#[test]
+#[should_panic]
+fn inv_zero_integer() {
+    use num_traits::Inv;
+    let _ = DimensionlessInteger(0).inv();
+}
+#[test]
+fn inv_zero_quantity() {
+    use num_traits::Inv;
+    assert_eq!(
+        MillimeterPerSecondCubed::new(0.0).inv(),
+        SecondCubedPerMillimeter::new(f32::INFINITY)
+    );
+    assert_eq!(
+        MillimeterPerSecondCubed::new(-0.0).inv(),
+        SecondCubedPerMillimeter::new(f32::NEG_INFINITY)
+    );
+}
+#[test]
+fn inv_zero_time() {
+    use num_traits::Inv;
+    assert_eq!(
+        Time::from_nanoseconds(0).inv(),
+        InverseSecond::new(f32::INFINITY),
+    );
+    assert_eq!(
+        Time::from_seconds_f32(0.0).inv(),
+        InverseSecond::new(f32::INFINITY),
+    );
+    //Unlike in Quantity, Time converts the zero to an integer first, so it becomes a "positive
+    //zero" when it's converted back to a float.
+    assert_eq!(
+        Time::from_seconds_f32(-0.0).inv(),
+        InverseSecond::new(f32::INFINITY),
+    );
+}
