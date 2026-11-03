@@ -1177,6 +1177,7 @@ impl num_traits::ops::inv::Inv for DimensionlessFraction {
         self.reciprocal()
     }
 }
+///Also see [`Self::neg_extreme`].
 #[cfg(feature = "num-traits")]
 impl num_traits::ops::checked::CheckedNeg for DimensionlessFraction {
     #[inline]
