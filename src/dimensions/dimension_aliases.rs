@@ -11,7 +11,8 @@ pub type InverseMillimeterCubedSecond<T> = Quantity<T, Neg3, Neg1>;
 pub type InverseMillimeterCubed<T> = Quantity<T, Neg3, Zero>;
 pub type SecondPerMillimeterCubed<T> = Quantity<T, Neg3, Pos1>;
 pub type SecondSquaredPerMillimeterCubed<T> = Quantity<T, Neg3, Pos2>;
-pub type SecondCubedPerMillimeterCubed<T> = Quantity<T, Neg3, Pos2>;
+///Before RRTK 0.7.2, this alias was incorrect.
+pub type SecondCubedPerMillimeterCubed<T> = Quantity<T, Neg3, Pos3>;
 
 pub type InverseMillimeterSquaredSecondCubed<T> = Quantity<T, Neg2, Neg3>;
 pub type InverseMillimeterSquaredSecondSquared<T> = Quantity<T, Neg2, Neg2>;
@@ -19,7 +20,8 @@ pub type InverseMillimeterSquaredSecond<T> = Quantity<T, Neg2, Neg1>;
 pub type InverseMillimeterSquared<T> = Quantity<T, Neg2, Zero>;
 pub type SecondPerMillimeterSquared<T> = Quantity<T, Neg2, Pos1>;
 pub type SecondSquaredPerMillimeterSquared<T> = Quantity<T, Neg2, Pos2>;
-pub type SecondCubedPerMillimeterSquared<T> = Quantity<T, Neg2, Pos2>;
+///Before RRTK 0.7.2, this alias was incorrect.
+pub type SecondCubedPerMillimeterSquared<T> = Quantity<T, Neg2, Pos3>;
 
 pub type InverseMillimeterSecondCubed<T> = Quantity<T, Neg1, Neg3>;
 pub type InverseMillimeterSecondSquared<T> = Quantity<T, Neg1, Neg2>;
@@ -27,7 +29,8 @@ pub type InverseMillimeterSecond<T> = Quantity<T, Neg1, Neg1>;
 pub type InverseMillimeter<T> = Quantity<T, Neg1, Zero>;
 pub type SecondPerMillimeter<T> = Quantity<T, Neg1, Pos1>;
 pub type SecondSquaredPerMillimeter<T> = Quantity<T, Neg1, Pos2>;
-pub type SecondCubedPerMillimeter<T> = Quantity<T, Neg1, Pos2>;
+///Before RRTK 0.7.2, this alias was incorrect.
+pub type SecondCubedPerMillimeter<T> = Quantity<T, Neg1, Pos3>;
 
 pub type InverseSecondCubed<T> = Quantity<T, Zero, Neg3>;
 pub type InverseSecondSquared<T> = Quantity<T, Zero, Neg2>;
