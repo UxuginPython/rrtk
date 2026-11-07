@@ -169,6 +169,26 @@ fn inv_zero_time() {
         InverseSecond::new(f32::INFINITY),
     );
 }
+mod checked_neg {
+    use super::*;
+    use num_traits::CheckedNeg;
+    #[test]
+    fn time() {
+        todo!();
+    }
+    #[test]
+    fn dimensionless_integer() {
+        todo!();
+    }
+    #[test]
+    fn quantity() {
+        todo!();
+    }
+    #[test]
+    fn dimensionless_fraction() {
+        todo!();
+    }
+}
 mod checked_add {
     use super::*;
     use num_traits::CheckedAdd;
@@ -277,5 +297,26 @@ mod checked_sub {
             MillimeterPerSecondCubed::new(5i8).checked_sub(&MillimeterPerSecondCubed::new(-3i8)),
             Some(MillimeterPerSecondCubed::new(8i8))
         );
+    }
+}
+mod checked_mul {
+    use super::*;
+    use num_traits::CheckedMul;
+    #[test]
+    fn dimensionless_integer() {
+        todo!();
+    }
+    #[test]
+    fn quantity_dimensionless() {
+        todo!();
+    }
+}
+//Although there's only one test in here, we keep the module structure for consistency.
+mod checked_div {
+    use super::*;
+    use num_traits::CheckedDiv;
+    #[test]
+    fn quantity_dimensionless() {
+        todo!();
     }
 }
