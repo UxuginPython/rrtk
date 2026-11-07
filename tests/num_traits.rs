@@ -392,7 +392,25 @@ mod checked_mul {
     use num_traits::CheckedMul;
     #[test]
     fn dimensionless_integer() {
-        todo!();
+        assert!(
+            DimensionlessInteger(i64::MAX)
+                .checked_mul(&DimensionlessInteger(i64::MAX))
+                .is_none()
+        );
+        assert!(
+            DimensionlessInteger(2)
+                .checked_mul(&DimensionlessInteger(i64::MAX))
+                .is_none()
+        );
+        assert!(
+            DimensionlessInteger(i64::MIN)
+                .checked_mul(&DimensionlessInteger(-1))
+                .is_none()
+        );
+        assert_eq!(
+            DimensionlessInteger(70).checked_mul(&DimensionlessInteger(80)),
+            Some(DimensionlessInteger(5600))
+        );
     }
     #[test]
     fn quantity_dimensionless() {
