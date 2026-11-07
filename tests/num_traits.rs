@@ -414,7 +414,25 @@ mod checked_mul {
     }
     #[test]
     fn quantity_dimensionless() {
-        todo!();
+        assert!(
+            Dimensionless::new(i64::MAX)
+                .checked_mul(&Dimensionless::new(i64::MAX))
+                .is_none()
+        );
+        assert!(
+            Dimensionless::new(2)
+                .checked_mul(&Dimensionless::new(i64::MAX))
+                .is_none()
+        );
+        assert!(
+            Dimensionless::new(i64::MIN)
+                .checked_mul(&Dimensionless::new(-1))
+                .is_none()
+        );
+        assert_eq!(
+            Dimensionless::new(70).checked_mul(&Dimensionless::new(80)),
+            Some(Dimensionless::new(5600))
+        );
     }
 }
 //Although there's only one test in here, we keep the module structure for consistency.
