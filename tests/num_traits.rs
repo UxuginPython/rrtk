@@ -227,20 +227,34 @@ mod checked_neg {
     }
     #[test]
     fn dimensionless_fraction() {
+        macro_rules! assert_raw_eq {
+            ($a: expr, $b: expr) => {
+                assert!(
+                    ($a.is_none() && $b.is_none())
+                        || if let Some(a) = $a
+                            && let Some(b) = $b
+                        {
+                            a.raw_eq(&b)
+                        } else {
+                            false
+                        }
+                );
+            };
+        }
         assert!(
             DimensionlessFraction::from_raw(i64::MIN, 1)
                 .checked_neg()
                 .is_none()
         );
-        assert_eq!(
+        assert_raw_eq!(
             DimensionlessFraction::from_raw(i64::MAX, 1).checked_neg(),
             Some(DimensionlessFraction::from_raw(i64::MIN + 1, 1))
         );
-        assert_eq!(
+        assert_raw_eq!(
             DimensionlessFraction::from_raw(10, 2).checked_neg(),
             Some(DimensionlessFraction::from_raw(-10, 2))
         );
-        assert_eq!(
+        assert_raw_eq!(
             DimensionlessFraction::from_raw(-10, 2).checked_neg(),
             Some(DimensionlessFraction::from_raw(10, 2))
         );
@@ -249,15 +263,15 @@ mod checked_neg {
                 .checked_neg()
                 .is_none()
         );
-        assert_eq!(
+        assert_raw_eq!(
             DimensionlessFraction::from_raw(i64::MAX, i64::MIN).checked_neg(),
             Some(DimensionlessFraction::from_raw(i64::MIN + 1, i64::MIN))
         );
-        assert_eq!(
+        assert_raw_eq!(
             DimensionlessFraction::from_raw(10, i64::MIN).checked_neg(),
             Some(DimensionlessFraction::from_raw(-10, i64::MIN))
         );
-        assert_eq!(
+        assert_raw_eq!(
             DimensionlessFraction::from_raw(-10, i64::MIN).checked_neg(),
             Some(DimensionlessFraction::from_raw(10, i64::MIN))
         );
