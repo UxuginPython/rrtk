@@ -169,3 +169,58 @@ fn inv_zero_time() {
         InverseSecond::new(f32::INFINITY),
     );
 }
+mod checked_add {
+    use super::*;
+    use num_traits::CheckedAdd;
+    #[test]
+    fn time() {
+        assert!(
+            Time::from_nanoseconds(i64::MAX)
+                .checked_add(&Time::from_nanoseconds(1))
+                .is_none()
+        );
+        assert!(
+            Time::from_nanoseconds(i64::MIN)
+                .checked_add(&Time::from_nanoseconds(-1))
+                .is_none()
+        );
+        assert_eq!(
+            Time::from_nanoseconds(2000).checked_add(&Time::from_nanoseconds(-3000)),
+            Some(Time::from_nanoseconds(-1000))
+        );
+    }
+    #[test]
+    fn dimensionless_integer() {
+        assert!(
+            DimensionlessInteger(i64::MAX)
+                .checked_add(&DimensionlessInteger(1))
+                .is_none()
+        );
+        assert!(
+            DimensionlessInteger(i64::MIN)
+                .checked_add(&DimensionlessInteger(-1))
+                .is_none()
+        );
+        assert_eq!(
+            DimensionlessInteger(30).checked_add(&DimensionlessInteger(-10)),
+            Some(DimensionlessInteger(20))
+        );
+    }
+    #[test]
+    fn quantity() {
+        assert!(
+            MillimeterPerSecondCubed::new(100i8)
+                .checked_add(&MillimeterPerSecondCubed::new(30i8))
+                .is_none()
+        );
+        assert!(
+            MillimeterPerSecondCubed::new(-100i8)
+                .checked_add(&MillimeterPerSecondCubed::new(-30i8))
+                .is_none()
+        );
+        assert_eq!(
+            MillimeterPerSecondCubed::new(5i8).checked_add(&MillimeterPerSecondCubed::new(3i8)),
+            Some(MillimeterPerSecondCubed::new(8i8))
+        );
+    }
+}
