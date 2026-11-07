@@ -227,7 +227,40 @@ mod checked_neg {
     }
     #[test]
     fn dimensionless_fraction() {
-        todo!();
+        assert!(
+            DimensionlessFraction::from_raw(i64::MIN, 1)
+                .checked_neg()
+                .is_none()
+        );
+        assert_eq!(
+            DimensionlessFraction::from_raw(i64::MAX, 1).checked_neg(),
+            Some(DimensionlessFraction::from_raw(i64::MIN + 1, 1))
+        );
+        assert_eq!(
+            DimensionlessFraction::from_raw(10, 2).checked_neg(),
+            Some(DimensionlessFraction::from_raw(-10, 2))
+        );
+        assert_eq!(
+            DimensionlessFraction::from_raw(-10, 2).checked_neg(),
+            Some(DimensionlessFraction::from_raw(10, 2))
+        );
+        assert!(
+            DimensionlessFraction::from_raw(i64::MIN, i64::MIN)
+                .checked_neg()
+                .is_none()
+        );
+        assert_eq!(
+            DimensionlessFraction::from_raw(i64::MAX, i64::MIN).checked_neg(),
+            Some(DimensionlessFraction::from_raw(i64::MIN + 1, i64::MIN))
+        );
+        assert_eq!(
+            DimensionlessFraction::from_raw(10, i64::MIN).checked_neg(),
+            Some(DimensionlessFraction::from_raw(-10, i64::MIN))
+        );
+        assert_eq!(
+            DimensionlessFraction::from_raw(-10, i64::MIN).checked_neg(),
+            Some(DimensionlessFraction::from_raw(10, i64::MIN))
+        );
     }
 }
 mod checked_add {
