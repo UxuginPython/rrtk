@@ -174,11 +174,40 @@ mod checked_neg {
     use num_traits::CheckedNeg;
     #[test]
     fn time() {
-        todo!();
+        assert!(Time::from_nanoseconds(i64::MIN).checked_neg().is_none());
+        assert_eq!(
+            Time::from_nanoseconds(i64::MAX).checked_neg(),
+            Some(Time::from_nanoseconds(i64::MIN + 1))
+        );
+        assert_eq!(Time::ZERO.checked_neg(), Some(Time::ZERO));
+        assert_eq!(
+            Time::from_nanoseconds(1_000_000_000).checked_neg(),
+            Some(Time::from_nanoseconds(-1_000_000_000))
+        );
+        assert_eq!(
+            Time::from_nanoseconds(-2_000_000_000).checked_neg(),
+            Some(Time::from_nanoseconds(2_000_000_000))
+        );
     }
     #[test]
     fn dimensionless_integer() {
-        todo!();
+        assert!(DimensionlessInteger(i64::MIN).checked_neg().is_none());
+        assert_eq!(
+            DimensionlessInteger(i64::MAX).checked_neg(),
+            Some(DimensionlessInteger(i64::MIN + 1))
+        );
+        assert_eq!(
+            DimensionlessInteger(0).checked_neg(),
+            Some(DimensionlessInteger(0))
+        );
+        assert_eq!(
+            DimensionlessInteger(300).checked_neg(),
+            Some(DimensionlessInteger(-300))
+        );
+        assert_eq!(
+            DimensionlessInteger(-300).checked_neg(),
+            Some(DimensionlessInteger(300))
+        );
     }
     #[test]
     fn quantity() {
