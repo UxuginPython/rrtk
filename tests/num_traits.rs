@@ -224,3 +224,58 @@ mod checked_add {
         );
     }
 }
+mod checked_sub {
+    use super::*;
+    use num_traits::CheckedSub;
+    #[test]
+    fn time() {
+        assert!(
+            Time::from_nanoseconds(i64::MAX)
+                .checked_sub(&Time::from_nanoseconds(-1))
+                .is_none()
+        );
+        assert!(
+            Time::from_nanoseconds(i64::MIN)
+                .checked_sub(&Time::from_nanoseconds(1))
+                .is_none()
+        );
+        assert_eq!(
+            Time::from_nanoseconds(2000).checked_sub(&Time::from_nanoseconds(3000)),
+            Some(Time::from_nanoseconds(-1000))
+        );
+    }
+    #[test]
+    fn dimensionless_integer() {
+        assert!(
+            DimensionlessInteger(i64::MAX)
+                .checked_sub(&DimensionlessInteger(-1))
+                .is_none()
+        );
+        assert!(
+            DimensionlessInteger(i64::MIN)
+                .checked_sub(&DimensionlessInteger(1))
+                .is_none()
+        );
+        assert_eq!(
+            DimensionlessInteger(30).checked_sub(&DimensionlessInteger(10)),
+            Some(DimensionlessInteger(20))
+        );
+    }
+    #[test]
+    fn quantity() {
+        assert!(
+            MillimeterPerSecondCubed::new(100i8)
+                .checked_sub(&MillimeterPerSecondCubed::new(-30i8))
+                .is_none()
+        );
+        assert!(
+            MillimeterPerSecondCubed::new(-100i8)
+                .checked_sub(&MillimeterPerSecondCubed::new(30i8))
+                .is_none()
+        );
+        assert_eq!(
+            MillimeterPerSecondCubed::new(5i8).checked_sub(&MillimeterPerSecondCubed::new(-3i8)),
+            Some(MillimeterPerSecondCubed::new(8i8))
+        );
+    }
+}
