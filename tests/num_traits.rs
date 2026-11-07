@@ -21,9 +21,15 @@ fn zero_is_zero() {
     use num_traits::Zero;
     assert!(Time::from_nanoseconds(0).is_zero());
     assert!(!Time::from_nanoseconds(1).is_zero());
-    assert!(DimensionlessInteger(0).is_zero());
-    assert!(!DimensionlessInteger(1).is_zero());
-    assert!(!DimensionlessInteger(2).is_zero());
+    assert!(<DimensionlessInteger as Zero>::is_zero(
+        &DimensionlessInteger(0)
+    ));
+    assert!(!<DimensionlessInteger as Zero>::is_zero(
+        &DimensionlessInteger(1)
+    ));
+    assert!(!<DimensionlessInteger as Zero>::is_zero(
+        &DimensionlessInteger(2)
+    ));
     assert!(DimensionlessFraction::from_raw(0, 1).is_zero());
     assert!(DimensionlessFraction::from_raw(0, 3).is_zero());
     assert!(!DimensionlessFraction::from_raw(5, 1).is_zero());
