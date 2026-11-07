@@ -211,7 +211,19 @@ mod checked_neg {
     }
     #[test]
     fn quantity() {
-        todo!();
+        assert!(InverseSecond::new(i8::MIN).checked_neg().is_none());
+        assert_eq!(
+            InverseSecond::new(i8::MAX).checked_neg(),
+            Some(InverseSecond::new(i8::MIN + 1))
+        );
+        assert_eq!(
+            InverseSecond::new(10).checked_neg(),
+            Some(InverseSecond::new(-10))
+        );
+        assert_eq!(
+            InverseSecond::new(-10).checked_neg(),
+            Some(InverseSecond::new(10))
+        );
     }
     #[test]
     fn dimensionless_fraction() {
