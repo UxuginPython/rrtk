@@ -441,6 +441,19 @@ mod checked_div {
     use num_traits::CheckedDiv;
     #[test]
     fn quantity_dimensionless() {
-        todo!();
+        assert!(
+            Dimensionless::new(1i8)
+                .checked_div(&Dimensionless::new(0i8))
+                .is_none()
+        );
+        assert!(
+            Dimensionless::new(-1i8)
+                .checked_div(&Dimensionless::new(0i8))
+                .is_none()
+        );
+        assert_eq!(
+            Dimensionless::new(7i8).checked_div(&Dimensionless::new(-3i8)),
+            Some(Dimensionless::new(-2i8))
+        );
     }
 }
