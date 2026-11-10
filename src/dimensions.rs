@@ -750,6 +750,16 @@ impl DimensionlessFraction {
     pub const unsafe fn reciprocal_unchecked(&self) -> Self {
         unsafe { Self::from_raw_unchecked(self.1.get(), self.0) }
     }
+    ///Reciprocal function (1/x) that returns `None` if the new denominator would be zero and `Some`
+    ///with the reciprocal value otherwise.
+    #[inline(always)]
+    pub const fn try_reciprocal(&self) -> Option<Self> {
+        if self.0 == 0 {
+            None
+        } else {
+            Some(unsafe { self.reciprocal_unchecked() })
+        }
+    }
     ///Converts the fraction into a tuple `(numerator, denominator)`.
     ///
     ///The following code is guaranteed to leave mutable [`DimensionlessInteger`] variables `x` and
@@ -1183,6 +1193,21 @@ impl num_traits::ops::checked::CheckedNeg for DimensionlessFraction {
     #[inline]
     fn checked_neg(&self) -> Option<Self> {
         self.0.checked_neg().map(|value| Self(value, self.1))
+    }
+}
+#[cfg(feature = "num-traits")]
+impl num_traits::ops::checked::CheckedMul for DimensionlessFraction {
+    #[inline]
+    fn checked_mul(&self, rhs: &Self) -> Option<Self> {
+        Some(Self(self.0.checked_mul(rhs.0)?, self.1.checked_mul(rhs.1)?))
+    }
+}
+#[cfg(feature = "num-traits")]
+impl num_traits::ops::checked::CheckedDiv for DimensionlessFraction {
+    #[inline]
+    fn checked_div(&self, rhs: &Self) -> Option<Self> {
+        use num_traits::CheckedMul;
+        self.checked_mul(&rhs.try_reciprocal()?)
     }
 }
 ///Gets the resulting type from multiplying values of two types. (Alias for
