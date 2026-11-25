@@ -727,6 +727,18 @@ impl DimensionlessFraction {
     pub const unsafe fn from_raw_unchecked(num: i64, denom: i64) -> Self {
         Self(num, unsafe { NonZero::new_unchecked(denom) })
     }
+    ///Constructor from raw `i64` values for numerator and denominator that returns `None` if the
+    ///provided denominator is zero.
+    ///
+    ///This function is **unit-unsafe**.
+    #[inline]
+    pub const fn try_from_raw(num: i64, denom: i64) -> Option<Self> {
+        if denom == 0 {
+            None
+        } else {
+            Some(unsafe { Self::from_raw_unchecked(num, denom) })
+        }
+    }
     ///Constructor from an `i64` numerator and a `NonZero<i64>` denominator.
     ///
     ///The numerator and denominator are internally stored by `DimensionlessFraction` as these
@@ -1208,6 +1220,25 @@ impl num_traits::ops::checked::CheckedDiv for DimensionlessFraction {
     fn checked_div(&self, rhs: &Self) -> Option<Self> {
         use num_traits::CheckedMul;
         self.checked_mul(&rhs.try_reciprocal()?)
+    }
+}
+#[cfg(feature = "num-traits")]
+impl num_traits::ops::checked::CheckedAdd for DimensionlessFraction {
+    #[inline]
+    fn checked_add(&self, rhs: &Self) -> Option<Self> {
+        let new_denom = self.1.checked_mul(rhs.1)?;
+        let self_num_with_new_denom = self.0.checked_mul(rhs.1.get())?;
+        let rhs_num_with_new_denom = self.1.get().checked_mul(self.0)?;
+        let new_num = self_num_with_new_denom.checked_add(rhs_num_with_new_denom)?;
+        Some(Self::from_true_raw(new_num, new_denom))
+    }
+}
+#[cfg(feature = "num-traits")]
+impl num_traits::ops::checked::CheckedSub for DimensionlessFraction {
+    #[inline]
+    fn checked_sub(&self, rhs: &Self) -> Option<Self> {
+        use num_traits::CheckedAdd;
+        self.checked_add(&rhs.neg_extreme())
     }
 }
 ///Gets the resulting type from multiplying values of two types. (Alias for
