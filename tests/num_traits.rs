@@ -175,6 +175,20 @@ fn inv_zero_time() {
         InverseSecond::new(f32::INFINITY),
     );
 }
+macro_rules! assert_raw_eq {
+    ($a: expr, $b: expr) => {
+        assert!(
+            ($a.is_none() && $b.is_none())
+                || if let Some(a) = $a
+                    && let Some(b) = $b
+                {
+                    a.raw_eq(&b)
+                } else {
+                    false
+                }
+        );
+    };
+}
 mod checked_neg {
     use super::*;
     use num_traits::CheckedNeg;
@@ -233,20 +247,6 @@ mod checked_neg {
     }
     #[test]
     fn dimensionless_fraction() {
-        macro_rules! assert_raw_eq {
-            ($a: expr, $b: expr) => {
-                assert!(
-                    ($a.is_none() && $b.is_none())
-                        || if let Some(a) = $a
-                            && let Some(b) = $b
-                        {
-                            a.raw_eq(&b)
-                        } else {
-                            false
-                        }
-                );
-            };
-        }
         assert!(
             DimensionlessFraction::from_raw(i64::MIN, 1)
                 .checked_neg()
@@ -337,6 +337,24 @@ mod checked_add {
             Some(MillimeterPerSecondCubed::new(8i8))
         );
     }
+    #[test]
+    fn dimensionless_fraction() {
+        assert_raw_eq!(
+            DimensionlessFraction::from_raw(2, 3)
+                .checked_add(&DimensionlessFraction::from_raw(3, 5)),
+            Some(DimensionlessFraction::from_raw(19, 15))
+        );
+        assert_raw_eq!(
+            DimensionlessFraction::from_raw(i64::MAX, 1)
+                .checked_add(&DimensionlessFraction::from_raw(1, 1)),
+            None::<DimensionlessFraction>
+        );
+        assert_raw_eq!(
+            DimensionlessFraction::from_raw(1, i64::MAX)
+                .checked_add(&DimensionlessFraction::from_raw(1, 2)),
+            None::<DimensionlessFraction>
+        );
+    }
 }
 mod checked_sub {
     use super::*;
@@ -392,6 +410,10 @@ mod checked_sub {
             Some(MillimeterPerSecondCubed::new(8i8))
         );
     }
+    #[test]
+    fn dimensionless_fraction() {
+        todo!();
+    }
 }
 mod checked_mul {
     use super::*;
@@ -440,6 +462,10 @@ mod checked_mul {
             Some(Dimensionless::new(5600))
         );
     }
+    #[test]
+    fn dimensionless_fraction() {
+        todo!();
+    }
 }
 //Although there's only one test in here, we keep the module structure for consistency.
 mod checked_div {
@@ -461,5 +487,9 @@ mod checked_div {
             Dimensionless::new(7i8).checked_div(&Dimensionless::new(-3i8)),
             Some(Dimensionless::new(-2i8))
         );
+    }
+    #[test]
+    fn dimensionless_fraction() {
+        todo!();
     }
 }

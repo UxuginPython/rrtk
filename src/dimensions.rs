@@ -1228,7 +1228,7 @@ impl num_traits::ops::checked::CheckedAdd for DimensionlessFraction {
     fn checked_add(&self, rhs: &Self) -> Option<Self> {
         let new_denom = self.1.checked_mul(rhs.1)?;
         let self_num_with_new_denom = self.0.checked_mul(rhs.1.get())?;
-        let rhs_num_with_new_denom = self.1.get().checked_mul(self.0)?;
+        let rhs_num_with_new_denom = rhs.0.checked_mul(self.1.get())?;
         let new_num = self_num_with_new_denom.checked_add(rhs_num_with_new_denom)?;
         Some(Self::from_true_raw(new_num, new_denom))
     }
