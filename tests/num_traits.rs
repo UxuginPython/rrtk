@@ -478,7 +478,21 @@ mod checked_mul {
     }
     #[test]
     fn dimensionless_fraction() {
-        todo!();
+        assert_raw_eq!(
+            DimensionlessFraction::from_raw(2, 3)
+                .checked_mul(&DimensionlessFraction::from_raw(3, 5)),
+            Some(DimensionlessFraction::from_raw(6, 15))
+        );
+        assert_raw_eq!(
+            DimensionlessFraction::from_raw(i64::MAX, 1)
+                .checked_mul(&DimensionlessFraction::from_raw(2, 1)),
+            None::<DimensionlessFraction>
+        );
+        assert_raw_eq!(
+            DimensionlessFraction::from_raw(1, i64::MAX)
+                .checked_mul(&DimensionlessFraction::from_raw(1, 2)),
+            None::<DimensionlessFraction>
+        );
     }
 }
 //Although there's only one test in here, we keep the module structure for consistency.
@@ -504,6 +518,20 @@ mod checked_div {
     }
     #[test]
     fn dimensionless_fraction() {
-        todo!();
+        assert_raw_eq!(
+            DimensionlessFraction::from_raw(2, 3)
+                .checked_div(&DimensionlessFraction::from_raw(3, 5)),
+            Some(DimensionlessFraction::from_raw(10, 9))
+        );
+        assert_raw_eq!(
+            DimensionlessFraction::from_raw(i64::MAX, 1)
+                .checked_div(&DimensionlessFraction::from_raw(1, 2)),
+            None::<DimensionlessFraction>
+        );
+        assert_raw_eq!(
+            DimensionlessFraction::from_raw(1, i64::MAX)
+                .checked_div(&DimensionlessFraction::from_raw(2, 1)),
+            None::<DimensionlessFraction>
+        );
     }
 }
