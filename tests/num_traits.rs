@@ -412,7 +412,21 @@ mod checked_sub {
     }
     #[test]
     fn dimensionless_fraction() {
-        todo!();
+        assert_raw_eq!(
+            DimensionlessFraction::from_raw(2, 3)
+                .checked_sub(&DimensionlessFraction::from_raw(3, 5)),
+            Some(DimensionlessFraction::from_raw(1, 15))
+        );
+        assert_raw_eq!(
+            DimensionlessFraction::from_raw(i64::MIN, 1)
+                .checked_sub(&DimensionlessFraction::from_raw(1, 1)),
+            None::<DimensionlessFraction>
+        );
+        assert_raw_eq!(
+            DimensionlessFraction::from_raw(1, i64::MAX)
+                .checked_sub(&DimensionlessFraction::from_raw(1, 2)),
+            None::<DimensionlessFraction>
+        );
     }
 }
 mod checked_mul {
