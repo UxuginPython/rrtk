@@ -176,9 +176,17 @@ fn inv_zero_time() {
     );
 }
 mod mul_add {
+    use super::*;
+    use num_traits::MulAdd;
+    #[test]
+    fn dimensionless_integer() {
+        let x = DimensionlessInteger(97);
+        let y = DimensionlessInteger(3);
+        let z = DimensionlessInteger(-1);
+        assert_eq!(x.mul_add(y, z), DimensionlessInteger(290));
+    }
     #[test]
     fn quantity() {
-        use num_traits::MulAdd;
         let x = InverseSecondCubed::new(97u16);
         let y = Millimeter::new(3);
         let z = MillimeterPerSecondCubed::new(1);
@@ -186,9 +194,18 @@ mod mul_add {
     }
 }
 mod mul_add_assign {
+    use super::*;
+    use num_traits::MulAddAssign;
+    #[test]
+    fn dimensionless_integer() {
+        let mut x = DimensionlessInteger(97);
+        let y = DimensionlessInteger(3);
+        let z = DimensionlessInteger(-1);
+        x.mul_add_assign(y, z);
+        assert_eq!(x, DimensionlessInteger(290));
+    }
     #[test]
     fn quantity() {
-        use num_traits::MulAddAssign;
         let mut x = MillimeterPerSecondCubed::new(97u16);
         let y = Dimensionless::new(3);
         let z = MillimeterPerSecondCubed::new(1);
