@@ -636,6 +636,14 @@ impl num_traits::ops::mul_add::MulAdd for DimensionlessInteger {
     }
 }
 #[cfg(feature = "num-traits")]
+impl num_traits::ops::mul_add::MulAddAssign for DimensionlessInteger {
+    #[inline(always)]
+    fn mul_add_assign(&mut self, m: Self, b: Self) {
+        use num_traits::ops::mul_add::MulAdd;
+        *self = self.mul_add(m, b);
+    }
+}
+#[cfg(feature = "num-traits")]
 impl num_traits::cast::AsPrimitive<i64> for DimensionlessInteger {
     #[inline(always)]
     fn as_(self) -> i64 {
