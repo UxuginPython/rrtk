@@ -628,6 +628,14 @@ impl_checked_op!(
     checked_mul
 );
 #[cfg(feature = "num-traits")]
+impl num_traits::ops::mul_add::MulAdd for DimensionlessInteger {
+    type Output = Self;
+    #[inline(always)]
+    fn mul_add(self, m: Self, b: Self) -> Self {
+        Self(self.0 * m.0 + b.0)
+    }
+}
+#[cfg(feature = "num-traits")]
 impl num_traits::cast::AsPrimitive<i64> for DimensionlessInteger {
     #[inline(always)]
     fn as_(self) -> i64 {
