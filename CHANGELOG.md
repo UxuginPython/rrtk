@@ -385,3 +385,8 @@ Add some support for num-rational:
 ## 0.7.2-beta.1
 - Correct some incorrect type aliases in `rrtk::dimensions::dimension_aliases`.
 - Minor improvements to testing and documentation.
+## 0.7.2
+- Add `DimensionlessFraction::try_reciprocal` and `DimensionlessFraction::try_from_raw`.
+- Implement `CheckedAdd`, `CheckedAdd`, `CheckedAdd`, and `CheckedAdd`, for `DimensionlessFraction`.
+- Implement `MulAdd` and `MulAddAssign` for `DimensionlessInteger`.
+- Significantly improve testing.

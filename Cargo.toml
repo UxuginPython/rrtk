@@ -3,7 +3,7 @@
 
 [package]
 name = "rrtk"
-version = "0.7.2-beta.1"
+version = "0.7.2"
 license = "BSD-3-Clause"
 edition = "2024"
 rust-version = "1.95"
@@ -14,7 +14,7 @@ description = "Rust Robotics ToolKit: A data flow-based robotics framework desig
 keywords = ["robotics", "control", "stream", "device", "dimensional-analysis"]
 categories = ["science::robotics", "embedded", "no-std::no-alloc"]
 # We can't exclude the SVGs because they're needed for building the docs.
-exclude = ["/generatetestall.py", "/testall.sh", "/testallmiri.sh", "/checkall.sh", "/featurequickcheck.sh", "/exclude/"]
+exclude = ["/generatetestall.py", "/testall.sh", "/testallmiri.sh", "/checkall.sh", "/featurequickcheck.sh", "/fulltestsuite.sh", "/exclude/"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

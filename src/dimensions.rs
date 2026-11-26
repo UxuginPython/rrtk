@@ -1151,9 +1151,6 @@ impl TryFrom<num_rational::Rational64> for DimensionlessFraction {
     type Error = error::ZeroDivision;
     #[inline]
     fn try_from(was: num_rational::Rational64) -> Result<Self, error::ZeroDivision> {
-        //TODO: Decide if you'd rather use Ratio::into_raw().
-        //We currently don't use the more modern Ratio::into_raw() for compatibility with older
-        //versions of num-rational.
         let denom = *was.denom();
         if denom == 0 {
             Err(error::ZeroDivision)
@@ -1176,7 +1173,6 @@ impl num_traits::bounds::Bounded for DimensionlessFraction {
     ///Note that this makes the value quite unwieldy.
     #[inline(always)]
     fn max_value() -> Self {
-        //TODO decide if you really want it that way
         const { Self(i64::MIN, NonZero::new(-1).expect("hardcoded -1 is not 0")) }
     }
 }
@@ -1524,7 +1520,6 @@ impl<T: stulta::AbsoluteValue, MM: Integer, S: Integer> stulta::AbsoluteValue
         Self::new(self.2.rrtk_abs())
     }
 }
-//TODO: Decide if you want to do it like this or with num_traits::bounds::Bounded.
 #[cfg(feature = "num-traits")]
 impl<T: num_traits::bounds::LowerBounded, MM: Integer, S: Integer> num_traits::bounds::LowerBounded
     for Quantity<T, MM, S>
