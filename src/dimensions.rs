@@ -65,7 +65,8 @@ pub use dimension_aliases::*;
 ///Tools for safely transmuting between different types in the dimension system in certain
 ///circumstances.
 ///
-///Implementing traits in this module outside of RRTK is discouraged, but it is supported.
+///This module is probably the most nuanced part of RRTK, so be careful when implementing these
+///traits.
 pub mod transmute_safe {
     use super::*;
     ///Marker trait for types that can be used as unit marker types for [`CanRepresent`]'s `U` type
@@ -110,6 +111,12 @@ pub mod transmute_safe {
     ///This trait can be implemented multiple times for the same type, but it must not be
     ///implemented multiple times for any type also implementing [`OnlyRepresents`]. See the
     ///documentation there for more information.
+    ///
+    ///There is one other requirement for implementing this trait that's a bit more complicated.
+    ///Take types `A` and `B` and unit marker type `U`. Let `A` implement [`Transparent<Inner = B>`]
+    ///and `CanRepresent<U>`. `B`, since it is `<A as Transparent>::Inner`, must also implement
+    ///`CanRepresent<U>`. This requirement exists to ensure that the units of the value represented
+    ///by an instance of `A` can carry over to the new `B` value when the `A` is transmuted.
     pub trait CanRepresent<U: UnitMarker> {}
     impl<T, MM: Integer, S: Integer> CanRepresent<unit_markers::MillimeterSecond<MM, S>>
         for Quantity<T, MM, S>
@@ -163,6 +170,39 @@ pub mod transmute_safe {
     ///
     ///The intended use for this trait is when a type is `#[repr(transparent)]` to allow transmuting
     ///between the type and the inner type that its representation is identical to.
+    ///
+    ///When a type implementing `Transparent` is transmuted to its `Transparent::Inner`, the
+    ///conceptual value must not change. This is a bit nuanced, so here's an example. Let's define a
+    ///type:
+    ///```
+    ///#[repr(transparent)]
+    ///struct Halves(u8);
+    ///```
+    ///The conceptual value of `Halves` is equal to half the value of its field. It can represent
+    ///any integer 0..=127 and any of those integers + 1/2. One of its implementations might look
+    ///like this:
+    ///```
+    ///# struct Halves(u8);
+    ///impl From<Halves> for f32 {
+    ///    fn from(was: Halves) -> f32 {
+    ///        (was.0 as f32) / 2.0
+    ///    }
+    ///}
+    ///# assert_eq!(f32::from(Halves(5)), 2.5);
+    ///```
+    ///Now, one may look at the `Halves` type and think, "Oh, it's `#[repr(transparent)]`! I can
+    ///implement `Transparent<Inner = u8>`." This is incorrect because `Halves` does not represent
+    ///the same value as its hypothetical `type Inner = u8;`. If you implemented `Transparent` for
+    ///`Halves`, you would be doubling the value every time you transmuted to `u8`.
+    ///
+    ///
+    ///Even though `Halves` may be "transparent" in a *memory* way, it is *not* transparent in a
+    ///*value* way. The `Transparent` trait requires both.
+    ///
+    ///There is also a similar requirement that types implementing `Transparent` must be transparent
+    ///in a *unit* way, in addition to value and memory. In short, if a type `T` implements both
+    ///`Transparent` and [`CanRepresent<U>`], then `<T as Transparent>::Inner` must also implement
+    ///`CanRepresent<U>`. This is explained in more detail in the documentation for [`CanRepresent`].
     pub unsafe trait Transparent: Sized {
         ///The inner type of the `#[repr(transparent)]` of the implementor. It must not ever cause
         ///undefined behavior to transmute between this type and the implementor in either
