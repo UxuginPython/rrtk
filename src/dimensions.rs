@@ -668,22 +668,6 @@ impl_checked_op!(
     checked_mul
 );
 #[cfg(feature = "num-traits")]
-impl num_traits::ops::mul_add::MulAdd for DimensionlessInteger {
-    type Output = Self;
-    #[inline(always)]
-    fn mul_add(self, m: Self, b: Self) -> Self {
-        Self(self.0 * m.0 + b.0)
-    }
-}
-#[cfg(feature = "num-traits")]
-impl num_traits::ops::mul_add::MulAddAssign for DimensionlessInteger {
-    #[inline(always)]
-    fn mul_add_assign(&mut self, m: Self, b: Self) {
-        use num_traits::ops::mul_add::MulAdd;
-        *self = self.mul_add(m, b);
-    }
-}
-#[cfg(feature = "num-traits")]
 impl num_traits::cast::AsPrimitive<i64> for DimensionlessInteger {
     #[inline(always)]
     fn as_(self) -> i64 {
@@ -1802,5 +1786,36 @@ where
         b: DimensionlessInteger,
     ) -> Quantity<i64, Zero, Zero> {
         self * m + Dimensionless::<i64>::from(b)
+    }
+}
+#[cfg(feature = "num-traits")]
+impl<M, B> num_traits::MulAdd<M, B> for DimensionlessInteger
+where
+    M: transmute_safe::Transparent<Inner = i64>
+        + transmute_safe::OnlyRepresents<
+            Unit = transmute_safe::unit_markers::MillimeterSecond<Zero, Zero>,
+        > + Copy,
+    B: transmute_safe::Transparent<Inner = i64>
+        + transmute_safe::OnlyRepresents<
+            Unit = transmute_safe::unit_markers::MillimeterSecond<Zero, Zero>,
+        > + Copy,
+{
+    type Output = Self;
+    #[inline]
+    fn mul_add(self, m: M, b: B) -> Self {
+        let m: DimensionlessInteger = transmute_safe::transmute_unit_safe(m);
+        let b: DimensionlessInteger = transmute_safe::transmute_unit_safe(b);
+        Self(self.0 * m.0 + b.0)
+    }
+}
+#[cfg(feature = "num-traits")]
+impl<M, B> num_traits::MulAddAssign<M, B> for DimensionlessInteger
+where
+    Self: num_traits::MulAdd<M, B, Output = Self>,
+{
+    #[inline(always)]
+    fn mul_add_assign(&mut self, m: M, b: B) {
+        use num_traits::MulAdd;
+        *self = self.mul_add(m, b)
     }
 }
