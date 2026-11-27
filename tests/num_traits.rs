@@ -179,14 +179,56 @@ mod mul_add {
     use super::*;
     use num_traits::MulAdd;
     #[test]
-    fn dimensionless_integer() {
+    fn di_di_di() {
         let x = DimensionlessInteger(97);
         let y = DimensionlessInteger(3);
         let z = DimensionlessInteger(-1);
         assert_eq!(x.mul_add(y, z), DimensionlessInteger(290));
     }
     #[test]
-    fn quantity() {
+    fn di_di_q() {
+        let x = DimensionlessInteger(97);
+        let y = DimensionlessInteger(3);
+        let z = Dimensionless::new(-1);
+        assert_eq!(x.mul_add(y, z), DimensionlessInteger(290));
+    }
+    #[test]
+    fn di_q_di() {
+        let x = DimensionlessInteger(97);
+        let y = Dimensionless::new(3);
+        let z = DimensionlessInteger(-1);
+        assert_eq!(x.mul_add(y, z), DimensionlessInteger(290));
+    }
+    #[test]
+    fn di_q_q() {
+        let x = DimensionlessInteger(97);
+        let y = Dimensionless::new(3);
+        let z = Dimensionless::new(-1);
+        assert_eq!(x.mul_add(y, z), DimensionlessInteger(290));
+    }
+    #[test]
+    fn q_di_di() {
+        let x = Dimensionless::new(97);
+        let y = DimensionlessInteger(3);
+        let z = DimensionlessInteger(-1);
+        assert_eq!(x.mul_add(y, z), Dimensionless::new(290));
+    }
+    #[test]
+    fn q_di_q() {
+        let x = MillimeterPerSecondCubed::new(97);
+        let y = DimensionlessInteger(3);
+        let z = MillimeterPerSecondCubed::new(-1);
+        assert_eq!(x.mul_add(y, z), MillimeterPerSecondCubed::new(290));
+    }
+    #[test]
+    fn q_q_di() {
+        let x = MillimeterPerSecondCubed::new(97);
+        let y = SecondCubedPerMillimeter::new(3);
+        let z = DimensionlessInteger(-1);
+        assert_eq!(x.mul_add(y, z), Dimensionless::new(290));
+    }
+    #[test]
+    fn q_q_q() {
         let x = InverseSecondCubed::new(97u16);
         let y = Millimeter::new(3);
         let z = MillimeterPerSecondCubed::new(1);
