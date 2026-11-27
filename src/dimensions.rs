@@ -1396,6 +1396,7 @@ impl_quantity_abs!(i32);
 impl_quantity_abs!(i64);
 impl_quantity_abs!(i128);
 impl_quantity_abs!(isize);
+///This implementation is **unit-unsafe** and **deprecated** since RRTK 0.7.2.
 impl<T, MM: Integer, S: Integer> From<T> for Quantity<T, MM, S> {
     fn from(was: T) -> Self {
         Self(PhantomData, PhantomData, was)
@@ -1735,5 +1736,71 @@ impl Div<Time> for DimensionlessFraction {
     type Output = InverseSecond<f32>;
     fn div(self, rhs: Time) -> InverseSecond<f32> {
         self.as_quantity_f32() / rhs
+    }
+}
+impl From<DimensionlessInteger> for Dimensionless<i64> {
+    #[inline(always)]
+    fn from(was: DimensionlessInteger) -> Self {
+        Self::new(was.0)
+    }
+}
+impl From<Dimensionless<i64>> for DimensionlessInteger {
+    #[inline(always)]
+    fn from(was: Dimensionless<i64>) -> DimensionlessInteger {
+        Self(was.2)
+    }
+}
+#[cfg(feature = "num-traits")]
+impl<MM: Integer, S: Integer> num_traits::MulAdd<DimensionlessInteger, Self>
+    for Quantity<i64, MM, S>
+{
+    type Output = Self;
+    #[inline]
+    fn mul_add(self, m: DimensionlessInteger, b: Self) -> Self {
+        Self::new(self.2 * m.0 + b.2)
+    }
+}
+#[cfg(feature = "num-traits")]
+impl<MM: Integer, S: Integer> num_traits::MulAddAssign<DimensionlessInteger, Self>
+    for Quantity<i64, MM, S>
+{
+    #[inline(always)]
+    fn mul_add_assign(&mut self, m: DimensionlessInteger, b: Self) {
+        self.2.mul_add_assign(m.0, b.2);
+    }
+}
+#[cfg(feature = "num-traits")]
+impl num_traits::MulAdd<DimensionlessInteger, DimensionlessInteger> for Quantity<i64, Zero, Zero> {
+    type Output = Self;
+    #[inline]
+    fn mul_add(self, m: DimensionlessInteger, b: DimensionlessInteger) -> Self {
+        Self::new(self.2 * m.0 + b.0)
+    }
+}
+#[cfg(feature = "num-traits")]
+impl num_traits::MulAddAssign<DimensionlessInteger, DimensionlessInteger>
+    for Quantity<i64, Zero, Zero>
+{
+    #[inline(always)]
+    fn mul_add_assign(&mut self, m: DimensionlessInteger, b: DimensionlessInteger) {
+        self.2.mul_add_assign(m.0, b.0)
+    }
+}
+#[cfg(feature = "num-traits")]
+impl<MM, S> num_traits::MulAdd<Quantity<i64, MM::Negative, S::Negative>, DimensionlessInteger>
+    for Quantity<i64, MM, S>
+where
+    //These bounds should hold for every Integer, but the compiler doesn't know that.
+    MM: Integer<Plus<<MM as Integer>::Negative> = Zero>,
+    S: Integer<Plus<<S as Integer>::Negative> = Zero>,
+{
+    type Output = Quantity<i64, Zero, Zero>;
+    #[inline]
+    fn mul_add(
+        self,
+        m: Quantity<i64, MM::Negative, S::Negative>,
+        b: DimensionlessInteger,
+    ) -> Quantity<i64, Zero, Zero> {
+        self * m + Dimensionless::<i64>::from(b)
     }
 }
