@@ -239,7 +239,7 @@ mod mul_add_assign {
     use super::*;
     use num_traits::MulAddAssign;
     #[test]
-    fn dimensionless_integer() {
+    fn di_di_di() {
         let mut x = DimensionlessInteger(97);
         let y = DimensionlessInteger(3);
         let z = DimensionlessInteger(-1);
@@ -247,7 +247,31 @@ mod mul_add_assign {
         assert_eq!(x, DimensionlessInteger(290));
     }
     #[test]
-    fn quantity() {
+    fn di_di_q() {
+        let mut x = DimensionlessInteger(97);
+        let y = DimensionlessInteger(3);
+        let z = Dimensionless::new(-1);
+        x.mul_add_assign(y, z);
+        assert_eq!(x, DimensionlessInteger(290));
+    }
+    #[test]
+    fn di_q_di() {
+        let mut x = DimensionlessInteger(97);
+        let y = Dimensionless::new(3);
+        let z = DimensionlessInteger(-1);
+        x.mul_add_assign(y, z);
+        assert_eq!(x, DimensionlessInteger(290));
+    }
+    #[test]
+    fn di_q_q() {
+        let mut x = DimensionlessInteger(97);
+        let y = Dimensionless::new(3);
+        let z = Dimensionless::new(-1);
+        x.mul_add_assign(y, z);
+        assert_eq!(x, DimensionlessInteger(290));
+    }
+    #[test]
+    fn q_q_q() {
         let mut x = MillimeterPerSecondCubed::new(97u16);
         let y = Dimensionless::new(3);
         let z = MillimeterPerSecondCubed::new(1);
